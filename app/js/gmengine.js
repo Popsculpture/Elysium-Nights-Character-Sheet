@@ -402,7 +402,7 @@ EN.gmEngine = (function () {
     if (des && des.damageMult) { dmg = dmg * des.damageMult; mNote += ", " + des.name + " x" + des.damageMult; }
     else if (des && des.damageMultLow) {
       dmg = dmg * des.damageMultLow;                       // the low end, so a build is never over-priced by default
-      mNote += ", " + des.name + " x" + des.damageMultLow + " (the book allows up to x" + des.damageMultHigh + ")";
+      mNote += ", " + des.name + " x" + des.damageMultLow + " (the Toolkit allows up to x" + des.damageMultHigh + ")";
     }
     if (rol && rol.damageMult) { dmg = dmg * rol.damageMult; mNote += ", " + rol.name + " x" + rol.damageMult; }
     var oneAttack = rol && rol.damageMultOneAttack ? rol.damageMultOneAttack : null;

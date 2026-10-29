@@ -629,8 +629,8 @@ EN.pdfExport = (function () {
   function buildFrontSheet(doc, form, fonts, ch, d) {
     var id = ch.identity || {};
     var ctx = makeCtx(doc, form, fonts, { title: "FREELANCER FIELD DOSSIER", tag: "01 · FRONT", serial: idSerial(ch), fieldPrefix: "front" });
-    var classLine = [d.classInfo ? d.classInfo.name : "-", d.subclassInfo ? d.subclassInfo.name : null].filter(Boolean).join(" · ");
-    var speciesLine = [d.speciesInfo ? d.speciesInfo.name : "-", d.lineageInfo ? d.lineageInfo.name : null].filter(Boolean).join(" · ");
+    var classLine = [d.classInfo ? d.classInfo.name : "-", d.subclassInfo ? d.subclassInfo.name + bookTag("subclass", d.subclassInfo.key) : null].filter(Boolean).join(" · ");
+    var speciesLine = [d.speciesInfo ? d.speciesInfo.name : "-", d.lineageInfo ? d.lineageInfo.name + bookTag("lineage", d.lineageInfo.key) : null].filter(Boolean).join(" · ");
     var progression = ch.useXp ? ("XP " + (d.xp || 0) + (d.xpForNext ? " / " + d.xpForNext : "")) : ("Milestones " + ((ch.milestones && ch.milestones.major) || 0) + " maj, " + ((ch.milestones && ch.milestones.minor) || 0) + " min");
 
     ctx.row([{ label: "Handle / alias", name: "handle", value: id.handle || ch.name, w: 1 }, { label: "Name on record", name: "name", value: ch.name, w: 1 }]);
@@ -642,7 +642,7 @@ EN.pdfExport = (function () {
       { label: "Size", name: "size", value: d.size || "-", w: "60px", align: "center" }
     ]);
     ctx.row([
-      { label: "Background", name: "background", value: d.backgroundInfo ? d.backgroundInfo.name : "-", w: 1 },
+      { label: "Background", name: "background", value: d.backgroundInfo ? d.backgroundInfo.name + bookTag("background", d.backgroundInfo.key) : "-", w: 1 },
       { label: "Progression", name: "progression", value: progression, w: 1 }
     ]);
     ctx.spacer(4);
@@ -904,11 +904,22 @@ EN.pdfExport = (function () {
   function proficientCats(ch, bucket) {
     return ((EN.rules.gear || {})[bucket] || []).filter(function (cat) { return eng.effectiveGearTier(ch, bucket, cat) !== "untrained"; });
   }
+  /* The book tag the app's COMPANION chip carries, as PDF text (printsheet.js has the same pair):
+     Freelancer's Companion content says so whether or not Supplemental content is on. */
+  function bookTag(kind, key) {
+    var L = EN.launch;
+    return L && L.isCompanion && key && L.isCompanion(kind, key) ? " (COMPANION)" : "";
+  }
+  function featBookTag(ch, f) {
+    return f.kind === "subclass" ? bookTag("subclass", ch.subclass)
+         : f.kind === "lineage" ? bookTag("lineage", ch.lineage)
+         : f.kind === "talent" ? bookTag("talent", f._base || f.name) : "";
+  }
   function proficiencyLines(ch) {
     var lines = [];
     [["Weapons", "weapons"], ["Armor", "armor"], ["Tools", "tools"], ["Vehicles", "vehicles"]].forEach(function (p) {
       var cats = proficientCats(ch, p[1]);
-      if (cats.length) lines.push(p[0] + ": " + cats.join(", "));
+      if (cats.length) lines.push(p[0] + ": " + cats.map(function (c) { return c + (p[1] === "tools" ? bookTag("tool", c) : ""); }).join(", "));
     });
     function fsLabel(f) {
       var parent = f.parent || f.skill;
@@ -950,7 +961,7 @@ EN.pdfExport = (function () {
           var uses = f.noTracker ? null : parseUses(f.text, d); // noTracker: see printsheet.js (A Sucker Born Every Minute, PHB:3470)
           ctx.text(f.name + (cost ? "   [" + cost + "]" : ""), { size: 9, font: fonts.bold, h: 11 });
           ctx.text(briefFor(f), { size: 8, h: 10 });
-          ctx.text((f.source || "") + (f.level ? " · L" + f.level : ""), { size: 6.5, color: hexColor("dim"), h: uses ? 8 : 11 });
+          ctx.text((f.source || "") + featBookTag(ch, f) + (f.level ? " · L" + f.level : ""), { size: 6.5, color: hexColor("dim"), h: uses ? 8 : 11 });
           if (uses) ctx.checkboxRow("Uses (" + uses.recharge + ")", "ability." + (featIdx++) + ".uses", Math.min(uses.max, 8), 0, { size: 8 });
           else featIdx++;
         });
@@ -978,11 +989,11 @@ EN.pdfExport = (function () {
         var talWhat = function (k) {
           var ck = EN.engine.canonTalentKey ? EN.engine.canonTalentKey(k) : k;
           var raised = (ck && EN.engine.talentAttr) ? EN.engine.talentAttr(ch, ck) : null;
-          return talName(k) + (raised ? " (+1 " + attrName(raised) + ")" : "");
+          return talName(k) + bookTag("talent", k) + (raised ? " (+1 " + attrName(raised) + ")" : "");
         };
         var what = u.type === "attr" ? attrWhat()
           : u.type === "talent" ? ("Talent: " + talWhat(u.talent))
-          : u.type === "talentUpgrade" ? ("Talent Upgrade: " + talName(u.talent))
+          : u.type === "talentUpgrade" ? ("Talent Upgrade: " + talName(u.talent) + bookTag("talent", u.talent))
           // the builder stores the pick as u.evolution (decision 13: the line used to print blank)
           : u.type === "evolution" ? ("Lineage Evolution: " + (u.evolution || u.feature || u.name || ""))
           : (u.name || u.type || "choice");
@@ -1078,7 +1089,7 @@ EN.pdfExport = (function () {
       var it = catItem(e.name);
       var key = e.id || e.name;
       var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || eng.isSlotEquipped(ch, key);
-      return { name: e.name, qty: e.qty, status: worn ? "Equipped" : "Stash",
+      return { name: e.name + bookTag("item", e.name), qty: e.qty, status: worn ? "Equipped" : "Stash",
                notes: it ? gearSummaryLine(it, eng.armorState ? eng.armorState(ch, key) : null,
                                            eng.shieldState ? eng.shieldState(ch, key) : null,
                                            eng.weaponGrip ? eng.weaponGrip(ch, it, key) : null,

@@ -293,12 +293,12 @@ EN.classes.stitcher = {
           level: 1,
           name: "Black Market Butcher",
           grants: { tools: ["Engineering Tools"] },
-          text: "You gain Proficiency with Engineering Tools. If you spend 10 minutes extracting tech from a defeated enemy with cybernetics or the Machine Physiology trait, you harvest Cyber-Scrap. You also harvest organic salvage from defeated biological enemies (adrenal tissue, bio-gel), which is stored and used identically to Cyber-Scrap (including for Rig Fuel and Pawn It). You can hold Cyber-Scrap up to your Tech Modifier, and use it in two ways:\n\n• **Rig Fuel:** As an **Action**, break down a piece of Cyber-Scrap into your Triage Rig to regain 1 spent Triage.\n• **Pawn It:** Sell Cyber-Scrap to fixers, merchants, or underground clinics for a modest payout (the exact \u{1D4A2} value is set by the GM based on the tier of the enemy it was harvested from).\n• **Chop Rig:** Surgical arms on one side, a hopper on the other. It holds a body open and it eats what comes out. Harvesting Cyber-Scrap takes 1 minute instead of 10, and you can hold Cyber-Scrap up to **twice your Tech Modifier**. As an **Action**, spend 1 Cyber-Scrap to apply an Aftermarket Hot-Wire to a willing ally within your melee reach; it lasts until the end of the encounter and doesn't count against your usual number of Hot-Wires."
+          text: "You gain Proficiency with Engineering Tools. If you spend 10 minutes extracting tech from a defeated enemy with cybernetics or the Machine Physiology trait, you harvest Cyber-Scrap. You also harvest organic salvage from defeated biological enemies (adrenal tissue, bio-gel), which is stored and used identically to Cyber-Scrap (including for Rig Fuel and Pawn It). You can hold Cyber-Scrap up to your Tech Modifier, and use it in two ways:\n\n• **Rig Fuel:** As an **Action**, break down a piece of Cyber-Scrap into your Trauma Rig to regain 1 spent Triage.\n• **Pawn It:** Sell Cyber-Scrap to fixers, merchants, or underground clinics for a modest payout (the exact \u{1D4A2} value is set by the GM based on the tier of the enemy it was harvested from).\n\n**Chop Rig:** Your Trauma Rig is a Chop Rig. Surgical arms on one side, a hopper on the other. It holds a body open and it eats what comes out. Harvesting Cyber-Scrap takes 1 minute instead of 10, you can hold Cyber-Scrap up to **twice your Tech Modifier**, and as an **Action** you can spend 1 Cyber-Scrap to apply an Aftermarket Hot-Wire to a willing ally within your melee reach. That tuning lasts until the end of the encounter and doesn't count against your usual number of Hot-Wires."
         },
         {
           level: 3,
           name: "Hot-Wired Implants",
-          text: "Whenever you finish a Short or Long Rest, you can apply an Aftermarket Hot-Wire to a number of willing allies up to your Tech Modifier (minimum 1). An ally must possess cybernetics or the Machine Physiology trait, and the tuning must match their installed hardware (for example, you can't perform an Optical Overclock on organic eyes). An ally can have only one Hot-Wire at a time; it stays active until you finish your next Short or Long Rest, when you must recalibrate it or it powers down. Choose from the following tunings:\n\n• **Optical Overclock** *(requires Cyberoptics or Synthetic Vision):* They ignore the defensive penalties of partial Cover when making ranged attacks, and they gain Darkvision up to 12 spaces.\n• **Dermal Reinforcement** *(requires Subdermal Plating or Machine Chassis):* They gain a +1 bonus to Defense. The first time they take Wound damage during an encounter, the incoming damage is reduced by an amount equal to your Caliber.\n• **Pneumatic Bypass** *(requires Cyberlimbs or Joint Servos):* Their unarmed strike damage die increases by one size, and they gain Edge on in-combat Athletics d20 checks to grapple, shove, or break objects.\n• **Synaptic Accelerator** *(requires a Neural Processor or Synthetic Nervous System):* Their Speed increases by 1, and they gain a +2 bonus to Initiative.\n• **Recoil Compensator** *(requires Skeletal Bracing or Cyberarms):* They ignore the penalties of wielding weapons with the Heavy or Cumbersome trait, and they gain Edge on Body Saves against being knocked Prone.\n• **Adrenal Tuning** *(requires a living, organic ally; can't be applied to a fully synthetic body such as a Clanker):* Their Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they gain Vigor equal to your Caliber."
+          text: "Whenever you finish a Short or Long Rest, you can apply an Aftermarket Hot-Wire to a number of willing allies up to your Tech Modifier (minimum 1). An ally must possess cybernetics or the Machine Physiology trait, and the tuning must match their installed hardware (for example, you can't perform an Optical Overclock on organic eyes). The Machine Physiology trait meets every hardware requirement. An ally can have only one Hot-Wire at a time; it stays active until you finish your next Short or Long Rest, when you must recalibrate it or it powers down. Choose from the following tunings:\n\n• **Optical Overclock** *(requires Cyberoptics):* They ignore the defensive penalties of partial Cover when making ranged attacks, and they gain Darkvision up to 12 spaces.\n• **Dermal Reinforcement** *(requires Integument cyberware):* They gain a +1 bonus to Defense. The first time they take Wound damage during an encounter, the incoming damage is reduced by an amount equal to your Caliber.\n• **Pneumatic Bypass** *(requires Arms or Legs cyberware):* Their unarmed strike damage die increases by one size, and they gain Edge on in-combat Athletics checks to grapple, shove, or break objects.\n• **Synaptic Accelerator** *(requires Neural cyberware):* Their Speed increases by 1, and they gain a +2 bonus to Initiative.\n• **Recoil Compensator** *(requires Integument or Arms cyberware):* They ignore the penalties of wielding weapons with the Heavy or High Recoil trait, and they gain Edge on Body Saves against being knocked Prone.\n• **Adrenal Tuning** *(requires a living, organic ally; can't be applied to a fully synthetic body such as a Clanker):* Their Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they gain Vigor equal to your Caliber."
         },
         {
           level: 7,
@@ -326,36 +326,38 @@ EN.classes.stitcher = {
         text: p.text
       };
     }),
+    // The Ripper's Hot-Wire tunings in the Freelancer's Companion's (EN1101) words. The Machine
+    // Physiology trait meets every hardware requirement below.
     aftermarketTunings: [
       {
         name: "Optical Overclock",
-        requires: "Cyberoptics or Synthetic Vision",
-        text: "You recalibrate their visual sensors, stripping the safety filters. They ignore the defensive penalties of partial Cover when making ranged attacks, and they gain Darkvision up to 12 spaces."
+        requires: "Cyberoptics",
+        text: "They ignore the defensive penalties of partial Cover when making ranged attacks, and they gain Darkvision up to 12 spaces."
       },
       {
         name: "Dermal Reinforcement",
-        requires: "Subdermal Plating or Machine Chassis",
-        text: "You overcharge the impact-absorption of their plating. They gain a +1 bonus to their Defense rating. Additionally, the first time they take Wound damage during an encounter, the plating hardens, reducing the incoming damage by an amount equal to your Caliber."
+        requires: "Integument cyberware",
+        text: "They gain a +1 bonus to Defense. The first time they take Wound damage during an encounter, the incoming damage is reduced by an amount equal to your Caliber."
       },
       {
         name: "Pneumatic Bypass",
-        requires: "Cyberlimbs or Joint Servos",
-        text: "You remove the limiters on their synthetic muscles. Their unarmed strike damage die steps up one size (a strike with no die gains 1d4), and they gain Edge on in-combat Athletics d20 checks made to grapple, shove, or break physical objects."
+        requires: "Arms or Legs cyberware",
+        text: "Their unarmed strike damage die increases by one size, and they gain Edge on in-combat Athletics checks to grapple, shove, or break objects."
       },
       {
         name: "Synaptic Accelerator",
-        requires: "a Neural Processor or Synthetic Nervous System",
-        text: "You splice a direct override into their reflex pathways. Their Speed increases by 1, and they gain a +2 bonus to Initiative rolls as their hardware twitches with preemptive adrenaline."
+        requires: "Neural cyberware",
+        text: "Their Speed increases by 1, and they gain a +2 bonus to Initiative."
       },
       {
         name: "Recoil Compensator",
-        requires: "Skeletal Bracing or Cyberarms",
-        text: "You tune their internal shock absorbers to handle massive kinetic kickback. They ignore the mechanical penalties of wielding weapons with the Heavy or Cumbersome traits, and they gain Edge on Body Saves against being knocked Prone."
+        requires: "Integument or Arms cyberware",
+        text: "They ignore the penalties of wielding weapons with the Heavy or High Recoil trait, and they gain Edge on Body Saves against being knocked Prone."
       },
       {
         name: "Adrenal Tuning",
         requires: "a living, organic ally; can't be applied to a fully synthetic body such as a Clanker",
-        text: "With no hardware to tune, you go to work on the body itself, priming their endocrine and adrenal systems to run hot. Their Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they immediately gain Vigor equal to your Caliber as their body floods with combat hormones."
+        text: "Their Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they gain Vigor equal to your Caliber."
       }
     ]
   }

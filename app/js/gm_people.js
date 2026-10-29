@@ -823,7 +823,7 @@ EN.gmPeople = (function () {
     ]));
     if (d.weak.double && d.weak.double === d.weak.none) {
       kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--warn)" },
-        text: approachName(d.weak.double) + " is on both lines. The book's weak spots are double from one Approach and none from another." }));
+        text: approachName(d.weak.double) + " is on both lines. The Toolkit's weak spots are double from one Approach and none from another." }));
     }
     if (S && S.insight && S.insight.text) kids.push(el("p.help", { style: { margin: "5px 0 0", color: "var(--text3)" }, text: S.insight.text }));
     return el("div", { dataset: { block: "weak" } }, kids);
@@ -834,7 +834,7 @@ EN.gmPeople = (function () {
   function cardHead() {
     var d = _p.draft, st = cardState(d), out = [];
     out.push(el("span", { dataset: { cardstate: st.key } }, [tag(st.label, st.key === "full" ? "var(--success)" : st.key === "walkon" ? "var(--accent)" : "var(--text3)")]));
-    if (d.example) out.push(tag("THE BOOK'S EXAMPLE", "var(--gold)"));
+    if (d.example) out.push(tag("THE TOOLKIT'S EXAMPLE", "var(--gold)"));
     var dirty = isDirty(d);
     out.push(el("span", { dataset: { saved: dirty ? (d.id ? "changed" : "new") : "saved" } }, [
       dirty ? tag(d.id ? "UNSAVED CHANGES" : "NOT SAVED", "var(--warn)") : tag("IN CONTACTS", "var(--success)")]));
@@ -853,7 +853,7 @@ EN.gmPeople = (function () {
     d.profileN = profileRow(E.profileN) ? E.profileN : null;
     d.example = E.key || "example";
     setDraft(d);
-    toast("The book's example is on the card. Save it to keep it.");
+    toast("The Toolkit's example is on the card. Save it to keep it.");
     EN.app.render();
   }
   function cardActs() {
@@ -865,8 +865,8 @@ EN.gmPeople = (function () {
       el("button.btn.sm", { disabled: !any, dataset: { act: "copy" },
         onclick: function () { copyText(cardText(_p.draft), "The card"); } }, "COPY THE CARD"),
       guarded("gmpeople:new", "NEW CARD", "The card has unsaved changes. Click again to clear it.", fresh, dirty),
-      guarded("gmpeople:example", "LOAD THE BOOK'S EXAMPLE",
-        "The card has unsaved changes. Click again to put the book's example over them.", loadExample, dirty)
+      guarded("gmpeople:example", "LOAD THE TOOLKIT'S EXAMPLE",
+        "The card has unsaved changes. Click again to put the Toolkit's example over them.", loadExample, dirty)
     ];
   }
   function textBox(kind, text) {
@@ -1179,7 +1179,7 @@ EN.gmPeople = (function () {
     var all = gm.list(BAG), kids = [];
     if (!all.length) {
       kids.push(el("div.muted-box", { style: { padding: "18px" },
-        text: "No contacts yet. Write a card above and save it, or load the book's example." }));
+        text: "No contacts yet. Write a card above and save it, or load the Toolkit's example." }));
     } else {
       kids.push(el("input", { type: "text", value: _p.q, dataset: { pf: "search" },
         placeholder: "search names, work, wants, fears, tells and notes",
@@ -1207,14 +1207,14 @@ EN.gmPeople = (function () {
      each link is plain text when codex.js is missing. */
   function referencePanel() {
     var B = book(), C = B.card || {}, R = B.resolveByRole || {}, P = B.profiles || {};
-    var list = [["gmp-quickbuild/the-contact-card", C.title || "The Contact Card"], ["gmp-quickbuild/the-book-s-example", "The Book's Example"],
+    var list = [["gmp-quickbuild/the-contact-card", C.title || "The Contact Card"], ["gmp-quickbuild/the-book-s-example", "The Toolkit's Example"],
                 ["gmp-resolve", R.title || "Resolve by Role"], ["gmp-profiles", P.title || "Their Profile of You"]];
     var line = el("p.help", { dataset: { people: "codex" }, style: { margin: 0 } }, [document.createTextNode("In the Codex: ")]);
     list.forEach(function (it, i) {
       if (i) line.appendChild(document.createTextNode(" · "));
       line.appendChild(EN.ui.ruleLink(it[0], it[1]));
     });
-    var p = EN.ui.panel("From the Book", String(B.title || "NPC Quick-Build").toUpperCase(), [line]);
+    var p = EN.ui.panel("From the Toolkit", String(B.title || "NPC Quick-Build").toUpperCase(), [line]);
     p.dataset.people = "reference";
     return p;
   }

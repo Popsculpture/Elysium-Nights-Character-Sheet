@@ -199,7 +199,10 @@ window.EN = window.EN || {};
       var gp = el("p");
       K.linkify(gp, (T.gearRule ? T.gearRule + "\n\n" : "")
         + Object.keys(BUCKET).filter(function (b) { return (R.gear[b] || []).length; }).map(function (b) {
-          return BUCKET[b] + ": " + R.gear[b].join(", ") + ((R.gearUpgradable || {})[b] === false && T.armorNote ? " (" + T.armorNote + ")" : "");
+          // a Freelancer's Companion Tool Category (Culinary Tools) is listed, tagged, while Supplemental content is on
+          var L = EN.launch, cats = R.gear[b].filter(function (c) { return !(L && L.isHeld) || !L.isHeld(b === "tools" ? "tool" : "", c); })
+            .map(function (c) { return L && L.isCompanion && b === "tools" && L.isCompanion("tool", c) ? c + " (Freelancer's Companion)" : c; });
+          return BUCKET[b] + ": " + cats.join(", ") + ((R.gearUpgradable || {})[b] === false && T.armorNote ? " (" + T.armorNote + ")" : "");
         }).join("\n"), { self: ["sk-skills/gear-proficiencies", "ref-vehicles"] });
       // what each vehicle category covers, and what an untrained pilot rolls, are the chase panels' Vehicle Proficiencies
       var vp = (R.gear.vehicles || []).length ? K.seeAlso("Vehicle categories and untrained pilots:", [["vc-piloting/vehicle-proficiencies", "Vehicle Proficiencies"]]) : null;

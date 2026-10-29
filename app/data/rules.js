@@ -181,13 +181,14 @@ EN.rules = {
   // NextGen "Open Architecture", structured Integration pairings for the UI.
   // Each combo pairs a NextGen Lineage Feature with its matching cyberware.
   openArchitecture: {
-    intro: "You were not built finished. You were built ready. Your body was engineered to documented interface standards: pre-threaded neural shunts, reserved anatomical space, tolerances no baseline human was ever given. Taking this feature opens the Integration clause of every NextGen Lineage Feature you possess, now or in the future.",
+    // Synced to the Freelancer's Companion (Open Architecture, The Seven Integrations), 28 Oct 2026.
+    intro: "Your body was engineered to standardized interface specifications, with pre-threaded neural shunts, reserved anatomical space, and tolerances no baseline human was ever given. Taking this feature unlocks the Integration clause of every NextGen Lineage Feature you possess, now or in the future. Whenever you have both halves of a listed pairing, the Lineage Feature and its matching cyberware at any tier, that clause activates.",
     /* ADDITIVE, never subtractive. The old model had the Lineage Feature's effect "end as a
        separate system and be absorbed into the chrome", which meant the app had to REMOVE a
        feature's effects and substitute new ones. That model is gone, along with the term
        Engineered Baseline. The feature keeps working in full, the implant keeps working in
        full, and a third NAMED record switches on while both halves are held. */
-    rule: "Whenever you have both halves of a listed pairing (the Lineage Feature and its matching cyberware, installed at any tier), its Integration activates: a new named benefit switches on, and the matching cyberware's Static Point cost is reduced by 1 (minimum 0). The Lineage Feature keeps working in full and so does the chrome; nothing is replaced. Select Open Architecture once; it covers every qualifying combination you ever assemble.",
+    rule: "You retain the full benefits of both the Lineage Feature and the cyberware. Integration doesn't replace, absorb, or remove either one unless its own text specifically says otherwise. Instead, the pairing opens an additional capability that lasts only as long as you hold both halves. The matching cyberware's Static Point cost is reduced by 1 (minimum 0). Nothing is traded away. You never lose a Lineage Feature to an install, and the install never has to work around you. You select Open Architecture only once. It applies to every qualifying combination you ever assemble. Without it, your Lineage Features and your chrome do the same work from separate rooms.",
     combos: [
       { key: "dermal-aegis", name: "Dermal Aegis", feature: "Dermal Plating", cyberware: "Subdermal Armor",
         text: "Your engineered plating and Subdermal Armor lock together into a single load-bearing shell.\n\u2022 The first time each round a physical attack hits you, increase your Subdermal Armor's DR by 2 against that attack, applied at passive mitigation.\n\u2022 Any effect of that attack that would knock you Prone or forcibly move you fails to do so.",
@@ -200,7 +201,7 @@ EN.rules = {
         // Swift Action for it. Do not add Grapple here.
         cadence: "turn", cost: "free", maneuvers: ["Shove", "Trip"] },
       { key: "dermal-neuralink", name: "Dermal Neuralink", feature: "Dermal Induction", cyberware: "Neural Interface (Datajack)",
-        text: "Your Neural Interface routes directly through your skin, turning physical contact into a hardwired connection.\n\u2022 Your Neural Interface has no exposed port and leaves no visible scarring.\n\u2022 By touching a device, you can establish a direct wired Link without a cable, including with air-gapped systems. The connection creates no wireless signal and leaves no physical trace.\n\u2022 Once per Encounter as a Swift Action, you can touch a basic Tier 0-1 camera, automated door, or terminal and silently slave it until the end of the Encounter without triggering an alert or network notification.\n\u2022 This cancels the Streetware Datajack's visible-port drawback, but not its lack of encryption. Interception and tracing of your #GRID activity at range are still governed by the Datajack's own tier.",
+        text: "Your Neural Interface routes directly through your skin, turning physical contact into a hardwired connection.\n\u2022 Your Neural Interface has no exposed port and leaves no visible scarring.\n\u2022 A Link you make by touch stays open after you let go, until the end of the scene or until you move more than 12 spaces away.\n\u2022 Once per Encounter as a Swift Action, you can touch a Rudimentary or Standard Node (a camera, automated door, or terminal) and silently slave it until the end of the Encounter without triggering an alert or network notification.\n\u2022 This cancels the Streetware Datajack's visible-port drawback, but not its lack of encryption. Interception and tracing of your #GRID activity at range are still governed by the Datajack's own tier.",
         // suppresses the Streetware visible-port drawback ONLY; the tier's interception
         // penalty is untouched, and tier-based encryption is unchanged at every tier.
         cadence: "encounter", cost: "Swift Action", negates: "streetware-visible-port" },
@@ -210,7 +211,7 @@ EN.rules = {
         // keeps its own range and encryption. Conditional on the character being up.
         cadence: "passive", cost: "passive", requiresConscious: true },
       { key: "hitscan-optics", name: "Hitscan Optics", feature: "Hitscan", cyberware: "Cyberoptics",
-        text: "Your Hitscan subroutine feeds its Priority Target data directly into your Cyberoptics.\n\u2022 While you have a Priority Target, Threat Targeting is automatically active against it and doesn't occupy one of your Cyberoptic modes.\n\u2022 Once per round when you hit your Priority Target, choose one ally who can see it. That ally gains Edge on their next attack against it before the start of your next turn.",
+        text: "Your Hitscan subroutine feeds its Priority Target data directly into your Cyberoptics.\n\u2022 While you have a Priority Target, Threat Targeting is automatically active against it and doesn't occupy one of your Cyberoptic modes.\n\u2022 Once per round when you hit your Priority Target, choose one ally who can see it. That ally's next hit against it before the start of your next turn deals an additional 1d4 damage.",
         // the mode rides FREE, on top of the tier budget (1/2/3), and must not decrement it
         cadence: "round", cost: "free", grantsFreeMode: "Threat Targeting" },
       { key: "synaptic-reflex", name: "Synaptic Reflex", feature: "Tuned Synapses", cyberware: "Reflex Booster",
@@ -378,7 +379,10 @@ EN.rules = {
        Heavy Armor proficiency is still what lets you WEAR a frame. This one is the training
        the Powered trait refers to (its Powered Benefits). No class or background grants it. */
     armor: ["Light Armor", "Medium Armor", "Heavy Armor", "Physical Shields", "Powered Frames", "Warding Foci"],
-    tools: ["Medical Tools", "Engineering Tools", "Systems Tools", "Investigation Tools", "Infiltration Tools", "Security Tools", "Fieldcraft Tools", "Media Tools", "Glamour Tools", "Bureaucracy Tools", "Ritual Implements"],
+    /* Culinary Tools: the Freelancer's Companion's new Tool Category (Kit / Gear), gained through
+       the Street Chef Talent or with Training Points. A saved character has no entry for it and
+       reads Untrained; nothing needs migrating. */
+    tools: ["Medical Tools", "Engineering Tools", "Systems Tools", "Investigation Tools", "Infiltration Tools", "Security Tools", "Fieldcraft Tools", "Media Tools", "Glamour Tools", "Bureaucracy Tools", "Ritual Implements", "Culinary Tools"],
     vehicles: ["Ground Vehicles", "Aerial Vehicles", "Marine Vehicles", "Industrial / Mechs", "Starcraft"]
   },
   // Armor can be ACQUIRED with TP but not upgraded to higher tiers (per rules).

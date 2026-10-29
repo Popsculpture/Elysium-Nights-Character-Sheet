@@ -241,12 +241,12 @@ EN.classes.scoundrel = {
         {
           level: 1,
           name: "Fight Dirty",
-          text: "When you hit a target with a melee attack, spend 1 Moxie to add a dirty trick. (Whenever you deal Cheap Shot damage with a melee attack, you can apply one of these tricks.) Choose one:\n\n• **Dirt in the Eyes:** The target rolls with Snag on its attacks until the end of its next turn.\n• **Sweep the Leg:** The target must succeed on an Agility Save (DC = 8 + your Agility Modifier + your Caliber) or be knocked Prone.\n• **Squirrel Tap:** The target can't take Impulse Actions until the start of your next turn."
+          text: "When you deal Cheap Shot damage with a melee attack, you can spend 1 Moxie to add a dirty trick. Choose one:\n\n• **Dirt in the Eyes:** The target rolls with Snag on its attacks until the end of its next turn.\n• **Sweep the Leg:** The target must succeed on an Agility Save (DC = 8 + your Agility Modifier + your Caliber) or be knocked Prone.\n• **Squirrel Tap:** The target can't take Impulse Actions until the start of your next turn."
         },
         {
           level: 3,
           name: "Pressure",
-          text: "As an **Impulse Action** when a target within your reach moves, spend 1 Moxie to make a melee attack against it. On a hit, the attack qualifies for your Cheap Shot damage and the target's Speed drops to 0 until the end of its turn."
+          text: "As an **Impulse Action** when a Target within your reach moves, spend 1 Moxie to make a melee attack against it. On a hit, the attack qualifies for your Cheap Shot damage and the Target's Speed drops to 0 until the end of its turn."
         },
         {
           level: 7,
@@ -422,7 +422,7 @@ EN.classes.shaper = {
         {
           level: 1,
           name: "Center of Attention",
-          text: "**Flow Attribute:** Presence. This drives your Flow Attack rolls, Flow Save DCs, and your Reservoir's Flow Modifier component as normal.\n\n**The Parasocial Pact:** When calculating the size of your Reservoir, add half your Mystique Modifier (rounded up, minimum 0) to your maximum FP, on top of the standard formula.\n\n**Metaphysical Live Feed:** You gain Edge on in-combat Presence d20 checks (or +1 Edge Die to related out-of-combat Dice Pools) when dealing with crowds or fans. Once per combat, if you hit an enemy with a Flow Attack after taking a deliberate risk (such as moving out of Cover to expose yourself or taking a dangerous leap), you regain 1d4 FP."
+          text: "**Flow Attribute:** Presence. This drives your Flow Attack rolls, Flow Save DCs, and your Reservoir's Flow Modifier component as normal.\n\n**The Parasocial Pact:** When calculating the size of your Reservoir, add half your Mystique Modifier (rounded up, minimum 0) to your maximum FP, on top of the standard formula.\n\n**Metaphysical Live Feed:** You gain Edge on in-combat Presence checks when dealing with crowds or fans. Once per Encounter, if you hit an enemy with a Flow Attack after taking a deliberate risk (such as moving out of Cover to expose yourself or taking a dangerous leap), you regain 1d4 FP."
         },
         {
           level: 3,
@@ -432,12 +432,12 @@ EN.classes.shaper = {
         {
           level: 7,
           name: "The Show Must Go On",
-          text: "**Plot Armor:** Once per Long Rest, when an attack would reduce you to 0 Wounds, you don't fall Unconscious and don't become Dying. Instead, you remain at 1 Wound and gain 1 Stage of Strain. In the same instant, you emit a pulse of resonance: every enemy within 6 spaces must make a Saving Throw of your choice (DC = 8 + your Presence Modifier + your Caliber).\n\n• **The Spectacle (Presence Save):** On a failure, targets are knocked Prone and Blinded until the end of their next turn.\n• **The Reckoning (Mystique Save):** On a failure, targets are Charmed until the end of their next turn and can't willingly attack you.\n\n**Authentic Self:** Once per Short Rest, when you would take 1 Stage of Strain from any Icon subclass feature, you may make a Mystique Save (DC 10 + your current Stages of Strain). On a success, you take no Strain and regain 1 FP."
+          text: "**Plot Armor:** Once per Long Rest, when an attack would reduce you to 0 Wounds, you don't fall Unconscious and don't become Dying. Instead, you remain at 1 Wound and gain 1 Stage of Strain. In the same instant, you emit a pulse of resonance: every enemy within 6 spaces must make a Saving Throw of your choice (DC = 8 + your Presence Modifier + your Caliber).\n\n• **The Spectacle (Wits Save):** On a failure, targets are knocked Prone and Blinded until the end of their next turn.\n• **The Reckoning (Mystique Save):** On a failure, targets are Charmed until the end of their next turn and can't willingly attack you.\n\n**Authentic Self:** Once per Short Rest, when you would take 1 Stage of Strain from any Icon subclass feature, you may make a Mystique Save (DC 10 + your current Stages of Strain). On a success, you take no Strain and regain 1 FP."
         },
         {
           level: 10,
           name: "Do Not Look Away",
-          text: "Once per Long Rest, as an **Action**, spend 2 FP to broadcast your feed into the ambient Flow.\n\n**Audience Capture:** Every enemy within 20 spaces must make a Saving Throw (DC = 8 + your Presence OR Mystique Modifier (your choice) + your Caliber). The type depends on which face you project:\n\n• **Project the Icon (Presence Save):** Enemies are captivated by the spectacle. Your broadcast is overwhelming, hypnotic, total.\n• **Project the Self (Mystique Save):** Enemies are captivated by the truth underneath the persona, the raw, unfiltered weight of who you actually are, broadcast at metaphysical volume.\n\nOn a failure, they are completely captivated: they drop their weapons, their Speed becomes 0, and they can't take Actions or Impulse Actions, only stare. The effect lasts up to 1 minute and ends immediately for any individual target that takes damage."
+          text: "Once per Long Rest, as an **Action**, spend 2 FP to broadcast your feed into the ambient Flow.\n\n**Audience Capture:** Every enemy within 20 spaces must make a Saving Throw (DC = 8 + your Presence or Mystique Modifier (your choice) + your Caliber). The type depends on which face you project:\n\n• **Project the Icon (Presence Save):** Enemies are captivated by the spectacle. Your broadcast is overwhelming, hypnotic, total.\n• **Project the Self (Mystique Save):** Enemies are captivated by the truth underneath the persona, the raw, unfiltered weight of who you actually are, broadcast at metaphysical volume.\n\nOn a failure, they are completely captivated: they drop their weapons, their Speed becomes 0, and they can't take Actions or Impulse Actions, only stare. The effect lasts up to 1 minute and ends immediately for any individual target that takes damage."
         }
       ]
     },
@@ -483,17 +483,17 @@ EN.classes.shaper = {
         {
           level: 3,
           name: "Flowstride",
-          text: "As a **Swift Action**, spend 1 FP to become frictionless for the rest of your turn. Your Speed increases by 3, you ignore Difficult Terrain, you don't provoke opportunity attacks, and you can run along vertical surfaces, up walls, or across water, so long as you end your turn on solid ground."
+          text: "As a **Swift Action**, spend 1 FP to become frictionless for the rest of your turn. Your Speed increases by 3, you ignore Difficult Terrain, you don't provoke Opportunity Attacks, and you can run along vertical surfaces, up walls, or across water, so long as you end your turn on solid ground."
         },
         {
           level: 7,
           name: "Spiral Deflection",
-          text: "As an **Impulse Action** when you are hit by a ranged ballistic or physical attack, spend 1 FP to deflect the projectile. Reduce the damage by 1d10 + your Body Modifier + your Caliber. If you reduce the damage to 0, you may immediately make a ranged Flow Attack (using your Body Modifier) to redirect the projectile at any target within 6 spaces, dealing its original damage on a hit."
+          text: "As an **Impulse Action** when a ranged attack that deals Standard Physical Damage hits you, spend 1 FP to deflect the projectile. Reduce the damage by 1d10 + your Body Modifier + your Caliber. If you reduce the damage to 0, you may immediately make a ranged Flow Attack (using your Body Modifier) to redirect the projectile at any target within 6 spaces, dealing its original damage on a hit."
         },
         {
           level: 10,
           name: "Thousand Ripples",
-          text: "Once per Long Rest, as an **Action**, spend 2 FP and dissolve into pure motion. You instantly move to every enemy of your choice within 12 spaces and make one standard melee weapon attack against each, without provoking opportunity attacks. After all attacks resolve, you materialize in an unoccupied space adjacent to the final target you attacked."
+          text: "Once per Long Rest, as an **Action**, spend 2 FP and dissolve into pure motion. You instantly move to every enemy of your choice within 12 spaces and make one standard melee weapon attack against each, without provoking Opportunity Attacks. After all attacks resolve, you materialize in an unoccupied space adjacent to the final target you attacked."
         }
       ]
     },

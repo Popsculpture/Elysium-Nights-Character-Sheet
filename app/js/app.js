@@ -91,12 +91,12 @@ EN.app = (function () {
     { key: "encounters", label: "Encounters", glyph: "⌗", sub: "budget and build a fight", portal: "admin", gated: adminReady,
       view: gmModule("encounters", "gmEncounters"),
       stub: "Budgeting an encounter: XP shares by crew Caliber, four difficulty bands from Milk Run " +
-            "to Red Work, and the book's own line that past 2x is not an encounter, it is an ambush " +
+            "to Red Work, and the Toolkit's own line that past 2x is not an encounter, it is an ambush " +
             "you are writing on purpose." },
     { key: "hazards",    label: "Hazards",    glyph: "⚠", sub: "set pieces and the room", portal: "admin", gated: adminReady,
       view: gmModule("hazards", "gmHazards"),
       stub: "Set Pieces: the eight pre-written hazards, all authored at Grade 3, plus the DC ladder " +
-            "and the Bite table the Game Master's Handbook prices them by." },
+            "and the Bite table the Game Master's Toolkit prices them by." },
     { key: "jobs",       label: "Job Board",  glyph: "▣", sub: "roll a job", portal: "admin", gated: adminReady,
       view: gmModule("jobs", "gmJobs"),
       stub: "The Job Board: five roll tables and twelve postings." },

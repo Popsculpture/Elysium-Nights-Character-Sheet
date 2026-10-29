@@ -217,8 +217,8 @@ EN.classes.hustler = {
         {
           level: 1,
           name: "Street Broker",
-          grants: { tools: ["Engineering Tools"] },
-          text: "You gain Proficiency with Engineering Tools and +1 Edge Die on all out-of-combat Dice Pool checks made to locate restricted gear, secure black-market Nexus Token exchanges, or find a safehouse. By spending one minute examining a weapon, vehicle, or piece of cybertech, you determine its exact black-market value, its origin (manufacturer or previous owner's faction), and whether it is counterfeit, bugged with a tracker, or malfunctioning."
+          grants: { tools: ["Investigation Tools"] },
+          text: "You gain Proficiency with Investigation Tools and +1 Edge Die on all out-of-combat Dice Pool checks made to locate restricted gear, secure black-market Nexus Token exchanges, or find a safehouse. By spending one minute examining a weapon, vehicle, or piece of cybertech, you determine its exact black-market value, its origin (manufacturer or previous owner's faction), and whether it is counterfeit, bugged with a tracker, or malfunctioning."
         },
         {
           level: 3,
@@ -228,7 +228,7 @@ EN.classes.hustler = {
         {
           level: 7,
           name: "Off-the-Books Asset",
-          text: "Once per encounter, as an **Action**, spend 2 Leverage to ping a heavy hitter on standby. Target an Area 2 you can see within 24 spaces. All enemies in the area must make an Agility Save (DC = 8 + your Presence Modifier + your Caliber). On a failure, they take 3d8 + your Presence Modifier Ballistic or Energy damage (your choice) and are knocked Prone. On a success, they take half damage and aren't knocked Prone."
+          text: "Once per Encounter, as an **Action**, spend 2 Leverage to ping a heavy hitter on standby. Target an Area 2 you can see within 24 spaces. All enemies in the area must make an Agility Save (DC = 8 + your Presence Modifier + your Caliber). On a failure, they take 3d8 + your Presence Modifier Ballistic or Energy damage (your choice) and are knocked Prone. On a success, they take half damage and aren't knocked Prone."
         },
         {
           level: 10,
@@ -457,12 +457,13 @@ EN.classes.operator = {
         {
           level: 1,
           name: "Prey Drive",
-          text: "You gain Proficiency in the Survival skill, and you permanently upgrade your Focus Fire maneuver. When you spend 1 EX to mark a target with Focus Fire, the tracking benefits last 1 full minute (the Edge from Focus Fire still applies only to the first attack, made by you or an Ally). For that minute, the target can't benefit from the Hidden or Invisible conditions against you, and you always know its exact location while it stays within 24 spaces."
+          grants: { skills: ["Investigation"] },
+          text: "You gain Proficiency in the Investigation skill, and you permanently upgrade your Focus Fire maneuver. When you spend 1 EX to mark a target with Focus Fire, the tracking benefits last 1 full minute (the Edge from Focus Fire still applies only to the first attack, made by you or an Ally). For that minute, the target can't benefit from the Hidden or Invisible conditions against you, and you always know its exact location while it stays within 24 spaces."
         },
         {
           level: 3,
           name: "Disarming Precision",
-          text: "Whenever you hit an enemy with a weapon attack, you may spend 1 Execution. The target must make a Body or Agility Save (DC = 8 + your Wits Modifier + your Caliber). On a failure, they drop one weapon or object they are holding. If they try to pick it up before the end of their next turn, you may immediately fire a single retaliatory shot at them as an **Impulse Action**."
+          text: "Whenever you hit an enemy with a weapon attack, you may spend 1 Execution. The target must make a Body or Agility Save, its choice (DC = 8 + your Wits Modifier + your Caliber). On a failure, they drop one weapon or object they are holding. If they try to pick it up before the end of their next turn, you may immediately fire a single retaliatory shot at them as an **Impulse Action**."
         },
         {
           level: 7,
@@ -472,7 +473,7 @@ EN.classes.operator = {
         {
           level: 10,
           name: "Dead or Alive",
-          text: "Once per Long Rest, as an **Action**, declare an execution order on a target within 12 spaces. For 1 minute, your weapon attacks against it go straight past whatever is keeping it upright.\n\n**Systemic Trauma:** Half of all damage you deal to the target (rounded up) is dealt as direct Wound damage, reducing its maximum Vitality and forcing the standard Body Save against Fatigue and crippling conditions.\n\n**Precision Targeting:** Whenever you hit the target with a weapon attack, you may spend 2 Execution to apply one effect:\n\n• **Dead (Arterial Strike):** Inflict 2 stacks of Bleeding on the target.\n• **Alive (Tendon Shot):** The target must make a Body Save (DC = 8 + your Agility or Body Modifier + your Caliber). On a failure, it is knocked Prone and its Speed is reduced to 0; it can't stand or walk until it receives medical attention or Flow healing.\n\nIf this assault reduces the target to 50 percent or less of its total Wounds, it is knocked Unconscious and stabilized, letting you collect the bounty dead or alive."
+          text: "Once per Long Rest, as an **Action**, declare an execution order on a target within 12 spaces. For 1 minute, your weapon attacks against it go straight past whatever is keeping it upright.\n\n**Systemic Trauma:** Half of all damage you deal to the target (rounded up) is dealt as direct Wound damage, reducing its maximum Vitality and forcing the standard Body Save against Fatigue and crippling conditions.\n\n**Precision Targeting:** Whenever you hit the target with a weapon attack, you may spend 2 Execution to apply one effect:\n\n• **Dead (Arterial Strike):** Inflict 2 stacks of Bleeding on the target.\n• **Alive (Tendon Shot):** The target must make a Body Save (DC = 8 + your Wits Modifier + your Caliber). On a failure, it is knocked Prone and its Speed is reduced to 0; it can't stand or walk until it receives medical attention or Flow healing.\n\nIf this assault reduces the target to 50 percent or less of its total Wounds, it is knocked Unconscious and stabilized, letting you collect the bounty dead or alive."
         }
       ]
     }

@@ -1101,7 +1101,7 @@ EN.gmEncounters = (function () {
     if (hasSolo && EN.threats.budget && EN.threats.budget.soloNote) {
       kids.push(help("Solo: " + EN.threats.budget.soloNote, { color: "var(--gold)" }));
     }
-    kids.push(codexPointer([["gme-budget/how-the-budget-works", "How the budget works"], ["gme-budget/example", "the book's example"]], "budget-ref"));
+    kids.push(codexPointer([["gme-budget/how-the-budget-works", "How the budget works"], ["gme-budget/example", "the Toolkit's example"]], "budget-ref"));
     return EN.ui.panel("Budget", diffName(plan.difficulty).toUpperCase() + " · " + fmtXp(target) + " XP", kids);
   }
 
@@ -1213,7 +1213,7 @@ EN.gmEncounters = (function () {
   function linesPanel(plan, crew) {
     var kids = [];
     if (!plan.lines.length) {
-      kids.push(muted("No lines yet. Add threats and hazards below, or load one of the book's worked examples under Plans."));
+      kids.push(muted("No lines yet. Add threats and hazards below, or load one of the Toolkit's worked examples under Plans."));
     } else {
       var waves = [];
       plan.lines.forEach(function (l) { if (waves.indexOf(l.wave) === -1) waves.push(l.wave); });
@@ -1484,7 +1484,7 @@ EN.gmEncounters = (function () {
     var nHz = plan.lines.filter(function (l) { return l.kind === "hazard"; }).reduce(function (a, l) { return a + l.count; }, 0);
     if (seasoning && nHz) {
       var reads = (seasoning.perFight || []).filter(function (x) { return x.count === nHz; })[0];
-      kids.push(help(plural(nHz, "hazard") + ": " + (reads ? "the book reads that as " + reads.reads + "." : seasoning.text), { margin: "8px 0 0" }));
+      kids.push(help(plural(nHz, "hazard") + ": " + (reads ? "the Toolkit reads that as " + reads.reads + "." : seasoning.text), { margin: "8px 0 0" }));
     }
     kids.push(codexPointer([["gme-composition", "Composition Rules"]].concat(C.guidance
       ? [["gme-composition/" + codexSlug(C.guidance.name), C.guidance.name]] : []), "comp-ref"));
@@ -1634,14 +1634,14 @@ EN.gmEncounters = (function () {
       ]));
     });
 
-    kids.push(EN.ui.sectionTitle("The book's worked examples"));
+    kids.push(EN.ui.sectionTitle("The Toolkit's worked examples"));
     templates().forEach(function (t) {
       kids.push(el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--border)" } }, [
         el("div", { style: { flex: "1 1 220px", minWidth: "0" } }, [
           el("span", { style: { fontWeight: 600 }, text: t.name }),
           help(t.sub, { margin: "2px 0 0" })
         ]),
-        loader("enc:tpl:" + t.key, "LOAD", t.make, "Loaded the book's example: " + t.name + ". Save it to keep it.")
+        loader("enc:tpl:" + t.key, "LOAD", t.make, "Loaded the Toolkit's example: " + t.name + ". Save it to keep it.")
       ]));
     });
     return EN.ui.panel("Plans", saved.length + " SAVED", kids);

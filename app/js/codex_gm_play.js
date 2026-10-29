@@ -35,7 +35,7 @@
                    salvage-and-parts, experience, milestones-and-pacing,
                    the-other-ledger, the-bills, debt, identity-theft,
                    hypercare-response, paying-for-it,
-                   payday-in-the-book-s-order)
+                   payday-in-the-toolkit-s-order)
      gmg-running   Running Gear (street-prices, the six Running Gear sections:
                    weapon-builds, armor-slots, vehicle-upkeep, modded-cars,
                    kits, encumbrance, then ordnance-prices, rookie-cyberware)
@@ -206,7 +206,7 @@ window.EN = window.EN || {};
       if (B.postures) {
         // the full list of Postures is the social chapter's (so-postures)
         var Po = B.postures;
-        kids.push(addLinks(K.ruleBlock("Postures", Po.rule + "\nThe book names " + (Po.named || []).map(function (p) { return p.name; }).join(", ") + "." +
+        kids.push(addLinks(K.ruleBlock("Postures", Po.rule + "\nThe Toolkit names " + (Po.named || []).map(function (p) { return p.name; }).join(", ") + "." +
           (Po.named || []).filter(function (p) { return p.text; }).map(function (p) { return " " + p.text; }).join("")),
           K, "Every Posture:", [["so-postures", "Postures"]]));
       }
@@ -224,7 +224,7 @@ window.EN = window.EN || {};
           K, "See", [["gmy-pay/milestones-and-pacing", "Milestones and Pacing"]]));
       }
       // the player-facing rules this panel runs, entry by entry, in the social chapter
-      kids.push(K.seeAlso("The book's Sit-Down:", [["so-sitdown", "The Sit-Down"], ["so-plays", "Rounds & Plays"],
+      kids.push(K.seeAlso("The Toolkit's Sit-Down:", [["so-sitdown", "The Sit-Down"], ["so-plays", "Rounds & Plays"],
         ["so-floor", "The Floor"], ["so-conditions", "Sit-Down Conditions"]]));
       return kids;
     } },
@@ -250,7 +250,7 @@ window.EN = window.EN || {};
         return "Grade " + r.gradeLow + (r.gradeHigh !== r.gradeLow ? " to " + r.gradeHigh : "") + ": moving Defense " + r.text + ".";
       }).join("\n")));
       // the book's Pursuit Escalation table, and the crash rules a stalemate or a failed check leads to
-      kids.push(K.seeAlso("Also in the book's chase:", [["vc-chase/pursuit-escalation", "Pursuit Escalation"], ["vc-damage/control-check", "Control Check"], ["vc-damage/crashes", "Crashes"]]));
+      kids.push(K.seeAlso("Also for the chase:", [["vc-chase/pursuit-escalation", "Pursuit Escalation"], ["vc-damage/control-check", "Control Check"], ["vc-damage/crashes", "Crashes"]]));
       return kids;
     } },
     { id: "gms-incursion", title: "Incursion Rules", tag: "RATING · THE DIVE · THE RETURN", order: 30, when: hasScenes, build: function (ctx, K) {
@@ -310,9 +310,9 @@ window.EN = window.EN || {};
           var v = l.field === "resolve" ? E.resolve : E[l.field];
           if (v) out.push(l.line + ": " + stop(v));
         });
-        kids.push(K.entry("the-book-s-example", "The Book's Example", [
+        kids.push(K.entry("the-book-s-example", "The Toolkit's Example", [
           el("div.feature", null, [
-            el("h4", { text: "The Book's Example" }),
+            el("h4", { text: "The Toolkit's Example" }),
             el("p", { style: { whiteSpace: "pre-wrap" }, text: out.join("\n") })
           ])
         ]));
@@ -425,7 +425,7 @@ window.EN = window.EN || {};
         });
       }
       if (B.incursion) kids.push(K.ruleBlock(B.incursion.name, B.incursion.text));
-      if (B.payday) kids.push(K.ruleBlock("Payday, in the book's order", B.payday.text));
+      if (B.payday) kids.push(K.ruleBlock("Payday, in the Toolkit's order", B.payday.text));
       return kids;
     } }
   ] };

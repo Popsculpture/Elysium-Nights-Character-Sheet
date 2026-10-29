@@ -29,7 +29,9 @@ EN.gearCatalog.tools = {
         { name: "Security & Custody", intro: "Tool Category: Security Tools." },
         { name: "Media & Presence", intro: "Tool Category: Media Tools (Field Recording Kit) and Glamour Tools (Disguise and Styling Kit, Venue Kit); the Disguise and Styling Kit also answers to Infiltration Tools." },
         { name: "Bureaucracy & Paper", intro: "Tool Category: Bureaucracy Tools." },
-        { name: "Ritual Implements", intro: "Tool Category: Ritual Implements. Governing Skill varies." }
+        { name: "Ritual Implements", intro: "Tool Category: Ritual Implements. Governing Skill varies." },
+        // the Freelancer's Companion, Kit / Gear: Culinary Tools (its KITCHEN KIT table)
+        { name: "Kitchen Kit", intro: "Tool Category: Culinary Tools." }
       ] },
     { key: "devices", title: "Field Devices & Gadgets",
       intro: "Discrete items you carry, aim, plug in, or set down. A few are worn devices with ongoing benefits and call out a Body Slot; handheld tools never use a slot.",
@@ -269,6 +271,17 @@ EN.gearCatalog.tools = {
       desc: "Heavy warded restraints and anchors for binding a volatile Flow entity instead of destroying it.",
       basic: "Usually required to contain, bind, or stabilize a Flow entity or anomaly rather than break it.",
       proficient: "Run controlled containment. With at least 1 minute of prep, gain Edge on one in-combat d20 check to secure the Target, and a simple failure doesn't automatically escalate into a breakout unless the GM calls it volatile." },
+
+    /* ---- Kitchen Kit (Culinary Tools) ----
+       The Freelancer's Companion, Kit / Gear: Culinary Tools. The Companion prints no
+       Availability for it (Availability is held), so the row carries none. */
+    { name: "Street Kitchen Kit", bucket: "kits", group: "Kitchen Kit", price: 60, legality: "Legal",
+      category: "Culinary Tools", skill: "Perception, Medtech, Persuasion",
+      effect: "Cook a real meal for a crew anywhere. Proficient: Edge to taste drugs or poison in food or drink.",
+      edgeDice: 1, requiresProficient: true, edgeNote: "tasting drugs or poison in food or drink",
+      desc: "A folding induction plate, a battered wok, knives that have seen worse, and a spice tin that's mostly hot sauce.",
+      basic: "Cook a real meal for a crew anywhere: a stairwell, a rooftop, the back of a parked van. The Street Chef Talent needs it.",
+      proficient: "Your checks to taste drugs or poison in food or drink have Edge." },
 
     /* =========================== FIELD DEVICES ============================= */
     /* ---- Everyday Utility ---- */

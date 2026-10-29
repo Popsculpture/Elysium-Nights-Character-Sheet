@@ -1022,7 +1022,7 @@ EN.combatView = (function () {
   function zeroVitalityToast(z) {
     if (!z) return "";
     return z.gained ? "Vitality 0: +1 Fatigue (now level " + (z.level + 1) + ") and Bloodied. Undo it with the Fatigue control under Status Changes."
-                    : "Vitality 0: Bloodied. Fatigue is already at 6, so the level the book adds has nowhere to go.";
+                    : "Vitality 0: Bloodied. Fatigue is already at 6, so the level the Handbook adds has nowhere to go.";
   }
   function applyDamage(ch, d, amount) {
     if (!amount || amount <= 0) return;
@@ -1416,7 +1416,7 @@ EN.combatView = (function () {
     /* Told before the altitude lock, because an unprovisioned rest is the player's own
        declaration and the more surprising of the two. A Clanker is told in its own terms. */
     if (unprovisioned) toast("Long Rest complete, but with no safe shelter, food or water: Fatigue "
-      + unprovisioned + " stays where it is. The book gives the reduction only to a rest that had "
+      + unprovisioned + " stays where it is. The Handbook gives the reduction only to a rest that had "
       + (ch.species === "clankers" ? "maintenance and charge." : "all three.")
       + (dayRep ? " " + dayRep + "." : "") + bfNote);
     else if (altitudeLocked) toast("Long Rest complete. " + altitudeLocked + " level(s) of Fatigue came from thin air ("
@@ -2151,7 +2151,7 @@ EN.combatView = (function () {
       // Names its actual source. It read VOID LUNG for everyone, so a Rebreather
       // wearer was told they had a lineage trait they did not have.
       if (b.holdFromGrant) chips.push(hazChip(String(b.breathFrom).toUpperCase() + " · " + b.breathMinutes + " MIN", "var(--success)",
-        b.breathFrom + " holds " + b.breathMinutes + " minutes of breath, which is " + b.holdRounds + " rounds at the book's 10 rounds to the minute"));
+        b.breathFrom + " holds " + b.breathMinutes + " minutes of breath, which is " + b.holdRounds + " rounds at the Handbook's 10 rounds to the minute"));
       if (b.kind === "vacuum") chips.push(hazChip(b.sealedOut ? "SEALED · " + String(b.seal.via).toUpperCase() : "NOT VACUUM-SEALED",
         b.sealedOut ? "var(--success)" : "var(--danger)", b.seal.why));
       var right = [];
@@ -6779,7 +6779,8 @@ EN.combatView = (function () {
         if (tier === "untrained") return null;
         var viaTP = R.profOrder.indexOf(eng.gearFloorTier(ch, bucket, cat)) < R.profOrder.indexOf(tier) || !profSrc.gear[bucket + "|" + cat];
         return el("span.chip", { title: srcTitle(profSrc.gear[bucket + "|" + cat], viaTP) + " · " + TIER_LABEL[tier],
-          style: { fontSize: "10.5px", color: color, borderColor: color } }, cat);
+          style: { fontSize: "10.5px", color: color, borderColor: color } },
+          [cat, bucket === "tools" && EN.ui.heldChip ? EN.ui.heldChip("tool", cat) : null]);
       }).filter(Boolean);
     }
     function profRowIf(label, chips) {

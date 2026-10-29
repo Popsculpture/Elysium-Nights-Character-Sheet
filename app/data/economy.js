@@ -230,7 +230,7 @@ EN.economy = {
      visible rather than looking like the chapter is fully covered */
   notModelled: [
     "Crew Kit as a tracked shared fund (the split math itself is in the Payout Splitter)",
-    "Debt escalation, which the book runs as GM pressure rather than paperwork (the debts themselves ARE tracked, in Bills: kind, holder, principal and clock, with no interest calculated)",
+    "Debt escalation, which the Handbook runs as GM pressure rather than paperwork (the debts themselves ARE tracked, in Bills: kind, holder, principal and clock, with no interest calculated)",
     "Captured Goods and Typical Fence Rates (Choosing a Fence is carried, in the Social chapter's Contacts & Fences)",
     "Flow-Touched and Haunted Goods",
     "Identity Theft and Account Compromise",

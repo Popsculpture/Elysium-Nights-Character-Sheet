@@ -1165,6 +1165,26 @@ EN.settings = (function () {
     return kids;
   }
 
+  /* CONTENT. Which books the pickers offer from. Device state, like the skin: it is
+     EN.launch's (en_supplemental_v1), never on a character and never exported, and it
+     reads the same on both desktops. Off by default, the Player's Handbook alone. It
+     only decides what is OFFERED: a Freelancer who already has Companion content keeps
+     it either way, marked COMPANION. */
+  function supplementalSection() {
+    var L = EN.launch, on = L.supplemental();
+    return [
+      el("div.set-sectitle", { text: "// CONTENT" }),
+      el("label.set-label", { text: "Supplemental content" }),
+      el("p.set-hint", { text: on
+        ? "On: the pickers, the market and the Codex offer the Freelancer's Companion alongside the Player's Handbook: its lineages, subclasses, Backgrounds and Talents, and Culinary Tools. Saved on this device."
+        : "Off: the pickers offer the Player's Handbook alone. Turn this on to add the Freelancer's Companion: its lineages, subclasses, Backgrounds and Talents, and Culinary Tools. A Freelancer who already has Companion content keeps it either way, marked COMPANION. Saved on this device." }),
+      el("button.btn.sm" + (on ? ".primary" : ""), {
+        title: "Offer the Freelancer's Companion (supplemental) in every picker",
+        onclick: function () { L.setSupplemental(!on); EN.app.render(); rebuild(); }
+      }, on ? "◈ FREELANCER'S COMPANION: ON" : "◈ FREELANCER'S COMPANION: OFF")
+    ];
+  }
+
   function gridSection() {
     var gv = EN.gridView;
     var on = gv.isDamage();
@@ -1303,6 +1323,8 @@ EN.settings = (function () {
     if (EN.app.activeTab() === "grid" && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
     // general sections, shown regardless of which tab settings was opened from
     sections.push(portalSection());
+    // which books the pickers offer from, on both desktops
+    if (EN.launch && EN.launch.setSupplemental) sections.push(supplementalSection());
     // the GM document's backup, on the Admin desktop only: a Freelancer's tray never shows it
     if (EN.theme.inAdmin() && EN.gmStore && EN.gmStore.exportDoc) sections.push(gmDataSection());
     // skin and palette are one section under one title: skinSection carries

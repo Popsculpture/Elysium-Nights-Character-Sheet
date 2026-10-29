@@ -283,8 +283,19 @@ EN.engine = (function () {
       var b = talentGearBucket(t.talent.key); if (!b) return;
       var c = talentGearPick(ch, t.talent.key); if (c) out[b][c] = "proficient";
     });
+    // Talents that print a fixed category (TALENT_GEAR_GRANT): no pick, always Proficient
+    activeTalents(ch).forEach(function (t) {
+      var g = ownVal(TALENT_GEAR_GRANT, t.talent.key); if (!g) return;
+      Object.keys(g).forEach(function (b) {
+        (g[b] || []).forEach(function (name) { var c = matchGearCat(b, name); if (c) out[b][c] = "proficient"; });
+      });
+    });
     return out;
   }
+  /* Talents whose text grants Proficiency with one named category. Street Chef (the Freelancer's
+     Companion): "You gain Proficiency with Culinary Tools". A free "proficient" floor, like the
+     picks below, so TP already spent on that category is returned. */
+  var TALENT_GEAR_GRANT = { "street-chef": { tools: ["Culinary Tools"] } };
   /* Talents whose text grants Proficiency with one category of the player's choice. Asphalt Rider:
      "You gain Proficiency with one vehicle category of your choice." Junk Tinkerer: "Choose one
      Tool Category. You're Proficient with it". The pick lives in ch.talentGearPicks[talentKey] and
@@ -639,7 +650,9 @@ EN.engine = (function () {
     "Ironhide Tusks":        { dr: 1 },
     "Slipstream Runner":     { speed: 2 },
     "Calibrated Gait":       { speed: 1 },
-    "Static Premonition":    { initCaliber: true, condImmune: ["Surprised"] },
+    // Freelancer's Companion: "You can never be Surprised, and you gain Edge on Initiative rolls."
+    // (It used to add Caliber to Initiative; initCaliber stays in the reader for no row now.)
+    "Static Premonition":    { initEdge: true, condImmune: ["Surprised"] },
     "Tuned Synapses":        { initEdge: true, speedFirstRound: 2 },
     "Synthetic Musculature": { unarmedStep: 1 },
     "Briar Strike":          { unarmed: { die: "1d6", type: "Piercing or Slashing", traits: "Light, Finesse",
@@ -654,7 +667,7 @@ EN.engine = (function () {
     "Brutal Frame":          { unarmed: { die: "1d6", type: "Bludgeoning or Slashing",
                                  note: "pick the type with each strike" },
                                unarmedRider: { damage: "1d4",
-                                 when: "against a Target at least one Size category smaller",
+                                 when: "against a Target at least one Size smaller",
                                  note: "you may also push the Target 1 space away" } },
     "Butcher Spurs":         { unarmed: { die: "1d6", type: "Slashing", traits: "Finesse",
                                  note: "once per turn on a hit, Target Speed -2 until your next turn" } },
@@ -667,22 +680,24 @@ EN.engine = (function () {
     "Canopy Reach":          { unarmedReach: 1, meleeReach: 1 },
     // standing damage-type grants, read by damageResistances()
     "Radiation Calluses":   { resist: ["Radiation"] },
+    // Freelancer's Companion: Hazard Seal is now "Resistance to Acid and Toxic damage"
+    "Hazard Seal":           { resist: ["Acid", "Toxic"] },
     // condition immunity, the axis damageResistances deliberately does not carry
     "Timber Fortitude":      { condImmune: ["Frightened"] },
     "Axiomatic Mind":        { condImmune: ["Confused"] },
-    "Distributed Anatomy":   { condImmune: ["Bleeding"] },
+    "Distributed Anatomy":   { condImmune: ["Bleeding", "Poisoned"] },
     "Hare-Trigger Instinct": { condImmune: ["Surprised"] },
     "Forge-Blooded":         { resist: ["Fire"] }
   };
   function lineageMechanics(ch) {
-    var out = { dr: 0, speed: 0, speedFirstRound: 0, initCaliber: false, initEdge: false };
+    var out = { dr: 0, speed: 0, speedFirstRound: 0, initCaliber: false, initEdge: false, initEdgeSources: [] };
     activeLineageFeatures(ch).forEach(function (fn) {
       var m = LINEAGE_MECH[fn]; if (!m) return;
       if (m.dr) out.dr += m.dr;
       if (m.speed) out.speed += m.speed;
       if (m.speedFirstRound) out.speedFirstRound += m.speedFirstRound;   // conditional: first round of combat only
       if (m.initCaliber) out.initCaliber = true;
-      if (m.initEdge) out.initEdge = true;
+      if (m.initEdge) { out.initEdge = true; out.initEdgeSources.push(fn); }
       // The unarmed entries are NOT folded here: a replacer is a player choice,
       // a step is counted against the ladder, and a rider stands apart from both.
       // The unarmed-strike helpers below collect each kind on its own terms.
@@ -1011,6 +1026,7 @@ EN.engine = (function () {
     "augment-specialist":        ["TEC"],               // 174
     "gridrunners-reflexes":      ["TEC", "WIT"],        // 181
     "pain-editor":               ["BOD", "TEC"],        // 209
+    "script-kiddie":             ["TEC", "WIT"],        // 230, Freelancer's Companion adds the bump
     "resonance-dabbler":         ["TEC", "MYS", "PRE"], // 246
     "cyber-reinforced-vitality": ["BOD"],               // 283
     "cybernetic-surge":          ["BOD", "AGI"],        // 290
@@ -1205,8 +1221,12 @@ EN.engine = (function () {
      is live. It steps the die rather than setting it: a Freelancer already
      punching for 1d8 does not drop to 1d6 because an ally tuned their servos.
      Keyed on the EN.statusChanges option key, which is what gets persisted. */
+  /* noFirstDie: the step needs a die to step. The Freelancer's Companion prints Pneumatic Bypass
+     as "Their unarmed strike damage die increases by one size" and drops the old "(a strike with
+     no die gains 1d4)", so on a strike with no die it changes nothing unless Oomph has already
+     granted one (unarmedStepInfo below). */
   var BONUS_UNARMED_STEP = [
-    { key: "bonus:pneumatic-bypass", label: "Pneumatic Bypass", steps: 1,
+    { key: "bonus:pneumatic-bypass", label: "Pneumatic Bypass", steps: 1, noFirstDie: true,
       note: "Ripper Hot-Wire, installed by a Stitcher" }
   ];
   function bonusApplied(ch, key) {
@@ -1269,7 +1289,7 @@ EN.engine = (function () {
     });
     BONUS_UNARMED_STEP.forEach(function (spec) {
       if (!bonusApplied(ch, spec.key)) return;
-      out.push({ label: spec.label, kind: "bonus", steps: spec.steps, scope: "Unarmed", note: spec.note || null });
+      out.push({ label: spec.label, kind: "bonus", steps: spec.steps, scope: "Unarmed", note: spec.note || null, noFirstDie: !!spec.noFirstDie });
     });
     return out;
   }
@@ -1355,7 +1375,7 @@ EN.engine = (function () {
       scopedOomphSources(ch).forEach(function (s) {
         if (scopeKey(s.scope) !== want) return;
         out.total += s.steps;
-        out.sources.push({ label: s.label, kind: s.kind, steps: s.steps, scope: s.scope, capped: 0, note: s.note || null });
+        out.sources.push({ label: s.label, kind: s.kind, steps: s.steps, scope: s.scope, capped: 0, note: s.note || null, noFirstDie: !!s.noFirstDie });
       });
       if ("die" in target) measure = target.die;
       else if (kind === "unarmed") {
@@ -1366,7 +1386,7 @@ EN.engine = (function () {
         return out;
       }
     }
-    var info = stepDieInfo(measure, out.total);
+    var info = kind === "weapon" ? stepDieInfo(measure, out.total) : unarmedStepInfo(measure, out.sources);
     out.die = info.die; out.applied = info.applied; out.lost = info.lost;
     return out;
   }
@@ -1435,7 +1455,7 @@ EN.engine = (function () {
     "Lowlight Optics":       { sense: "Darkvision",     range: "12 sp.", note: "Blinding flashes and strobes impose no Snag." },
     "Predator's Glare":      { sense: "Darkvision",     range: "6 sp." },
     "Fungal Network":        { sense: "Tremor Sense",   range: "6 sp.",  note: "While touching a connected surface; telepathic comms with allies within 12 sp." },
-    "Seismic Sense":         { sense: "Tremor Sense",   range: "8 sp.",  note: "Via ground contact; can't detect anyone flying, climbing, or levitating." },
+    "Seismic Sense":         { sense: "Tremor Sense",   range: "8 sp.",  note: "While touching the ground, a floor, or a connected structure; anyone also touching it, through walls or total darkness." },
     "Warmblood Sense":       { sense: "Heat Sense",     range: "6 sp.",  note: "Ignore Invisible and Hidden for living, heat-producing targets." },
     "Blood-Scent Tracker":   { sense: "Blood Scent",    range: "6 sp.",  note: "Know the direction of anyone Bleeding or below half Vitality, even hidden or behind cover." },
     "Disturbance Compass":   { sense: "Flow Sense",     range: "12 sp.", note: "Presence and direction of Flow disturbances and active Invocations, through walls. Always on." },
@@ -1846,7 +1866,7 @@ EN.engine = (function () {
        player declares it in the Status Changes panel and it lands here as one step. */
     scopedOomphSources(ch).forEach(function (s) {
       if (scopeKey(s.scope) !== "unarmed") return;
-      sources.push({ label: s.label, kind: s.kind, steps: s.steps, scope: s.scope, note: s.note || null });
+      sources.push({ label: s.label, kind: s.kind, steps: s.steps, scope: s.scope, note: s.note || null, noFirstDie: !!s.noFirstDie });
     });
     var count = 0;
     sources.forEach(function (s) { count += s.steps; });
@@ -2125,12 +2145,21 @@ EN.engine = (function () {
   }
   // The whole strike: the chosen replacer resolved FIRST, then Oomph (Unarmed)
   // applied on top of it. `die` null is the bare flat-1 punch.
+  /* Step an unarmed or improvised die by its sources. A strike with no die takes 1d4 from its
+     first step of Oomph, but a noFirstDie source (Pneumatic Bypass) only steps a die that is
+     there: with no die and nothing else stepping, it changes nothing (no step applied or lost). */
+  function unarmedStepInfo(die, sources) {
+    var total = 0, granting = 0;
+    (sources || []).forEach(function (s) { total += s.steps; if (!s.noFirstDie) granting += s.steps; });
+    if ((die == null || die === "") && granting <= 0) return { die: null, applied: 0, lost: 0, offLadder: false };
+    return stepDieInfo(die, total);
+  }
   function resolveUnarmedStrike(ch) {
     var replacers = unarmedReplacers(ch);
     var replacer = resolveUnarmed(ch, replacers);
     var inc = unarmedIncreases(ch);
     var baseDie = replacer ? replacer.die : UNARMED_BASE.die;
-    var info = stepDieInfo(baseDie, inc.count);
+    var info = unarmedStepInfo(baseDie, inc.sources);
     var die = info.die;
     return {
       die: die,
@@ -2246,6 +2275,17 @@ EN.engine = (function () {
       if (canon) out.push(canon);
     });
     return out;
+  }
+  /* The level a Talent's Upgrade prints: "**Upgrade (Level 8+):**" is 8. Most are Level 6+; the
+     Freelancer's Companion gives Hardware Harmonizer and Resonant Recovery Level 8+ Upgrades.
+     An `upgradeLevel` field on the Talent wins over the text; no Upgrade at all reads null. */
+  function talentUpgradeLevel(t) {
+    if (typeof t === "string") { var ck = canonTalentKey(t); t = (EN.talents || []).filter(function (x) { return x.key === ck; })[0] || null; }
+    if (!t) return null;
+    if (t.upgradeLevel) return Number(t.upgradeLevel);
+    var m = String(t.text || "").match(/\*\*Upgrade \(Level (\d+)\+\)/);
+    if (m) return Number(m[1]);
+    return String(t.text || "").indexOf("**Upgrade") !== -1 ? 6 : null;
   }
   // Split a Talent's text into its base body and its "Upgrade (Level 6+)" rider.
   function splitTalentText(text) {
@@ -4119,8 +4159,9 @@ EN.engine = (function () {
     classMech.speed.forEach(function (r) { speedFeatures.push({ label: r.label, val: r.val }); });
     var speedFeatureTotal = 0;
     speedFeatures.forEach(function (r) { speedFeatureTotal += r.val; });
-    // Edge on Initiative: the lineage's Tuned Synapses, then each class feature that grants it
-    var initEdgeSources = (linMech.initEdge ? ["Tuned Synapses"] : []).concat(classMech.initEdge);
+    // Edge on Initiative: the lineage features that grant it (Tuned Synapses, Static Premonition),
+    // then each class feature that grants it
+    var initEdgeSources = linMech.initEdgeSources.concat(classMech.initEdge);
     var speed = Math.max(3, 6 + agiMod) + (cyberFlat.speed || 0) + (defLoadout.speedPenalty || 0) + linMech.speed + speedFeatureTotal;
 
     /* encumbrance: state from the declared Loadout, on-person Load, and hauls;
@@ -5010,7 +5051,7 @@ EN.engine = (function () {
     trainingBudget: trainingBudget,
     gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
-    activeLineageFeatures: activeLineageFeatures, awakeningPick: awakeningPick, activeTalents: activeTalents, splitTalentText: splitTalentText, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
+    activeLineageFeatures: activeLineageFeatures, awakeningPick: awakeningPick, activeTalents: activeTalents, splitTalentText: splitTalentText, talentUpgradeLevel: talentUpgradeLevel, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
     // THE resolver for which attribute a Talent raised, and the one enumeration of every
     // post-creation attribute bump. effectiveAttributes sums attrBumpSources rather than
     // walking the upgrade slots itself, so no surface can disagree about what bumped what.

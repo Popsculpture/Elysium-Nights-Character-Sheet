@@ -286,7 +286,7 @@ EN.aoeGrid = (function () {
       facingOut.textContent = facingName();
       var txt = info.text;
       if (_grid === "hex" && _shape === "cube") {
-        txt += " The book calls this a square zone and gives no hex version, so it is drawn here as "
+        txt += " The Handbook calls this a square zone and gives no hex version, so it is drawn here as "
           + n + " rows of " + n + ".";
       }
       note.textContent = txt;
@@ -361,7 +361,7 @@ EN.aoeGrid = (function () {
       box,
       note,
       el("p.help", { style: { margin: "6px 0 0", fontStyle: "italic" },
-        text: "The shapes and their sizes are the book's. How the grid counts them is this diagram's own convention: a diagonal step costs 1 space, a cone widens one space per space and reaches its stated width at the far edge, and a space is in or out by its center. Cone, Line and Aura start on you; Sphere and Cube are placed on a point you can see. Facing turns in quarters on a square grid and in sixths on a hex one, since those are the turns that land whole spaces on whole spaces and keep a cone exactly its stated width." })
+        text: "The shapes and their sizes are the Handbook's. How the grid counts them is this diagram's own convention: a diagonal step costs 1 space, a cone widens one space per space and reaches its stated width at the far edge, and a space is in or out by its center. Cone, Line and Aura start on you; Sphere and Cube are placed on a point you can see. Facing turns in quarters on a square grid and in sixths on a hex one, since those are the turns that land whole spaces on whole spaces and keep a cone exactly its stated width." })
     ]);
   }
 

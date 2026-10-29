@@ -167,7 +167,7 @@ EN.gmView = (function () {
         function (v) { _b.strong = v ? [curStrong[0], v] : [curStrong[0]]; }),
       // the Saves line of "Reading a Threat Stat Block" (EN.threats.savesRule) says what the two pickers mean
       el("p.help", { dataset: { gm: "saves-rule" }, style: { margin: 0, maxWidth: "440px" },
-        text: "The book names these per threat rather than deriving them. The Role only suggests a starting point." +
+        text: "The Toolkit names these per threat rather than deriving them. The Role only suggests a starting point." +
           (T.savesRule ? " " + T.savesRule : "") })
     ]));
 
@@ -746,7 +746,7 @@ EN.gmView = (function () {
     pairs.forEach(function (x) { first[x.profile.name] = true; });
     var opts = [el("option", { value: "" }, row.vehicle ? "Swap for..." : "Pick a vehicle...")];
     if (pairs.length) {
-      opts.push(el("optgroup", { label: "The book pairs these with this pilot" }, pairs.map(function (x) {
+      opts.push(el("optgroup", { label: "The Toolkit pairs these with this pilot" }, pairs.map(function (x) {
         return el("option", { value: x.profile.name, title: x.why }, x.profile.name);
       })));
     }
@@ -1192,7 +1192,7 @@ EN.gmView = (function () {
 
     if (ties.length) {
       kids.push(el("p.help", { style: { marginTop: "8px", color: "var(--warn)" },
-        text: "Tied after both tie-breaks: " + ties.length + " entries. The book hands this back to the table, so roll off and nudge a number." }));
+        text: "Tied after both tie-breaks: " + ties.length + " entries. The Handbook hands this back to the table, so roll off and nudge a number." }));
     }
 
     // the crew picker. Examples are excluded on purpose: setExample gives an

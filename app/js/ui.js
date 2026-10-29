@@ -706,27 +706,44 @@ EN.ui = (function () {
   /* ===== HELD AND TOOLKIT MARKERS ========================================
      The launch holds (data/launch.js) hide options from the pickers and lists, but a character
      who already has one keeps it, and the place that shows it says so with a small chip in the
-     style of the CUSTOM and UNCHOSEN chips. Two words:
-       HELD     a lineage, subclass, Talent or Background held for a later release
-       TOOLKIT  owned gear the Player's Handbook gear list doesn't print (EN.launch.toolkit.phb)
-     heldChip(kind) always returns the chip. heldChip(kind, key) returns it only while that key is
-     actually held (EN.launch.isHeld for a lineup kind, EN.launch.isToolkit for a gear kind, or
+     style of the CUSTOM and UNCHOSEN chips. Three words:
+       COMPANION  a lineage, subclass, Talent, Background, Tool Category or kit the Freelancer's
+                  Companion prints (a supplemental book). It names the book whether or not the
+                  Supplemental content setting is on, so a sheet always says where an option is from.
+       HELD       a lineage, subclass, Talent or Background in neither book
+       TOOLKIT    owned gear the Player's Handbook gear list doesn't print (EN.launch.toolkit.phb)
+     heldChip(kind) always returns the chip (kind "companion" for COMPANION). heldChip(kind, key)
+     returns it only for Companion content (EN.launch.isCompanion) or while that key is actually
+     held (EN.launch.isHeld for a lineup kind, EN.launch.isToolkit for a gear kind, or
      EN.launch.isToolkitItem when key is a catalog item object), and null otherwise, so a caller
      can drop it into a children array unconditionally. heldSuffix is the same test for text that
-     cannot hold a chip (a <select> option): " (held)" or " (Toolkit)", or "". */
-  var LINEUP_KINDS = { held: 1, lineage: 1, subclass: 1, talent: 1, background: 1 };
+     cannot hold a chip (a <select> option): " (Companion)", " (held)" or " (Toolkit)", or "". */
+  var LINEUP_KINDS = { held: 1, lineage: 1, subclass: 1, talent: 1, background: 1, tool: 1 };
   var HELD_MARK = {
+    companion: { label: "COMPANION", word: "Companion", color: "var(--gold)",
+                 title: "Freelancer's Companion (supplemental)" },
     held: { label: "HELD", word: "held", color: "var(--text3)",
-            title: "Held for a later release. This character keeps it; new characters can't pick it." },
+            title: "In neither the Player's Handbook nor the Freelancer's Companion. This character keeps it; new characters can't pick it." },
     toolkit: { label: "TOOLKIT", word: "Toolkit", color: "var(--accent)",
                // true for every held row: most are printed in the Game Master's Toolkit, three are in neither book
                title: "Not in the Player's Handbook gear list. Shown because you own it." }
   };
+  // Freelancer's Companion content, judged by the same kinds and keys heldChip takes
+  function companionKey(L, kind, key) {
+    if (!L || typeof L.isCompanion !== "function" || key == null) return false;
+    if (kind === "held") return ["lineage", "subclass", "talent", "background"].some(function (k) { return L.isCompanion(k, key); });
+    if (LINEUP_KINDS[kind]) return L.isCompanion(kind, key);
+    if (typeof key === "object") return L.isCompanion("item", key.name);
+    if (kind === "item" || kind === "toolkit") return L.isCompanion("item", key);
+    return false;
+  }
   function heldMark(kind, key, hasKey) {
+    if (kind === "companion" && !hasKey) return HELD_MARK.companion;
     var lineup = !!LINEUP_KINDS[kind];
     if (hasKey) {
       var L = EN.launch;
       if (!L) return null;
+      if (companionKey(L, kind, key)) return HELD_MARK.companion;
       var on = lineup ? (kind === "held"
           ? ["lineage", "subclass", "talent", "background"].some(function (k) { return L.isHeld(k, key); })
           : L.isHeld(kind, key))

@@ -479,12 +479,23 @@ EN.printSheet = (function () {
   function proficientCats(ch, bucket) {
     return ((EN.rules.gear || {})[bucket] || []).filter(function (cat) { return eng.effectiveGearTier(ch, bucket, cat) !== "untrained"; });
   }
+  /* The book tag the app's COMPANION chip carries (EN.ui.heldChip), as print text: Freelancer's
+     Companion content says so on paper whether or not Supplemental content is on. */
+  function bookTag(kind, key) {
+    var L = EN.launch;
+    return L && L.isCompanion && key && L.isCompanion(kind, key) ? " (COMPANION)" : "";
+  }
+  function featBookTag(ch, f) {
+    return f.kind === "subclass" ? bookTag("subclass", ch.subclass)
+         : f.kind === "lineage" ? bookTag("lineage", ch.lineage)
+         : f.kind === "talent" ? bookTag("talent", f._base || f.name) : "";
+  }
   // Proficiencies & Training rows (weapons/armor/tools/vehicles + skill foci/specializations)
   function proficiencyRows(ch) {
     var rows = [];
     [["Weapons", "weapons"], ["Armor", "armor"], ["Tools", "tools"], ["Vehicles", "vehicles"]].forEach(function (p) {
       var cats = proficientCats(ch, p[1]);
-      if (cats.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: p[0] }), el("span.ps-proc-v", { text: cats.join(", ") })]));
+      if (cats.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: p[0] }), el("span.ps-proc-v", { text: cats.map(function (c) { return c + (p[1] === "tools" ? bookTag("tool", c) : ""); }).join(", ") })]));
     });
     function fsLabel(f) {
       var parent = f.parent || f.skill;
@@ -503,8 +514,8 @@ EN.printSheet = (function () {
      ======================================================================= */
   function frontSheet(ch, d) {
     var id = ch.identity || {}, body = [];
-    var classLine = [d.classInfo ? d.classInfo.name : "-", d.subclassInfo ? d.subclassInfo.name : null].filter(Boolean).join(" · ");
-    var speciesLine = [d.speciesInfo ? d.speciesInfo.name : "-", d.lineageInfo ? d.lineageInfo.name : null].filter(Boolean).join(" · ");
+    var classLine = [d.classInfo ? d.classInfo.name : "-", d.subclassInfo ? d.subclassInfo.name + bookTag("subclass", d.subclassInfo.key) : null].filter(Boolean).join(" · ");
+    var speciesLine = [d.speciesInfo ? d.speciesInfo.name : "-", d.lineageInfo ? d.lineageInfo.name + bookTag("lineage", d.lineageInfo.key) : null].filter(Boolean).join(" · ");
     var progression = ch.useXp ? ("XP " + (d.xp || 0) + (d.xpForNext ? " / " + d.xpForNext : "")) : ("Milestones " + ((ch.milestones && ch.milestones.major) || 0) + " maj, " + ((ch.milestones && ch.milestones.minor) || 0) + " min");
 
     body.push(el("div.ps-grid2", null, [field("Handle / alias", id.handle || ch.name), field("Name on record", ch.name)]));
@@ -515,7 +526,7 @@ EN.printSheet = (function () {
       field("Size", d.size || "-", { style: { flex: "0 0 70px" } })
     ]));
     body.push(el("div.ps-row", null, [
-      field("Background", d.backgroundInfo ? d.backgroundInfo.name : "-", { style: { flex: "2 1 0" } }),
+      field("Background", d.backgroundInfo ? d.backgroundInfo.name + bookTag("background", d.backgroundInfo.key) : "-", { style: { flex: "2 1 0" } }),
       field("Progression", progression, { style: { flex: "2 1 0" } })
     ]));
 
@@ -753,7 +764,7 @@ EN.printSheet = (function () {
         el("span.ps-snip-n", { text: f.name }),
         cost ? el("span.ps-snip-cost", { text: cost }) : null,
         el("span.ps-snip-b", { text: briefFor(f) }),
-        el("span.ps-snip-src", { text: (f.source || "") + (f.level ? " · L" + f.level : "") })
+        el("span.ps-snip-src", { text: (f.source || "") + featBookTag(ch, f) + (f.level ? " · L" + f.level : "") })
       ]);
       if (uses) { var u = el("span.ps-snip-uses", { title: uses.max + " / " + uses.recharge }); for (var i = 0; i < Math.min(uses.max, 6); i++) u.appendChild(el("span.ps-pip")); row.appendChild(u); }
       return row;
@@ -791,11 +802,11 @@ EN.printSheet = (function () {
         var talWhat = function (k) {
           var ck = EN.engine.canonTalentKey ? EN.engine.canonTalentKey(k) : k;
           var raised = (ck && EN.engine.talentAttr) ? EN.engine.talentAttr(ch, ck) : null;
-          return talName(k) + (raised ? " (+1 " + attrName(raised) + ")" : "");
+          return talName(k) + bookTag("talent", k) + (raised ? " (+1 " + attrName(raised) + ")" : "");
         };
         var what = u.type === "attr" ? attrWhat()
           : u.type === "talent" ? ("Talent: " + talWhat(u.talent))
-          : u.type === "talentUpgrade" ? ("Talent Upgrade: " + talName(u.talent))
+          : u.type === "talentUpgrade" ? ("Talent Upgrade: " + talName(u.talent) + bookTag("talent", u.talent))
           // the builder stores the pick as u.evolution (decision 13: the line used to print blank)
           : u.type === "evolution" ? ("Lineage Evolution: " + (u.evolution || u.feature || u.name || ""))
           : (u.name || u.type || "choice");
@@ -861,7 +872,7 @@ EN.printSheet = (function () {
         var tags = it ? [it.group || it.kind || it.bucket, it.legality, showAvail ? it.availability : null].filter(Boolean).join(" · ") : "";
         var meta = ["x" + e.qty, worn ? "equipped" : "stash"].concat(tags ? [tags] : []).join(" · ");
         var block = el("div.ps-invitem", null, [
-          el("div.ps-invhead", null, [el("span.ps-invname", { text: e.name }), el("span.ps-invmeta", { text: meta })])
+          el("div.ps-invhead", null, [el("span.ps-invname", { text: e.name + bookTag("item", e.name) }), el("span.ps-invmeta", { text: meta })])
         ]);
         if (it) gearDetailLines(it, eng.armorState ? eng.armorState(ch, key) : null,
                                 eng.shieldState ? eng.shieldState(ch, key) : null,

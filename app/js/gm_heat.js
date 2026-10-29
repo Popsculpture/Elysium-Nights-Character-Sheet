@@ -1272,7 +1272,7 @@ EN.gmHeat = (function () {
         el("span", { style: { flex: "1 1 200px", minWidth: "0" } }, [
           el("span", { style: { fontWeight: 600 }, text: t.name }),
           el("span.help", { style: { margin: "0 0 0 6px" }, text: "Caliber " + p.row.caliber + ", counts as " + p.row.countsAs +
-            DOT + "the book: " + p.row.kill + " kill, " + p.row.alive + " alive" })
+            DOT + "the Toolkit: " + p.row.kill + " kill, " + p.row.alive + " alive" })
         ]),
         el("span.mono", { style: { fontSize: "12.5px", color: "var(--danger)" },
           text: r.aliveOnly ? "ALIVE " + fmtG(p.alive) : "KILL " + fmtG(p.kill) + DOT + "ALIVE " + fmtG(p.alive) })

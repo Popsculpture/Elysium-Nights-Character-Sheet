@@ -162,7 +162,7 @@ EN.hazards = {
     { key: "rebreather", name: "Rebreather", kind: "Gear",
       source: { type: "gear", name: "Rebreather" },
       summary: "1 hour of thin air, and 1 hour against Drowning.",
-      note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. Against Drowning that hour is 600 rounds, at the book's 10 rounds to the minute. It does not cover vacuum, which is why the breath grant names its kind: a face-slot mouthpiece is not a sealed suit, and the vacuum rule's only path is a Rebreather Liner fitted to a suit that is already Sealed.",
+      note: "Its own entry gives up to 1 hour of active use, refreshing between scenes, and stops you beginning to Drown in water or low-oxygen air. Sixty minutes of a thin-air exposure pass with no save at all; the clock starts when the hour runs out. Against Drowning that hour is 600 rounds, at the Handbook's 10 rounds to the minute. It does not cover vacuum, which is why the breath grant names its kind: a face-slot mouthpiece is not a sealed suit, and the vacuum rule's only path is a Rebreather Liner fitted to a suit that is already Sealed.",
       effects: { thinAirMinutes: 60, breathMinutes: { drowning: 60 } } },
 
     /* PHB:8311 "Sealed armor turns the bad air aside and does nothing whatsoever for cold." Author
@@ -190,7 +190,7 @@ EN.hazards = {
     { key: "void-lung", name: "Void Lung", kind: "FreeBorn Trait",
       source: { type: "lineageFeature", name: "Void Lung" }, lineage: "freeborn",
       summary: "15 minutes of held breath. The largest single vacuum mitigation in the game.",
-      note: "Fifteen minutes is 150 rounds, at the book's flat rate of 10 rounds to the minute, and it covers both Vacuum and Drowning. The save clock starts when those run out rather than never starting, so the tracker stays live and counts down. A Vacuum's 1d6 Cold still lands every round regardless of held breath.",
+      note: "Fifteen minutes is 150 rounds, at the Handbook's flat rate of 10 rounds to the minute, and it covers both Vacuum and Drowning. The save clock starts when those run out rather than never starting, so the tracker stays live and counts down. A Vacuum's 1d6 Cold still lands every round regardless of held breath.",
       effects: { breathMinutes: 15 } },
 
     { key: "hearthglow", name: "Hearthglow", kind: "Cinder-Heart Feature",
@@ -201,9 +201,12 @@ EN.hazards = {
 
     { key: "hazard-seal", name: "Hazard Seal", kind: "Durabody Trait",
       source: { type: "lineageFeature", name: "Hazard Seal" }, lineage: "durabodies",
-      summary: "Immune to caustic damage.",
-      note: "Immunity to the Acid, so both the damage inside and the lingering damage after exit are zero, and there is nothing to wash off.",
-      effects: { immuneCaustic: true } },
+      // Freelancer's Companion: Resistance to Acid and Toxic damage, no longer an immunity. The
+      // Resistance is on the sheet through the engine's damage resistances (engine.js "Hazard Seal"),
+      // so this row carries no caustic effect: the caustic damage still lands, and Resistance halves it.
+      summary: "Resistance to Acid and Toxic damage; operate submerged in polluted or caustic liquids without penalty.",
+      note: "Freelancer's Companion: no immunity. Caustic damage still lands, inside and lingering; your Resistance to Acid halves it. It gives no resistance to extreme thermal hazards like lava or liquid nitrogen.",
+      effects: {} },
 
     { key: "frictionless-stasis", name: "Frictionless Stasis", kind: "Harbinger Trait",
       source: { type: "lineageFeature", name: "Frictionless Stasis" }, lineage: "harbinger",

@@ -720,7 +720,7 @@ EN.gmPayroll = (function () {
     ]));
     if (c.overridden && (c.overridden.headcount || c.overridden.caliber)) {
       kids.push(help("Set by hand: " + [c.overridden.headcount ? "headcount" : null, c.overridden.caliber ? "Caliber" : null]
-        .filter(Boolean).join(" and ") + ". The book prices one Caliber for the whole crew, so a mixed crew is the GM's call."));
+        .filter(Boolean).join(" and ") + ". The Toolkit prices one Caliber for the whole crew, so a mixed crew is the GM's call."));
     }
     return EN.ui.panel("This Payday", "JOB" + DOT + "ENCOUNTER" + DOT + "CREW", kids);
   }
@@ -803,7 +803,7 @@ EN.gmPayroll = (function () {
         var named = (I.ratingToColumn || []).map(function (x) {
           return (x.offset === 0 ? "at the crew's Caliber" : x.offset + " " + plural(x.offset, "step") + " above it") + " (" + colName(x.col) + ")";
         }).join(" or ");
-        kids.push(help("The book names a column only for a rating " + named + ". Price this one by hand.",
+        kids.push(help("The Toolkit names a column only for a rating " + named + ". Price this one by hand.",
           { color: "var(--warn)" }));
       }
     }
@@ -958,7 +958,7 @@ EN.gmPayroll = (function () {
         el("span.mono", { dataset: { pay: "bounty-total", v: String(m.bTotal) }, style: { fontSize: "16px" }, text: fmtG(m.bTotal) })
       ]));
     }
-    kids.push(codexLine("bounties", "The book on bounties:", [["gmy-pay/bounties", "Bounties"]]));
+    kids.push(codexLine("bounties", "The Toolkit on bounties:", [["gmy-pay/bounties", "Bounties"]]));
     return EN.ui.panel("Bounties", "PRICED OFF THE TARGET'S XP", kids);
   }
 
@@ -1056,7 +1056,7 @@ EN.gmPayroll = (function () {
         } }, "+ ADD AS SALVAGE")
       ]));
       if (_p.awPct !== "" && pct !== typedPct) {
-        kids.push(help("Held to the book's " + lo + " to " + hi + " percent.", { color: "var(--warn)" }));
+        kids.push(help("Held to the Toolkit's " + lo + " to " + hi + " percent.", { color: "var(--warn)" }));
       }
     }
 
@@ -1083,7 +1083,7 @@ EN.gmPayroll = (function () {
       ])
     ]));
     if (sp.fixerPct < flo || sp.fixerPct > fhi) {
-      kids.push(help("Outside the book's " + flo + " to " + fhi + " percent for a fixer.", { color: "var(--warn)", margin: "0 0 8px" }));
+      kids.push(help("Outside the Toolkit's " + flo + " to " + fhi + " percent for a fixer.", { color: "var(--warn)", margin: "0 0 8px" }));
     }
     kids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center" } }, [
       money("THROUGH THE FIXER", sp.total, fmtG(sp.total), "var(--text)", "split-total"),
@@ -1117,7 +1117,7 @@ EN.gmPayroll = (function () {
     // the payday checklist, the book's own order
     var D = P().payday;
     if (D && Array.isArray(D.steps)) {
-      kids.push(EN.ui.sectionTitle("Payday, in the book's order"));
+      kids.push(EN.ui.sectionTitle("Payday, in the Toolkit's order"));
       D.steps.forEach(function (s, i) {
         var on = _p.steps.indexOf(i) !== -1;
         kids.push(el("label", { style: { display: "flex", gap: "8px", alignItems: "flex-start", padding: "3px 0", cursor: "pointer",
@@ -1187,7 +1187,7 @@ EN.gmPayroll = (function () {
       if (ms.length) kids.push(el("p.help", { dataset: { pay: "xp-skip" }, style: { margin: "4px 0 0", color: "var(--text2)" },
         text: "On milestones, so no XP is written: " + ms.map(function (x) { return x.name; }).join(", ") + "." }));
     }
-    kids.push(codexLine("xp", "The book on XP:", [["gmy-pay/experience", "Experience"]]));
+    kids.push(codexLine("xp", "The Toolkit on XP:", [["gmy-pay/experience", "Experience"]]));
     return EN.ui.panel("Experience", "EVERY FREELANCER, THE FULL TOTAL", kids);
   }
 
@@ -1557,7 +1557,7 @@ EN.gmPayroll = (function () {
     }
 
     // the book on pacing, in the Codex
-    kids.push(codexLine("milestones", "The book on pacing:", [["gmy-pay/milestones-and-pacing", M.name]]
+    kids.push(codexLine("milestones", "The Toolkit on pacing:", [["gmy-pay/milestones-and-pacing", M.name]]
       .concat((M.notes || []).map(function (nt) { return ["gmy-pay/" + cxSlug(nt.name), nt.name.replace(/\.$/, "")]; }))));
     return EN.ui.panel(M.name, "MAJOR" + DOT + "MINOR" + DOT + "PACING", kids);
   }

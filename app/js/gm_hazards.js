@@ -477,7 +477,7 @@ EN.gmHazards = (function () {
       return "Priced like " + (/^[aeiou]/i.test(dn) ? "an " : "a ") + dn + " threat of its Grade: " +
              priceXp(c, g) + " XP at G" + g + ".";
     }
-    return "The book prices only Severe and Lethal hazards, so this one is free unless you enter XP.";
+    return "The Toolkit prices only Severe and Lethal hazards, so this one is free unless you enter XP.";
   }
   function pricingOptions() {
     var H = book();
@@ -807,8 +807,8 @@ EN.gmHazards = (function () {
         // an Anomaly's counters are the PHB's: Counter Flow, and a Null Scar's Focal Anchor
         kids.push(anomalyRun
           ? EN.ui.ruleText(el("p.help", { "data-hook": "unprinted", style: { margin: "4px 0 0" } }),
-              "The book prints no separate " + said + " for this one: the Anomaly you pick supplies the rules. Its counters are Counter Flow and, in a Null Scar, the Focal Anchor.")
-          : help("The book prints no separate " + said + " for this one. The paragraph above is the whole rule."));
+              "The Toolkit prints no separate " + said + " for this one: the Anomaly you pick supplies the rules. Its counters are Counter Flow and, in a Null Scar, the Focal Anchor.")
+          : help("The Toolkit prints no separate " + said + " for this one. The paragraph above is the whole rule."));
       }
     } else {
       kids.push(line(fieldName("trigger", "Trigger"), hz.trigger || none, "trigger"));
@@ -998,7 +998,7 @@ EN.gmHazards = (function () {
   function saveDraft() {
     var h = draftHazard(_c);
     if (!h.name) { toast("Name the hazard first."); return; }
-    if (!h.counter) { toast("Every hazard needs a Counter. The book says there must always be a way to shut it off."); return; }
+    if (!h.counter) { toast("Every hazard needs a Counter. The Toolkit says there must always be a way to shut it off."); return; }
     var k = kindOf(h.timing.kind);
     if (k.hasN && !h.timing.n) { toast("Say how many rounds the " + k.label.toLowerCase() + " takes."); return; }
     var id = _c.id || gm.uid();
@@ -1102,7 +1102,7 @@ EN.gmHazards = (function () {
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end" } }, [
       pick("Price as", pricingOptions(), d.pricing, function (v) { d.pricing = v === "flavor" ? "flavor" : "opposition"; }, { hook: "c-pricing" }),
       d.pricing === "flavor" ? null
-        : textField("XP (blank for the book's price)", d.xp, String(bookPrice), function (v) { d.xp = v; },
+        : textField("XP (blank for the Toolkit's price)", d.xp, String(bookPrice), function (v) { d.xp = v; },
             { type: "number", hook: "c-xp", flex: "0 1 220px" })
     ]));
     var pc = pricingCase(d.pricing);

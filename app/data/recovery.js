@@ -72,7 +72,7 @@ EN.recovery = {
        EN.rules.dieAverage(die) + Body Modifier, at least 1 a level. The Codex adds
        each die's average from EN.rules.dieAverage after this line, so the figures
        follow the engine rather than being typed here. */
-    appNote: "App note, not book text: the book rolls 1dX + Body Modifier for each level after 1st. This app takes the fixed average instead (half the die, plus 1, plus Body Modifier, at least 1 a level), so a character's Vitality comes out the same every time the sheet works it out.",
+    appNote: "App note, not book text: the Handbook rolls 1dX + Body Modifier for each level after 1st. This app takes the fixed average instead (half the die, plus 1, plus Body Modifier, at least 1 a level), so a character's Vitality comes out the same every time the sheet works it out.",
     example: "A Codebreaker with **12 Vitality** takes **14 damage**. The first 12 reduces their Vitality to **0**, triggering **1 Fatigue** and **Bloodied**. The remaining **2 damage** becomes **Wound damage**, reducing both current and maximum Vitality by 2."
   },
 

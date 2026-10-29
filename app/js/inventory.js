@@ -4009,7 +4009,7 @@ EN.inventoryView = (function () {
         num("PAYOUT", "total", 0, 9999999, "110px", "The contract's lump sum, before anyone takes a cut"),
         num("CREW", "crew", 1, 12, "56px", "How many Freelancers split it"),
         num("FIXER %", "fixer", 0, 100, "56px", "The fixer's cut, taken off the top before the split"),
-        num("CREW KIT %", "kit", 0, 100, "56px", "Optional shared fund; the book suggests 10 to 30 percent")
+        num("CREW KIT %", "kit", 0, 100, "56px", "Optional shared fund; the Handbook suggests 10 to 30 percent")
       ]),
       el("div.row.wrap", { style: { gap: "16px", alignItems: "center" } }, [
         stat("FIXER", r.fixer, "var(--ember)"),

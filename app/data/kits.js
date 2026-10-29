@@ -140,7 +140,7 @@ EN.kits = {
     the_lifeline:     { items: [{ name: "Bio Monitor Band" }, { name: "Trauma Slap Patch" }] },
     the_toxicologist: { items: [{ name: "Dart Gun" }, { name: "Darts" }], replacesSlot: "weapon",
                         note: "A Toxicologist doesn't pick a weapon above. They start with a Dart Gun and Darts instead. The dart platform is what the toxins ride on, straight into First Do No Harm." },
-    the_ripper:       { items: [{ name: "Neurocut Jack" }] }
+    the_ripper:       { items: [{ name: "Engineering Toolkit" }] }
   },
 
   /* Alternate Picks: an opt-in swap on the Subclass Extra */

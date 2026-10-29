@@ -18,21 +18,21 @@ EN.talents = [
     name: "Akimbo Specialist",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "Your off hand stopped being the spare a long time ago. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• While you wield a separate weapon in each hand, melee or ranged, your Defense gets a +1 bonus.\n• Two-weapon fighting, the Swift Action follow-up attack, works for you with any pair of one-handed weapons, not only Light ones.\n• Anytime you could draw or stow a single one-handed weapon, you can handle a pair instead, as a Free Action.\n\n**Upgrade (Level 6+):** When you score a critical hit with one of your two weapons, you may immediately make one additional attack with the opposite weapon as part of the same Action against the same Target."
+    text: "Your off hand stopped being the spare a long time ago. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• While you wield a separate weapon in each hand, melee or ranged, your Defense gets a +1 bonus.\n• You can make a Follow-Up Attack (Swift Action) with any one-handed weapon in your other hand, not only Light or Off-Hand ones.\n• Anytime you could draw or stow a single one-handed weapon, you can handle a pair instead, as a Free Action.\n\n**Upgrade (Level 6+):** When you score a critical hit with one of your two weapons, you may immediately make one additional attack with the opposite weapon as part of the same Action against the same Target."
   },
   {
     key: "armor-piercing-specialist",
     name: "Armor Piercing Specialist",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You know where the plate thins and the weave parts. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Once per turn, you can reroll one damage die from a hit of yours that deals Piercing or Ballistic damage. The new roll stands, even if it's lower.\n• When a critical hit of yours deals Piercing or Ballistic damage, you can roll one extra damage die for the critical damage.\n\n**Upgrade (Level 6+):** Your Piercing and Ballistic attacks ignore the first 3 points of Armor DR, this doesn't apply against Resonant Plating or Flow-imbued defenses."
+    text: "You know where the plate thins and the weave parts. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Once per turn, you can reroll one damage die from a hit of yours that deals Piercing or Ballistic damage. The new roll stands, even if it's lower.\n• When a critical hit of yours deals Piercing or Ballistic damage, you can roll one extra damage die for the critical damage.\n\n**Upgrade (Level 6+):** Your Piercing and Ballistic attacks ignore the first 3 points of Armor DR. This doesn't apply against Resonant Plating or Flow-imbued defenses."
   },
   {
     key: "arsenal-adept",
     name: "Arsenal Adept",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You've trained with whatever the black market had and the last firefight left behind. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Choose four weapon categories or specific martial weapons. You're Proficient with them, so your Weapon Proficiency Bonus applies to your attack rolls with each.\n• You can pick up and fight with anything. You don't roll with Snag for making an attack with a weapon you aren't Proficient with (you still don't add a Weapon Proficiency Bonus to those attacks).\n\n**Upgrade (Level 6+):** Once per turn, when you hit a Target with a weapon you gained Proficiency in through this Talent, you add your Caliber to that attack's damage."
+    text: "You've trained with whatever the black market had and the last firefight left behind. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Choose four weapon categories or specific martial weapons. You're Proficient with them, so your Weapon Proficiency Bonus applies to your attack rolls with each.\n• You can pick up and fight with anything. You don't roll with Snag for making an attack with a weapon you aren't Proficient with (you still don't add a Weapon Proficiency Bonus to those attacks).\n\n**Upgrade (Level 6+):** Once per turn, when you hit a target with a weapon you gained Proficiency in through this Talent, you add your Caliber to that attack's damage."
   },
   {
     key: "close-quarters-brawler",
@@ -52,7 +52,7 @@ EN.talents = [
     key: "heavy-handed",
     name: "Heavy Handed",
     category: "Combat & Weapon Mastery",
-    requirements: "Character Level 4, Body 14+.",
+    requirements: "Character Level 4, Body 14 or higher.",
     text: "You put crushing momentum into your heaviest strikes. You gain the following benefits:\n• When you hit a Target with a melee attack using a weapon with the Heavy trait, you can push the Target up to 1 space into an unoccupied space.\n• If this push forces the Target to strike a solid object or another Target, they must succeed on a Body Saving Throw (DC 8 + your Body Modifier + your Weapon Proficiency Bonus) or be knocked Prone.\n• You gain a +2 bonus to damage rolls with weapons possessing the Heavy trait.\n\n**Upgrade (Level 6+):** The push distance increases to 2 spaces, and a Target knocked Prone by this Talent also takes Bludgeoning damage equal to your Body Modifier (minimum 1)."
   },
   {
@@ -74,7 +74,7 @@ EN.talents = [
     name: "Melee Mastery",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "You strike with brutal efficiency in close quarters, gaining the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Once per turn, you can roll the weapon's damage dice a second time for one of your melee weapon attacks. Use whichever total you prefer.\n• When you take the Attack Action with a melee weapon, you can use a Swift Action to make one additional attack with the same weapon as long as the original attack hit. This Swift Action attack uses your full damage modifier.\n\n**Upgrade (Level 6+):** When you reduce a Target to 0 Vitality with a melee attack, you regain Vitality equal to your Caliber + your Body Modifier. You can do this a number of times equal to your Caliber per Long Rest."
+    text: "You strike with brutal efficiency in close quarters. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Once per turn, you can roll the weapon's damage dice a second time for one of your melee weapon attacks. Use whichever total you prefer.\n• When you take the Attack Action with a melee weapon, you can use a Swift Action to make one additional attack with the same weapon as long as the original attack hit. This Swift Action attack uses your full damage modifier.\n\n**Upgrade (Level 6+):** When you reduce a Target to 0 Vitality with a melee attack, you regain Vitality equal to your Caliber + your Body Modifier. You can do this a number of times equal to your Caliber per Long Rest."
   },
   {
     key: "ricochet-shot",
@@ -95,7 +95,7 @@ EN.talents = [
     name: "Staff & Spear Master",
     category: "Combat & Weapon Mastery",
     requirements: "",
-    text: "With a staff or a spear, the fight happens at the end of the pole, where you want it. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Take the Attack Action with nothing but a long-shafted weapon, like a staff or a spear, and you can follow up by bringing the other end around as a Swift Action: a melee attack that deals 1d6 Bludgeoning damage and uses your normal attack and damage modifiers.\n• While you wield a long-shafted weapon, any Enemy that enters its reach provokes an Opportunity Attack (Impulse) from you.\n\n**Upgrade (Level 6+):** Your reach with long-shafted weapons extends an additional 1 space, and you gain Edge on Opportunity Attacks made with long-shafted weapons."
+    text: "With a staff or a spear, the fight happens at the end of the pole, where you want it. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Take the Attack Action with nothing but a long-shafted weapon, like a staff or a spear, and you can follow up by bringing the other end around as a Swift Action: a melee attack that deals 1d6 Bludgeoning damage and uses your normal attack and damage modifiers.\n• While you wield a long-shafted weapon, any Enemy that enters its reach provokes an Opportunity Attack (Impulse) from you.\n\n**Upgrade (Level 6+):** Your long-shafted weapons gain Reach +1, on top of any Reach they already have, and you gain Edge on Opportunity Attacks made with long-shafted weapons."
   },
   {
     key: "street-scrapper",
@@ -118,7 +118,7 @@ EN.talents = [
     name: "Blade Weaver",
     category: "Tactics & Hybrid Fighting",
     requirements: "Agility 13 or higher.",
-    text: "***Prerequisite:** Agility 13 or higher.* You weave through enemy strikes with razor-sharp timing, gaining the following benefits:\n• Increase your Agility score by 1, to a maximum of 20.\n• With a Light melee weapon you're Proficient with in hand, you can meet an Enemy's melee hit with your Impulse Action: add your Weapon Proficiency Bonus to your Defense against that attack, which can turn the hit into a miss.\n\n**Upgrade (Level 6+):** When an attack misses you because of this Talent, you may make a retaliatory melee attack against the attacker as a Free Action."
+    text: "You weave through enemy strikes with razor-sharp timing. You gain the following benefits:\n• Increase your Agility score by 1, to a maximum of 20.\n• With a Light melee weapon you're Proficient with in hand, you gain a new Active Defense (Impulse). When an Enemy's melee attack meets or beats your Defense, add your Weapon Proficiency Bonus to your Defense against that attack, which can turn the hit into a miss. It counts as your Parry for the round.\n\n**Upgrade (Level 6+):** When an attack misses you because of this Talent, you may make a retaliatory melee attack against the attacker as a Free Action."
   },
   {
     key: "combat-splicer",
@@ -160,14 +160,14 @@ EN.talents = [
     name: "Signal Sniper",
     category: "Tactics & Hybrid Fighting",
     requirements: "The ability to use Quick Hacks, Ciphers, or Flow Invocations.",
-    text: "***Prerequisite:** The ability to use Quick Hacks, Ciphers, or Flow Invocations.* You push signal and resonance farther than the spec sheet says they go. You gain the following benefits:\n• Your Quick Hacks, Cipher Attacks, and Flow Attacks that call for an attack roll work at double their effective range.\n• Half Cover and Three-Quarter Cover add nothing to a Target's Defense against your ranged tech and Flow attacks.\n• Add one Quick Hack of your choice to what you know, or one Base Resonance at a 0 FP Intent.\n\n**Upgrade (Level 6+):** Once per Short Rest, you can use a Quick Hack, Cipher, or Invocation as if you were within line of sight of a Target you have personally seen within the past hour, regardless of intervening obstacles, walls, or distance (up to 1 mile)."
+    text: "You push signal and resonance farther than the spec sheet says they go. You gain the following benefits:\n• Your Quick Hacks, Cipher Attacks, and Flow Attacks that call for an attack roll work at double their effective range.\n• Half Cover and Three-Quarter Cover add nothing to a Target's Defense against your ranged tech and Flow attacks.\n• Add one Quick Hack of your choice to what you know, or one Base Resonance at a 0 FP Intent.\n\n**Upgrade (Level 6+):** Once per Short Rest, you can use a Quick Hack, Cipher, or Invocation as if you were within line of sight of a Target you have personally seen within the past hour, regardless of intervening obstacles, walls, or distance (up to 1 mile)."
   },
   {
     key: "tactical-operative",
     name: "Tactical Operative",
     category: "Tactics & Hybrid Fighting",
     requirements: "",
-    text: "Somebody taught you the Fury's and the Operator's tricks, and you kept them. You gain the following benefits:\n• Pick two Overdrive Maneuvers or Calls from the Fury or Operator class. A maneuver that forces a Target to make a Saving Throw uses DC 8 + your Body or Agility Modifier (your choice) + your Caliber.\n• You gain 2 Overdrive Points (or Execution, to match your choice) to fuel your maneuvers, regained when you finish a Short Rest or Long Rest. Unless its entry says otherwise, each Maneuver or Call you learn here costs 1 point from this pool.\n\n**Upgrade (Level 6+):** You learn one additional maneuver from the same list, and your resource pool from this Talent increases by 2 points."
+    text: "Somebody taught you the Fury's and the Operator's tricks, and you kept them. You gain the following benefits:\n• Pick two Overdrive Maneuvers or Calls from the Fury or Operator class. A maneuver that forces a Target to make a Saving Throw uses DC 8 + your Body or Agility Modifier (your choice) + your Caliber.\n• You gain 2 Overdrive (or Execution, to match your choice) to fuel your maneuvers, regained when you finish a Short Rest or Long Rest. Unless its entry says otherwise, each Maneuver or Call you learn here costs 1 point from this pool.\n\n**Upgrade (Level 6+):** You learn one additional maneuver from the same list, and your resource pool from this Talent increases by 2 points."
   },
 
   // ===== Tech & #GRID Operations =====
@@ -176,7 +176,7 @@ EN.talents = [
     name: "Augment Specialist",
     category: "Tech & #GRID Operations",
     requirements: "Tech 13 or higher.",
-    text: "You have an intuitive command of cybernetic installation and tuning, granting you the following benefits:\n• Increase your Tech score by 1, to a maximum of 20.\n• Your body tolerates chrome better than most. Reduce your Total Static by 2 for the purpose of determining your Static Threshold, to a minimum of 0. This lets you install more cyberware before the Chrome Tax penalties escalate.\n• The credit cost of installing, removing, or tuning your own cybernetics is reduced by 25%, and the Downtime required for installation is halved.\n\n**Upgrade (Level 6+):** Once per Long Rest, when one of your installed cybernetics is disabled, suppressed, or hacked by an Enemy effect, you can use your Impulse Action to override the disruption and restore the cybernetic to full function."
+    text: "You have an intuitive command of cybernetic installation and tuning. You gain the following benefits:\n• Increase your Tech score by 1, to a maximum of 20.\n• Your body tolerates chrome better than most. Reduce your Total Static by 2 for the purpose of determining your Static Threshold, to a minimum of 0. This lets you install more cyberware before the Chrome Tax penalties escalate.\n• The Glimmer cost of installing, removing, or tuning your own cybernetics is reduced by 25%, and the Downtime required for installation is halved.\n\n**Upgrade (Level 6+):** Once per Long Rest, when one of your installed cybernetics is disabled, suppressed, or hacked by an Enemy effect, you can use your Impulse Action to override the disruption and restore the cybernetic to full function."
   },
   {
     key: "gridrunners-reflexes",
@@ -189,8 +189,8 @@ EN.talents = [
     key: "hardware-harmonizer",
     name: "Hardware Harmonizer",
     category: "Tech & #GRID Operations",
-    requirements: "Character Level 8, Tech 16+.",
-    text: "***Prerequisite:** Character Level 8, Tech 16+.* You have a preternatural understanding of how mechanical and digital systems want to function. You gain the following benefits:\n• When you use a Tool Kit in which you have Proficiency, any Dice Pool margin of 0 (Mixed Result) is treated as a Costly Success instead.\n• The time required for you to repair broken hardware, patch corrupted code, or build localized devices is halved.\n• You gain Edge on Engineering and Systems d20 checks made to repair, build, or harmonize hardware.\n\n**Upgrade (Level 6+):** Your Mixed Result to Costly Success conversion now applies to all your Tech-based Dice Pool checks, not only those made with a Tool Kit."
+    requirements: "Character Level 6, Tech 16 or higher.",
+    text: "You have a preternatural understanding of how mechanical and digital systems want to function. You gain the following benefits:\n• When you use a kit from a Tool Category you're Proficient with, a Dice Pool margin of 0 (Mixed Result) counts as a Costly Success instead.\n• The time required for you to repair broken hardware, patch corrupted code, or build localized devices is halved.\n• You gain Edge on Engineering and Systems checks made to repair, build, or harmonize hardware.\n\n**Upgrade (Level 8+):** Your Mixed Result to Costly Success conversion now applies to all your Tech-based Dice Pool checks, not only those made with a kit."
   },
   {
     key: "junk-tinkerer",
@@ -203,7 +203,7 @@ EN.talents = [
     key: "neural-backup",
     name: "Neural Backup",
     category: "Tech & #GRID Operations",
-    requirements: "Character Level 4, Wits 14+.",
+    requirements: "Character Level 4, Wits 14 or higher.",
     text: "You have installed localized logic gates in your own wetware to prevent catastrophic feedback. You gain the following benefits:\n• Once per Long Rest, when you fail a LinkDeath Saving Throw, you can choose to take the Dazed condition for 1 minute to completely negate all Psychic damage from the feedback.\n• You gain Edge on Saving Throws against effects that would cause the Dazed condition.\n\n**Upgrade (Level 6+):** You may use the failure-negation feature twice per Long Rest instead of once, and the Dazed duration is reduced to 1 round."
   },
   {
@@ -225,14 +225,14 @@ EN.talents = [
     name: "Script Archivist",
     category: "Tech & #GRID Operations",
     requirements: "Tech or Wits 13 or higher.",
-    text: "You maintain a personal library of scripts and signature exploits. You gain the following benefits:\n• Your library starts on a data-slate loaded with two complex utility Ciphers or diagnostic Quick Hacks of your choice.\n• Standard Ciphers you find in the field (on a Burner Relay, say, or an Enemy's Smartdeck) can be copied onto your data-slate. Copying one takes 2 hours of Downtime per tier of the Cipher and costs 𝒢50 per tier.\n• You can execute these stored scripts during Downtime or out of combat using the Dice Pool Method. Once per Long Rest, you may execute one stored script during combat as if it were a Quick Hack you knew.\n\n**Upgrade (Level 6+):** The in-combat execution increases to a number of uses equal to your Caliber per Long Rest, and integrating new Ciphers costs only 𝒢25 per tier and takes half the normal time."
+    text: "You maintain a personal library of scripts and signature exploits. You gain the following benefits:\n• Your library starts on a data-slate loaded with two complex utility Ciphers or diagnostic Quick Hacks of your choice.\n• Standard Ciphers you find in the field (on a Burner Relay, say, or an Enemy's Smartdeck) can be copied onto your data-slate. Copying one takes 2 hours of Downtime and costs 𝒢50 per point of the Cipher's Complexity (minimum 1).\n• You can execute these stored scripts during Downtime or out of combat using the Dice Pool Method. Once per Long Rest, you may execute one stored script during combat as if it were a Quick Hack you knew.\n\n**Upgrade (Level 6+):** The in-combat execution increases to a number of uses equal to your Caliber per Long Rest, and integrating new Ciphers costs only 𝒢25 per point of Complexity and takes half the normal time."
   },
   {
     key: "script-kiddie",
     name: "Script Kiddie",
     category: "Tech & #GRID Operations",
     requirements: "",
-    text: "You've cobbled together a handful of dangerous tricks from forum dumps and cracked tutorials. You gain the following benefits:\n• You learn two basic Quick Hacks or two Base Resonances (0 FP Intent) of your choice.\n• Choose one advanced Cipher or Empowered Effect (1 FP) to learn. You can activate it once per Long Rest without a Smartdeck or FP cost.\n• Your primary attribute for these checks matches your chosen focus (Tech or Mystique).\n\n**Upgrade (Level 6+):** You learn one additional advanced Cipher or Empowered Effect (1 FP), and you can use the free activation feature twice per Long Rest across your learned advanced effects."
+    text: "You've cobbled together a handful of dangerous tricks from forum dumps and cracked tutorials. You gain the following benefits:\n• Increase your Tech or Wits score by 1, to a maximum of 20.\n• You learn two basic Quick Hacks and one Cipher of your choice.\n• The Cipher has one free use. These checks use the Attribute this Talent raised.\n\n**Upgrade (Level 6+):** You learn one additional Cipher, and you get two free uses per Long Rest, shared across the Ciphers you learned from this Talent."
   },
 
   // ===== The Flow & Resonance =====
@@ -240,8 +240,8 @@ EN.talents = [
     key: "echo-sighted",
     name: "Echo Sighted",
     category: "The Flow & Resonance",
-    requirements: "Character Level 4, Mystique 14+.",
-    text: "Your connection to the Flow allows you to perceive the lingering echoes of metaphysical phenomena. You gain the following benefits:\n• Your passive Resonance Sense range increases to 12 spaces.\n• You gain Edge on Awareness checks made to identify the Severity Rating of a Flow Disturbance or to track a Target using residual Flow energy.\n\n**Upgrade (Level 6+):** Your passive Resonance Sense range increases to 24 spaces and can detect through up to 1 space of solid material. You also automatically know the general direction of the nearest Flow Disturbance of Severity 2 or higher within 1 mile."
+    requirements: "Character Level 4, Mystique 14 or higher.",
+    text: "Your connection to the Flow allows you to perceive the lingering echoes of metaphysical phenomena. You gain the following benefits:\n• You gain Resonance Sense out to 12 spaces: you automatically detect strong disturbances within that range. If you already have Resonance Sense, its range becomes 12 spaces.\n• You gain Edge on Awareness checks made to identify the Severity Rating of a Flow Disturbance or to track a Target using residual Flow energy.\n\n**Upgrade (Level 6+):** Your Resonance Sense range increases to 24 spaces and can detect through up to 1 space of solid material. You also automatically know the general direction of the nearest Flow Disturbance of Severity 2 or higher within 1 mile."
   },
   {
     key: "resonance-dabbler",
@@ -255,7 +255,7 @@ EN.talents = [
     name: "Resonance Optimizer",
     category: "The Flow & Resonance",
     requirements: "The ability to shape Flow Invocations.",
-    text: "When you take this Talent, pick the damage type you've learned to push harder: Fire, Cold, Electric, Toxic, or Force.\n• Resistance to the chosen type does nothing against the Invocations you shape.\n• Any 1 on a damage die for an Invocation you shape that deals the chosen damage type can count as a 2.\n• You can take this Talent more than once, choosing a different damage type each time.\n\n**Upgrade (Level 6+):** Your Invocations of the chosen damage type now treat Immunity to that damage type as Resistance instead, and once per Short Rest you may maximize the damage of one Invocation that deals damage of the chosen type."
+    text: "When you take this Talent, pick one damage type your Invocations can deal. You've learned to push it harder.\n• Resistance to the chosen type does nothing against the Invocations you shape.\n• Any 1 on a damage die for an Invocation you shape that deals the chosen damage type can count as a 2.\n• You can take this Talent more than once, choosing a different damage type each time.\n\n**Upgrade (Level 6+):** Your Invocations of the chosen damage type now treat Immunity to that damage type as Resistance instead, and once per Short Rest you may maximize the damage of one Invocation that deals damage of the chosen type."
   },
   {
     key: "resonance-weaver",
@@ -268,15 +268,15 @@ EN.talents = [
     key: "resonant-recovery",
     name: "Resonant Recovery",
     category: "The Flow & Resonance",
-    requirements: "Character Level 8, Shaper.",
-    text: "You are deeply synchronized with the ambient frequencies of the world. You gain the following benefits:\n• When you perform a Ritual Recovery, you regain 1 additional Flow Point beyond your normal amount.\n• If you perform a Ritual Recovery in a Flow-rich area (Anomaly Severity 0), you add +2 Edge Dice to the Flow Dice Pool check.\n\n**Upgrade (Level 6+):** Once per Long Rest, when your Flow Points reach 0, you can use an Impulse Action to regain Flow Points equal to your Caliber + your Flow Modifier."
+    requirements: "Character Level 6, Shaper.",
+    text: "You are deeply synchronized with the ambient frequencies of the world. You gain the following benefits:\n• When you perform a Ritual Recovery, you regain 1 additional Flow Point beyond your normal amount.\n• If you perform a Ritual Recovery in a Flow-rich area (Anomaly Severity 0), you add +2 Edge Dice to the Flow Dice Pool check.\n\n**Upgrade (Level 8+):** Once per Long Rest, when your Flow Points reach 0, you can use an Impulse Action to regain Flow Points equal to your Caliber + your Flow Modifier."
   },
   {
     key: "static-grounding",
     name: "Static Grounding",
     category: "The Flow & Resonance",
-    requirements: "Character Level 4, Unattuned Classes.",
-    text: "***Prerequisite:** Character Level 4, Unattuned Classes.* Your grounded, purely physical nature makes you difficult for the Flow to latch onto. You gain the following benefits:\n• You gain Edge on all Saving Throws against Invocations using the Electromagnetic or Cognitive Base Resonances.\n• You reduce the damage you take from any Invocation or resonant effect that targets you directly by an amount equal to your Caliber.\n\n**Upgrade (Level 6+):** Once per Long Rest, when you succeed on a Saving Throw against a hostile Invocation, you can use your Impulse Action to reflect the effect back at its caster, who must make the same Saving Throw against their own DC."
+    requirements: "Character Level 4, an Unattuned class.",
+    text: "Your grounded, purely physical nature makes you difficult for the Flow to latch onto. You gain the following benefits:\n• You gain Edge on all Saving Throws against Invocations using the Electromagnetic or Cognitive Base Resonances.\n• You reduce the damage you take from any Invocation or resonant effect that targets you directly by an amount equal to your Caliber.\n\n**Upgrade (Level 6+):** Once per Long Rest, when you succeed on a Saving Throw against a hostile Invocation, you can use your Impulse Action to reflect the effect back at the Shaper who made it, who must make the same Saving Throw against their own DC."
   },
 
   // ===== Armor & Resilience =====
@@ -306,14 +306,14 @@ EN.talents = [
     name: "Siege Plating Expert",
     category: "Armor & Resilience",
     requirements: "Proficiency with Heavy Armor.",
-    text: "You wear heavy plate like it was poured around you. You gain the following benefits:\n• Increase your Body score by 1, to a maximum of 20.\n• In Heavy Armor, you take 3 less Ballistic, Piercing, Bludgeoning, and Slashing damage from standard weapons, on top of your normal Armor DR.\n\n**Upgrade (Level 6+):** The damage reduction increases to 5, and once per Short Rest when you would be reduced to 0 Vitality by a Ballistic, Piercing, Bludgeoning, or Slashing attack while wearing Heavy Armor, you are instead reduced to 1 Vitality."
+    text: "You wear heavy plate like it was poured around you. You gain the following benefits:\n• Increase your Body score by 1, to a maximum of 20.\n• In Heavy Armor, you gain +3 DR against Standard Physical Damage.\n\n**Upgrade (Level 6+):** The DR from this Talent increases to +5, and once per Short Rest, when Standard Physical Damage would reduce you to 0 Vitality while you're wearing Heavy Armor, you are reduced to 1 Vitality instead."
   },
   {
     key: "tactical-harness-expert",
     name: "Tactical Harness Expert",
     category: "Armor & Resilience",
     requirements: "Proficiency with Medium Armor.",
-    text: "You've run enough ops in medium armor that it moves like skin. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Your Agility (Stealth) checks and Agility-based Dice Pools take no Snag from Medium Armor.\n• In Medium Armor, your Agility Modifier can add up to +3 to your Defense instead of the usual +2.\n\n**Upgrade (Level 6+):** The Agility Modifier cap for Medium Armor increases to +4 for you, and you treat Medium Armor as Light Armor for the purposes of class features and Talent prerequisites."
+    text: "You've run enough ops in medium armor that it moves like skin. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Medium Armor's traits never give you Snag on Agility checks, and its Loud trait doesn't cost you Stealth.\n\n**Upgrade (Level 6+):** You treat Medium Armor as Light Armor for the purposes of class features and Talent prerequisites."
   },
   {
     key: "unbreakable",
@@ -335,8 +335,8 @@ EN.talents = [
     key: "blitz-logic",
     name: "Blitz Logic",
     category: "Mobility & Traversal",
-    requirements: "Character Level 4, Agility 14+.",
-    text: "Your neural wiring has been optimized for explosive bursts of movement. You gain the following benefits:\n• You treat your Speed as if it were 2 points higher for the purposes of calculating your movement pool.\n• Once per Encounter, you can perform a Swift Action without expending a Move Action.\n• You gain a +2 bonus to your Initiative checks.\n\n**Upgrade (Level 6+):** The free Swift Action feature can be used a number of times per Encounter equal to your Caliber, and your Initiative bonus increases to +5."
+    requirements: "Character Level 4, Agility 14 or higher.",
+    text: "Your neural wiring has been optimized for explosive bursts of movement. You gain the following benefits:\n• Your Speed increases by 2.\n• Once per Encounter, you can perform a Swift Action without expending a Move Action.\n• You gain a +2 bonus to your Initiative checks.\n\n**Upgrade (Level 6+):** The free Swift Action feature can be used a number of times per Encounter equal to your Caliber, and your Initiative bonus increases to +5."
   },
   {
     key: "breach-charger",
@@ -350,7 +350,7 @@ EN.talents = [
     name: "Parkour Runner",
     category: "Mobility & Traversal",
     requirements: "",
-    text: "To you, the rooftops and the fire escapes are one continuous road. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Getting up from Prone takes just 1 point of your Speed.\n• You climb at no extra Speed cost.\n• A running jump, long or high, needs only 1 space of run-up instead of 2.\n\n**Upgrade (Level 6+):** You gain a climb speed equal to your walking Speed, and you don't take fall damage from falls of 6 spaces or less if you are conscious and not Restrained."
+    text: "To you, the rooftops and the fire escapes are one continuous road. You gain the following benefits:\n• Increase your Body or Agility score by 1, to a maximum of 20.\n• Standing up from Prone is a Free Action for you.\n• You climb at no extra Speed cost.\n• A running jump, long or high, needs only 1 space of run-up instead of 2.\n\n**Upgrade (Level 6+):** You gain a climb speed equal to your walking Speed, and you don't take fall damage from falls of 6 spaces or less if you are conscious and not Restrained."
   },
   {
     key: "speed-freak",
@@ -427,7 +427,7 @@ EN.talents = [
     name: "Photographic Memory",
     category: "Skills, Social & Utility",
     requirements: "",
-    text: "You remember the plate number and the name the guard used on the phone, and you'll still remember them next month. You gain the following benefits:\n• Increase your Tech or Wits score by 1, to a maximum of 20.\n• With no help from the #GRID, you always know where north is and keep perfect track of time and direction.\n• Anything you've seen or heard in the past month comes back accurately when you reach for it, and your Wits (Insight), Wits (Intuition), or Wits (Investigation) checks to recall details have Edge.\n\n**Upgrade (Level 6+):** Your recall extends to anything you have seen or heard within the past year, and you can make a Wits check (DC 15) to recall specific written documents or visual data with photographic clarity."
+    text: "You remember the plate number and the name the guard used on the phone, and you'll still remember them next month. You gain the following benefits:\n• Increase your Tech or Wits score by 1, to a maximum of 20.\n• With no help from the #GRID, you always know where north is and keep perfect track of time and direction.\n• Anything you've seen or heard in the past month comes back accurately when you reach for it, and your Insight, Intuition, or Investigation checks to recall details have Edge.\n\n**Upgrade (Level 6+):** Your recall extends to anything you have seen or heard within the past year, and you can make a Wits check (DC 15) to recall specific written documents or visual data with photographic clarity."
   },
   {
     key: "ruin-crawler",
@@ -444,7 +444,8 @@ EN.talents = [
     text: "You know which shadows the cameras miss and which floor panels creak. You gain the following benefits:\n• Increase your Agility score by 1, to a maximum of 20.\n• Being only lightly obscured from a Target is enough for you to attempt to hide from it.\n• A ranged weapon attack that misses a Target you're Hidden from doesn't give away your position, and you stay Hidden.\n• Your sight-based Wits (Perception) checks take no Snag from dim light or heavy shadows.\n\n**Upgrade (Level 6+):** When you are Hidden and make an attack against a Target that hasn't acted yet in the Encounter, you gain Edge on the attack roll and the attack scores critical hits on a roll of 19 or 20."
   },
   {
-    /* Text verified printed in Part 1 on 2026-08-19 and transcribed from the document.
+    /* Text verified printed on 2026-08-19 and re-checked against the Freelancer's Companion
+       on 2026-10-28.
        Formerly Kinetic Manipulator; store.js migrates the old key.
 
        The base Talent has NO active ability: levels 1 to 5 are pure utility and the shove
@@ -457,7 +458,8 @@ EN.talents = [
        fully blocked shove pays up to 3d6 under Falling & Forced Movement. There is no local
        damage scale on purpose: Part 2 already prices a cut-short shove at 1d6 per space.
        "Unattended" is load-bearing, per Part 2's Object Interactions callout. The opening
-       question is the author's and is the only Talent in Part 1 that opens with one. */
+       question is the author's and is the only Talent in the Freelancer's Companion that opens
+       with one. */
     key: "spatial-delivery",
     name: "Spatial Delivery",
     category: "Skills, Social & Utility",
@@ -469,7 +471,7 @@ EN.talents = [
     name: "Street Chef",
     category: "Skills, Social & Utility",
     requirements: "",
-    text: "Give you a hotplate and whatever the market was throwing out, and you'll make a meal people talk about. You gain the following benefits:\n• Increase your Body or Wits score by 1, to a maximum of 20.\n• You gain Proficiency with culinary tools or survival cooking gear.\n• During a Short Rest, with ingredients and proper gear, you can turn out a hearty meal big enough for a number of Characters equal to 4 + your Caliber. When the rest ends, each diner who spends at least one Resilience Die to regain Vitality adds an extra 1d8 to what they regain.\n• You can cook a number of specialized rations equal to your Caliber, either with an hour of work or as you finish a Long Rest. They keep for 8 hours; eating one takes a Swift Action and grants Vigor equal to your Caliber.\n\n**Upgrade (Level 6+):** The hearty meal bonus increases to 2d8 Vitality, and your specialized rations now also grant the eater Edge on their next Body Saving Throw within 1 hour of consumption."
+    text: "Give you a hotplate and whatever the market was throwing out, and you'll make a meal people talk about. You gain the following benefits:\n• Increase your Body or Wits score by 1, to a maximum of 20.\n• You gain Proficiency with Culinary Tools (see Culinary Tools, in the Freelancer's Companion).\n• During a Short Rest, with ingredients and a Street Kitchen Kit, you can turn out a hearty meal big enough for a number of Characters equal to 4 + your Caliber. When the rest ends, each diner who spends at least one Resilience Die to regain Vitality adds an extra 1d8 to what they regain.\n• You can cook a number of specialized rations equal to your Caliber, either with an hour of work or as you finish a Long Rest. They keep for 8 hours; eating one takes a Swift Action and grants Vigor equal to your Caliber.\n\n**Upgrade (Level 6+):** The hearty meal bonus increases to 2d8 Vitality, and your specialized rations now also grant the eater Edge on their next Body Saving Throw within 1 hour of consumption."
   },
   {
     key: "trauma-medic",
@@ -483,6 +485,6 @@ EN.talents = [
     name: "Undercity Survivor",
     category: "Skills, Social & Utility",
     requirements: "",
-    text: "Years below the street taught you to be where the light isn't. You gain the following benefits:\n• Increase your Wits, Tech, or Presence score by 1, to a maximum of 20.\n• You learn one Quick Hack or Invocation that creates obscurement or alters perception (the Cognitive \"Phantom Shroud\", for example, or a sensory hack), and once per Long Rest you can activate it without spending Flow Points or generating Strain. Its checks use the Attribute this Talent raised.\n\n**Upgrade (Level 6+):** You can use the free activation feature twice per Long Rest, and you gain Edge on Agility (Stealth) checks made within the effect of your learned obscurement ability."
+    text: "Years below the street taught you to be where the light isn't. You gain the following benefits:\n• Increase your Wits, Tech, or Presence score by 1, to a maximum of 20.\n• You learn one Quick Hack or Invocation that creates obscurement or alters perception (a Cognitive Invocation or a sensory hack, for example), with one free use. Its checks use the Attribute this Talent raised.\n\n**Upgrade (Level 6+):** You get two free uses per Long Rest, and you gain Edge on Agility (Stealth) checks made within the effect of your learned obscurement ability."
   }
 ];

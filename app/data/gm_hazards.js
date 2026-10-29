@@ -99,7 +99,7 @@ EN.gmBook.hazards = {
     /* APP RULING, not book text: the gap the equivalents leave, as the Hazards
        tab has always said it. Moved here from js/gm_hazards.js so the Codex
        (Hazards & Set Pieces) and the tab read one copy. */
-    unpricedNote: "The book prints no price for a recurring Nuisance or Dangerous hazard. This app treats one as free unless you enter XP."
+    unpricedNote: "The Toolkit prints no price for a recurring Nuisance or Dangerous hazard. This app treats one as free unless you enter XP."
   },
 
   /* OBJECTS. Structure is the damage threshold, Integrity the pool. The six

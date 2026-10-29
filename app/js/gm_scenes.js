@@ -701,12 +701,12 @@ EN.gmScenes = (function () {
       if (kind === "sitdown") _v.posture = "";
     }));
     if (exampleOf(kind)) {
-      btns.push(discarding("example:" + kind, "LOAD THE BOOK'S EXAMPLE", "example",
-        "Open the book's worked example: " + exampleName(kind), function () {
+      btns.push(discarding("example:" + kind, "LOAD THE TOOLKIT'S EXAMPLE", "example",
+        "Open the Toolkit's worked example: " + exampleName(kind), function () {
           setDraft(kind, exampleDraft(kind));
           _v.chk = { a: "", b: "", rollA: "", rollB: "", last: null };
           if (kind === "sitdown") _v.posture = "";
-          toast("The book's example is open: " + exampleName(kind) + ".");
+          toast("The Toolkit's example is open: " + exampleName(kind) + ".");
         }));
     }
     btns.push(btn("COPY", "copy", function () { copyText(sceneText(kind, d), "The scene"); return false; },
@@ -988,7 +988,7 @@ EN.gmScenes = (function () {
     ]), row([
       field("Second Posture", textIn("sd.posture2", d.postures.second, "Compose", function (v) { d.postures.second = v; }, { list: "sc-postures" }), "0 1 170px"),
       field("How they do it", textIn("sd.posture2note", d.postures.secondNote, "", function (v) { d.postures.secondNote = v; }))
-    ]), linkHelp(["The book names " + Po.named.map(function (p) { return p.name; }).join(", ") + ". " +
+    ]), linkHelp(["The Toolkit names " + Po.named.map(function (p) { return p.name; }).join(", ") + ". " +
       (bookPostures.length ? "The full list is " + bookPostures.map(function (p) { return p.name; }).join(", ") +
         ", with what each does in " : "The full list, with what each does, is in "),
       ["so-postures/posture-table", "Postures"], ". Type any of them, or any other."], { color: "var(--text3)" }, "postures-book")]));
@@ -1057,7 +1057,7 @@ EN.gmScenes = (function () {
     return btn("ROLL " + String(P.die || "d12").toUpperCase(), "sd-profile-roll", function () {
       var n = die(P.sides || 12), r = P.rows.filter(function (x) { return x.n === n; })[0];
       if (r) { d.opp.profile = r.name; toast("Their Profile of the crew: " + r.name + " (" + n + ")."); }
-    }, { title: "Roll their Profile of the crew on the book's d12" });
+    }, { title: "Roll their Profile of the crew on the Toolkit's d12" });
   }
   function profileLine(d) {
     var P = ref(SD().refs.theirProfile), name = str(d.opp.profile).trim().toLowerCase();
@@ -2119,7 +2119,7 @@ EN.gmScenes = (function () {
         btn("✕", "lr-del-" + r.lid, function () { d.rules = d.rules.filter(function (x) { return x.lid !== r.lid; }); }, { title: "Remove this rule" })
       ]));
     });
-    if (d.rules.length > LR.pickHigh) kids.push(help("More than the one or two the book suggests.", { color: "var(--warn)" }));
+    if (d.rules.length > LR.pickHigh) kids.push(help("More than the one or two the Toolkit suggests.", { color: "var(--warn)" }));
     return EN.ui.panel(LR.name, d.rules.length + " " + plural(d.rules.length, "RULE"), kids);
   }
 
@@ -2230,7 +2230,7 @@ EN.gmScenes = (function () {
         return (x.offset === 0 ? "at the crew's Caliber" : x.offset + " " + plural(x.offset, "step") + " above it") + " (" + (c ? c.name : x.col) + ")";
       }).join(" or ");
       kids.push(el("p.help", { dataset: { sc: "pay-col", col: "" }, style: { margin: "8px 0 0", color: "var(--warn)" },
-        text: "Rating " + d.rating + " against a Caliber " + cal + " crew: the book names a column only for a rating " + named + ". Price it by hand on Payroll." }));
+        text: "Rating " + d.rating + " against a Caliber " + cal + " crew: the Toolkit names a column only for a rating " + named + ". Price it by hand on Payroll." }));
     }
     var OA = P.objectiveAward;
     kids.push(row([

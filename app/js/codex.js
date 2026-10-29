@@ -1466,8 +1466,9 @@ EN.codexView = (function () {
      Freelancer tab, so the GM could not read them at all. */
   function hasCombat() { return !!EN.combat; }
   /* ---- the launch lineup (EN.launch, data/launch.js) -------------------------
-     A row tied to a held lineage (a Size-shifting feature, a hazard mitigation) is in no
-     book now, so it leaves the Codex on both desktops while EN.launch.holds.lineup is on.
+     A row tied to a held lineage (a Size-shifting feature, a hazard mitigation) leaves the
+     Codex on both desktops while EN.launch holds it: a Freelancer's Companion lineage while
+     the Supplemental content setting is off, a lineage in neither book always.
      The row names its lineage by key (lineageKey or a `lineage` that is a key), by a
      display word ("Durabody", "Cinder-Heart Feature"), or by its lineage feature's name,
      which is looked up in EN.species. A row whose lineages are ALL held is held. */
@@ -1706,7 +1707,7 @@ EN.codexView = (function () {
         // one definition, rendered here for Size context and in full under Improvised Weapons
         if ((((R.improvised || {}).meatShield) || []).length) kids.push(ruleBlock("Meat Shield",
           R.improvised.meatShield[0] + "\n\nFull rules under Improvised Weapons."));
-        // a feature of a held lineage is in no book now (EN.launch), so its row leaves both desktops
+        // a Companion lineage's feature leaves both desktops while Supplemental content is off (EN.launch)
         var shifts = (R.sizeShiftFeatures || []).filter(function (f) { return !heldLineageRow(f); });
         if (shifts.length) kids.push(ruleBlock("Features That Shift Effective Size",
           shifts.map(function (f) { return f.name + " (" + lineageLabel(f) + "): " + f.effect; }).join("\n")
@@ -1863,8 +1864,8 @@ EN.codexView = (function () {
           null, { terms: { "Armor Repair": "gr-craft/armor-repair" } }));
         kids.push(subTitle("Mitigations"));
         kids.push(el("p", { style: { margin: "0 0 8px", fontSize: "13px", color: "var(--text2)", lineHeight: "1.5" },
-          text: "Nothing new. Each of these already exists elsewhere in the book, and each one changes an outcome on a Freelancer's Hazards panel rather than only being described." }));
-        // a held lineage's feature is in no book now (EN.launch), so its row leaves both desktops
+          text: "Nothing new. Each of these already exists elsewhere in the books, and each one changes an outcome on a Freelancer's Hazards panel rather than only being described." }));
+        // a Companion lineage's feature leaves both desktops while Supplemental content is off (EN.launch)
         var mits = H.mitigations.filter(function (m) { return !heldLineageRow(m); });
         kids.push(refTable(["Mitigation", "Source", "Effect"], mits.map(function (m) {
           return [m.name, m.kind, m.summary];
@@ -1994,7 +1995,7 @@ EN.codexView = (function () {
           + (ctx.portal === "admin" ? "\n\nThe Payroll tab splits a payout with the same math as a Freelancer's Payout Splitter."
                                     : "\n\nThe Inventory tab has a Payout Splitter that does this math.")));
         kids.push(ruleBlock("Not Yet In The App",
-          "These parts of the chapter are rules the sheet does not model yet. They live in the book:\n\n"
+          "These parts of the chapter are rules the sheet does not model yet. They live in the Player's Handbook:\n\n"
           + bullets(E.notModelled)
           // sections that left the Handbook for the Game Master's Toolkit, named on the Admin desktop only
           + (ctx.portal === "admin" && (E.notModelledToolkit || []).length

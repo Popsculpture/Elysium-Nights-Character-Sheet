@@ -38,10 +38,11 @@ EN.builder = (function () {
   }
   function attnShown(id, need, dismissKey) { return !!need && _dismissed[id] !== dismissKey; }
 
-  /* The launch lineup (data/launch.js). Every picker below lists only what launches, plus the
-     character's OWN current pick when that pick is held, so a saved character on a held
-     lineage, subclass, Background or Talent still sees and keeps it, marked HELD. The data
-     arrays are never filtered: this is the listing layer only. */
+  /* The launch lineup (data/launch.js). Every picker below lists the Player's Handbook's options,
+     the Freelancer's Companion's while the Supplemental content setting is on, and the
+     character's OWN current pick whatever it is, so a saved character keeps it: marked COMPANION
+     for Companion content, HELD for content in neither book. The data arrays are never filtered:
+     this is the listing layer only. */
   function offered(kind, key, current) { return !EN.launch || EN.launch.offer(kind, key, current); }
   function heldTag(kind, key) { return EN.ui.heldChip ? EN.ui.heldChip(kind, key) : null; }
   function heldText(kind, key) { return EN.ui.heldSuffix ? EN.ui.heldSuffix(kind, key) : ""; }
@@ -1116,7 +1117,7 @@ EN.builder = (function () {
         var viaTP = R.profOrder.indexOf(eng.gearFloorTier(ch, bucket, cat)) < R.profOrder.indexOf(tier) || !src.gear[bucket + "|" + cat];
         return el("span.chip", { title: srcTitle(src.gear[bucket + "|" + cat], viaTP) + (dup ? ", overlap grant: the proficiency applies once and grants a Free Skill Focus" : ""),
           style: { fontSize: "10.5px", color: color, borderColor: color } },
-          (dup ? "⊕ " : "") + cat + " · " + TIER_LABEL[tier]);
+          [(dup ? "⊕ " : "") + cat + " · " + TIER_LABEL[tier], bucket === "tools" ? heldTag("tool", cat) : null]);
       }).filter(Boolean);
     }
     function rowIf(label, chips) {
@@ -1919,7 +1920,7 @@ EN.builder = (function () {
       } else right.push(el("span.help", { style: { margin: 0, minWidth: "138px", textAlign: "right" }, text: "Max tier reached" }));
     }
     var head = el("div.row", { style: { gap: "10px", alignItems: "center" } }, [
-      el("div", { style: { flex: 1, minWidth: "120px" } }, [el("span", { text: cat }), granted ? el("span.badge", { style: { marginLeft: "8px" }, title: "Granted free by class/background", text: "GRANTED" }) : null]),
+      el("div", { style: { flex: 1, minWidth: "120px" } }, [el("span", { text: cat }), bucket === "tools" ? heldTag("tool", cat) : null, granted ? el("span.badge", { style: { marginLeft: "8px" }, title: "Granted free by class/background", text: "GRANTED" }) : null]),
       el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" } }, right)
     ]);
     // Weapon, Tool, and Vehicle categories take Focus/Specialization like
@@ -1931,7 +1932,11 @@ EN.builder = (function () {
   function gearSection(ch, bucket, title, note, rule) {
     return [el("div.section-title", null, [document.createTextNode(title), rule ? EN.ui.ruleChip(rule, { title: title }) : null, el("span.line")]),
       note ? el("p.help", { style: { marginBottom: "4px" }, text: note }) : null
-    ].concat(R.gear[bucket].map(function (cat) { return gearRow(ch, bucket, cat); }));
+    ].concat(R.gear[bucket].filter(function (cat) {
+      // a Freelancer's Companion Tool Category (Culinary Tools) is offered while Supplemental
+      // content is on, and stays listed for a character who already has it
+      return bucket !== "tools" || offered("tool", cat, eng.effectiveGearTier(ch, bucket, cat) !== "untrained" ? cat : null);
+    }).map(function (cat) { return gearRow(ch, bucket, cat); }));
   }
 
   // Derive a granular, refundable ledger of every current TP expenditure.
@@ -2405,13 +2410,13 @@ EN.builder = (function () {
     var on = editFreely(ch);
     return el("div", { style: { margin: "0 0 12px", padding: "8px 10px", border: "1px dashed " + (on ? "var(--warn)" : "var(--border2)"), borderRadius: "4px" } }, [
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
-        el("button.btn.sm" + (on ? ".primary" : ""), { title: on ? "Turn Edit freely off: the book's one retrain per level applies again. Nothing you changed is undone." : "Lift the one-retrain-per-level count and the level-up timing for this character",
+        el("button.btn.sm" + (on ? ".primary" : ""), { title: on ? "Turn Edit freely off: the Handbook's one retrain per level applies again. Nothing you changed is undone." : "Lift the one-retrain-per-level count and the level-up timing for this character",
           onclick: function () { setEditFreely(!on); } }, on ? "EDIT FREELY: ON" : "EDIT FREELY: OFF"),
         on ? el("span.chip.edit-freely", { style: { color: "var(--warn)", borderColor: "var(--warn)" }, text: "EDIT FREELY" }) : null
       ]),
       el("p.help", { style: { margin: "6px 0 0" }, text: on
         ? "On: any Talent or Lineage Evolution slot can change at any time, and changes don't use a level's retrain. Replacing an Upgraded Talent still loses its Upgrade, and an emptied slot still refills with Talents only. +2 Attributes, Upgrades on their own and your creation Lineage feature stay locked. The sheet, print and PDF show EDIT FREELY."
-        : "Off (the book's rule): one retrain per level once filed. Turn it on to change Talents and Lineage Evolutions at any time; the header, print and PDF will say EDIT FREELY." })
+        : "Off (the Handbook's rule): one retrain per level once filed. Turn it on to change Talents and Lineage Evolutions at any time; the header, print and PDF will say EDIT FREELY." })
     ]);
   }
   function undoRetrain() {
@@ -3020,7 +3025,10 @@ EN.builder = (function () {
         else delete c.talentGearPicks[t.key];
       });
     } }, [el("option", { value: "", selected: !cur, text: "- choose a " + noun + " -" })].concat(
-      opts.map(function (name) { return el("option", { value: name, selected: cur === name, text: name }); })));
+      // a Freelancer's Companion Tool Category (Culinary Tools) only while Supplemental content is on,
+      // or when it is already this Talent's pick
+      opts.filter(function (name) { return bucket !== "tools" || offered("tool", name, cur); })
+        .map(function (name) { return el("option", { value: name, selected: cur === name, text: name + (bucket === "tools" ? heldText("tool", name) : "") }); })));
     return el("div", { style: { margin: "0 0 8px" } }, [
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("label.fl", { style: { margin: 0 }, text: "Proficient with" }), sel,
@@ -3101,6 +3109,10 @@ EN.builder = (function () {
       [el("option", { value: "", text: "- upgrade a Talent you have -" })].concat(
         eligible.map(function (t) {
           var g = talentGate(ch, d, t);
+          /* an Upgrade unlocks at the level its Talent prints, read from the slot's level: Level 6+
+             for most, Level 8+ for the Companion's Hardware Harmonizer and Resonant Recovery */
+          var upLv = eng.talentUpgradeLevel ? eng.talentUpgradeLevel(t) : 6;
+          if (upLv && Number(L) < upLv) g = { ok: false, unmet: ["Level " + upLv].concat(g.ok ? [] : g.unmet) };
           var blocked = !g.ok && current !== t.key;
           return el("option", { value: t.key, selected: current === t.key, disabled: blocked,
             title: blocked ? "Needs " + g.unmet.join(", ") : (t.requirements || ""),
@@ -3299,8 +3311,8 @@ EN.builder = (function () {
 
   var renderText = EN.ui.renderText;
 
-  /* A Dossier feature that came from a held lineage, subclass or Talent carries the HELD chip
-     beside its source tag. The engine stamps no key on a feature, so the source is read off
+  /* A Dossier feature that came from a Companion or held lineage, subclass or Talent carries the
+     COMPANION or HELD chip beside its source tag. The engine stamps no key on a feature, so the source is read off
      its kind: a subclass or lineage feature belongs to the character's own subclass or
      lineage (Open Architecture pairings are kind "lineage" too), and a Talent by its name. */
   function heldFeature(ch, f, node) {
@@ -3557,24 +3569,31 @@ EN.builder = (function () {
      the roster, so NO #PRINT ON FILE is still true afterwards and this gate comes straight back
      the moment the example is dropped. */
   /* Author's decision 1 (16 October 2026): the pre-mades that use held options stay openable,
-     marked, until the author supplies launch replacements. HELD names the held lineage,
-     subclass, Background or Talents; TOOLKIT names owned gear the Player's Handbook gear list
+     marked. COMPANION names the Freelancer's Companion lineage, subclass, Background or
+     Talents they use (28 October 2026: the Companion prints every option the hold listed);
+     HELD names any in neither book; TOOLKIT names owned gear the Player's Handbook gear list
      doesn't print (an item by name, or an installed weapon Part by key). HELD keeps its standard
      title and adds the names. TOOLKIT writes its own: the standard "Shown because you own it" is
      for the viewer's own inventory rows, and nobody owns a pre-made's gear before opening it. */
   function premadeMarks(x) {
     var p = x.patch || {}, L = EN.launch, out = [];
     if (!L || !EN.ui.heldChip) return out;
-    var held = [];
+    // COMPANION names Freelancer's Companion picks; HELD names picks in neither book
+    var held = [], comp = [];
+    function mark(kind, key, label) {
+      if (!key) return;
+      var s = L.source ? L.source(kind, key) : (L.isHeld(kind, key) ? "held" : null);
+      if (s === "companion") comp.push(label); else if (s === "held") held.push(label);
+    }
     var lin = p.species && p.lineage ? eng.getLineage(p.species, p.lineage) : null;
-    if (L.isHeld("lineage", p.lineage)) held.push((lin ? lin.name : p.lineage) + " (lineage)");
+    mark("lineage", p.lineage, (lin ? lin.name : p.lineage) + " (lineage)");
     var cls = p.class ? eng.getClass(p.class) : null, sub = cls && p.subclass ? eng.getSubclass(cls, p.subclass) : null;
-    if (L.isHeld("subclass", p.subclass)) held.push((sub ? sub.name : p.subclass) + " (subclass)");
+    mark("subclass", p.subclass, (sub ? sub.name : p.subclass) + " (subclass)");
     var bg = p.background ? eng.getBackground(p.background) : null;
-    if (L.isHeld("background", p.background)) held.push((bg ? bg.name : p.background) + " (Background)");
+    mark("background", p.background, (bg ? bg.name : p.background) + " (Background)");
     Object.keys(p.universalUpgrades || {}).forEach(function (k) {
       var u = p.universalUpgrades[k];
-      if (u && u.type === "talent" && L.isHeld("talent", u.talent)) held.push(talentName(u.talent) + " (Talent)");
+      if (u && u.type === "talent") mark("talent", u.talent, talentName(u.talent) + " (Talent)");
     });
     var moved = [];
     (p.equipment || []).forEach(function (it) {
@@ -3593,6 +3612,7 @@ EN.builder = (function () {
       });
     });
     var style = { style: { marginLeft: "6px", verticalAlign: "middle" } };
+    if (comp.length) { var c = EN.ui.heldChip("companion", undefined, style); c.title = "Uses " + comp.join(", ") + ". " + c.title; out.push(c); }
     if (held.length) { var h = EN.ui.heldChip("held", undefined, style); h.title = "Uses " + held.join(", ") + ". " + h.title; out.push(h); }
     if (moved.length) {
       var many = moved.length > 1, m = EN.ui.heldChip("toolkit", undefined, style);

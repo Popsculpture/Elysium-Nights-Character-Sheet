@@ -112,7 +112,8 @@ EN.statusChanges = (function () {
       name: t.name,
       kind: "classBuff",
       source: "Ripper Hot-Wired Implants",
-      /* The Ripper is held for a later release (16 October handoff), and these come with it:
+      /* The Ripper is a Freelancer's Companion subclass, offered only while Supplemental content
+         is on (data/launch.js), and these come with it:
          the Bonuses menu hides an entry while EN.launch.isHeld("subclass", heldWith) unless it
          is already applied (the author's decision 3, 2026-10-16). The data stays. */
       heldWith: "the_ripper",

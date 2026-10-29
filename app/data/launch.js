@@ -1,11 +1,16 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS - Launch holds (16 October 2026 handoff)
+   ELYSIUM NIGHTS - Launch holds (16 October 2026 handoff), and the
+   Supplemental content setting (28 October 2026)
    One file, three switches. Each hold flips back in one line:
 
-     holds.lineup        the launch lineup: one lineage per species, two
-                         subclasses per class, 21 Talents, 10 Backgrounds.
-                         Everything listed under `held` is held for a later
-                         release.
+     holds.lineup        the core lineup the Player's Handbook prints: one
+                         lineage per species, two subclasses per class, 21
+                         Talents, 10 Backgrounds. Everything else is gated:
+                         `companion` lists what the Freelancer's Companion
+                         (EN1101, a supplemental book) prints, offered only
+                         while the device's Supplemental content setting is
+                         on (supplemental() below); `held` lists anything in
+                         neither book, which stays held.
      holds.availability  rarity: the Handbook no longer prints Availability
                          (Common, Uncommon, Rare, Custom, Prototype, or the
                          Mystech tiers), so the app stops displaying it.
@@ -24,8 +29,9 @@
    so a character built on a held option loads, derives and renders exactly as
    before. Only the LISTING layer reads this file: pickers, the market, the
    Blueprints, the install pickers and the Codex. Each picker uses offer(),
-   which keeps the character's own current pick visible (with a HELD marker,
-   EN.ui.heldChip) and hides only the unselected held options.
+   which keeps the character's own current pick visible (with a marker,
+   EN.ui.heldChip: COMPANION for Freelancer's Companion content, HELD for
+   content in neither book) and hides only the unselected held options.
 
    Loaded right after data/rules.js and before data/species.js, so it can read
    nothing from the other data files at load time. Every function that needs
@@ -38,21 +44,35 @@ window.EN = window.EN || {};
 EN.launch = (function () {
   var holds = { lineup: true, availability: true, toolkit: true };
 
-  /* ---- the launch lineup: what is HELD (everything else launches) -------
-     Launch lineages: freeborn, floral, laborframes, ryn, grinling.
+  /* ---- Supplemental content: a device setting, like the skin ----------------
+     Off by default (core Handbook only). Stored per device, never on a character
+     and never in an export: it decides what the pickers OFFER, not what a saved
+     character may keep. Settings (js/settings.js) flips it. */
+  var SUPP_KEY = "en_supplemental_v1";
+  function supplemental() { try { return localStorage.getItem(SUPP_KEY) === "1"; } catch (e) { return false; } }
+  function setSupplemental(on) { try { localStorage.setItem(SUPP_KEY, on ? "1" : "0"); } catch (e) {} }
+
+  /* ---- the core lineup: what is gated (everything else is the Handbook's) ----
+     Core lineages: freeborn, floral, laborframes, ryn, grinling.
      Launch subclasses: gridweaver, burner, juggernaut, reaver, the_suit,
        the_grifter, the_vanguard, the_deadeye, smuggler, wildcard, harmonist,
        sourcerer, the_lifeline, the_toxicologist.
-     Launch Talents (21): street-scrapper, heavy-weapon-specialist, zeroed-in,
+     Core Talents (21): street-scrapper, heavy-weapon-specialist, zeroed-in,
        sidearm-gunslinger, cross-discipline-tactic, combat-splicer,
        lockdown-specialist, parallel-processing, junk-tinkerer,
        resonance-dabbler, resonance-weaver, hardened-survivor,
        cybernetic-surge, asphalt-rider, breach-charger, trauma-medic,
        cutting-agent, faceless-persona, shadow-operative, crew-commander,
        cold-reader (crowd-reader before the rename).
-     Launch Backgrounds (10): badge, boardroom-exile, cipher-punk, courier,
-       dealer, ganger, gearhead, glow-idol, minimum-wage-mage, street-doc. */
-  var held = {
+     Core Backgrounds (10): badge, boardroom-exile, cipher-punk, courier,
+       dealer, ganger, gearhead, glow-idol, minimum-wage-mage, street-doc.
+
+     The Freelancer's Companion prints every option the 16 October hold
+     listed: "ten new Lineages, eight new subclasses, ten Backgrounds, and
+     forty-two Talents", plus Culinary Tools, a new Tool Category (its kit is
+     the Street Kitchen Kit). So `companion` carries the whole old hold, and
+     `held` (neither book) is empty until something needs it. */
+  var companion = {
     // A held lineage takes its Lineage Evolution features with it: the
     // evolution pickers are scoped to the character's own lineage, so they
     // need no list of their own. NextGen's Open Architecture rides along.
@@ -86,8 +106,13 @@ EN.launch = (function () {
       "undercity-survivor"
     ],
     background: ["click-chaser", "homesteader", "hired-gun", "outrider", "rocker",
-                 "spacer", "spotlight-survivor", "starhuffer", "wageslave", "whitecoat"]
+                 "spacer", "spotlight-survivor", "starhuffer", "wageslave", "whitecoat"],
+    // Culinary Tools: a Gear Proficiency (EN.rules.gear.tools) and its kit, a catalog row
+    tool: ["Culinary Tools"],
+    item: ["Street Kitchen Kit"]
   };
+  // in neither book: held whatever the setting says (same kinds as `companion`)
+  var held = { lineage: [], subclass: [], talent: [], background: [], tool: [] };
 
   /* ---- the Player's Handbook gear list (round 2, 16 October 2026) ---------
      The listings SHOW every catalog row the Player's Handbook prints, plus the class gear
@@ -96,7 +121,9 @@ EN.launch = (function () {
      Launcher weapons the Handbook no longer prints, the Signature Weapons chapter, the Mystech
      gear, the Blackware and Prototype tiers, and the tools and kits the Handbook leaves out.
      Most are printed in the Game Master's Toolkit; three are in neither book (Breaching
-     Charge, Smart-Sight + Targeting Suite, Hypercare Contract).
+     Charge, Smart-Sight + Targeting Suite, Hypercare Contract). The one Freelancer's
+     Companion row (the Street Kitchen Kit, `companion.item`) is not held by this list: it
+     follows the Supplemental content setting instead (isToolkit below).
 
      `phb` is the author's phb-gear-items-2026-10-16.txt: all 322 rows of the Handbook's gear
      tables, in book spelling, under the book's own section headings. A row that names no
@@ -232,14 +259,31 @@ EN.launch = (function () {
     return k;
   }
 
-  /* isHeld(kind, key): kind is "lineage", "subclass", "talent" or
-     "background". True only while holds.lineup is on and the key is listed. */
-  function isHeld(kind, key) {
-    if (!holds.lineup || key == null || key === "") return false;
-    var list = held[kind];
-    if (!list) return false;
+  function listed(list, kind, key) {
+    if (!list || key == null || key === "") return false;
     if (has(list, key)) return true;
     return kind === "talent" && has(list, talentKey(key));
+  }
+
+  /* isCompanion(kind, key): true when the Freelancer's Companion prints it, whatever the
+     setting says (the COMPANION chip cites the book). kind is "lineage", "subclass",
+     "talent", "background", "tool" (a Tool Category) or "item" (a catalog name). */
+  function isCompanion(kind, key) { return listed(companion[kind], kind, key); }
+
+  /* isHeld(kind, key): kind is "lineage", "subclass", "talent", "background" or
+     "tool". True only while holds.lineup is on and the key is in neither book, or
+     is Companion content while the Supplemental content setting is off. */
+  function isHeld(kind, key) {
+    if (!holds.lineup || key == null || key === "") return false;
+    if (listed(held[kind], kind, key)) return true;
+    return !supplemental() && isCompanion(kind, key);
+  }
+
+  /* source(kind, key): "companion" for Freelancer's Companion content, "held" for content
+     in neither book while holds.lineup is on, else null (the Player's Handbook). */
+  function source(kind, key) {
+    if (isCompanion(kind, key)) return "companion";
+    return holds.lineup && listed(held[kind], kind, key) ? "held" : null;
   }
 
   /* offer(kind, key, current): the one rule every picker uses. A held option
@@ -335,6 +379,8 @@ EN.launch = (function () {
       });
     }
     if (kind === "part" || kind === "armorMod" || kind === "vehicleMod") { var row = byKey(kind, id); return !!row && !inBook(row.name); }
+    // a Freelancer's Companion row (the Street Kitchen Kit) follows the Supplemental setting
+    if (kind === "item" && isCompanion("item", bookName(id))) return !supplemental();
     if (kind === "item") return catalogHas(id) && !inBook(id);
     return false;
   }
@@ -357,7 +403,9 @@ EN.launch = (function () {
      Project tier) keeps reading it. */
   function showAvailability() { return !holds.availability; }
 
-  return { holds: holds, held: held, toolkit: toolkit,
-           isHeld: isHeld, offer: offer, isToolkit: isToolkit, isToolkitItem: isToolkitItem,
+  return { holds: holds, held: held, companion: companion, toolkit: toolkit,
+           supplemental: supplemental, setSupplemental: setSupplemental,
+           isHeld: isHeld, isCompanion: isCompanion, source: source, offer: offer,
+           isToolkit: isToolkit, isToolkitItem: isToolkitItem,
            showAvailability: showAvailability };
 })();
