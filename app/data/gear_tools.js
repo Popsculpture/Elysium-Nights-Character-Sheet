@@ -79,6 +79,7 @@ EN.gearCatalog.tools = {
       groups: [
         { name: "Smartdecks", intro: "Power User hardware. Governs Cipher complexity ceiling, Device Bonus, and mod slots. Restricted citywide; Contraband in corporate sectors." },
         { name: "B&E Buddies", intro: "Standard User rigs. No Bandwidth, no multi-Link, and locked out of Premium+ Nodes. Restricted." },
+        { name: "Burner Relays", intro: "Disposable, overclocked, single-shot: anyone can fire one, with the Relay's own Attack Bonus and Save DC. Each comes loaded with a cipher of its tier's Complexity; pick it on the card. Fire it from the #GRID tab." },
         { name: "Hardware Mods", intro: "Smartdeck plug-ins. Buy them here, then slot them into a Smartdeck's mod slots on the #GRID tab. B&E Buddies cannot take mods." },
         { name: "Trauma Rigs", intro: "Governing Skill: Medtech (Tech). Worn. Output Bonus adds to any healing roll the Rig delivers and sets the Triage Save DC; Mod Slots equal the Tier; every Rig counts as a Basic Medkit, and Trauma Grade [2] and up counts as an Advanced Medkit. Each Trauma Rig has the trait named for its tier and keeps every trait below it. A Black Clinic rig carries all six." }
       ] },
@@ -718,7 +719,26 @@ EN.gearCatalog.tools = {
       desc: "Better antenna, tighter code. Still a Standard User tool, still hates Premium Nodes." },
     { name: "Advanced B&E Buddy", bucket: "rigs", group: "B&E Buddies", deckType: "buddy", deckTier: "Advanced",
       price: 900, availability: "Rare", legality: "Restricted",
-      desc: "As good as a B&E Buddy gets. Hits hard, holds up, still locks out of the top tier Nodes." }
+      desc: "As good as a B&E Buddy gets. Hits hard, holds up, still locks out of the top tier Nodes." },
+
+    /* ---- Burner Relays (anyone; 29 Oct 2026 handoff) ----
+       Prices are the Burner Relay table's; the card numbers (Attack Bonus, Save DC, Max Node Tier)
+       are composed from EN.grid.relays at the tail of app/data/grid.js, as the decks' are. The
+       handoff gives no Availability or Legality for them, so none is set: the Register's markup
+       reads them as x1 until the book's values arrive. Each is bought loaded with a cipher of the
+       matching Complexity, picked on the card (relayTier t = that Complexity). */
+    { name: "Standard Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Standard", relayT: 0, price: 100,
+      desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." },
+    { name: "Improved Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Improved", relayT: 1, price: 200,
+      desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." },
+    { name: "Advanced Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Advanced", relayT: 2, price: 350,
+      desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." },
+    { name: "Premium Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Premium", relayT: 3, price: 500,
+      desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." },
+    { name: "Elite Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Elite", relayT: 4, price: 750,
+      desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." },
+    { name: "Apex Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Apex", relayT: 5, price: 1000,
+      desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." }
   ]
 };
 

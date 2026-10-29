@@ -6,7 +6,7 @@
    the live Cipher Attack / Save DC / Link math from the character. The rules
    prose renders in the Codex chapter The #GRID (js/codex_grid.js), on both
    desktops; the catalogs (ciphers, rigs, mods) stay on the tab and in the gray
-   market. The Burner Relay table is in the Codex only (relays are not sold there).
+   market. Burner Relays are sold there too since 29 Oct 2026, their card numbers composed from relays below.
    23 October 2026 handoff (costly success): the Active Scanning and Cipher Attack formulas add
    Device Bonus (the Cipher Save DC does not); Black Sun opens with its Cipher Attack and always
    triggers Alert; Hardline Tap no longer carries the Link marker.
@@ -296,6 +296,12 @@ EN.grid = {
       r = rowFor(EN.grid.buddies, it.deckTier);
       if (r) it.effect = "+" + r.attack + " atk · DC " + r.saveDc + " · Integrity " + r.integrity + " · max Tier " + r.maxNode + " Nodes.";
     }
+  });
+  // Burner Relays: their own baked-in numbers, single-shot, loaded with a cipher of the matching Complexity
+  EN.gearCatalog.tools.items.forEach(function (it) {
+    if (!it || !it.relayTier) return;
+    var r = rowFor(EN.grid.relays, it.relayTier);
+    if (r) it.effect = "+" + r.attack + " atk · DC " + r.saveDc + " · max Tier " + r.maxNode + " Nodes · single-shot, loaded with a Complexity " + r.t + " cipher.";
   });
 })();
 

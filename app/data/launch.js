@@ -275,10 +275,13 @@ EN.launch = (function () {
     ],
     // class gear, printed in the #GRID chapter (Equipment, and the Cipher Library) for the
     // Codebreaker's Smartdeck and Repertoire: the Smartdeck tiers, the B&E Buddy tiers and the
-    // nine Smartdeck Hardware Modifications. The Stitcher's Trauma Rigs are rows of `phb` above.
+    // nine Smartdeck Hardware Modifications, and the Burner Relays. The Stitcher's Trauma Rigs are rows of `phb` above.
     classGear: ["Standard Smartdeck", "Improved Smartdeck", "Advanced Smartdeck", "Premium Smartdeck",
                 "Elite Smartdeck", "Apex Smartdeck",
                 "Standard B&E Buddy", "Improved B&E Buddy", "Advanced B&E Buddy",
+                // the six Burner Relay tiers (PHB Equipment, Burner Relays; sold since 29 Oct 2026)
+                "Standard Burner Relay", "Improved Burner Relay", "Advanced Burner Relay", "Premium Burner Relay",
+                "Elite Burner Relay", "Apex Burner Relay",
                 "Reinforced Heatsinks", "Sweep Suite Plug-In", "Burn Notice Module", "ICE-Breaker Algorithm",
                 "Overclocked Coprocessor", "Trigger Cache", "Redline Lattice", "Crown Spike Array", "Predator Stack"],
     // the cipher tiers: every acquirable cipher of these Complexities (EN.grid.ciphers, the

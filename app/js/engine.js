@@ -3311,6 +3311,70 @@ EN.engine = (function () {
     return out;
   }
 
+  /* ---- Burner Relays (29 October 2026 handoff) ---------------------------------
+     PHB, Equipment, Burner Relays: "Disposable, overclocked, single-shot. Anyone can fire one.
+     After it fires, both the Relay and the cipher are gone." A Relay is a Stash entry (one per
+     unit, never pooled) named "<Tier> Burner Relay", whose tier row in EN.grid.relays carries its
+     own baked-in Attack Bonus, Save DC and Max Node Tier: "Burner Relays and B&E Buddies use their
+     own baked-in Attack Bonus instead of yours." The loaded cipher rides on the entry:
+       e.relayCipher   the loaded cipher's name (the six suite names without their link mark)
+       e.relaySlotted  a Codebreaker slotted one of their Repertoire ciphers into it
+       e.relayEmpty    nothing loaded (a Codebreaker extracted it, or never loaded one)
+     THE CHECK: "If the cipher's Complexity exceeds what you could normally run (Complexity 0 for
+     a Standard User, your deck's Max Complexity for a Codebreaker), roll a Systems (Tech) check
+     (DC 10 + Cipher Complexity, or Snag Dice equal to Cipher Complexity out of combat)". What
+     you can normally run is a Codebreaker's live Smartdeck's Max Complexity; anyone else, a
+     Codebreaker on a Buddy or with no deck included, is a Standard User at 0. The d20 check is
+     the user's own Systems: Tech Modifier + Systems Proficiency Bonus, no Device Bonus (the
+     Relay, not the deck, is doing the firing). */
+  function relayRow(name) {
+    var G = EN.grid || {};
+    return (G.relays || []).filter(function (r) { return (r.tier + " Burner Relay") === name; })[0] || null;
+  }
+  function suiteName(n) { return String(n || "").replace(/\s*\u21cb\s*$/, ""); }
+  // a cipher by name, from the library or the free Complexity 0 suite
+  function cipherByName(name) {
+    var G = EN.grid || {}, n = suiteName(name);
+    var c = (G.ciphers || []).filter(function (x) { return x.name === n; })[0];
+    if (c) return { name: c.name, cx: c.cx, text: c.text, activation: c.activation, range: c.range };
+    var b = (G.buddyCiphers || []).filter(function (x) { return suiteName(x.name) === n; })[0];
+    if (b) return { name: n, cx: 0, text: b.text, activation: b.activation, range: b.range, suite: true };
+    return null;
+  }
+  // what a Relay of tier t comes loaded with: a cipher of the matching Complexity (the Cipher
+  // Library's "Burner Relay (one-shot)" column prices Complexity 0-5 at the Relay tiers)
+  function relayLoadable(t) {
+    var G = EN.grid || {};
+    if (t === 0) return (G.buddyCiphers || []).map(function (b) { return suiteName(b.name); });
+    return (G.ciphers || []).filter(function (c) { return c.cx === t; }).map(function (c) { return c.name; });
+  }
+  function relayRunCap(ch, gd) {
+    return (ch && ch["class"] === "codebreaker" && gd && gd.deck && gd.deck.type === "smartdeck") ? (gd.deck.maxComplexity || 0) : 0;
+  }
+  function relayInfo(ch, d, e) {
+    var row = e ? relayRow(e.name) : null;
+    if (!row) return null;
+    var gd = (d && d.grid) || {};
+    var cy = (e.relayCipher && !e.relayEmpty) ? cipherByName(e.relayCipher) : null;
+    var cap = relayRunCap(ch, gd);
+    var cx = cy ? cy.cx : null;
+    return { row: row, cipher: cy, empty: !cy, cap: cap, needed: !!cy && cx > cap,
+             dc: cy ? 10 + cx : null, bonus: gd.cipherAttackBonus || 0, codebreaker: !!(ch && ch["class"] === "codebreaker") };
+  }
+  /* The check's outcome. In combat, value is the natural d20: "Critical Failure (Nat 1, Margin
+     minus 5 or worse on d20...)", "Failure (Margin minus 1 to minus 4 on d20...)". Out of combat,
+     value is the Dice Pool Margin: minus 1 to minus 2 a Failure, minus 3 or worse a Critical
+     Failure. "full", "reduced" (Save DC and Attack Bonus minus 2, or 2 fewer Edge Dice), "dead". */
+  function relayOutcome(info, mode, value) {
+    if (!info || !info.needed) return { result: "full", margin: null };
+    if (value == null || value === "" || isNaN(+value)) return null;
+    value = +value;
+    if (mode === "pool") return { result: value >= 0 ? "full" : value >= -2 ? "reduced" : "dead", margin: value };
+    if (value === 1) return { result: "dead", margin: 1 + info.bonus - info.dc, nat1: true };
+    var m = value + info.bonus - info.dc;
+    return { result: m >= 0 ? "full" : m >= -4 ? "reduced" : "dead", margin: m };
+  }
+
   /* ---- #GRID hacking stats: Cipher Attack / Save DC, Links, Bandwidth, and the
      equipped rig (Smartdeck for Power Users / B&E Buddy for Standard Users).
      Cipher Attack = d20 + Tech mod + Systems Proficiency Bonus; the deck's Device
@@ -5270,6 +5334,9 @@ EN.engine = (function () {
     // stash itself. It answers with an ENTRY key, so the answer names one specific Rig.
     rigStats: rigStats,
     rigTierRow: rigTierRow, ownedRigs: ownedRigs, ownedDecks: ownedDecks,
+    // Burner Relays (29 Oct 2026)
+    relayRow: relayRow, cipherByName: cipherByName, relayLoadable: relayLoadable, relayRunCap: relayRunCap,
+    relayInfo: relayInfo, relayOutcome: relayOutcome,
     // the single-slot equip registry: one description of the five slots, so no view has to
     // list the field names by hand (see EQUIP_SLOTS for why that mattered)
     equipSlotFor: equipSlotFor, slotEquippedKeys: slotEquippedKeys, equipSlotLabel: equipSlotLabel,

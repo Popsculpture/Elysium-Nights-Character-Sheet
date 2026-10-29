@@ -397,6 +397,39 @@ EN.inventoryView = (function () {
      rate on the spot wherever it happens, so signing premium costs the buy-in AND the first
      installment now, which is exactly what leasing standard and upgrading a moment later costs.
      Neither route is the cheaper trick. */
+  /* BURNER RELAYS (29 October 2026 handoff): a Relay is bought loaded with a cipher of its own
+     Complexity (the Cipher Library's "Burner Relay (one-shot)" column). The market card asks which;
+     the pick rides on the new entry as relayCipher. The Stash card says what it carries and hands
+     FIRE to the #GRID tab's firing card. */
+  var _relayPick = Object.create(null);
+  function relayLoadPick(it) {
+    var opts = EN.engine.relayLoadable ? EN.engine.relayLoadable(it.relayT) : [];
+    return opts.indexOf(_relayPick[it.name]) !== -1 ? _relayPick[it.name] : (opts[0] || null);
+  }
+  function relayLine(ch, it, mode, entry) {
+    var E = EN.engine;
+    if (!it.relayTier || !E.relayLoadable) return null;
+    if (mode === "mkt") {
+      var cur = relayLoadPick(it);
+      return el("div.row.wrap.relay-buy", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+        el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Loaded with (Complexity " + it.relayT + "):" }),
+        el("select.relay-pick", { "aria-label": it.name + ": the cipher it comes loaded with",
+          onchange: function (ev) { _relayPick[it.name] = ev.target.value; } },
+          E.relayLoadable(it.relayT).map(function (n) { return el("option", { value: n, selected: n === cur }, n); }))
+      ]);
+    }
+    if (!entry) return null;
+    var key = entryKey(entry), info = E.relayInfo(ch, E.derive(ch), entry);
+    if (!info) return null;
+    var cy = info.cipher;
+    return el("div.row.wrap.relay-stash", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+      el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--text2)" },
+        text: cy ? "Loaded: " + cy.name + " (Complexity " + cy.cx + ")" + (entry.relaySlotted ? ", slotted from your Repertoire" : "") : (entry.relayEmpty ? "Empty" : "No cipher named yet") }),
+      el("button.btn.sm.relay-goto", { type: "button", disabled: !cy, title: cy ? "Fire it from the #GRID tab's Ciphers panel" : "Nothing loaded to fire",
+        style: cy ? { color: "var(--warn)", borderColor: "var(--warn)" } : null,
+        onclick: function () { if (!cy) return; if (EN.gridView && EN.gridView.openRelay) EN.gridView.openRelay(key); EN.app.gotoTab("grid"); } }, "⚡ FIRE ON #GRID ▸")
+    ]);
+  }
   function buy(it, premium) {
     if (it.vendor === false && _mode !== "fivefinger") { toast(it.name + " isn't vendor stock; it's found, not bought. (" + (it.nexus || "rarely sold") + ")"); return; }
     var sp = streetPrice(it);
@@ -415,8 +448,9 @@ EN.inventoryView = (function () {
       // re-leasing an item already in arrears never clears another one's debt.
       var extra = it.upkeep ? { leaseDays: 7, leaseDue: false, leaseOwned: false } : null;
       if (extra && planFee) extra.premium = true;
+      if (it.relayTier) extra = { relayCipher: relayLoadPick(it) };   // a Relay comes loaded with the picked cipher
       addToStash(c, it.name, extra);
-    }, { ledger: "Bought " + it.name + (it.upkeep ? " (lease buy-in" + (planFee ? " and first Premium installment" : "") + ")" : "") });
+    }, { ledger: "Bought " + it.name + (it.relayTier ? " loaded with " + relayLoadPick(it) : "") + (it.upkeep ? " (lease buy-in" + (planFee ? " and first Premium installment" : "") + ")" : "") });
     toast(_mode === "register" ? it.name + " purchased for " + fmtG(sp) + ". Compliance fees included. All sales final." :
           _mode === "surplus" ? it.name + " claimed from the Guild lot for " + fmtG(sp) + ". Mostly works." :
           _mode === "fivefinger" ? it.name + " taken. You were never here." :
@@ -1101,6 +1135,7 @@ EN.inventoryView = (function () {
       head, info, traitsExpandRow,
       it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it, entry) : null),
       mode === "stash" ? armorResistPicker(ch, it, entry) : null,
+      it.relayTier ? relayLine(ch, it, mode, entry) : null,
       open && it.desc ? EN.ui.ruleText(el("p", { style: { marginTop: "8px" } }), it.desc, lo) : null,
       open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(upkeepOf(it, owned)) + "/wk Upkeep" + (owned && owned.premium ? " (Premium plan)" : "") : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,

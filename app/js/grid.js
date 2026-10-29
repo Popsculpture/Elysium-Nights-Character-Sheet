@@ -19,6 +19,8 @@ EN.gridView = (function () {
   // Run Mode: HOT RUN = in-combat d20 math; DEEP RUN = out-of-combat Dice Pool intrusion
   var _runMode = "hot";
   var _deep = { edges: {}, snags: {}, kitsOff: {}, risk: 2, result: null, animating: false, animToken: 0, focusSrc: "skill" };
+  // Burner Relay firing card: which Relay is open, the check's mode and roll, the target, and the last firing
+  var _relay = { key: null, mode: "combat", nat: "", margin: "", pool: null, target: "", last: null };
 
   // Battle Damage: the whole #GRID tab visibly degrades as rig System Integrity drops.
   // Device-level preference, matching the Flow immersive pattern (en_flow_*).
@@ -312,6 +314,176 @@ EN.gridView = (function () {
       EN.ui.proseP("p.help", { margin: "4px 0 0" }, cy.text, cy.range || null)
     ]);
   }
+  /* ============================ BURNER RELAYS (29 October 2026 handoff) ============================
+     Anyone can fire one, Standard Users included. The numbers are the Relay's own (EN.grid.relays):
+     "Burner Relays and B&E Buddies use their own baked-in Attack Bonus instead of yours", and never a
+     deck's Device Bonus. No Bandwidth: the Relay fires the cipher. The Systems (Tech) check only
+     when the cipher's Complexity is above what this character can normally run (engine.relayInfo),
+     rolled here or entered from the table. After any firing, a Critical Failure included, the Relay
+     and its cipher leave the Stash; a Codebreaker's Repertoire copy of a slotted cipher stays. */
+  function relayResetFire(key) { _relay.key = key; _relay.mode = "combat"; _relay.nat = ""; _relay.margin = ""; _relay.pool = null; _relay.target = ""; }
+  function openRelay(key) { relayResetFire(key); _relay.last = null; }
+  function relaySystemsPoolPoints(d) {
+    var s = (d.skills || []).find(function (x) { return x.key === "systems"; });
+    var prof = s ? (((EN.rules.profTiers[s.tier] || {}).pool) || 0) : 0;
+    return Math.max(0, d.attributes.TEC.mod) + prof;
+  }
+  function relayMutate(key, fn) {
+    store.update(function (c) { var e = eng.findEntry(c, key); if (e) fn(e, c); });
+  }
+  function fireRelay(ch, key, info, out) {
+    var row = info.row, cy = info.cipher, e0 = eng.findEntry(ch, key);
+    var dead = out.result === "dead", pool = _relay.mode === "pool";
+    var red = out.result === "reduced" && !pool;
+    var tgt = _relay.target === "" ? null : +_relay.target;
+    if (tgt != null && tgt > row.maxNode) { toast("This Relay can't reach a Tier " + tgt + " Node: it tops out at Tier " + row.maxNode + "."); return; }
+    var atk = row.attack - (red ? 2 : 0), dc = row.saveDc - (red ? 2 : 0);
+    var text = dead
+      ? "CRITICAL FAILURE: the " + e0.name + " sparked and died in your hand. " + cy.name + " is lost; nothing fired."
+      : "FIRED " + cy.name + " from the " + e0.name + ": the Relay's Attack Bonus (" + eng.fmtMod(atk) + "), the Relay's Save DC (" + dc + ")"
+        + (red ? ", each reduced by 2 from " + eng.fmtMod(row.attack) + " and " + row.saveDc : "")
+        + (out.result === "reduced" && pool ? "; 2 fewer Edge Dice" : "")
+        + ". Target: " + (tgt != null ? "a Tier " + tgt + " Node" : "a Node up to Tier " + row.maxNode) + ". No Bandwidth spent. The Relay and the cipher are slag.";
+    if (e0.relaySlotted) text += " Your Repertoire keeps " + cy.name + "; only the slotted instance is gone.";
+    // the report is set first: the write below re-renders the tab at once
+    _relay.key = null;
+    _relay.last = { text: text, dead: dead, atk: dead ? null : atk, dc: dead ? null : dc, reduced: red };
+    store.update(function (c) {
+      c.equipment = (c.equipment || []).filter(function (x) { return eng.entryKey(x) !== key; });
+      if (c.carry) delete c.carry[key];
+    });
+    toast(dead ? "The Relay died: " + cy.name + " is lost." : cy.name + " fired from the Relay. The Relay is slag.");
+  }
+  function relayFireCard(ch, d, e, key, info) {
+    var row = info.row, cy = info.cipher;
+    var out = eng.relayOutcome(info, _relay.mode, _relay.mode === "pool" ? _relay.margin : _relay.nat);
+    var pool = _relay.mode === "pool", red = out && out.result === "reduced" && !pool;
+    var atk = row.attack - (red ? 2 : 0), dc = row.saveDc - (red ? 2 : 0);
+    var kids = [];
+    kids.push(el("div.mono", { style: { fontSize: "10px", letterSpacing: ".14em", color: "var(--warn)" }, text: "FIRING · " + cy.name.toUpperCase() + " · COMPLEXITY " + cy.cx }));
+    kids.push(el("p.help.relay-numbers", { style: { margin: "4px 0 0", color: "var(--text2)" },
+      text: "Cipher Attack: the Relay's Attack Bonus (" + eng.fmtMod(atk) + ")" + (red ? ", reduced by 2 from " + eng.fmtMod(row.attack) : "")
+        + " · Node resists vs the Relay's Save DC (" + dc + ")" + (red ? ", reduced by 2 from " + row.saveDc : "")
+        + " · reaches Nodes up to Tier " + row.maxNode + " · no Bandwidth. Your own Tech and Systems, and any deck's Device Bonus, never enter into it." }));
+    // the target: a Node above the Relay's Max Node Tier can't be picked
+    var tsel = el("select.relay-target", { "aria-label": "Target Node Tier", onchange: function (ev) { _relay.target = ev.target.value; EN.app.render(); } },
+      [el("option", { value: "", selected: _relay.target === "" }, "Target: any Node up to Tier " + row.maxNode)].concat([0, 1, 2, 3, 4, 5].map(function (k) {
+        return el("option", { value: String(k), disabled: k > row.maxNode, selected: _relay.target === String(k) },
+          "Tier " + k + " Node" + (k > row.maxNode ? " (above this Relay)" : ""));
+      })));
+    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [tsel]));
+    if (!info.needed) {
+      kids.push(el("p.help.relay-check", { style: { margin: "6px 0 0", color: "var(--success)" },
+        text: "No check: Complexity " + cy.cx + " is within what you can normally run (Complexity " + info.cap + "). Full power." }));
+    } else {
+      kids.push(el("p.help.relay-check", { style: { margin: "6px 0 0", color: "var(--warn)" },
+        text: "Systems (Tech) check: Complexity " + cy.cx + " is above what you can normally run (Complexity " + info.cap + ")." }));
+      kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [["combat", "IN COMBAT · d20"], ["pool", "OUT OF COMBAT · DICE POOL"]].map(function (m) {
+        var on = _relay.mode === m[0];
+        return el("button.btn.sm.relay-mode" + (on ? ".primary" : ""), { type: "button", dataset: { mode: m[0] },
+          onclick: function () { _relay.mode = m[0]; _relay.nat = ""; _relay.margin = ""; _relay.pool = null; EN.app.render(); } }, m[1]);
+      })));
+      if (!pool) {
+        kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
+          el("span.mono", { style: { fontSize: "12px" }, text: "d20 " + eng.fmtMod(info.bonus) + " (Tech + Systems) vs DC " + info.dc + " (10 + Complexity)" }),
+          el("button.btn.sm.relay-roll", { type: "button", onclick: function () { _relay.nat = String(1 + Math.floor(Math.random() * 20)); EN.app.render(); } }, "ROLL d20"),
+          el("input.relay-nat", { type: "number", min: "1", max: "20", value: _relay.nat, placeholder: "your d20", "aria-label": "Natural d20 rolled at the table",
+            style: { width: "84px" }, onchange: function (ev) { var v = parseInt(ev.target.value, 10); _relay.nat = (v >= 1 && v <= 20) ? String(v) : ""; EN.app.render(); } })
+        ]));
+      } else {
+        var pts = relaySystemsPoolPoints(d), ep = eng.buildEdgePool(pts), sp = eng.buildSnagPool(cy.cx);
+        kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
+          el("span.mono", { style: { fontSize: "12px" }, text: "Edge " + pts + " → " + ep.label + " (Tech + Systems) vs Snag " + cy.cx + " → " + sp.label + " (the Complexity)" }),
+          el("button.btn.sm.relay-roll", { type: "button", onclick: function () {
+            var er = eng.rollDicePool(ep), sr = eng.rollDicePool(sp);
+            _relay.pool = { edge: er.total, snag: sr.total }; _relay.margin = String(er.total - sr.total); EN.app.render(); } }, "ROLL POOL"),
+          el("input.relay-margin", { type: "number", value: _relay.margin, placeholder: "Margin", "aria-label": "Dice Pool Margin rolled at the table",
+            style: { width: "84px" }, onchange: function (ev) { var v = parseInt(ev.target.value, 10); _relay.margin = isNaN(v) ? "" : String(v); _relay.pool = null; EN.app.render(); } })
+        ]));
+      }
+      if (out) {
+        var nat = !pool ? +_relay.nat : null;
+        var how = pool ? "Margin " + (out.margin >= 0 ? "+" : "") + out.margin + (_relay.pool ? " (" + _relay.pool.edge + " successes vs " + _relay.pool.snag + " failures)" : "")
+                       : "rolled " + nat + (out.nat1 ? " (Natural 1)" : "") + ", total " + (nat + info.bonus) + ", Margin " + (out.margin >= 0 ? "+" : "") + out.margin;
+        var res = out.result === "full" ? "Success: full power."
+          : out.result === "reduced" ? (pool ? "Failure: the cipher runs with 2 fewer Edge Dice." : "Failure: the Relay's Save DC and Attack Bonus are each reduced by 2 for this firing.")
+          : "Critical Failure: the Relay sparks and dies instantly. The cipher is lost.";
+        kids.push(el("p.help.relay-result", { dataset: { result: out.result }, style: { margin: "4px 0 0", color: out.result === "full" ? "var(--success)" : out.result === "reduced" ? "var(--warn)" : "var(--danger)" },
+          text: how.charAt(0).toUpperCase() + how.slice(1) + ". " + res }));
+      }
+    }
+    var ready = !info.needed || !!out;
+    var dead = out && out.result === "dead";
+    kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px" } }, [
+      el("button.btn.sm.relay-fire" + (ready ? ".primary" : ""), { type: "button", disabled: !ready,
+        title: ready ? (dead ? "The Relay dies; the cipher is lost and the Relay leaves your Stash" : "Fire it: the Relay and the cipher leave your Stash") : "Make the Systems (Tech) check first",
+        style: dead ? { color: "var(--danger)", borderColor: "var(--danger)" } : null,
+        onclick: function () { if (ready) fireRelay(store.active(), key, info, out || { result: "full" }); } },
+        dead ? "THE RELAY DIES" : "FIRE · " + eng.fmtMod(atk) + " · DC " + dc),
+      el("button.btn.sm", { type: "button", onclick: function () { _relay.key = null; EN.app.render(); } }, "CANCEL")
+    ]));
+    return el("div.relay-fire-card", { dataset: { relay: key }, style: { margin: "4px 0 8px 12px", padding: "8px 10px", border: "1px dashed var(--warn)", borderRadius: "4px" } }, kids);
+  }
+  function relaySection(ch, d) {
+    var relays = (ch.equipment || []).filter(function (e) { return e && e.qty > 0 && eng.relayRow(e.name); });
+    if (!relays.length && !_relay.last) return [];
+    var rows = [el("div.section-title", { style: { marginTop: "12px" } }, [document.createTextNode("Burner Relays"),
+      EN.ui.ruleChip("gd-devices/burner-relays", { title: "Burner Relays" }), el("span.line")])];
+    if (_relay.last) rows.push(el("div.relay-last", { style: { margin: "4px 0 8px", padding: "6px 9px", borderLeft: "3px solid " + (_relay.last.dead ? "var(--danger)" : "var(--success)"), fontSize: "11.5px", color: "var(--text2)" } }, [
+      el("span", { text: _relay.last.text }),
+      el("button.btn.sm", { type: "button", style: { marginLeft: "8px" }, onclick: function () { _relay.last = null; EN.app.render(); } }, "OK")
+    ]));
+    if (!relays.length) return rows;
+    rows.push(noteP("Single-shot, anyone can fire one: the Relay's own Attack Bonus and Save DC, never yours, and no Bandwidth. A check only when the cipher is above what you can normally run.", "var(--text2)"));
+    var B = EN.builder || {};
+    relays.forEach(function (e) {
+      var key = eng.entryKey(e), info = eng.relayInfo(ch, d, e), row = info.row, cy = info.cipher;
+      var btns = [];
+      if (cy) btns.push(el("button.btn.sm.relay-open" + (_relay.key === key ? ".primary" : ""), { type: "button", title: "Fire the loaded cipher from this Relay",
+        style: _relay.key === key ? null : { color: "var(--warn)", borderColor: "var(--warn)" },
+        onclick: function () { if (_relay.key === key) _relay.key = null; else relayResetFire(key); EN.app.render(); } }, "⚡ FIRE"));
+      if (!cy && !e.relayEmpty) {
+        // loaded but not yet named (a record from before the picker): choose what it carries
+        btns.push(el("select.relay-choose", { "aria-label": "Choose the cipher this Relay carries",
+          onchange: function (ev) { var v = ev.target.value; if (v) relayMutate(key, function (x) { x.relayCipher = v; delete x.relayEmpty; }); } },
+          [el("option", { value: "" }, "Choose its Complexity " + row.t + " cipher")].concat(eng.relayLoadable(row.t).map(function (n) { return el("option", { value: n }, n); }))));
+      }
+      if (info.codebreaker && !cy && e.relayEmpty && B.repertoireCiphers) {
+        // "The Relay doesn't care what you slot into it": any Repertoire cipher, any Complexity
+        btns.push(el("select.relay-slot", { "aria-label": "Slot a Repertoire cipher into this Relay",
+          onchange: function (ev) { var v = ev.target.value; if (v) relayMutate(key, function (x) { x.relayCipher = v; x.relaySlotted = true; delete x.relayEmpty; }); } },
+          [el("option", { value: "" }, "Slot a Repertoire cipher")].concat(B.repertoireCiphers(ch).map(function (c) { return el("option", { value: c.name }, c.name + " (CX " + c.cx + ")"); }))));
+      }
+      if (info.codebreaker && cy && !e.relaySlotted) btns.push(el("button.btn.sm.relay-extract", { type: "button",
+        title: "Downtime: move this unused Relay's cipher into your Repertoire. The Relay is left empty.",
+        onclick: function () {
+          if (cy.suite) { toast(cy.name + " already ships with every Smartdeck; there is nothing to extract."); return; }
+          var known = (B.repertoireCiphers ? B.repertoireCiphers(store.active()) : []).some(function (c) { return c.name === cy.name; });
+          if (known) { toast(cy.name + " is already in your Repertoire."); return; }
+          store.update(function (c) {
+            var x = eng.findEntry(c, key); if (!x) return;
+            c.equipment.push({ id: "eq_" + Math.random().toString(36).slice(2, 9), name: cy.name, qty: 1, fromRelay: true });
+            x.relayCipher = null; x.relayEmpty = true; delete x.relaySlotted;
+          });
+          toast(cy.name + " extracted into your Repertoire during Downtime. The Relay is empty.");
+        } }, "EXTRACT · DOWNTIME"));
+      rows.push(el("div.feature.relay-card", { dataset: { relay: key }, style: { borderLeftColor: "var(--warn)" } }, [
+        el("div.row.between.wrap", { style: { alignItems: "center", gap: "8px" } }, [
+          el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: e.name }),
+          el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
+            el("span.chip", { style: { fontSize: "9px" }, title: "The Relay's own Attack Bonus" }, "ATK " + eng.fmtMod(row.attack)),
+            el("span.chip", { style: { fontSize: "9px" }, title: "The Relay's own Save DC" }, "DC " + row.saveDc),
+            el("span.chip", { style: { fontSize: "9px" }, title: "Max Node Tier" }, "≤ TIER " + row.maxNode)
+          ].concat(btns))
+        ]),
+        el("p.help.relay-load", { style: { margin: "4px 0 0" },
+          text: cy ? "Loaded: " + cy.name + " (Complexity " + cy.cx + ")" + (e.relaySlotted ? ", slotted from your Repertoire" : "") + (info.needed ? ". Above what you can normally run: firing takes a Systems (Tech) check." : ". Within what you can run: no check.")
+                   : (e.relayEmpty ? "Empty." + (info.codebreaker ? " Slot a Repertoire cipher to fire it." : "") : "No cipher named yet.") })
+      ]));
+      if (_relay.key === key && cy) rows.push(relayFireCard(ch, d, e, key, info));
+    });
+    return rows;
+  }
   function cipherViewToggle(label, to) {
     return el("button.btn.sm", { style: { fontSize: "10px", color: "var(--accent)", borderColor: "var(--accent)" },
       onclick: function () { _cipherView = to; EN.app.render(); } }, label);
@@ -326,6 +498,7 @@ EN.gridView = (function () {
       /* FG-12: the suite is not Complexity 0 only. It runs at the Buddy's own tier in anyone's hands (PHB:9169). */
       rows.push(ruleNote("You're running a B&E Buddy: this rig executes its baked-in cipher suite only, at the Buddy's own tier (Complexity " + gd.deck.t + "). Switch back to a Smartdeck in the Rig panel to use your Repertoire and Bandwidth."));
       (G.buddyCiphers || []).forEach(function (cy) { rows.push(buddyCipherCard(cy)); });
+      rows = rows.concat(relaySection(ch, d));
       return EN.ui.panel("Ciphers", "B&E BUDDY CIPHER SUITE", rows, { corners: true, headerRight: cipherViewToggle("Repertoire", "power") });
     }
 
@@ -411,6 +584,7 @@ EN.gridView = (function () {
         + (cipherCost({ cx: 4 }, deck && deck.tier) === 1 ? " (Quantum Core)" : "") + " · Signature Ciphers a flat 1 BW. ", "var(--text2)");
       costNote.appendChild(EN.ui.ruleChip("gd-ciphers/complexity-and-casting-cost", { title: "Complexity and Casting Cost" }) || document.createTextNode(""));
       rows.push(costNote);
+      rows = rows.concat(relaySection(ch, d));
       return EN.ui.panel("Ciphers", "EXPLOITS · REPERTOIRE", rows,
         { corners: true, headerRight: buddyEquipped ? cipherViewToggle("B&E Buddy Cipher Suite", "buddy") : null });
     }
@@ -420,6 +594,7 @@ EN.gridView = (function () {
     // cipher above Complexity 0 for whoever passes the Systems check (PHB:9617), so "Complexity 0 only" was wrong
     rows.push(ruleNote("Standard Users run this universal cipher set off any B&E Buddy or Burner Relay. The suite runs at the Buddy's own tier in anyone's hands, and a Relay fires a cipher above Complexity 0 with a Systems (Tech) check (DC 10 + the cipher's Complexity). Otherwise Complexity 1+ is Power User territory; Bandwidth and a custom Repertoire are the Codebreaker's domain."));
     (G.buddyCiphers || []).forEach(function (cy) { rows.push(buddyCipherCard(cy)); });
+    rows = rows.concat(relaySection(ch, d));
     return EN.ui.panel("Ciphers", "STANDARD USER CIPHER LIST", rows, { corners: true });
   }
 
@@ -490,10 +665,14 @@ EN.gridView = (function () {
        alike, so this line reads effectiveAttack (Tech + Systems + Device Bonus, or a Buddy's own
        baked-in Attack Bonus) and no longer files the Device Bonus under the Quick Hack alone. */
     var deckKind = gd.deck && gd.deck.type;
-    body.push(ruleNote("Cipher Attack and Quick Hack: d20 " + fmt(gd.effectiveAttack) + " vs Node Security Rating"
+    /* The label names whose number it is (29 October 2026 handoff): on a Smartdeck, or with no
+       rig, your own Cipher Attack and Cipher Save DC; on a B&E Buddy, the Buddy's baked-in Attack
+       Bonus and Save DC. A Burner Relay's firing card labels the Relay's the same way. */
+    var buddyRig = deckKind === "buddy";
+    body.push(ruleNote("Cipher Attack and Quick Hack: " + (buddyRig ? "the Buddy's Attack Bonus" : "your Cipher Attack") + ", d20 " + fmt(gd.effectiveAttack) + " vs Node Security Rating"
       + (deckKind === "smartdeck" && gd.deck.deviceBonus ? " (" + fmt(gd.cipherAttackBonus) + " Tech and Systems + " + gd.deck.deviceBonus + " Device Bonus, which applies to both)"
-        : deckKind === "buddy" ? " (the Buddy's own baked-in Attack Bonus)" : "")
-      + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs your Save DC " + gd.effectiveSaveDC + ".", "var(--text2)"));
+        : buddyRig ? " (baked into the Buddy; your training never enters into it)" : "")
+      + ". Node resists save-ciphers with d20 + its Cipher Save Bonus vs " + (buddyRig ? "the Buddy's Save DC" : "your Cipher Save DC") + " (" + gd.effectiveSaveDC + ").", "var(--text2)"));
     // FG-02: the Standard User note is for Standard Users. A Sourcerer is a Power User who opens Links
     // with a Flow Attack at Sprite Tether's range (PHB:9180-9193), not a Cipher Attack. The roll is the
     // Sprite Tether one (Flow Modifier + Caliber, which for a Sourcerer is the Tech Modifier), so the
@@ -1017,5 +1196,7 @@ EN.gridView = (function () {
            shiftDeckIntegrity: shiftDeckIntegrity, repairDeckFully: repairDeckFully,
            ownedRigRows: ownedRigRows, cipherCost: cipherCost,
            // B1: the Complexity 0 suite's text as it reads through a Smartdeck (the starting picker's tooltips use it too)
-           suiteOnDeck: suiteOnDeck };
+           suiteOnDeck: suiteOnDeck,
+           // Burner Relays: open a Relay's firing card (the Stash card's FIRE goes through here)
+           openRelay: openRelay };
 })();
