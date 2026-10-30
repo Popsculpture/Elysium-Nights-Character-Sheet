@@ -1091,7 +1091,7 @@ EN.printSheet = (function () {
         el("span.ps-fv", { text: "CX " + c.cx + " · " + c.bw + " BW" })])); n++;
     });
     if (gear && gear.suite && gear.suite.length) {
-      rep.appendChild(el("div.ps-wl.ps-rep-suite", null, [el("span.ps-fv", { text: "Ships with your Smartdeck: " + gear.suite.join(", ") }), el("span.ps-wl-line"),
+      rep.appendChild(el("div.ps-wl.ps-rep-suite", null, [el("span.ps-fv", { text: "Off the rack: " + gear.suite.join(", ") }), el("span.ps-wl-line"),
         el("span.ps-fv", { text: "CX 0 · free" })])); n++;
     }
     for (; n < 8; n++) rep.appendChild(writeLine(""));

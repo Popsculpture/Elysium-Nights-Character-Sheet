@@ -1283,7 +1283,7 @@ EN.pdfExport = (function () {
       var repRows = (gear && gear.ciphers ? gear.ciphers : []).map(function (c) {
         return { name: c.name + (c.start ? " (starting)" : ""), cx: String(c.cx), cost: c.bw + " BW" };
       });
-      if (gear && gear.suite && gear.suite.length) repRows.push({ name: "Ships with your Smartdeck: " + gear.suite.join(", "), cx: "0", cost: "free" });
+      if (gear && gear.suite && gear.suite.length) repRows.push({ name: "Off the rack: " + gear.suite.join(", "), cx: "0", cost: "free" });
       while (repRows.length < 8) repRows.push(null);
       ctx.table(
         [{ header: "Cipher", key: "name", w: 2 }, { header: "CX", key: "cx", w: "50px", align: "center" }, { header: "Cost", key: "cost", w: "50px", align: "center" }],

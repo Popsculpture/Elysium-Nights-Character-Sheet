@@ -2129,7 +2129,7 @@ EN.builder = (function () {
     if (cb && g.startingChosen < g.startingOf) kids.push(el("p.help", { style: { margin: "6px 0 0", color: "var(--warn)" },
       text: g.startingChosen + " / " + g.startingOf + " starting Ciphers chosen. Pick the rest on the Class step." }));
     if (cb && g.suite.length) kids.push(el("p.help.rf-suite", { style: { margin: "8px 0 0" },
-      text: "Complexity 0, ships with your Smartdeck (free, not one of your four): " + g.suite.join(", ") + "." }));
+      text: "Complexity 0, off the rack (on every Smartdeck and B&E Buddy; free, not one of your four): " + g.suite.join(", ") + "." }));
     var title = cb ? "Repertoire" : "Triage Protocols";
     var right = cb ? (g.ciphers.length + g.suite.length) + " KNOWN" : g.protocols.length + " KNOWN";
     return [EN.ui.sectionTitle(letter + " · RIG & " + title.toUpperCase()),
@@ -2167,7 +2167,7 @@ EN.builder = (function () {
       var color = p.cx === 0 ? "var(--gold)" : "var(--accent)";
       return el("span.chip.start-cipher", {
         dataset: { cipher: p.name, cx: String(p.cx) },
-        title: (p.action ? p.action + " · " : "") + (p.ships ? "Already ships with your Smartdeck. " : "") + p.text,
+        title: (p.action ? p.action + " · " : "") + (p.ships ? "Off the rack: already on your Smartdeck. " : "") + p.text,
         style: { fontSize: "10.5px", color: color, borderColor: color,
                  cursor: settled || full ? "not-allowed" : "pointer", borderStyle: on ? "solid" : "dashed",
                  opacity: on ? 1 : (full ? .3 : .6), boxShadow: on ? "0 0 9px " + color : "none" },
@@ -2185,7 +2185,7 @@ EN.builder = (function () {
         el("span", { text: (on ? "✓ " : "") + p.name }),
         p.action ? el("span", { style: { color: "var(--text3)", marginLeft: "5px", fontSize: "9px" }, text: p.action.replace(/^1 /, "").replace(/ Action$/, "") }) : null,
         p.signature ? el("span", { style: { color: "var(--gold)", marginLeft: "5px", fontSize: "9px" }, text: "SIG" }) : null,
-        on && p.ships ? el("span.ships-note", { style: { color: "var(--gold)", marginLeft: "5px", fontSize: "9px" }, text: "Already ships with your Smartdeck" }) : null
+        on && p.ships ? el("span.ships-note", { style: { color: "var(--gold)", marginLeft: "5px", fontSize: "9px" }, text: "Off the rack: already on your deck" }) : null
       ]);
     }
     var done = chosen.length >= STARTING_CIPHERS;
@@ -2206,13 +2206,13 @@ EN.builder = (function () {
       text: "The six Complexity 0 Ciphers ship free with your Smartdeck, so they come with your deck and don't count toward your four." }));
     // the suite, shown and never picked: solid chips with no click
     kids.push(el("div.row.wrap.ships-row", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } },
-      [el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)", minWidth: "92px" }, text: "CX 0 · ships with your Smartdeck" })].concat(
+      [el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)", minWidth: "92px" }, text: "CX 0 · off the rack" })].concat(
         pool.c0.map(function (p) {
           // B1: read through a Smartdeck, the Codebreaker's own DC and Attack, the Buddy's Tier as 0
           var _gd = null; try { _gd = eng.derive(ch).grid; } catch (e) { _gd = null; }
           var _tx = (EN.gridView && EN.gridView.suiteOnDeck && _gd)
             ? EN.gridView.suiteOnDeck(p, { cipherSaveDC: _gd.cipherSaveDC, effectiveAttack: _gd.deck && _gd.deck.type === "smartdeck" ? _gd.effectiveAttack : null }).text : p.text;
-          return el("span.chip.ships-cipher", { dataset: { cipher: p.name, cx: "0" }, title: (p.action ? p.action + " · " : "") + "Ships with your Smartdeck. Complexity 0. " + _tx,
+          return el("span.chip.ships-cipher", { dataset: { cipher: p.name, cx: "0" }, title: (p.action ? p.action + " · " : "") + "Off the rack: on every Smartdeck and B&E Buddy. Complexity 0. " + _tx,
             style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)", cursor: "default" } }, "✓ " + p.name);
         }))));
     kids.push(row("CX 1 · pick four", pool.c1));

@@ -303,9 +303,9 @@ EN.gridView = (function () {
       el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
         el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
-          // OEM: the factory suite on every rig, Smartdeck and B&E Buddy alike (the author, 30 Oct 2026)
-          ships ? el("span.chip.oem-chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
-            title: "OEM: the factory-installed hacking suite. These six ship free with every Smartdeck and every B&E Buddy, no license, no Bandwidth; not one of your four." }, "OEM") : null,
+          // OTR, off the rack: the factory suite on every rig, Smartdeck and B&E Buddy alike (the author, 30 Oct 2026)
+          ships ? el("span.chip.otr-chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
+            title: "Off the rack: the factory hacking suite on every Smartdeck and every B&E Buddy. Free, no license, no Bandwidth; not one of your four." }, "OTR") : null,
           ships ? el("span.chip.suite-cx", { title: "Through a Smartdeck the suite always runs as Complexity 0, free in Bandwidth", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, "COMPLEXITY 0") : null,
           cy.type ? el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, cy.type) : null,
           cy.activation ? el("span.chip", { title: "Activation", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.activation) : null
@@ -601,7 +601,7 @@ EN.gridView = (function () {
         owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur, deck && deck.tier, starts.indexOf(cy.name) !== -1, !!rigStow)); });
       }
       if (suite.length) {
-        rows.push(el("div.mono.ships-head", { style: { fontSize: "10px", letterSpacing: ".14em", color: "var(--gold)", margin: "10px 0 4px" }, text: "SHIPS WITH YOUR SMARTDECK · COMPLEXITY 0 · FREE" }));
+        rows.push(el("div.mono.ships-head", { style: { fontSize: "10px", letterSpacing: ".14em", color: "var(--gold)", margin: "10px 0 4px" }, text: "OFF THE RACK · COMPLEXITY 0 · FREE" }));
         rows.push(noteP("Through a Smartdeck they always run as Complexity 0: use your own Cipher Attack and Cipher Save DC, and read the Buddy's Tier as 0.", "var(--text2)"));
         suite.forEach(function (cy) { rows.push(buddyCipherCard(cy, true, gd)); });
       }
