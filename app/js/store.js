@@ -63,7 +63,7 @@ EN.store = (function () {
       name: composeFullName(firstName, "", lastName),
       firstName: firstName, lastName: lastName,
       identity: {
-        concept: "", handle: "", handleStory: "", whereFrom: "",
+        concept: "", handle: "", handleStory: "", whereFrom: "", backstory: "",
         facets: "", coreSparks: "", tethers: "", faultLines: "",
         appearance: "", notes: ""
       },

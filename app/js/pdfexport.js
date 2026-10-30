@@ -1201,8 +1201,12 @@ EN.pdfExport = (function () {
       { header: "Name", key: "name", w: 1.3 }, { header: "Work", key: "work", w: 1.3 },
       { header: "Standing / State", key: "standing", w: "92px" }, { header: "Why they pick up", key: "why", w: 2 }
     ], "contactList", cts.concat([null, null]));
-    ctx.sectionTitle("Backstory & Notes");
-    ctx.multiline(null, "backstory", { value: id.notes, height: 80 });
+    // the long-form Backstory & Motivation from the Freelancer Profile (its field is "backstory"),
+    // then the free Notes, which used to share that field and now has its own
+    ctx.sectionTitle("Backstory & Motivation");
+    ctx.multiline(null, "backstory", { value: id.backstory, height: 80 });
+    ctx.sectionTitle("Notes");
+    ctx.multiline(null, "notes", { value: id.notes, height: 50 });
 
     ctx.sectionTitle("Standing", "Cred · Heat");
     ctx.checkboxRow("Cred", "cred", 10, 0);

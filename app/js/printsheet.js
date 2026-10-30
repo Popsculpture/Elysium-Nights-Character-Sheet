@@ -983,7 +983,10 @@ EN.printSheet = (function () {
     });
     body.push(writeLine(""));
     body.push(writeLine(""));
-    body.push(sect("Backstory & Notes"));
+    // the long-form Backstory & Motivation from the Freelancer Profile, then the free Notes
+    body.push(sect("Backstory & Motivation"));
+    body.push(pblock("", id.backstory, true));
+    body.push(sect("Notes"));
     body.push(pblock("", id.notes, true));
     // Cred / Heat standing tracks (table-tracked; write-in)
     body.push(sect("Standing", "Cred · Heat"));

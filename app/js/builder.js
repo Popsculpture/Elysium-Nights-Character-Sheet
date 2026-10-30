@@ -139,9 +139,10 @@ EN.builder = (function () {
 
   /* ---------- STEP 1: IDENTITY ---------- */
   function stepIdentity(ch) {
-    function txt(field, label, ph, area) {
+    function txt(field, label, ph, area, tall) {
       var node = el(area ? "textarea" : "input", {
         type: "text", value: (ch.identity[field] || ""), placeholder: ph || "",
+        style: tall ? { minHeight: "160px" } : null,
         oninput: function (e) { store.update(function (c) { c.identity[field] = e.target.value; }, { silent: true }); }
       });
       return el("div.field", null, [el("label.fl", { text: label }), node]);
@@ -193,7 +194,9 @@ EN.builder = (function () {
         txt("handleStory", "How you got your Handle (optional)", "Who first called you that, and why it stuck…", true),
         el("p.help", { style: { margin: "-4px 0 10px" }, text: "A Handle is optional at Level 1. Leave it blank if you like, and add it once your Freelancer earns one in play." }),
         txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen trauma rig…", true),
-        txt("whereFrom", "Where You Came From", "Burbclave, Warrens, void station, corporate creche…", true)
+        txt("whereFrom", "Where You Came From", "Burbclave, Warrens, void station, corporate creche…", true),
+        // the long form, if the player wants one (the author, 30 Oct 2026): ch.identity.backstory
+        txt("backstory", "Backstory & Motivation (optional)", "The long version: who they were before the job, what broke, what they're after now, and what they won't do to get it…", true, true)
       ], { corners: true }),
       el("div", { style: { height: "16px" } }),
       EN.ui.panel("Inner Profile", "PURE STORY · NO MECHANICS", [
