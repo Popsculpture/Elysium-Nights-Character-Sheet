@@ -303,9 +303,10 @@ EN.gridView = (function () {
       el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
         el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
-          // OTR, off the rack: the factory suite on every rig, Smartdeck and B&E Buddy alike (the author, 30 Oct 2026)
-          ships ? el("span.chip.otr-chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
-            title: "Off the rack: the factory hacking suite on every Smartdeck and every B&E Buddy. Free, no license, no Bandwidth; not one of your four." }, "OTR") : null,
+          /* STANDARD: the book's own name for this tier, the Cipher Library's "Complexity 0 (Standard)
+             Ciphers" (the author, 30 Oct 2026). The tooltip keeps the off-the-rack wording. */
+          ships ? el("span.chip.suite-chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
+            title: "Off the rack: the factory hacking suite on every Smartdeck and every B&E Buddy. Free, no license, no Bandwidth; not one of your four." }, "STANDARD") : null,
           ships ? el("span.chip.suite-cx", { title: "Through a Smartdeck the suite always runs as Complexity 0, free in Bandwidth", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, "COMPLEXITY 0") : null,
           cy.type ? el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, cy.type) : null,
           cy.activation ? el("span.chip", { title: "Activation", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.activation) : null
