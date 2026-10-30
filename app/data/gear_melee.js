@@ -20,7 +20,9 @@ EN.gearCatalog.weaponRenames = [
 EN.gearCatalog.itemRenames = [
   { oldName: "Hardlight Barrier", name: "Hard-Light Barrier" },
   { oldName: "Gridline Cable", name: "#GRIDline Cable" },
-  { oldName: "Gridline Lumen Cable", name: "#GRIDline Lumen Cable" }
+  { oldName: "Gridline Lumen Cable", name: "#GRIDline Lumen Cable" },
+  // 29 Oct 2026 handoff (Worn items and new Carry Gear): the Sheath is now the Scabbard
+  { oldName: "Sheath", name: "Scabbard" }
 ];
 
 EN.gearCatalog.melee = {
@@ -51,7 +53,7 @@ EN.gearCatalog.melee = {
        retired; the engine reads the Oomph off this traits array (engine.js oomphTraits), which is
        also how it knows Knuckles augment a punch rather than being a weapon of their own. */
     { name: "Knuckles", group: "Simple", price: 15, damage: "Augments unarmed strikes", range: "Melee",
-      traits: ["Light", "Concealable", "Oomph +1 (Unarmed)"], availability: "Common", legality: "Restricted",
+      traits: ["Light", "Concealable", "Oomph +1 (Unarmed)", "Worn"], availability: "Common", legality: "Restricted",
       desc: "Composite or alloy bands that turn a punch into a hospital visit. Easy to hide. Harder to explain when a patrol officer flips your jacket open." },
     // shafted: a long-shafted weapon, which is what Staff & Spear Master keys on.
     // NOT the same question as "has Reach": a Whip reaches 2 and is not one.
@@ -63,11 +65,11 @@ EN.gearCatalog.melee = {
       traits: ["Reach 1", "Versatile (1d8)"], availability: "Common", legality: "Legal",
       desc: "A length of tough wood or composite pole, hip-high to head-high depending on the wielder. Street monks, crowd-control drills, and old-school brawlers all swear by it for reach and discipline." },
     { name: "Shock Gloves", group: "Simple", price: 100, damage: "Unarmed + 1d4 Electric", range: "Melee",
-      traits: ["Light", "Nonlethal", "Shock"], availability: "Uncommon", legality: "Restricted",
+      traits: ["Light", "Nonlethal", "Shock", "Worn"], availability: "Uncommon", legality: "Restricted",
       desc: "Reinforced gloves wired to a discharge core in the cuff. Your fists hit normally. The charge does the rest, and the lights in the room flicker once when it does.",
       effect: "Augments unarmed strikes. On a hit, you deal your normal unarmed strike damage plus an additional 1d4 Electric damage." },
     { name: "Snap-Blades", group: "Simple", price: 150, damage: "1d6 Slashing", range: "Melee",
-      traits: ["Light", "Finesse", "Concealable"], availability: "Uncommon", legality: "Restricted",
+      traits: ["Light", "Finesse", "Concealable", "Worn"], availability: "Uncommon", legality: "Restricted",
       desc: "Hidden blades that ride along the forearm until a flick of the wrist sends them out. Quiet to carry, and a bad answer to a casual search." },
     { name: "Spear", shafted: true, group: "Simple", price: 40, damage: "1d6 Piercing", range: "Melee (Reach 1) or thrown 4 / 12",
       traits: ["Reach 1", "Thrown (4/12)", "Versatile (1d8)"], availability: "Common", legality: "Legal",

@@ -235,7 +235,7 @@ EN.gearCatalog.armor = {
       desc: "A street sign, a manhole cover, a cafeteria tray, bolted to a forearm strap and a grab handle. It stops what it stops and dents doing it. Everyone in the lower wards has made one at least once, usually in a hurry.",
       effect: "Adds +1 to your Defense while wielded. It fully occupies the hand. It has only 2 Durability boxes instead of 3." },
     { name: "Ballistic Bracer", kind: "shield", group: "Physical Shield", type: "Physical Shield (+0 Defense, +1d4 Block, Wear 8)", price: 50,
-      defense: 0, blockDie: "1d4", wear: 8, boxes: 3, traits: ["Light", "Off-Hand", "Wear 8"], availability: "Common", legality: "Legal",
+      defense: 0, blockDie: "1d4", wear: 8, boxes: 3, traits: ["Light", "Off-Hand", "Worn", "Wear 8"], availability: "Common", legality: "Legal",
       desc: "A forearm plate of layered polymer and ablative weave, strapped tight enough to throw a punch through. Leaves your hand free for a pistol, a deck, or a fistful of someone's collar.",
       effect: "Allows one-handed weapon use and Invocations with the braced hand." },
     { name: "Riot Shield", kind: "shield", group: "Physical Shield", type: "Physical Shield (+1 Defense, +1d6 Block, Wear 12)", price: 200,
@@ -251,7 +251,7 @@ EN.gearCatalog.armor = {
       desc: "A planted ballistic wall you set down and fight from behind. It doesn't move fast. It doesn't need to. Hold a corridor with one and the corridor is yours until somebody brings a vehicle.",
       effect: "Adds +2 to your Defense while wielded. When you initiate Full Defense, you also gain Three-Quarter Cover until the start of your next turn." },
     { name: "Hard-Light Barrier", kind: "shield", group: "Physical Shield", type: "Physical Shield (+1 Defense, +1d6 Block, Wear 12)", price: 450,
-      defense: 1, blockDie: "1d6", wear: 12, boxes: 3, emitter: true, traits: ["Concealable", "Off-Hand", "Wear 12"], availability: "Uncommon", legality: "Restricted",
+      defense: 1, blockDie: "1d6", wear: 12, boxes: 3, emitter: true, traits: ["Concealable", "Off-Hand", "Worn", "Wear 12"], availability: "Uncommon", legality: "Restricted",
       desc: "A wrist projector that throws a plane of hardened light on command. Stowed, it is a bracelet nobody clocks. Raised, it is a shield that wasn't there a second ago, which is exactly long enough to ruin someone's aim. Prototype corporate tech, and very much not on a shelf anywhere.",
       effect: "Adds +1 to your Defense while wielded. It projects when you raise it to Block or enter Full Defense, at no extra cost to bring up, and fully occupies the hand while active. Stowed, the projector reads as a wrist unit or bracelet rather than a weapon. Its Durability boxes represent projector overload rather than physical wear." },
 

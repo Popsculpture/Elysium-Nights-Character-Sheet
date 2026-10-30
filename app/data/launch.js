@@ -239,7 +239,8 @@ EN.launch = (function () {
       "Disguise and Styling Kit", "Venue Kit", "Document and Contract Kit", "Rite Calibration Kit",
       // Field Devices and Gadgets (41)
       "Multi Tool", "Crowbar", "Fire Extinguisher", "Rebreather", "Cargo Mule", "Backpack", "Fanny Pack",
-      "Sheath", "Swift Draw Holster", "Utility Belt", "Flashlight", "Lighter", "Echolight Baton",
+      "Scabbard", "Swift Draw Holster", "Utility Belt", "Back Scabbard", "Weapon Sling",
+      "Courier Satchel (Bite Lining)", "Courier Satchel (Dump and Run)", "Courier Satchel (Transit Seal)", "Flashlight", "Lighter", "Echolight Baton",
       "Bug Scanner", "Metal Detector", "Throwcam", "Halo Drone", "Whisperlink Earpiece", "Walkie Talkie",
       "Wireless Transceiver", "#GRIDline Cable", "#GRIDline Lumen Cable", "Titan Tether", "Grapple Launcher",
       "Ziprunner", "Towrunner", "Autopicker", "Tag Eraser", "Portable Door Alarm Kit", "Motion Sensor Pod",

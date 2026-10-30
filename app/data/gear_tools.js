@@ -314,24 +314,40 @@ EN.gearCatalog.tools = {
     /* ============================== CARRY GEAR ==============================
        Type: Worn Gear · Body Slot: Carry · Load 0 (never counts against your
        own Load Budget). rack = how many items it holds; each Racked item's
-       Load is reduced by 1 (minimum 0). rackFits gates what it can hold:
-       "melee" (Simple/Martial weapons), "sidearm" (Sidearm group), or any
-       non-Carry-Gear item when absent. */
+       Load is reduced by 1 (minimum 0). rackFits gates what it can hold (the
+       values are listed on the table below). */
+    /* The complete Carry Gear table, in book order (29 Oct 2026 handoff, Worn items and new Carry
+       Gear). The Sheath became the Scabbard (EN.gearCatalog.itemRenames moves saves). The table
+       prints no Availability for the five new rows, so they carry none. rackFits: "onehand" a
+       one-handed melee weapon (not Two-Handed or Long-Shafted), "twohand" a Two-Handed or
+       Long-Shafted melee weapon, "longarm" a Longarm, "sidearm" a Sidearm; absent, anything (a
+       Courier Satchel's plausibility is the GM's call, never a hard block). freeDraw: the racked
+       weapon draws as part of the first attack each encounter (the Freelancer tab's chip). */
+    { name: "Back Scabbard", bucket: "carry", group: "Carry Gear", price: 40, legality: "Legal", slot: "Carry", rack: 1, rackFits: "twohand", freeDraw: true,
+      effect: "Rack 1 Two-Handed or Long-Shafted melee weapon. Load reduced by 1 (minimum 0). Draw it as part of your first attack each encounter; Quick Draw doesn't stack." },
     { name: "Backpack", bucket: "carry", group: "Carry Gear", price: 35, availability: "Common", legality: "Legal", slot: "Carry", rack: 3,
       effect: "Rack 3 items. Each item's Load is reduced by 1 (minimum 0).",
       desc: "The default answer to where the rest of it goes. More room than a belt, at the cost of digging for it under pressure." },
+    { name: "Courier Satchel (Bite Lining)", bucket: "carry", group: "Carry Gear", price: 60, legality: "Restricted", slot: "Carry", rack: 2,
+      effect: "Rack 2 items. Each item's Load is reduced by 1 (minimum 0). Shock mesh in the flap: anyone but you who reaches in, including with a Sleight check, takes 1d4 Electric damage, and you know it happened. It can't be taken off you unless you're Prone or Grappled." },
+    { name: "Courier Satchel (Dump and Run)", bucket: "carry", group: "Carry Gear", price: 60, legality: "Legal", slot: "Carry", rack: 2, dumpAndRun: true,
+      effect: "Rack 2 items. Each item's Load is reduced by 1 (minimum 0). Swift Action, while fleeing or in a chase: throw the satchel. One pursuer of the GM's choice breaks off to grab it unless they pass a Wits Save (DC 12). The bag and everything Racked in it are gone." },
+    { name: "Courier Satchel (Transit Seal)", bucket: "carry", group: "Carry Gear", price: 60, legality: "Licensed", slot: "Carry", rack: 2,
+      effect: "Rack 2 items. Each item's Load is reduced by 1 (minimum 0). Bonded courier seal: routine scans read SEALED / IN TRANSIT, and you gain Edge on checks to get a Racked item through a checkpoint without the bag being opened. If it's opened anyway and holds anything Restricted or Contraband, you gain 1 Heat." },
     { name: "Fanny Pack", bucket: "carry", group: "Carry Gear", price: 15, availability: "Common", legality: "Legal", slot: "Carry", rack: 1,
       effect: "Rack 1 item. Its Load is reduced by 1 (minimum 0).",
       desc: "Reads as harmless. A courier's kit, a tourist's kit, whatever the block expects to see. Holds just enough to be worth wearing." },
-    { name: "Sheath", bucket: "carry", group: "Carry Gear", price: 35, availability: "Common", legality: "Legal", slot: "Carry", rack: 1, rackFits: "melee",
-      effect: "As long as the weapon is sheathed here, draw it as part of your first attack with it in an encounter, rather than spending a separate action. Doesn't stack with the Quick Draw weapon trait. The weapon's Load is also reduced by 1 (minimum 0) while sheathed here.",
-      desc: "A dedicated rig for one blade, worn at the hip, the thigh, or across the back. The melee counterpart to a Swift Draw Holster." },
-    { name: "Swift Draw Holster", bucket: "carry", group: "Carry Gear", price: 35, availability: "Common", legality: "Legal", slot: "Carry", rack: 1, rackFits: "sidearm",
-      effect: "As long as the weapon is holstered there, draw it as part of your first attack with it in an encounter, rather than spending a separate action. Doesn't stack with the Quick Draw weapon trait. The weapon's Load is also reduced by 1 (minimum 0) while holstered there.",
+    { name: "Scabbard", bucket: "carry", group: "Carry Gear", price: 35, availability: "Common", legality: "Legal", slot: "Carry", rack: 1, rackFits: "onehand", freeDraw: true,
+      effect: "Rack 1 one-handed melee weapon (not Two-Handed or Long-Shafted). Load reduced by 1 (minimum 0). Draw it as part of your first attack each encounter; Quick Draw doesn't stack.",
+      desc: "A dedicated rig for one blade, worn at the hip or the thigh. The melee counterpart to a Swift Draw Holster." },
+    { name: "Swift Draw Holster", bucket: "carry", group: "Carry Gear", price: 35, availability: "Common", legality: "Legal", slot: "Carry", rack: 1, rackFits: "sidearm", freeDraw: true,
+      effect: "Rack 1 sidearm. Load reduced by 1 (minimum 0). Draw it as part of your first attack each encounter; Quick Draw doesn't stack.",
       desc: "A custom rig tuned to one specific sidearm." },
     { name: "Utility Belt", bucket: "carry", group: "Carry Gear", price: 25, availability: "Common", legality: "Legal", slot: "Carry", rack: 2,
       effect: "Rack 2 items. Each item's Load is reduced by 1 (minimum 0).",
       desc: "Loops, pouches, a clasp or two. The gear you actually reach for mid-job lives here, not at the bottom of a bag." },
+    { name: "Weapon Sling", bucket: "carry", group: "Carry Gear", price: 35, legality: "Legal", slot: "Carry", rack: 1, rackFits: "longarm", freeDraw: true,
+      effect: "Rack 1 Longarm. Load reduced by 1 (minimum 0). Draw it as part of your first attack each encounter; Quick Draw doesn't stack." },
     { name: "Cargo Mule", bucket: "devices", group: "Everyday Utility", price: 600, availability: "Uncommon", legality: "Licensed",
       effect: "The Mule follows simple voice or app commands and carries up to 8 Load (see Encumbrance and Load) without tiring or complaining. It can't fight, and it flees if attacked.",
       desc: "A squat, multi-legged robotic lockbox that trots along behind its owner carrying the spoils. Couriers, scavengers, and lazy fixers swear by them.",

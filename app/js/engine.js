@@ -3018,7 +3018,12 @@ EN.engine = (function () {
   function rackLimit(it) { return (it && it.rack) || 0; }
   function rackFits(gearIt, it) {
     if (!gearIt || !it || isCarryGear(it)) return false;      // no bags inside bags
-    if (gearIt.rackFits === "melee") return it.group === "Simple" || it.group === "Martial";
+    var melee = it.group === "Simple" || it.group === "Martial";
+    var twoish = (it.traits || []).indexOf("Two-Handed") !== -1 || isLongShafted(it);
+    if (gearIt.rackFits === "melee") return melee;
+    if (gearIt.rackFits === "onehand") return melee && !twoish;                 // Scabbard
+    if (gearIt.rackFits === "twohand") return melee && twoish;                  // Back Scabbard
+    if (gearIt.rackFits === "longarm") return it.group === "Longarm";           // Weapon Sling
     if (gearIt.rackFits === "sidearm") return it.group === "Sidearm";
     return true;                                              // plausibility is the GM's call
   }
@@ -3075,8 +3080,14 @@ EN.engine = (function () {
   // "actually worn" for the Worn Gear Trait's Load break: carry status worn, or equipped armor / slot gear / Rig
   function isWornEntry(ch, e) {
     var ek = entryKey(e);
-    return !!((ch.carry && ch.carry[ek] === "worn") || ch.equippedArmor === ek
-              || isSlotEquipped(ch, ek) || (ch.rig && ch.rig.key === ek));
+    if ((ch.carry && ch.carry[ek] === "worn") || ch.equippedArmor === ek || isSlotEquipped(ch, ek) || (ch.rig && ch.rig.key === ek)) return true;
+    /* A Worn weapon you have equipped is on you, not packed (29 Oct 2026: Shock Gloves, Knuckles,
+       Snap-Blades gained Worn): its Load break applies, unless it is Racked, which is packing it. */
+    if ((ch.equippedWeapons || []).indexOf(ek) !== -1 && !(ch.carry && ch.carry[ek] === "racked")) {
+      var it = loadCatalogItem(e.name);
+      return ((it && it.traits) || []).indexOf("Worn") !== -1;
+    }
+    return false;
   }
   /* The Load one equipment entry costs right now, exactly as encumbranceInfo counts it: its Load times
      its quantity, less 1 once while validly Racked (min 0). `units` limits the count to that many

@@ -5850,6 +5850,13 @@ EN.combatView = (function () {
             (s.key === "pf" ? "PRECISION FRAME" : "SPEC") + " · CRIT RANGE +1");
         });
 
+        /* Racked in a Holster, Scabbard, Back Scabbard or Weapon Sling: "Draw it as part of your first
+           attack each encounter; Quick Draw doesn't stack." A weapon with Quick Draw gets no chip. */
+        var drawGear = (wKey && eng.rackState) ? eng.rackState(ch).byItem[wKey] : null;
+        var drawIt = drawGear ? eng.catalogItem(drawGear.name) : null;
+        var drawChip = (drawIt && drawIt.freeDraw && (it.traits || []).indexOf("Quick Draw") === -1)
+          ? el("span.chip.free-draw", { title: "Racked in your " + drawGear.name + ": draw it as part of your first attack each encounter, not a separate action. Quick Draw doesn't stack.",
+              style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "DRAWS FREE · " + drawGear.name.toUpperCase()) : null;
         var head = el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap", marginBottom: "2px" } }, [
           equippedNames.length > 1 ? reorderArrows(wname, wi) : null,
           // row.label, not it.name: two equipped copies of one weapon are two rows with two
@@ -5859,10 +5866,10 @@ EN.combatView = (function () {
           snagWhy ? snagChip(snagWhy) : null,
           h.focus ? el("span.chip", { title: "Skill Focus: " + h.cat + " (" + h.focus.aspect + ")" + (h.focus.granted ? " · Free overlap Focus" : "") + ". Adds Caliber (" + eng.fmtMod(h.focusCal) + ") to attack rolls with this weapon type, outside the +15 static cap.",
             style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + h.focusCal) : null
-        ].concat(critChips).concat([
+        ].concat(critChips).concat([drawChip,
           el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype }),
-          // real dice roll on the table, but the magazine is still the app's job
-          (physicalDice() && isRanged) ? el("button.btn.sm", {
+          // real dice roll on the table, but the magazine is still the app's job; a Jammed firearm can't fire
+          (physicalDice() && isRanged && !(isJammed(ch, jamKeyOf(wKey, it.name)) && !/Bowfire/i.test(h.cat || ""))) ? el("button.btn.sm", {
             title: "Spend this weapon's ammo for one use; roll the dice yourself",
             style: { color: "var(--ember)", borderColor: "var(--ember)", flex: "0 0 auto" },
             onclick: function () { fireWeapon(wKey); } }, "FIRE") : null
@@ -6506,7 +6513,7 @@ EN.combatView = (function () {
         var staleKey = !rackedGear ? (ch.racked || {})[key] : null;
         statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
           el("span.mono", { title: "Equipped gear is managed in Inventory", style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".06em" }, text: "ON-PERSON" }),
-          (targets.length || rackedGear || staleKey) ? el("select", { title: "Rack this in worn Carry Gear (Load reduced by 1, and a Sheath/Holster draws it free on your first attack)",
+          (targets.length || rackedGear || staleKey) ? el("select", { title: "Rack this in worn Carry Gear (Load reduced by 1, and a Holster, Scabbard, Back Scabbard or Weapon Sling draws it free on your first attack each encounter)",
             style: { fontSize: "11px", width: "auto" },
             onchange: function () { var v = this.value; store.update(function (c) {
               c.racked = c.racked || {}; c.carry = c.carry || {};

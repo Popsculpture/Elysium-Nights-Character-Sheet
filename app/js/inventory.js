@@ -238,7 +238,7 @@ EN.inventoryView = (function () {
       // "adrift" so it can always be cleared
       var staleKey = !rackedGear ? (ch.racked || {})[key] : null;
       if (!targets.length && !rackedGear && !staleKey) return null;
-      return el("select", { title: "Rack this in worn Carry Gear: Load reduced by 1, and a Sheath or Holster draws it free on your first attack",
+      return el("select", { title: "Rack this in worn Carry Gear: Load reduced by 1, and a Holster, Scabbard, Back Scabbard or Weapon Sling draws it free on your first attack each encounter",
         style: { fontSize: "11px", width: "auto" },
         onchange: function () { var v = this.value; store.update(function (c) {
           c.racked = c.racked || {}; c.carry = c.carry || {};
@@ -432,6 +432,34 @@ EN.inventoryView = (function () {
       el("button.btn.sm.relay-goto", { type: "button", disabled: !cy, title: cy ? "Fire it from the #GRID tab's Ciphers panel" : "Nothing loaded to fire",
         style: cy ? { color: "var(--warn)", borderColor: "var(--warn)" } : null,
         onclick: function () { if (!cy) return; if (EN.gridView && EN.gridView.openRelay) EN.gridView.openRelay(key); EN.app.gotoTab("grid"); } }, "⚡ FIRE ON #GRID ▸")
+    ]);
+  }
+  /* COURIER SATCHEL (DUMP AND RUN): "Swift Action, while fleeing or in a chase: throw the satchel ...
+     The bag and everything Racked in it are gone." Armed, then confirmed; it removes the satchel and
+     every item Racked in it from the Stash, and clears what pointed at them. */
+  function dumpLine(ch, it, entry) {
+    if (!it.dumpAndRun || !entry) return null;
+    var key = entryKey(entry);
+    var inside = (EN.engine.rackState(ch).byGear[key] || []).map(function (x) { return x.name; });
+    return el("div.row.wrap.dump-run", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+      el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--text2)" },
+        text: inside.length ? "Racked in it: " + inside.join(", ") + "." : "Nothing Racked in it." }),
+      EN.ui.armButton("dump:" + key, { label: "DUMP AND RUN", armedLabel: "THROW IT, AND ALL OF IT?",
+        title: "Swift Action, while fleeing or in a chase: throw the satchel. The bag and everything Racked in it leave your Stash.",
+        onConfirm: function () {
+          var gone = [];
+          store.update(function (c) {
+            var keys = [key];
+            Object.keys(c.racked || {}).forEach(function (k) { if (c.racked[k] === key && (c.carry || {})[k] === "racked") keys.push(k); });
+            c.equipment = (c.equipment || []).filter(function (x) { var k = entryKey(x); if (keys.indexOf(k) !== -1) { gone.push(x.name); return false; } return true; });
+            keys.forEach(function (k) {
+              if (c.carry) delete c.carry[k];
+              if (c.racked) delete c.racked[k];
+              if (Array.isArray(c.equippedWeapons)) c.equippedWeapons = c.equippedWeapons.filter(function (w) { return w !== k; });
+            });
+          });
+          toast("Satchel thrown: " + gone.join(", ") + (gone.length > 1 ? " are" : " is") + " gone.");
+        } })
     ]);
   }
   function buy(it, premium) {
@@ -958,11 +986,15 @@ EN.inventoryView = (function () {
     // its generic Worn carry status instead.
     // A single-slot item is worn when it fills its slot; everything else reads its generic
     // carry status. Only the Trauma Rig actually converts this into a Load break.
-    var isWorn = mode === "stash" && (
-      EN.engine.isSlotEquipped(ch, ownedKey) || !!(ch.carry && ch.carry[ownedKey] === "worn"));
+    // The engine's own reading of "actually worn" (slot gear, worn carry status, the live Rig, an
+    // equipped Worn weapon), and its own count of the entry's Load, so the card and the LOAD bar
+    // agree, a GM -1 included or set aside while a Worn item is worn.
+    var isWorn = mode === "stash" && !!entry && (EN.engine.isWornEntry ? EN.engine.isWornEntry(ch, entry)
+      : (EN.engine.isSlotEquipped(ch, ownedKey) || !!(ch.carry && ch.carry[ownedKey] === "worn")));
     var ld = EN.engine.itemLoad ? EN.engine.itemLoad(it.name, { worn: isWorn }) : 0;
     var ldBase = ld;   // before the GM's adjustment, for the Load chip's own wording
-    if (mode === "stash" && entry && entry.loadLowered) ld = Math.max(0, ld - 1);
+    if (mode === "stash" && entry && EN.engine.entryUnitLoad) ld = EN.engine.entryUnitLoad(ch, entry, { worn: isWorn });
+    else if (mode === "stash" && entry && entry.loadLowered) ld = Math.max(0, ld - 1);
     // Benched by a Body Slot conflict (ch.slotInert): still worn, still keeps
     // its Load break, it just isn't actively benefiting from (or competing
     // for) the slot right now, so the pill shouldn't glow "worn" while inert.
@@ -1140,6 +1172,7 @@ EN.inventoryView = (function () {
       it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it, entry) : null),
       mode === "stash" ? armorResistPicker(ch, it, entry) : null,
       it.relayTier ? relayLine(ch, it, mode, entry) : null,
+      mode === "stash" && it.dumpAndRun ? dumpLine(ch, it, entry) : null,
       open && it.desc ? EN.ui.ruleText(el("p", { style: { marginTop: "8px" } }), it.desc, lo) : null,
       open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(upkeepOf(it, owned)) + "/wk Upkeep" + (owned && owned.premium ? " (Premium plan)" : "") : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
