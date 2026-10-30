@@ -5251,6 +5251,14 @@ EN.combatView = (function () {
             title: "Nothing to jack into",
             say: "Every cipher you know is sitting behind glass. The #GRID does not care how good you are if you turned up without hardware." };
           if (dk.bricked) return { state: "bricked", what: "Smartdeck" };
+          /* A Racked deck is stowed (30 Oct 2026): it goes through this same gate as no deck at all,
+             so the Bandwidth abilities leave the list until it is taken out. The box offers TAKE OUT. */
+          var dkE = dk.key ? eng.findEntry(ch, dk.key) : null;
+          var stw = (dkE && eng.stowedInfo) ? eng.stowedInfo(ch, dkE) : null;
+          var dkName = dk.type === "buddy" ? "B&E Buddy" : "Smartdeck";
+          if (stw) return { state: "missing", stowed: stw, deckKey: dk.key, what: dkName,
+            title: "Racked in your " + stw.gearName,
+            say: "Your " + dk.tier + " " + dkName + " is stowed in your " + stw.gearName + ", not in hand. Nothing runs through it until you take it out." };
           return { state: "ok" };
         }
         return null;
@@ -5382,8 +5390,14 @@ EN.combatView = (function () {
             el("div.gg-title", { text: "⚠ " + _dep.title }),
             el("p.gg-say", { text: _dep.say }),
             el("div.gg-count", { text: resourceFeats.length + " " + d.resource.name + " " +
-              (resourceFeats.length === 1 ? "ability is" : "abilities are") + " unavailable until a " + _dep.what + " is equipped." }),
-            el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
+              (resourceFeats.length === 1 ? "ability is" : "abilities are") + " unavailable until " +
+              (_dep.stowed ? "you take your " + _dep.what + " out." : "a " + _dep.what + " is equipped.") }),
+            _dep.stowed
+              ? el("button.btn.sm.take-out", { style: { color: "var(--warn)", borderColor: "var(--warn)" },
+                  title: "Take it out of the " + _dep.stowed.gearName + " (" + _dep.stowed.action + "). Its Load doesn't change.",
+                  onclick: function () { store.update(function (c) { eng.setInHand(c, _dep.deckKey, true); }); toast("Your " + _dep.what + " is out (" + _dep.stowed.action + ")."); } },
+                  "RACKED · TAKE OUT (" + _dep.stowed.action.toUpperCase() + ")")
+              : el("button.btn.sm", { style: { color: "var(--danger)", borderColor: "var(--danger)" },
               title: "Open the Stash and equip one",
               onclick: function () { if (EN.inventoryView.openStash) EN.inventoryView.openStash(_dep.cat); EN.app.gotoTab("gear"); } },
               "⇒ EQUIP A " + _dep.what.toUpperCase())

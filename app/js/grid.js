@@ -526,6 +526,10 @@ EN.gridView = (function () {
       bwCur = eng.clamp(bwCur, 0, bwMax);
       // Bandwidth pool lives in the Rig panel; cipher/exploit costs below still read bwCur.
 
+      /* A Smartdeck Racked in a Backpack (or any Carry Gear) is stowed: nothing runs through it until it
+         is taken out (30 Oct 2026), the Signature Exploits included, the same as having no deck. */
+      var rigEntry = gd.deck && gd.deck.key ? eng.findEntry(ch, gd.deck.key) : null;
+      var rigStow = (rigEntry && eng.stowedInfo) ? eng.stowedInfo(ch, rigEntry) : null;
       // ---- Signature #GRID Exploits ----
       var exploits = eng.resourceAbilities(ch) || [];
       if (exploits.length) {
@@ -534,14 +538,14 @@ EN.gridView = (function () {
         rows.push(noteP("Each costs 1 Bandwidth; meet its recharge trigger to refund it (use + to restore). USE spends the Bandwidth now."));
         exploits.forEach(function (ab) {
           var k = "exploit-" + ab.name, open = !!_open[k];
-          var cost = ab.cost || 1, can = bwCur >= cost;
+          var cost = ab.cost || 1, can = bwCur >= cost && !rigStow;
           /* USE leads the name here too, matching the Freelancer ability cards. The chips stay in
              their right-hand cluster, so the row reads button, name, cost. The name carries
              flex:1 1 0 with min-width:0 for the reason it does there: #GRIDroid sets every .row
              to flex-wrap:wrap, and a wrapping flex container picks its lines from each item's
              BASIS before it considers shrinking, so a name at auto (max-content) drops to the
              next row whole and strands the button above it. At 0 it shares the line. */
-          var useBtn = el("button.btn.sm", { disabled: !can, title: can ? "Spend " + cost + " Bandwidth" : "Not enough Bandwidth",
+          var useBtn = el("button.btn.sm", { disabled: !can, title: rigStow ? "Your rig is Racked: take it out first" : can ? "Spend " + cost + " Bandwidth" : "Not enough Bandwidth",
             style: can ? { color: "var(--accent)", borderColor: "var(--accent)", flex: "0 0 auto" } : { flex: "0 0 auto" },
             onclick: function () { if (can) { setBandwidth(Math.max(0, bwCur - cost)); toast(ab.name + " · −" + cost + " Bandwidth"); } } }, "USE");
           rows.push(el("div.feature", { style: { borderLeftColor: "var(--accent)" } }, [
@@ -576,8 +580,6 @@ EN.gridView = (function () {
       var owned = B.repertoireCiphers ? B.repertoireCiphers(ch) : [];
       /* A Smartdeck Racked in a Backpack (or any Carry Gear) is stowed: it runs no ciphers until it is
          taken out (30 Oct 2026). The prompt sits at the head of the Repertoire. */
-      var rigEntry = deck && deck.key ? eng.findEntry(ch, deck.key) : null;
-      var rigStow = (rigEntry && eng.stowedInfo) ? eng.stowedInfo(ch, rigEntry) : null;
       if (rigStow) rows.push(el("div.muted-box.rig-stowed", { style: { borderColor: "var(--warn)", color: "var(--warn)", margin: "6px 0", textAlign: "left" } }, [
         el("span", { text: "Your " + deck.tier + " " + (deck.type === "buddy" ? "B&E Buddy" : "Smartdeck") + " is Racked in your " + rigStow.gearName + ": no ciphers run until you take it out. " }),
         el("button.btn.sm.take-out", { type: "button", title: "Take it out (" + rigStow.action + "). Its Load doesn't change.", style: { marginLeft: "6px" },
