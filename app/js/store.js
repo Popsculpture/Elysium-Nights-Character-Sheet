@@ -92,7 +92,7 @@ EN.store = (function () {
       subclass: null,
       classSkillChoices: [],
       classGearChoices: { weapons: [], armor: [], tools: [], vehicles: [] },  // "choose one" gear picks
-      // Starting Gear Kit (Core Pack + Class Kit + Subclass Extra, 700 budget):
+      // Starting Gear Kit (Core Pack + Class Kit + Subclass Extra, 800 budget):
       // picks = {slotKey: 0|1}, alt = use the subclass Alternate Pick, granted
       // = [{key, qty}] equipment entries added at claim (for UNDO), and the
       // Glimmer that landed on the stick. claimedClass/Subclass pin what was

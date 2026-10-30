@@ -2,15 +2,15 @@
    ELYSIUM NIGHTS · Starting Gear Kits (Part 1, "Starting Gear Kits")
    The Core Freelance Pack every class gets, one Class Kit per class (option
    slots pick one of two), and a Subclass Extra. Everything prices off the
-   main gear catalogs by exact item name; the 700 Glimmer budget's leftover
+   main gear catalogs by exact item name; the 800 Glimmer budget's leftover
    loads onto the Glimmer Stick as starting cash.
    =========================================================================== */
 window.EN = window.EN || {};
 
 EN.kits = {
-  budget: 700,
+  budget: 800,   // 29 Oct 2026: was 700; every kit gained a paid Carry choice
   intro: "Pick your Class Kit once your Class and Subclass are locked, then add your Subclass Extra. Where a slot lists two options, pick one.",
-  budgetNote: "Every Freelancer starts with 𝒢700 to spend across the Core Pack, Class Kit, and Subclass Extra. Add up whatever you picked. Whatever is left over loads onto the Glimmer Stick in your Core Pack: real spending money for the first job, not a rounding error. Nobody's kit runs past that number, however they build it. Pick cheap and walk in with more cash on hand. Pick expensive and walk in with nothing to spare. Example: a Grifter Hustler who takes the Pocket Pistol spends 𝒢570 on the kit and 𝒢120 on the Fake License Portfolio, 𝒢690 in all, and walks in with 𝒢10. Take Snap-Blades instead and they walk in with 𝒢125. A Wildcard's 𝒢75 comes on top of whatever is left.",
+  budgetNote: "Every Freelancer starts with 𝒢800 to spend across the Core Pack, Class Kit, and Subclass Extra. Add up whatever you picked. Whatever is left over loads onto the Glimmer Stick in your Core Pack: real spending money for the first job, not a rounding error. Nobody's kit runs past that number, however they build it. Pick cheap and walk in with more cash on hand. Pick expensive and walk in with nothing to spare. Example: a Grifter Hustler who takes the Pocket Pistol and the Swift Draw Holster spends 𝒢605 on the kit and 𝒢120 on the Fake License Portfolio, 𝒢725 in all, and walks in with 𝒢75. Take Snap-Blades instead and they walk in with 𝒢190. A Wildcard's 𝒢75 comes on top of whatever is left.",
 
   corePack: {
     blurb: "Comms, light, a way to keep files off the #GRID, food, water that won't turn on you, and a stick to hold whatever Glimmer is left once the shopping's done.",
@@ -25,7 +25,10 @@ EN.kits = {
   },
 
   /* one kit per class key; slots are pick-one-of-two, each option a list of
-     {name, qty} entries so "plus 1 reload" rides along as its ammo box */
+     {name, qty} entries so "plus 1 reload" rides along as its ammo box.
+     CARRY (29 Oct 2026): every kit gained a paid Carry choice, the bullet just above the Core
+     Freelance Pack in the book's kit lists, priced from the catalogue like the other slots. A kit
+     claimed before it existed keeps its gear: the panel says so and adds nothing. */
   classKits: {
     codebreaker: {
       note: "Your Smartdeck and Repertoire come from your class picks and cost nothing further here.",
@@ -42,6 +45,10 @@ EN.kits = {
         { key: "gear", label: "Gear", options: [
           { label: "Trauma Slap Patch", items: [{ name: "Trauma Slap Patch" }] },
           { label: "Faraday Pouch", items: [{ name: "Faraday Pouch" }] }
+        ] },
+        { key: "carry", label: "Carry", options: [
+          { label: "Swift Draw Holster", items: [{ name: "Swift Draw Holster" }] },
+          { label: "Backpack", items: [{ name: "Backpack" }] }
         ] }
       ]
     },
@@ -56,6 +63,10 @@ EN.kits = {
         { key: "armor", label: "Armor", options: [
           { label: "Composite Kit", items: [{ name: "Composite Kit" }] },
           { label: "Liner Mesh", items: [{ name: "Liner Mesh" }] }
+        ] },
+        { key: "carry", label: "Carry", options: [
+          { label: "Scabbard", items: [{ name: "Scabbard" }] },
+          { label: "Utility Belt", items: [{ name: "Utility Belt" }] }
         ] }
       ]
     },
@@ -65,6 +76,10 @@ EN.kits = {
         { key: "weapon", label: "Weapon", options: [
           { label: "Pocket Pistol plus 1 reload", items: [{ name: "Pocket Pistol" }, { name: "Pistol Ammo" }] },
           { label: "Snap-Blades", items: [{ name: "Snap-Blades" }] }
+        ] },
+        { key: "carry", label: "Carry", options: [
+          { label: "Swift Draw Holster", items: [{ name: "Swift Draw Holster" }] },
+          { label: "Utility Belt", items: [{ name: "Utility Belt" }] }
         ] }
       ]
     },
@@ -75,6 +90,10 @@ EN.kits = {
         { key: "weapon", label: "Weapon", options: [
           { label: "Pistol plus 1 reload", items: [{ name: "Pistol" }, { name: "Pistol Ammo" }] },
           { label: "Pocket Pistol plus 1 reload", items: [{ name: "Pocket Pistol" }, { name: "Pistol Ammo" }] }
+        ] },
+        { key: "carry", label: "Carry", options: [
+          { label: "Swift Draw Holster", items: [{ name: "Swift Draw Holster" }] },
+          { label: "Utility Belt", items: [{ name: "Utility Belt" }] }
         ] }
       ]
     },
@@ -84,6 +103,10 @@ EN.kits = {
         { key: "weapon", label: "Weapon", options: [
           { label: "Pocket Pistol plus 1 reload", items: [{ name: "Pocket Pistol" }, { name: "Pistol Ammo" }] },
           { label: "Snap-Blades", items: [{ name: "Snap-Blades" }] }
+        ] },
+        { key: "carry", label: "Carry", options: [
+          { label: "Swift Draw Holster", items: [{ name: "Swift Draw Holster" }] },
+          { label: "Courier Satchel (Transit Seal)", items: [{ name: "Courier Satchel (Transit Seal)" }] }
         ] }
       ]
     },
@@ -94,6 +117,10 @@ EN.kits = {
         { key: "gear", label: "Gear", options: [
           { label: "Ritual Reagent Pouch", items: [{ name: "Ritual Reagent Pouch" }] },
           { label: "Knife", items: [{ name: "Knife" }] }
+        ] },
+        { key: "carry", label: "Carry", options: [
+          { label: "Scabbard", items: [{ name: "Scabbard" }] },
+          { label: "Backpack", items: [{ name: "Backpack" }] }
         ] }
       ]
     },
@@ -108,6 +135,10 @@ EN.kits = {
         { key: "armor", label: "Armor", options: [
           { label: "Hypeplate", items: [{ name: "Hypeplate" }] },
           { label: "Liner Mesh", items: [{ name: "Liner Mesh" }] }
+        ] },
+        { key: "carry", label: "Carry", options: [
+          { label: "Swift Draw Holster", items: [{ name: "Swift Draw Holster" }] },
+          { label: "Backpack", items: [{ name: "Backpack" }] }
         ] }
       ]
     }
@@ -131,7 +162,7 @@ EN.kits = {
     the_headhunter:   { items: [{ name: "Custody and Control Kit" }, { name: "Standard Cuffs" }] },
     smuggler:         { items: [{ name: "Tag Eraser" }, { name: "Fake License Portfolio" }] },
     // `row` is the Subclass Extras table's Wildcard row in the book's words (PHB:3327; the author's answer 4, 24 October 2026)
-    wildcard:         { glimmer: 75, row: "𝒢75 on the Glimmer Stick, on top of whatever is left of your 𝒢700", note: "A Wildcard skips the gadget. Their subclass gear is 𝒢75 straight onto the stick, better odds on the cash they start with." },
+    wildcard:         { glimmer: 75, row: "𝒢75 on the Glimmer Stick, on top of whatever is left of your 𝒢800", note: "A Wildcard skips the gadget. Their subclass gear is 𝒢75 straight onto the stick, better odds on the cash they start with." },
     shiv:             { items: [{ name: "Dagger" }] },
     harmonist:        { items: [{ name: "Flow Tonic Vial" }] },
     kensei:           { items: [{ name: "Shock Gloves" }] },

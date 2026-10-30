@@ -1334,7 +1334,7 @@ EN.builder = (function () {
 
   /* ---------- Starting Gear Kit (Core Pack + Class Kit + Subclass Extra) ----
      Data in EN.kits; items price off the main gear catalogs by exact name and
-     the 700 budget's leftover loads onto the Glimmer Stick as starting cash.
+     the 800 budget's leftover loads onto the Glimmer Stick as starting cash.
      Claiming writes real equipment entries (per-instance ids for non-stackable
      gear, pooled qty for consumables/ammo) and records exactly what it granted
      so UNDO can take every line and the Glimmer back. */
@@ -1385,7 +1385,7 @@ EN.builder = (function () {
       (effExtra.items || []).forEach(function (e) { items.push(e); });
     }
     var cost = 0; items.forEach(function (e) { cost += kitPrice(e); });
-    var leftover = (K.budget || 700) - cost + extraGlimmer;
+    var leftover = (K.budget || 800) - cost + extraGlimmer;
     return { kit: kit, items: items, slots: slots, extraDef: extraDef, altDef: altDef, useAlt: useAlt,
              effExtra: effExtra, cost: cost, extraGlimmer: extraGlimmer, leftover: leftover,
              allPicked: allPicked, ready: allPicked && !!ch.subclass };
@@ -1396,7 +1396,7 @@ EN.builder = (function () {
      Rig, both free with the class, and the Class Kit notes in app/data/kits.js say so. Nothing
      granted either: Nessa filed with no deck, "none jacked in", and 7 Bandwidth abilities dark.
      Claim Starting Kit now adds the item as one more Carried line and puts it in its slot (the
-     deck jacked in, the Rig worn), the same way it wears the kit's armor. It is outside the 700
+     deck jacked in, the Rig worn), the same way it wears the kit's armor. It is outside the 800
      budget: it never enters kitSelection's items, so the KIT TOTAL and the leftover on the
      Glimmer Stick are exactly what they were.
 
@@ -1434,7 +1434,7 @@ EN.builder = (function () {
     var sel = kitSelection(ch);
     if (!sel || !sel.ready) { toast("Lock in your Subclass and pick every kit slot first."); return; }
     if (ch.startingKit.claimed) { toast("Kit already claimed; UNDO it first."); return; }
-    if (sel.leftover < 0) { toast("This kit runs past the 𝒢700 budget; check your picks."); return; }
+    if (sel.leftover < 0) { toast("This kit runs past the 𝒢" + ((EN.kits || {}).budget || 800) + " budget; check your picks."); return; }
     /* B2: the kit lands READY TO PLAY, not Stashed. Every line is marked Carried, the kit's armor
        is worn, and the kit's weapon is equipped: the one the player picked where the kit offers
        a choice (the Weapon slot, or a Subclass Extra that replaces it, like the Toxicologist's
@@ -1476,6 +1476,8 @@ EN.builder = (function () {
         }
         keys.forEach(function (k) {
           if (!c.carry[k] || c.carry[k] === "stashed") c.carry[k] = "carried";
+          // the kit's Carry Gear goes on, so it can rack from the first scene (Carry Gear only works worn)
+          if (it && it.bucket === "carry") c.carry[k] = "worn";
           if (it && (it.kind === "armor" || it.kind === "shield" || it.kind === "focus")) {
             var slotGet = it.kind === "armor" ? c.equippedArmor : it.kind === "shield" ? c.equippedShield : c.equippedFocus;
             if (!slotGet) EN.engine.setEquipSlot(c, it.kind, k);
@@ -1490,6 +1492,7 @@ EN.builder = (function () {
       c.startingKit.claimed = true;
       c.startingKit.granted = granted;
       c.startingKit.glimmerGranted = sel.leftover;
+      c.startingKit.claimedBudget = (EN.kits || {}).budget || 800;   // what the leftover was counted against
       c.startingKit.claimedClass = c.class;
       c.startingKit.claimedSubclass = c.subclass;
     }, { ledger: "Starting kit claimed: the leftover goes on your Glimmer Stick" });
@@ -1568,7 +1571,7 @@ EN.builder = (function () {
     // A1: the free class item, shown as its own line so it plainly sits outside the budget
     var ci = CLASS_ITEMS[ch.class];
     if (ci) kids.push(kitRow("Class Item", [
-      el("span.chip.class-item", { title: "Free with the class, not counted against the " + G + "700. Claiming the kit adds it " + ci.verb + ".",
+      el("span.chip.class-item", { title: "Free with the class, not counted against the " + G + (K.budget || 800) + ". Claiming the kit adds it " + ci.verb + ".",
         style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, ci.name + " · free"),
       ch[ci.flag] ? el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--success)" }, text: "✓ on your record" }) : null
     ]));
@@ -1576,6 +1579,12 @@ EN.builder = (function () {
     sel.slots.forEach(function (s) {
       if (s.replaced) {
         kids.push(kitRow(s.def.label, [el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--flow)" }, text: "replaced by your Subclass Extra" })]));
+        return;
+      }
+      // a kit claimed before this slot existed (the Carry choice, 29 Oct 2026) keeps its gear; nothing is added or charged
+      if (sk.claimed && s.pick == null) {
+        kids.push(kitRow(s.def.label, [el("span.help.kit-slot-later", { style: { margin: 0, fontSize: "10.5px", color: "var(--text3)" },
+          text: "Not part of your kit: this choice came after you claimed it. Buy one in the Gray Market if you want it." })]));
         return;
       }
       var chips = [el("span", { style: { fontFamily: "var(--mono)", fontSize: "10px", color: "var(--text3)" }, text: "choose one:" })]
@@ -1605,13 +1614,22 @@ EN.builder = (function () {
         })]));
       }
     }
-    var budgetColor = sel.leftover < 0 ? "var(--danger)" : "var(--success)";
-    kids.push(el("div.row.wrap", { style: { gap: "14px", alignItems: "center", margin: "8px 0 6px" } }, [
+    /* A claimed kit shows what it WAS: the leftover it actually put on the stick, against the budget
+       of the day (a kit claimed before 29 Oct 2026 was counted against 𝒢700, and keeps that). */
+    var shownCost = sel.cost, shownLeft = sel.leftover;
+    if (sk.claimed) {
+      shownLeft = sk.glimmerGranted || 0;
+      shownCost = (sk.claimedBudget || 700) + (sel.extraGlimmer || 0) - shownLeft;
+    }
+    var budgetColor = shownLeft < 0 ? "var(--danger)" : "var(--success)";
+    kids.push(el("div.row.wrap.kit-totals", { style: { gap: "14px", alignItems: "center", margin: "8px 0 6px" } }, [
       // the kits' GM Guidance box moved to the Game Master's Toolkit (handoff 16 Oct, section 8),
       // so the player builder no longer carries it as this hover text; EN.kits.gmGuidance stays in the data
-      el("span.mono", { style: { fontSize: "14px", color: "var(--text)" } }, "KIT TOTAL " + G + sel.cost),
+      el("span.mono", { style: { fontSize: "14px", color: "var(--text)" } }, "KIT TOTAL " + G + shownCost),
       el("span.mono", { style: { fontSize: "14px", color: budgetColor } },
-        sel.leftover >= 0 ? "LEFTOVER TO GLIMMER STICK " + G + sel.leftover : "OVER BUDGET " + G + (-sel.leftover))
+        shownLeft >= 0 ? "LEFTOVER TO GLIMMER STICK " + G + shownLeft : "OVER BUDGET " + G + (-shownLeft)),
+      sk.claimed && (sk.claimedBudget || 700) !== (K.budget || 800) ? el("span.help", { style: { margin: 0, fontSize: "10.5px" },
+        text: "Claimed against the " + G + (sk.claimedBudget || 700) + " budget of the day." }) : null
     ]));
     if (sk.claimed) {
       var mismatch = sk.claimedClass !== ch.class || sk.claimedSubclass !== ch.subclass;
@@ -1643,7 +1661,7 @@ EN.builder = (function () {
         !sel.ready ? el("span.help", { style: { margin: 0, color: "var(--warn)" }, text: "Pick a Subclass and every slot first." }) : null
       ]));
     }
-    return EN.ui.panel("Starting Gear Kit", G + "700 BUDGET · CORE PACK + CLASS KIT + SUBCLASS EXTRA", kids, { corners: true });
+    return EN.ui.panel("Starting Gear Kit", G + (K.budget || 800) + " BUDGET · CORE PACK + CLASS KIT + SUBCLASS EXTRA", kids, { corners: true });
   }
 
   /* A subclass feature that prints "You gain Proficiency in the Stealth or Acrobatics skill (your
@@ -1792,7 +1810,7 @@ EN.builder = (function () {
       // class skill choices
       // (class skill/tool choices are picked directly on the Starting Proficiencies chips above)
 
-      // Starting Gear Kit (Core Pack + Class Kit + Subclass Extra, 700 budget)
+      // Starting Gear Kit (Core Pack + Class Kit + Subclass Extra, 800 budget)
       var kitPanel = startingKitPanel(ch, cls);
       if (kitPanel) { blocks.push(el("div", { style: { height: "16px" } })); blocks.push(kitPanel); }
 

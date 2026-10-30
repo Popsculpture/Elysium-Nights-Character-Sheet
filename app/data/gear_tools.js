@@ -333,7 +333,7 @@ EN.gearCatalog.tools = {
     { name: "Courier Satchel (Dump and Run)", bucket: "carry", group: "Carry Gear", price: 60, legality: "Legal", slot: "Carry", rack: 2, dumpAndRun: true,
       effect: "Rack 2 items. Each item's Load is reduced by 1 (minimum 0). Swift Action, while fleeing or in a chase: throw the satchel. One pursuer of the GM's choice breaks off to grab it unless they pass a Wits Save (DC 12). The bag and everything Racked in it are gone." },
     { name: "Courier Satchel (Transit Seal)", bucket: "carry", group: "Carry Gear", price: 60, legality: "Licensed", slot: "Carry", rack: 2,
-      effect: "Rack 2 items. Each item's Load is reduced by 1 (minimum 0). Bonded courier seal: routine scans read SEALED / IN TRANSIT, and you gain Edge on checks to get a Racked item through a checkpoint without the bag being opened. If it's opened anyway and holds anything Restricted or Contraband, you gain 1 Heat." },
+      effect: "Rack 2 items. Each item's Load is reduced by 1 (minimum 0). Bonded courier seal: routine scans read SEALED / IN TRANSIT / NOT YOUR BUSINESS, and you gain Edge on checks to get a Racked item through a checkpoint without the bag being opened. If it's opened anyway and holds anything Restricted or Contraband, you gain 1 Heat." },
     { name: "Fanny Pack", bucket: "carry", group: "Carry Gear", price: 15, availability: "Common", legality: "Legal", slot: "Carry", rack: 1,
       effect: "Rack 1 item. Its Load is reduced by 1 (minimum 0).",
       desc: "Reads as harmless. A courier's kit, a tourist's kit, whatever the block expects to see. Holds just enough to be worth wearing." },
