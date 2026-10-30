@@ -2983,7 +2983,16 @@ EN.engine = (function () {
     if (!e) return 0;
     var worn = opts && opts.worn != null ? !!opts.worn : (ch ? isWornEntry(ch, e) : false);
     var l = itemLoad(e.name, { worn: worn });
+    // the two don't stack (ruled 29 Oct 2026): while a Worn item is worn only the trait's -1 applies;
+    // the GM's flag stays on the entry and counts again once it is packed or carried
+    if (e.loadLowered && wornTraitWorn(e, worn)) return l;
     return e.loadLowered ? Math.max(0, l - 1) : l;
+  }
+  // a Worn-trait item that is being worn: the GM's -1 is set aside while this holds
+  function wornTraitWorn(e, worn) {
+    if (!e || !worn) return false;
+    var it = loadCatalogItem(e.name);
+    return ((it && it.traits) || []).indexOf("Worn") !== -1;
   }
   // on-person = equipped, or carry status "carried" / "worn" / "racked"
   // (Racked = stowed in a worn piece of Carry Gear, still on your person).
@@ -3358,8 +3367,15 @@ EN.engine = (function () {
     var cy = (e.relayCipher && !e.relayEmpty) ? cipherByName(e.relayCipher) : null;
     var cap = relayRunCap(ch, gd);
     var cx = cy ? cy.cx : null;
+    /* Untrained in Systems (ruled 29 Oct 2026, the Skills tier table: "Untrained | Default | Roll
+       with Snag | Add +2 Snag Dice to the pool"): Snag on the d20, and +2 Snag Dice on the pool on
+       top of the Complexity's. Human Ingenuity can waive the d20 Snag only. */
+    var sys = ((d && d.skills) || []).filter(function (x) { return x.key === "systems"; })[0];
+    var untrained = !sys || sys.tier === "untrained" || !!sys.untrained;
     return { row: row, cipher: cy, empty: !cy, cap: cap, needed: !!cy && cx > cap,
-             dc: cy ? 10 + cx : null, bonus: gd.cipherAttackBonus || 0, codebreaker: !!(ch && ch["class"] === "codebreaker") };
+             dc: cy ? 10 + cx : null, bonus: gd.cipherAttackBonus || 0, codebreaker: !!(ch && ch["class"] === "codebreaker"),
+             untrained: untrained, human: !!(ch && ch.species === "humans"),
+             poolSnag: cy ? cx + (untrained ? 2 : 0) : null };
   }
   /* The check's outcome. In combat, value is the natural d20: "Critical Failure (Nat 1, Margin
      minus 5 or worse on d20...)", "Failure (Margin minus 1 to minus 4 on d20...)". Out of combat,
@@ -5336,7 +5352,7 @@ EN.engine = (function () {
     rigTierRow: rigTierRow, ownedRigs: ownedRigs, ownedDecks: ownedDecks,
     // Burner Relays (29 Oct 2026)
     relayRow: relayRow, cipherByName: cipherByName, relayLoadable: relayLoadable, relayRunCap: relayRunCap,
-    relayInfo: relayInfo, relayOutcome: relayOutcome,
+    relayInfo: relayInfo, relayOutcome: relayOutcome, wornTraitWorn: wornTraitWorn,
     // the single-slot equip registry: one description of the five slots, so no view has to
     // list the field names by hand (see EQUIP_SLOTS for why that mattered)
     equipSlotFor: equipSlotFor, slotEquippedKeys: slotEquippedKeys, equipSlotLabel: equipSlotLabel,

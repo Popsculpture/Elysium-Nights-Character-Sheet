@@ -20,7 +20,7 @@ EN.gridView = (function () {
   var _runMode = "hot";
   var _deep = { edges: {}, snags: {}, kitsOff: {}, risk: 2, result: null, animating: false, animToken: 0, focusSrc: "skill" };
   // Burner Relay firing card: which Relay is open, the check's mode and roll, the target, and the last firing
-  var _relay = { key: null, mode: "combat", nat: "", margin: "", pool: null, target: "", last: null };
+  var _relay = { key: null, mode: "combat", nat: "", margin: "", pool: null, target: "", last: null, ingenuity: false };
 
   // Battle Damage: the whole #GRID tab visibly degrades as rig System Integrity drops.
   // Device-level preference, matching the Flow immersive pattern (en_flow_*).
@@ -321,7 +321,7 @@ EN.gridView = (function () {
      when the cipher's Complexity is above what this character can normally run (engine.relayInfo),
      rolled here or entered from the table. After any firing, a Critical Failure included, the Relay
      and its cipher leave the Stash; a Codebreaker's Repertoire copy of a slotted cipher stays. */
-  function relayResetFire(key) { _relay.key = key; _relay.mode = "combat"; _relay.nat = ""; _relay.margin = ""; _relay.pool = null; _relay.target = ""; }
+  function relayResetFire(key) { _relay.key = key; _relay.mode = "combat"; _relay.nat = ""; _relay.margin = ""; _relay.pool = null; _relay.target = ""; _relay.ingenuity = false; }
   function openRelay(key) { relayResetFire(key); _relay.last = null; }
   function relaySystemsPoolPoints(d) {
     var s = (d.skills || []).find(function (x) { return x.key === "systems"; });
@@ -384,16 +384,29 @@ EN.gridView = (function () {
           onclick: function () { _relay.mode = m[0]; _relay.nat = ""; _relay.margin = ""; _relay.pool = null; EN.app.render(); } }, m[1]);
       })));
       if (!pool) {
+        // untrained in Systems: Snag on the d20, which Human Ingenuity can waive (ruled 29 Oct 2026)
+        var snagOn = info.untrained && !(info.human && _relay.ingenuity);
+        if (info.untrained) kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
+          el("span.chip.relay-snag", { style: { fontSize: "9px", color: snagOn ? "var(--warn)" : "var(--text3)", borderColor: snagOn ? "var(--warn)" : "var(--border2)" },
+            title: "Untrained in Systems: roll with Snag" }, snagOn ? "SNAG · UNTRAINED IN SYSTEMS" : "NO SNAG · HUMAN INGENUITY"),
+          info.human ? el("button.btn.sm.relay-ingenuity" + (_relay.ingenuity ? ".primary" : ""), { type: "button",
+            title: "Human Ingenuity: ignore the Snag on this untrained d20 check (a use of it, Caliber per Short Rest; mark it on your sheet)",
+            onclick: function () { _relay.ingenuity = !_relay.ingenuity; _relay.nat = ""; EN.app.render(); } }, (_relay.ingenuity ? "✓ " : "") + "HUMAN INGENUITY") : null
+        ]));
         kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
-          el("span.mono", { style: { fontSize: "12px" }, text: "d20 " + eng.fmtMod(info.bonus) + " (Tech + Systems) vs DC " + info.dc + " (10 + Complexity)" }),
-          el("button.btn.sm.relay-roll", { type: "button", onclick: function () { _relay.nat = String(1 + Math.floor(Math.random() * 20)); EN.app.render(); } }, "ROLL d20"),
-          el("input.relay-nat", { type: "number", min: "1", max: "20", value: _relay.nat, placeholder: "your d20", "aria-label": "Natural d20 rolled at the table",
-            style: { width: "84px" }, onchange: function (ev) { var v = parseInt(ev.target.value, 10); _relay.nat = (v >= 1 && v <= 20) ? String(v) : ""; EN.app.render(); } })
+          el("span.mono", { style: { fontSize: "12px" }, text: "d20 " + eng.fmtMod(info.bonus) + " (Tech + Systems)" + (snagOn ? " with Snag" : "") + " vs DC " + info.dc + " (10 + Complexity)" }),
+          el("button.btn.sm.relay-roll", { type: "button", onclick: function () {
+            var r = eng.rollD20({ mods: [{ label: "Tech + Systems", value: info.bonus }], snag: snagOn ? 1 : 0 });
+            _relay.nat = String(r.nat); _relay.dice = r.dice; EN.app.render(); } }, snagOn ? "ROLL 2d20, KEEP LOWER" : "ROLL d20"),
+          el("input.relay-nat", { type: "number", min: "1", max: "20", value: _relay.nat, placeholder: snagOn ? "kept d20" : "your d20", "aria-label": "Natural d20 rolled at the table" + (snagOn ? " (the lower of two)" : ""),
+            style: { width: "84px" }, onchange: function (ev) { var v = parseInt(ev.target.value, 10); _relay.nat = (v >= 1 && v <= 20) ? String(v) : ""; _relay.dice = null; EN.app.render(); } })
         ]));
       } else {
-        var pts = relaySystemsPoolPoints(d), ep = eng.buildEdgePool(pts), sp = eng.buildSnagPool(cy.cx);
+        // untrained in Systems: +2 Snag Dice on top of the Complexity's (Human Ingenuity is d20 only)
+        var pts = relaySystemsPoolPoints(d), ep = eng.buildEdgePool(pts), sp = eng.buildSnagPool(info.poolSnag);
         kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
-          el("span.mono", { style: { fontSize: "12px" }, text: "Edge " + pts + " → " + ep.label + " (Tech + Systems) vs Snag " + cy.cx + " → " + sp.label + " (the Complexity)" }),
+          el("span.mono", { style: { fontSize: "12px" }, text: "Edge " + pts + " → " + ep.label + " (Tech + Systems) vs Snag " + info.poolSnag + " → " + sp.label
+            + " (the Complexity " + cy.cx + (info.untrained ? " + 2 untrained in Systems" : "") + ")" }),
           el("button.btn.sm.relay-roll", { type: "button", onclick: function () {
             var er = eng.rollDicePool(ep), sr = eng.rollDicePool(sp);
             _relay.pool = { edge: er.total, snag: sr.total }; _relay.margin = String(er.total - sr.total); EN.app.render(); } }, "ROLL POOL"),
@@ -404,7 +417,8 @@ EN.gridView = (function () {
       if (out) {
         var nat = !pool ? +_relay.nat : null;
         var how = pool ? "Margin " + (out.margin >= 0 ? "+" : "") + out.margin + (_relay.pool ? " (" + _relay.pool.edge + " successes vs " + _relay.pool.snag + " failures)" : "")
-                       : "rolled " + nat + (out.nat1 ? " (Natural 1)" : "") + ", total " + (nat + info.bonus) + ", Margin " + (out.margin >= 0 ? "+" : "") + out.margin;
+                       : "rolled " + nat + (_relay.dice && _relay.dice.length > 1 && String(nat) === _relay.nat ? " (kept the lower of " + _relay.dice.join(" and ") + ")" : "")
+                         + (out.nat1 ? " (Natural 1)" : "") + ", total " + (nat + info.bonus) + ", Margin " + (out.margin >= 0 ? "+" : "") + out.margin;
         var res = out.result === "full" ? "Success: full power."
           : out.result === "reduced" ? (pool ? "Failure: the cipher runs with 2 fewer Edge Dice." : "Failure: the Relay's Save DC and Attack Bonus are each reduced by 2 for this firing.")
           : "Critical Failure: the Relay sparks and dies instantly. The cipher is lost.";

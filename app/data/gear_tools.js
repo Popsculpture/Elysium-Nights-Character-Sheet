@@ -726,18 +726,21 @@ EN.gearCatalog.tools = {
        are composed from EN.grid.relays at the tail of app/data/grid.js, as the decks' are. The
        handoff gives no Availability or Legality for them, so none is set: the Register's markup
        reads them as x1 until the book's values arrive. Each is bought loaded with a cipher of the
-       matching Complexity, picked on the card (relayTier t = that Complexity). */
-    { name: "Standard Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Standard", relayT: 0, price: 100,
+       matching Complexity, picked on the card (relayTier t = that Complexity).
+       Craftable (ruled 29 Oct 2026): materials half the price, Systems (Tech) or Engineering (Tech)
+       with the Codebreaker Suite and help from the Smartdeck Peripheral Kit (craftSkills, craftKits),
+       Project Tier by Relay tier (crafting.js tierForItem); it comes out loaded like a bought one. */
+    { name: "Standard Burner Relay", bucket: "rigs", group: "Burner Relays", craftSkills: ["Systems", "Engineering"], craftKits: ["Codebreaker Suite", "Smartdeck Peripheral Kit"], relayTier: "Standard", relayT: 0, price: 100,
       desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." },
-    { name: "Improved Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Improved", relayT: 1, price: 200,
+    { name: "Improved Burner Relay", bucket: "rigs", group: "Burner Relays", craftSkills: ["Systems", "Engineering"], craftKits: ["Codebreaker Suite", "Smartdeck Peripheral Kit"], relayTier: "Improved", relayT: 1, price: 200,
       desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." },
-    { name: "Advanced Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Advanced", relayT: 2, price: 350,
+    { name: "Advanced Burner Relay", bucket: "rigs", group: "Burner Relays", craftSkills: ["Systems", "Engineering"], craftKits: ["Codebreaker Suite", "Smartdeck Peripheral Kit"], relayTier: "Advanced", relayT: 2, price: 350,
       desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." },
-    { name: "Premium Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Premium", relayT: 3, price: 500,
+    { name: "Premium Burner Relay", bucket: "rigs", group: "Burner Relays", craftSkills: ["Systems", "Engineering"], craftKits: ["Codebreaker Suite", "Smartdeck Peripheral Kit"], relayTier: "Premium", relayT: 3, price: 500,
       desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." },
-    { name: "Elite Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Elite", relayT: 4, price: 750,
+    { name: "Elite Burner Relay", bucket: "rigs", group: "Burner Relays", craftSkills: ["Systems", "Engineering"], craftKits: ["Codebreaker Suite", "Smartdeck Peripheral Kit"], relayTier: "Elite", relayT: 4, price: 750,
       desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." },
-    { name: "Apex Burner Relay", bucket: "rigs", group: "Burner Relays", relayTier: "Apex", relayT: 5, price: 1000,
+    { name: "Apex Burner Relay", bucket: "rigs", group: "Burner Relays", craftSkills: ["Systems", "Engineering"], craftKits: ["Codebreaker Suite", "Smartdeck Peripheral Kit"], relayTier: "Apex", relayT: 5, price: 1000,
       desc: "Disposable, overclocked, single-shot. Anyone can fire one; after it fires, the Relay and the cipher are slag in your hand." }
   ]
 };

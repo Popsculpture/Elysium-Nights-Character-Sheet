@@ -362,13 +362,17 @@ EN.inventoryView = (function () {
      Load before the GM's call (after the Worn Trait's break, if `wornBreak`). */
   function loadCtrl(ch, e, base, wornBreak) {
     if (!encOn()) return null;   // Encumbrance is off (Settings, Optional Rules): gear has no Load to show
-    var key = entryKey(e), low = !!e.loadLowered, now = low ? Math.max(0, base - 1) : base;
+    /* While a Worn-trait item is worn, its trait's -1 is the only one (ruled 29 Oct 2026: the two
+       don't stack), so the GM's -1 is hidden and a flag already set waits until it is packed or
+       carried (engine.entryUnitLoad reads the same rule). */
+    var key = entryKey(e), low = !!e.loadLowered && !wornBreak, now = low ? Math.max(0, base - 1) : base;
     var color = low ? "var(--gold)" : "var(--text2)";
     var tip = "Load " + now + " per item" + (low ? " (" + base + " by the table, lowered by 1 by the GM)" : " by the Assigning Load table")
-      + (wornBreak ? ", already 1 less while Worn" : "") + ". It spends your Load Budget while on-person (equipped, carried, worn, or racked).";
+      + (wornBreak ? ", already 1 less while Worn; the GM's -1 doesn't stack with that" + (e.loadLowered ? " and comes back when it is packed or carried" : "") : "")
+      + ". It spends your Load Budget while on-person (equipped, carried, worn, or racked).";
     var chip = el("span.chip.inv-load", { dataset: { load: String(now) }, title: tip,
       style: { fontSize: "9px", color: color, borderColor: color, marginLeft: "8px" } }, "⚖ LOAD " + now + (low ? " · GM -1" : ""));
-    if ((!(base > 0) && !low) || !gmOn("loadLower")) return chip;   // GM -1 is a GM control (Settings)
+    if ((!(base > 0) && !low) || !gmOn("loadLower") || wornBreak) return chip;   // GM -1 is a GM control (Settings); none while Worn and worn
     function toggle() {
       store.update(function (c) { var x = EN.engine.findEntry(c, key); if (!x) return; if (x.loadLowered) delete x.loadLowered; else x.loadLowered = true; });
       toast(low ? e.name + " is back to Load " + base + "." : e.name + ": Load lowered by 1 on the GM's call.");
@@ -2939,8 +2943,10 @@ EN.inventoryView = (function () {
   // kits that can feed this skill's pool: matching skill, a real Edge grant, and
   // the proficiency their text demands; rollState can toggle one off for a roll
   function tbActiveKits(ch, skillName, rollState) {
+    // a Project can name its kits whatever their skill (a Burner Relay built with Engineering still has the Codebreaker Suite)
+    var named = (rollState && rollState.kitNames) || [];
     return tbKits(ch).filter(function (k) {
-      return k.skill === skillName && k.edgeDice > 0 && (!k.requiresProficient || k.proficient) &&
+      return (k.skill === skillName || named.indexOf(k.name) !== -1) && k.edgeDice > 0 && (!k.requiresProficient || k.proficient) &&
              !(rollState && rollState.kitsOff[k.name]);
     });
   }
@@ -3041,6 +3047,9 @@ EN.inventoryView = (function () {
       // the suit it was for quietly restores nothing instead of resurrecting it.
       repairKey: spec.repairKey || null,
       repairPoints: spec.repairPoints || 0,
+      // a Burner Relay Build: the cipher it comes out loaded with, and the kits named for it
+      relayCipher: spec.relayCipher || null,
+      kits: spec.kits || null,
       log: [],
       createdAt: Date.now()
     };
@@ -3142,7 +3151,10 @@ EN.inventoryView = (function () {
       var clean = restored > 0 && (pp.log || []).some(function (l) { return l && l.o === "flawless"; });
       list.splice(i, 1);
       var addName = pp.addOnComplete ? pp.itemName : null;
-      if (addName) addToStash(c, addName);
+      // a crafted Burner Relay comes out loaded with a cipher of the matching Complexity
+      var addIt = addName ? findItem(addName) : null;
+      var relayExtra = (addIt && addIt.relayTier) ? { relayCipher: pp.relayCipher || (EN.engine.relayLoadable(addIt.relayT)[0] || null) } : null;
+      if (addName) addToStash(c, addName, relayExtra);
       var res = null;
       if (restored > 0) {
         res = EN.engine.applyArmorDamage(c, pp.repairKey, -restored);   // the one writer, clamped at the base
@@ -3282,6 +3294,9 @@ EN.inventoryView = (function () {
         tbSkillChip(p.skill),
         // below the tier's Required Skill Tier: a warning, the work stays open (ruling 2, 19 October 2026)
         tbBelowTierChip(ch, p.skill, p.overEngineered ? "prototype" : p.tier),
+        // a Burner Relay Build names its kits (neither prints Edge Dice, so neither adds to the pool)
+        p.kits && p.kits.length ? tbChip("KIT · " + p.kits[0].toUpperCase() + (p.kits[1] ? " + " + p.kits[1].toUpperCase() : ""), "var(--text2)",
+          "Kit: " + p.kits[0] + (p.kits[1] ? ", with help from the " + p.kits[1] : "") + (p.relayCipher ? ". Comes out loaded with " + p.relayCipher + "." : ".")) : null,
         // Armor Repair: name the piece and what completing this buys back, read
         // from the engine's resolver so the chip cannot drift from the sheet
         (function () {
@@ -3299,6 +3314,7 @@ EN.inventoryView = (function () {
     ]);
     // Work Interval roll box: Edge (character + kits + toggles) vs Snag (GM-set difficulty)
     var rs = tbRollState(p.id);
+    rs.kitNames = p.kits || null;
     var edge = tbEdgeFor(ch, d, p.skill, rs);
     var snag = tbSnagPts(p, s);
     var snagPool = EN.engine.buildSnagPool(snag.total);
@@ -3308,7 +3324,7 @@ EN.inventoryView = (function () {
     } else {
       var rollKids = [];
       // EDGE row: total + composition, with kit and situational toggles feeding the pool
-      var kitToggles = tbKits(ch).filter(function (k) { return k.skill === p.skill && k.edgeDice > 0 && (!k.requiresProficient || k.proficient); }).map(function (k) {
+      var kitToggles = tbKits(ch).filter(function (k) { return (k.skill === p.skill || (p.kits || []).indexOf(k.name) !== -1) && k.edgeDice > 0 && (!k.requiresProficient || k.proficient); }).map(function (k) {
         var on = !rs.kitsOff[k.name];
         return el("button.btn.sm", {
           title: (k.edgeNote ? k.edgeNote + ". " : "") + (on ? "Counted in the pool; click to leave it out of this roll." : "Not counted; click to include it."),
@@ -3483,6 +3499,8 @@ EN.inventoryView = (function () {
   /* ---- Panel 3: Blueprints (recipes derived from the gear catalog) ---- */
   function tbRecipeRow(ch, it) {
     var skill = CRAFT().skillForItem(it), tierKey = CRAFT().tierForItem(it), cost = CRAFT().materialCost(it);
+    // a Burner Relay builds with Systems or Engineering, and comes out loaded (ruled 29 Oct 2026)
+    if (it.craftSkills && it.relayTier) return tbRelayRecipeRow(ch, it, tierKey, cost);
     return el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center", padding: "5px 0", borderTop: "1px solid rgba(35,48,68,.4)" } }, [
       el("div.row.wrap", { style: { gap: "7px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, [
         el("span", { style: { fontWeight: 600, fontSize: "12.5px" }, text: it.name }),
@@ -3497,6 +3515,28 @@ EN.inventoryView = (function () {
       el("button.btn.sm.primary", { title: "Open a Build Project for this item", onclick: function () {
         tbStart({ kind: "build", name: "Build " + it.name, itemName: it.name, skill: skill, tier: tierKey, materialCost: cost });
       } }, "+ PROJECT")
+    ]);
+  }
+  function tbRelayRecipeRow(ch, it, tierKey, cost) {
+    var cur = relayLoadPick(it);
+    return el("div.row.between.wrap.relay-recipe", { dataset: { item: it.name }, style: { gap: "8px", alignItems: "center", padding: "5px 0", borderTop: "1px solid rgba(35,48,68,.4)" } }, [
+      el("div.row.wrap", { style: { gap: "7px", alignItems: "center", flex: "1 1 auto", minWidth: 0 } }, [
+        el("span", { style: { fontWeight: 600, fontSize: "12.5px" }, text: it.name }),
+        tbTierChip(tierKey),
+        tbChip(it.craftSkills.join(" OR ").toUpperCase(), "var(--text2)", "Primary Skill: either, with the Tech Attribute"),
+        tbBelowTierChip(ch, it.craftSkills[0], tierKey),
+        el("span.mono", { style: { fontSize: "10.5px", color: "var(--gold)" }, title: "Materials cost half of " + fmtG(CRAFT().listPrice(it)) + ", what this item is worth", text: "mat " + fmtG(cost) }),
+        el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Kit: " + it.craftKits[0] + ", with help from the " + it.craftKits[1] + "." }),
+        el("select.relay-craft-pick", { "aria-label": it.name + ": the cipher it comes out loaded with",
+          onchange: function (ev) { _relayPick[it.name] = ev.target.value; } },
+          EN.engine.relayLoadable(it.relayT).map(function (n) { return el("option", { value: n, selected: n === cur }, n); }))
+      ]),
+      el("div.row.wrap", { style: { gap: "6px" } }, it.craftSkills.map(function (sk) {
+        return el("button.btn.sm.primary.relay-craft", { dataset: { skill: sk }, title: "Open a Build Project for this Relay with " + sk + " (Tech)", onclick: function () {
+          tbStart({ kind: "build", name: "Build " + it.name, itemName: it.name, skill: sk, tier: tierKey, materialCost: cost,
+                    relayCipher: relayLoadPick(it), kits: it.craftKits.slice() });
+        } }, "+ " + sk.toUpperCase());
+      }))
     ]);
   }
   function tbBlueprints(ch) {

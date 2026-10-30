@@ -263,6 +263,7 @@ EN.crafting = {
     // testing category alone sent every drug and dose to the Engineering default and
     // the bench offered "Build Combat Stim Pack" as an Engineering Project.
     var cat = (it.category || "") + " " + (it.group || ""), traits = it.traits || [];
+    if (it.relayTier) return "Systems";   // or Engineering (ruled 29 Oct 2026): the Blueprint offers both
     if (traits.indexOf("Mystech") !== -1 || it.kind === "focus" || it.wardDie || /Ritual/i.test(cat)) return "Esoterica";
     if (it.cyber || /Systems|Media/i.test(cat)) return "Systems";
     if (/Medical/i.test(cat)) return "Medtech";
@@ -272,6 +273,8 @@ EN.crafting = {
   tierForItem: function (it) {
     it = it || {};
     var t = this._availTier[it.availability] || "standard";
+    // Burner Relays (ruled 29 Oct 2026): tiers 0 to 1 Simple, 2 to 3 Standard, 4 to 5 Advanced
+    if (it.relayTier) return it.relayT <= 1 ? "simple" : it.relayT <= 3 ? "standard" : "advanced";
     if (this._isAmmo(it)) t = "simple";
     if (it.cyber && this._tierRank[t] < this._tierRank.advanced) t = "advanced";
     // No blanket Mystech force. Part 2 names only an "experimental mystech build" at

@@ -272,6 +272,10 @@ EN.combatView = (function () {
       var wIt = findWeapon(ctx.weaponName);
       if (wIt) { var ast = readAmmo(store.active(), wIt, ctx.weaponKey); ammo = { cur: ast.cur, cap: ast.cap, cost: costFor(wIt, ast.mode), mode: ast.mode, unit: wIt.ammoUnit || "" }; canFire = ast.cur >= ammo.cost; }
     }
+    var jamKey = jamKeyOf(ctx.weaponKey, ctx.weaponName);
+    var jammedNow = !!ctx.firearm && isJammed(store.active(), jamKey);
+    if (jammedNow) canFire = false;   // a Jammed weapon can't fire until cleared
+    var noFire = jammedNow ? "JAMMED" : "OUT OF AMMO";
     var againWord = ctx.usesAmmo ? "TAP TO FIRE AGAIN" : "TAP TO ROLL AGAIN";
 
     // --- hero: the d20(s) you tap to roll ---
@@ -309,7 +313,7 @@ EN.combatView = (function () {
       prompt = anim ? el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: "var(--text3)", marginTop: "12px", textTransform: "uppercase" }, text: "rolling…" })
         : el("div", { style: { marginTop: "10px" } }, [
             totalNum,
-            el("div.mono", { style: { fontSize: "9px", letterSpacing: ".2em", color: canFire ? "var(--text3)" : "var(--warn)", marginTop: "5px" }, text: "TOTAL · " + (canFire ? againWord : "OUT OF AMMO") }),
+            el("div.mono", { style: { fontSize: "9px", letterSpacing: ".2em", color: canFire ? "var(--text3)" : "var(--warn)", marginTop: "5px" }, text: "TOTAL · " + (canFire ? againWord : noFire) }),
             crit ? el("div.mono", { title: ctx.critNote || null, style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--gold)", marginTop: "7px" }, text: ctx.critLabel || "◆ CRITICAL HIT" })
               : fumble ? el("div.mono", { style: { fontWeight: 700, letterSpacing: ".14em", fontSize: "12px", color: "var(--danger)", marginTop: "7px" }, text: ctx.fumbleLabel || "✖ FUMBLE (NAT 1)" }) : null,
             crit && ctx.critNote ? el("div.mono", { style: { fontSize: "9.5px", color: "var(--text3)", marginTop: "5px", padding: "0 14px", lineHeight: 1.5 }, text: ctx.critNote }) : null,
@@ -322,9 +326,12 @@ EN.combatView = (function () {
     } else {
       diceEls = [];
       for (var i = 0; i < diceN; i++) { var d = EN.ui.d20Face("", { size: 62 }); d.style.opacity = ".45"; diceEls.push(d); }
-      prompt = el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: canFire ? "var(--accent)" : "var(--warn)", marginTop: "12px", textTransform: "uppercase", opacity: ".9" }, text: canFire ? "Tap to roll" : "Out of ammo" });
+      prompt = el("div.mono", { style: { fontSize: "11px", letterSpacing: ".22em", color: canFire ? "var(--accent)" : "var(--warn)", marginTop: "12px", textTransform: "uppercase", opacity: ".9" }, text: canFire ? "Tap to roll" : (jammedNow ? "Jammed" : "Out of ammo") });
     }
-    var reloadBtn = (ctx.usesAmmo && !canFire) ? el("button.btn.sm", { style: { marginTop: "10px", color: "var(--warn)", borderColor: "var(--warn)" },
+    var reloadBtn = jammedNow
+      ? el("button.btn.sm.jam-clear", { title: "Clear the Jam: a Swift Action", style: { marginTop: "10px", color: "var(--warn)", borderColor: "var(--warn)" },
+          onclick: function (ev) { ev.stopPropagation(); setJammed(jamKey, false); toast(ctx.weaponName + " cleared (Swift Action)."); } }, "CLEAR · SWIFT ACTION")
+      : (ctx.usesAmmo && !canFire) ? el("button.btn.sm", { style: { marginTop: "10px", color: "var(--warn)", borderColor: "var(--warn)" },
       onclick: function () { reloadWeapon(ctx.weaponKey); } }, "⟳ RELOAD") : null;
     var fxIsCrit = shouldPlayFx && crit, fxIsFault = shouldPlayFx && fumble;
     var heroFxClass = fxIsCrit ? ".fx-crit" : fxIsFault ? ".fx-fault" : "";
@@ -382,6 +389,28 @@ EN.combatView = (function () {
           el("button.btn.sm", { title: "Spend 1 Moxie to treat the kept die as a 10",
             style: { color: MOXIE_CLR, borderColor: MOXIE_CLR, padding: "6px 16px", fontSize: "12px", letterSpacing: ".04em" },
             onclick: rollTrayPureLuck }, "◆ PURE LUCK · TREAT AS 10") ]) : null;
+
+    /* --- after a settled roll: Maximum Overdrive on a Natural 20 attack, Weapon Jam on a Natural 1 firearm --- */
+    var odOffer = null, jamOffer = null;
+    if (roll && !anim && ctx.attack && roll.nat === 20 && !roll.pureLuck && maxOverdriveOn(store.active())) {
+      odOffer = el("div", { style: { padding: "10px 16px 0", textAlign: "center" } }, [roll._odTaken
+        ? el("div.mono.tray-od", { dataset: { od: "taken" }, style: { fontSize: "11px", color: "#FF7A00", letterSpacing: ".1em" }, text: "+1 OVERDRIVE GAINED · MAXIMUM OVERDRIVE" })
+        : el("button.btn.sm.tray-od", { dataset: { od: "offer" }, title: "Maximum Overdrive: a Natural 20 on an attack roll gains 1 Overdrive. It can pass your maximum; the extra is lost when the encounter ends.",
+            style: { color: "#FF7A00", borderColor: "#FF7A00", padding: "6px 16px", fontSize: "12px" },
+            onclick: function () { if (maxOverdriveGain(false)) { roll._odTaken = true; toast("+1 Overdrive (Maximum Overdrive)."); EN.app.render(); } } }, "+1 OVERDRIVE · MAXIMUM OVERDRIVE")]);
+    }
+    if (roll && !anim && ctx.firearm && roll.nat === 1 && jamOn()) {
+      var jt = ctx.traits || [];
+      var reliable = jt.some(function (t) { return /^Reliable\b/.test(t); }), crew = jt.some(function (t) { return /^Crew Served\b/.test(t); });
+      jamOffer = el("div", { style: { padding: "10px 16px 0", textAlign: "center" } }, [
+        reliable ? null
+        : crew ? el("div.mono.tray-jam", { dataset: { jam: "crew" }, style: { fontSize: "10.5px", color: "var(--text3)" }, text: "Crew Served: if the GM rules a Jam, the loader clears it automatically." })
+        : jammedNow ? el("div.mono.tray-jam", { dataset: { jam: "jammed" }, style: { fontSize: "11px", color: "var(--warn)", letterSpacing: ".1em" }, text: "JAMMED · CLEAR IT WITH A SWIFT ACTION" })
+        : el("button.btn.sm.tray-jam", { dataset: { jam: "offer" }, title: "Optional (Weapon Jam): on a Natural 1 with a firearm, the GM may rule the weapon Jams. Mark it only on the GM's call.",
+            style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "6px 16px", fontSize: "12px" },
+            onclick: function () { setJammed(jamKey, true); toast(ctx.weaponName + " Jammed: it can't fire until cleared with a Swift Action."); } }, "MARK JAMMED · GM'S CALL")]);
+      if (reliable) jamOffer = null;   // Reliable ignores the rule: a Natural 1 is a simple miss
+    }
 
     // --- segmented Edge / None / Snag ---
     function segBtn(m, label, onColor) {
@@ -499,7 +528,7 @@ EN.combatView = (function () {
     }, [
       el("div", { style: { width: "min(430px, 96vw)", maxHeight: "94vh", overflowY: "auto", borderRadius: "12px",
         background: "linear-gradient(180deg, var(--bg2), var(--bg1))", border: "1px solid var(--border2)",
-        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, ammoLine, breakdown, dmgHandoff, pureLuckBtn, ctrls, foot, recent])
+        boxShadow: "0 20px 60px rgba(0,0,0,.55), 0 0 40px rgba(0,229,255,.10)" } }, [header, hero, autoLine, ammoLine, breakdown, dmgHandoff, pureLuckBtn, odOffer, jamOffer, ctrls, foot, recent])
     ]);
   }
 
@@ -2850,6 +2879,39 @@ EN.combatView = (function () {
      too. The once-per-round Wound trigger is ch.resources.maxOdWound, cleared by NEW ROUND, by
      END ENCOUNTER (which also sheds the overflow), and by a rest. */
   function maxOverdriveOn(ch) { return !!ch && ch["class"] === "fury" && (ch.level || 1) >= 9; }
+  /* Gain 1 Overdrive from Maximum Overdrive, past the maximum if need be. fromWound is the
+     once-per-round trigger (an Enemy's attack dealt you Wound damage); a Natural 20 has no limit.
+     The pool's buttons, the roll tray's Natural 20 offer and the Wound prompt's offer all land here. */
+  function maxOverdriveGain(fromWound) {
+    var ch0 = store.active();
+    if (!maxOverdriveOn(ch0)) return false;
+    if (fromWound && ch0.resources && ch0.resources.maxOdWound) return false;
+    var d0 = eng.derive(ch0);
+    if (!d0.resource) return false;
+    var nm = d0.resource.name, mx = d0.resource.max;
+    store.update(function (c) {
+      c.resources = c.resources || {}; c.resources.current = c.resources.current || {};
+      var cur = c.resources.current[nm]; if (cur == null) cur = mx;
+      c.resources.current[nm] = Math.max(0, cur) + 1;
+      if (fromWound) c.resources.maxOdWound = true;
+    });
+    return true;
+  }
+  /* WEAPON JAM (the optional rule, Settings; ruled 29 Oct 2026). "On a Natural 1 with a firearm,
+     the GM may rule the weapon Jams. A Jammed weapon can't fire until cleared with a Swift Action.
+     Reliable ignores this (a Natural 1 is a simple miss). Crew Served weapons are cleared
+     automatically by the loader." Never applied for you: a Natural 1 offers MARK JAMMED, the GM's
+     call. A Jammed weapon is ch.weaponJams[its piece key]; it can't fire until CLEAR. With the rule
+     off nothing is offered and a stored Jam blocks nothing. */
+  function jamOn() { return !(EN.launch && EN.launch.rule) || EN.launch.rule("weaponJam"); }
+  function jamKeyOf(key, name) { return key || name; }
+  function isJammed(ch, key) { return jamOn() && !!(ch && ch.weaponJams && ch.weaponJams[key]); }
+  function setJammed(key, on) {
+    store.update(function (c) {
+      c.weaponJams = c.weaponJams || {};
+      if (on) c.weaponJams[key] = true; else delete c.weaponJams[key];
+    });
+  }
   var SPITE_KEY = "fury.maneuver.spite";
 
   /* ---- The Trauma Rig as an OBJECT. Anyone can buy one, so this block is not
@@ -4611,6 +4673,17 @@ EN.combatView = (function () {
         wsBtns.push(el("button.btn.sm", { dataset: { woundsave: "roll" }, style: { color: "var(--wound)", borderColor: "var(--wound)" },
           onclick: function () { rollSave(wsBod, { dc: ws.dc, woundSave: ws.id }); } }, "ROLL BODY SAVE"));
       }
+      if (maxOverdriveOn(ch)) {
+        // Maximum Overdrive: Wound damage from an Enemy's attack, once per round (the app can't tell the source, so it asks)
+        var odUsed = !!(ch.resources && ch.resources.maxOdWound);
+        wsBtns.push(ws.odTaken
+          ? el("span.mono.ws-od", { dataset: { od: "taken" }, style: { fontSize: "10.5px", color: "#FF7A00", alignSelf: "center" }, text: "+1 OVERDRIVE GAINED" })
+          : el("button.btn.sm.ws-od", { dataset: { od: odUsed ? "used" : "offer" }, disabled: odUsed,
+              title: odUsed ? "Already gained from a Wound hit this round. NEW ROUND on the Overdrive pool resets it." : "Maximum Overdrive: if an Enemy's attack dealt this Wound damage, gain 1 Overdrive (once per round). It can pass your maximum.",
+              style: { color: odUsed ? "var(--text4)" : "#FF7A00", borderColor: odUsed ? "var(--border2)" : "#FF7A00" },
+              onclick: function () { if (maxOverdriveGain(true)) { ws.odTaken = true; toast("+1 Overdrive (Maximum Overdrive)."); EN.app.render(); } } },
+              odUsed ? "OVERDRIVE · USED THIS ROUND" : "+1 OVERDRIVE · AN ENEMY'S ATTACK"));
+      }
       wsBtns.push(el("button.btn.sm", { dataset: { woundsave: "dismiss" }, onclick: function () { dismissWoundSave(ws.id); } }, ws.result ? "OK" : "DISMISS"));
       var wsColor = ws.result === "pass" ? "var(--success)" : ws.result === "fail" ? "var(--danger)" : "var(--wound)";
       wsBox = el("div.muted-box", { dataset: { woundsavePrompt: ws.result || "open" }, style: { borderColor: wsColor, color: wsColor, marginTop: "10px", textAlign: "left" } }, [
@@ -5250,14 +5323,7 @@ EN.combatView = (function () {
         resKids.push(bar(Math.min(rCur, rMax), d.resource.max, resourceColor(d.resource.name)));
         if (_odOn) {
           var _woundUsed = !!(ch.resources && ch.resources.maxOdWound);
-          var _odGain = function (fromWound) {
-            store.update(function (c) {
-              c.resources = c.resources || {}; c.resources.current = c.resources.current || {};
-              var cur = c.resources.current[d.resource.name]; if (cur == null) cur = rMax;
-              c.resources.current[d.resource.name] = Math.max(0, cur) + 1;
-              if (fromWound) c.resources.maxOdWound = true;
-            });
-          };
+          var _odGain = maxOverdriveGain;
           var _odBtn = function (cls, label, title, on, fn) {
             return el("button.btn.sm." + cls, { type: "button", title: title, disabled: !on,
               style: { fontSize: "9.5px", color: on ? "#FF7A00" : "var(--text4)", borderColor: on ? "#FF7A00" : "var(--border2)" },
@@ -5610,6 +5676,9 @@ EN.combatView = (function () {
           subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
           melee: h.melee, thrownItem: h.thrownItem, ranged: !h.melee && !h.thrownItem,
           usesAmmo: !h.melee && !h.thrownItem && it.ammo != null,   // a fired weapon spends a shot per roll
+          attack: true,   // an attack roll: a Natural 20 can feed Maximum Overdrive
+          // a firearm, for the optional Weapon Jam: fired with ammunition, and not a bow
+          firearm: !h.melee && !h.thrownItem && it.ammo != null && !/Bowfire/i.test(h.cat || ""),
           traits: it.traits || [], baseMods: baseMods, critMin: cr.min,
           critNote: cr.min < 20
             ? ATTACK_CRIT_NOTE + " Your critical threat range is " + cr.min + "-20 here (" + cr.sources.map(function (s) { return s.label; }).join(" and ") + ")."
@@ -5627,7 +5696,7 @@ EN.combatView = (function () {
         opts = opts || {};
         var autoSnag = opts.snag ? [opts.snag] : [];
         return Object.assign({
-          weaponName: name, subtype: subtype,
+          weaponName: name, subtype: subtype, attack: true,
           melee: false, thrownItem: false, ranged: false, usesAmmo: false,
           traits: [], baseMods: mods, critMin: opts.critMin || 20, critNote: ATTACK_CRIT_NOTE,
           autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
@@ -5807,7 +5876,14 @@ EN.combatView = (function () {
           var canAny = st.cur >= minFireCost(it);   // any mode could fire?
           var canSel = st.cur >= selCost;           // the selected mode can fire?
           var hitCell;
-          if (!canAny) {   // magazine can't pay even the cheapest mode → Reload affordance
+          var wJamKey = jamKeyOf(wKey, it.name);
+          if (isJammed(ch, wJamKey) && !/Bowfire/i.test(h.cat || "")) {   // Weapon Jam: no HIT until cleared
+            hitCell = el("div.jam-cell", { style: { textAlign: "center", flex: "0 0 auto", minWidth: "56px" } }, [
+              el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--warn)" }, text: "JAMMED" }),
+              el("button.btn.sm.jam-clear", { title: "Clear the Jam: a Swift Action", style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px" },
+                onclick: function () { setJammed(wJamKey, false); toast(it.name + " cleared (Swift Action)."); } }, "CLEAR · SWIFT")
+            ]);
+          } else if (!canAny) {   // magazine can't pay even the cheapest mode → Reload affordance
             hitCell = el("div", { style: { textAlign: "center", flex: "0 0 auto", minWidth: "56px" } }, [
               el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HIT" }),
               el("button.btn.sm", { style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px" }, onclick: function () { reloadWeapon(wKey); } }, "⟳ RELOAD")
