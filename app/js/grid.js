@@ -303,7 +303,9 @@ EN.gridView = (function () {
       el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
         el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: cy.name }),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
-          ships ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, title: "Ships free with every Smartdeck; not one of your four" }, "SHIPS WITH YOUR SMARTDECK") : null,
+          // OEM: the factory suite on every rig, Smartdeck and B&E Buddy alike (the author, 30 Oct 2026)
+          ships ? el("span.chip.oem-chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
+            title: "OEM: the factory-installed hacking suite. These six ship free with every Smartdeck and every B&E Buddy, no license, no Bandwidth; not one of your four." }, "OEM") : null,
           ships ? el("span.chip.suite-cx", { title: "Through a Smartdeck the suite always runs as Complexity 0, free in Bandwidth", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, "COMPLEXITY 0") : null,
           cy.type ? el("span.chip", { style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" } }, cy.type) : null,
           cy.activation ? el("span.chip", { title: "Activation", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cy.activation) : null
