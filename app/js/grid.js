@@ -254,9 +254,9 @@ EN.gridView = (function () {
      else is a Standard User and gets the universal B&E Buddy cipher list. */
   // One acquired-cipher card in the Repertoire: collapsible detail, complexity-gated CAST.
   function isFiledRec(ch) { return !!(ch && ch.meta && ch.meta.filedAt); }
-  function cipherCard(cy, runCx, bwCur, deckTier, starting) {
+  function cipherCard(cy, runCx, bwCur, deckTier, starting, stowed) {
     var cx = cy.cx || 0, cost = cipherCost(cy, deckTier);
-    var castable = runCx >= cx, can = castable && bwCur >= cost;
+    var castable = runCx >= cx, can = castable && bwCur >= cost && !stowed;
     var key = "cipher-" + cy.name, open = !!_open[key], color = catColor(cy.cat);
     return el("div.feature", { style: { borderLeftColor: castable ? color : "var(--border2)", opacity: castable ? 1 : .6 } }, [
       el("div.row.between", { style: { alignItems: "center", gap: "8px" } }, [
@@ -267,7 +267,7 @@ EN.gridView = (function () {
           el("span.chip", { style: { fontSize: "9px", color: color, borderColor: color }, title: cy.cat + " · " + cy.sub }, "CX " + cx),
           cy.signature ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" }, title: "Signature cipher: flat 1 Bandwidth" }, "SIG") : null,
           el("span.chip", { style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" } }, cost === 0 ? "FREE" : cost + " BW"),
-          el("button.btn.sm", { disabled: !can, title: !castable ? "Your rig can't run Complexity " + cx : (bwCur < cost ? "Not enough Bandwidth" : "Run: spend " + (cost === 0 ? "no" : cost) + " Bandwidth"),
+          el("button.btn.sm", { disabled: !can, title: stowed ? "Your rig is Racked: take it out first" : !castable ? "Your rig can't run Complexity " + cx : (bwCur < cost ? "Not enough Bandwidth" : "Run: spend " + (cost === 0 ? "no" : cost) + " Bandwidth"),
             style: can ? { color: "var(--accent)", borderColor: "var(--accent)" } : null,
             onclick: function () { if (can) { if (cost) setBandwidth(Math.max(0, bwCur - cost)); toast(cy.name + (cost ? " · −" + cost + " Bandwidth" : " · run")); } } }, "RUN")
         ])
@@ -571,6 +571,16 @@ EN.gridView = (function () {
       var suite = deck ? (G.buddyCiphers || []) : [];
       // the same list the #PRINT review, the hardcopy and the export print (builder.repertoireCiphers)
       var owned = B.repertoireCiphers ? B.repertoireCiphers(ch) : [];
+      /* A Smartdeck Racked in a Backpack (or any Carry Gear) is stowed: it runs no ciphers until it is
+         taken out (30 Oct 2026). The prompt sits at the head of the Repertoire. */
+      var rigEntry = deck && deck.key ? eng.findEntry(ch, deck.key) : null;
+      var rigStow = (rigEntry && eng.stowedInfo) ? eng.stowedInfo(ch, rigEntry) : null;
+      if (rigStow) rows.push(el("div.muted-box.rig-stowed", { style: { borderColor: "var(--warn)", color: "var(--warn)", margin: "6px 0", textAlign: "left" } }, [
+        el("span", { text: "Your " + deck.tier + " " + (deck.type === "buddy" ? "B&E Buddy" : "Smartdeck") + " is Racked in your " + rigStow.gearName + ": no ciphers run until you take it out. " }),
+        el("button.btn.sm.take-out", { type: "button", title: "Take it out (" + rigStow.action + "). Its Load doesn't change.", style: { marginLeft: "6px" },
+          onclick: function () { store.update(function (c) { eng.setInHand(c, deck.key, true); }); toast("Your " + (deck.type === "buddy" ? "B&E Buddy" : "Smartdeck") + " is out (" + rigStow.action + ")."); } },
+          "RACKED · TAKE OUT (" + rigStow.action.toUpperCase() + ")")
+      ]));
       rows.push(el("div.section-title", null, [document.createTextNode("Repertoire"),
         EN.ui.ruleChip("gd-repertoire", { title: "Repertoire & Cipher Costs" }), el("span.line"),
         el("span.mono.rep-count", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: (owned.length + suite.length) + " known" })]));
@@ -586,7 +596,7 @@ EN.gridView = (function () {
           ? "No Complexity 1 Ciphers yet. You start with four, free: choose them " + (isFiledRec(ch) ? "in the prompt at the top of this tab" : "on the Class step of #PRINT") + ". No Glimmer, no Downtime."
           : "No ciphers acquired yet. Buy them in the Inventory tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
       } else {
-        owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur, deck && deck.tier, starts.indexOf(cy.name) !== -1)); });
+        owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur, deck && deck.tier, starts.indexOf(cy.name) !== -1, !!rigStow)); });
       }
       if (suite.length) {
         rows.push(el("div.mono.ships-head", { style: { fontSize: "10px", letterSpacing: ".14em", color: "var(--gold)", margin: "10px 0 4px" }, text: "SHIPS WITH YOUR SMARTDECK · COMPLEXITY 0 · FREE" }));

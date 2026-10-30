@@ -3077,6 +3077,32 @@ EN.engine = (function () {
       return used < rackLimit(gearIt);
     });
   }
+  /* STOWED (30 Oct 2026 handoff, Carry Gear: "A Racked item is stowed, not in hand. Take it out
+     before you use it: a light weapon or small item comes out as a Free Action, anything bulkier as
+     a Swift Action. ... Taking an item out or putting it back doesn't change your Load.")
+     A validly Racked item is stowed unless it has been taken out: ch.inHand[key] holds the key of
+     the Carry Gear it came out of, and counts only while the item is still Racked in that same
+     gear, so a re-rack anywhere puts it back. It stays Racked either way, so its Load and its -1
+     never move; only this flag flips. Returns null when the item is in use (not Racked, or out),
+     else { gear, gearName, freeDraw, action }. freeDraw: a Holster, Scabbard, Back Scabbard or
+     Weapon Sling, whose weapon draws as part of the first attack each encounter (no take-out). */
+  function stowedInfo(ch, e) {
+    if (!ch || !e) return null;
+    var key = entryKey(e), gear = rackState(ch).byItem[key];
+    if (!gear) return null;
+    var gk = entryKey(gear);
+    if (ch.inHand && ch.inHand[key] === gk) return null;
+    var gearIt = loadCatalogItem(gear.name), it = loadCatalogItem(e.name);
+    // "a light weapon or small item comes out as a Free Action": the Light trait, or Load 1 or less
+    var light = ((it && it.traits) || []).indexOf("Light") !== -1 || itemLoad(e.name, { worn: false }) <= 1;
+    return { key: key, gear: gear, gearKey: gk, gearName: gear.name, freeDraw: !!(gearIt && gearIt.freeDraw), action: light ? "Free Action" : "Swift Action" };
+  }
+  // the write behind TAKE OUT / PUT BACK: in hand records the gear it came out of
+  function setInHand(c, key, on) {
+    c.inHand = c.inHand || {};
+    if (on) { var g = rackState(c).byItem[key]; if (g) c.inHand[key] = entryKey(g); }
+    else delete c.inHand[key];
+  }
   // "actually worn" for the Worn Gear Trait's Load break: carry status worn, or equipped armor / slot gear / Rig
   function isWornEntry(ch, e) {
     var ek = entryKey(e);
@@ -5364,6 +5390,7 @@ EN.engine = (function () {
     // Burner Relays (29 Oct 2026)
     relayRow: relayRow, cipherByName: cipherByName, relayLoadable: relayLoadable, relayRunCap: relayRunCap,
     relayInfo: relayInfo, relayOutcome: relayOutcome, wornTraitWorn: wornTraitWorn,
+    stowedInfo: stowedInfo, setInHand: setInHand,
     // the single-slot equip registry: one description of the five slots, so no view has to
     // list the field names by hand (see EQUIP_SLOTS for why that mattered)
     equipSlotFor: equipSlotFor, slotEquippedKeys: slotEquippedKeys, equipSlotLabel: equipSlotLabel,

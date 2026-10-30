@@ -205,6 +205,7 @@ EN.inventoryView = (function () {
          item 10): dropping goes through DROP, which notes the unit in the dropped log beside LOAD
          (ch.loadDropped), and PICK UP on that log brings it back. A stray "dropped" is Stashed. */
       if (status === "dropped") status = "stashed";
+      if (c.inHand) delete c.inHand[key];   // any carry change puts a taken-out item back in its gear
       if (status && status.indexOf("racked|") === 0) {
         var gearKey = status.slice(7);
         if (gearKey) { c.carry[key] = "racked"; c.racked[key] = gearKey; }
@@ -242,6 +243,7 @@ EN.inventoryView = (function () {
         style: { fontSize: "11px", width: "auto" },
         onchange: function () { var v = this.value; store.update(function (c) {
           c.racked = c.racked || {}; c.carry = c.carry || {};
+          if (c.inHand) delete c.inHand[key];
           if (v) { c.racked[key] = v; c.carry[key] = "racked"; }
           else { delete c.racked[key]; if (c.carry[key] === "racked") c.carry[key] = "carried"; }
         }); } },
@@ -461,6 +463,22 @@ EN.inventoryView = (function () {
           toast("Satchel thrown: " + gone.join(", ") + (gone.length > 1 ? " are" : " is") + " gone.");
         } })
     ]);
+  }
+  /* A Racked item is stowed until taken out (30 Oct 2026); the Stash card says which and offers the
+     swap. Its Load doesn't move either way. */
+  function stowLine(ch, it, entry) {
+    var key = entryKey(entry), st = EN.engine.stowedInfo(ch, entry);
+    var racked = EN.engine.rackState(ch).byItem[key];
+    if (!racked) return null;
+    if (st && st.freeDraw && isWeapon(it)) return null;   // DRAWS FREE: the first attack draws it
+    return el("div.row.wrap.stow-line", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, st
+      ? [el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--text2)" }, text: "Stowed in your " + st.gearName + ": take it out before you use it." }),
+         el("button.btn.sm.take-out", { type: "button", title: "Take it out of the " + st.gearName + " (" + st.action + "). Its Load doesn't change.",
+           onclick: function () { store.update(function (c) { EN.engine.setInHand(c, key, true); }); toast(entry.name + " taken out (" + st.action + ")."); } },
+           "TAKE OUT · " + st.action.toUpperCase())]
+      : [el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--text2)" }, text: "Out of your " + racked.name + ", in hand." }),
+         el("button.btn.sm.put-back", { type: "button", title: "Put it back in the " + racked.name + ". Its Load doesn't change.",
+           onclick: function () { store.update(function (c) { EN.engine.setInHand(c, key, false); }); } }, "PUT BACK")]);
   }
   function buy(it, premium) {
     if (it.vendor === false && _mode !== "fivefinger") { toast(it.name + " isn't vendor stock; it's found, not bought. (" + (it.nexus || "rarely sold") + ")"); return; }
@@ -1173,6 +1191,7 @@ EN.inventoryView = (function () {
       mode === "stash" ? armorResistPicker(ch, it, entry) : null,
       it.relayTier ? relayLine(ch, it, mode, entry) : null,
       mode === "stash" && it.dumpAndRun ? dumpLine(ch, it, entry) : null,
+      mode === "stash" && entry ? stowLine(ch, it, entry) : null,
       open && it.desc ? EN.ui.ruleText(el("p", { style: { marginTop: "8px" } }), it.desc, lo) : null,
       open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(upkeepOf(it, owned)) + "/wk Upkeep" + (owned && owned.premium ? " (Premium plan)" : "") : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,

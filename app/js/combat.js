@@ -5853,6 +5853,12 @@ EN.combatView = (function () {
         /* Racked in a Holster, Scabbard, Back Scabbard or Weapon Sling: "Draw it as part of your first
            attack each encounter; Quick Draw doesn't stack." A weapon with Quick Draw gets no chip. */
         var drawGear = (wKey && eng.rackState) ? eng.rackState(ch).byItem[wKey] : null;
+        /* A weapon Racked in ordinary Carry Gear is stowed: no attack until it is taken out (Free Action
+           for a Light weapon or anything Load 1 or less, else Swift). A Holster, Scabbard, Back Scabbard
+           or Sling draws it with the first attack (DRAWS FREE below), so those are never blocked. */
+        var wEntry = wKey ? eng.findEntry(ch, wKey) : null;
+        var wStow = (wEntry && eng.stowedInfo) ? eng.stowedInfo(ch, wEntry) : null;
+        var stowBlocked = !!(wStow && !wStow.freeDraw);
         var drawIt = drawGear ? eng.catalogItem(drawGear.name) : null;
         var drawChip = (drawIt && drawIt.freeDraw && (it.traits || []).indexOf("Quick Draw") === -1)
           ? el("span.chip.free-draw", { title: "Racked in your " + drawGear.name + ": draw it as part of your first attack each encounter, not a separate action. Quick Draw doesn't stack.",
@@ -5869,7 +5875,7 @@ EN.combatView = (function () {
         ].concat(critChips).concat([drawChip,
           el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype }),
           // real dice roll on the table, but the magazine is still the app's job; a Jammed firearm can't fire
-          (physicalDice() && isRanged && !(isJammed(ch, jamKeyOf(wKey, it.name)) && !/Bowfire/i.test(h.cat || ""))) ? el("button.btn.sm", {
+          (physicalDice() && isRanged && !stowBlocked && !(isJammed(ch, jamKeyOf(wKey, it.name)) && !/Bowfire/i.test(h.cat || ""))) ? el("button.btn.sm", {
             title: "Spend this weapon's ammo for one use; roll the dice yourself",
             style: { color: "var(--ember)", borderColor: "var(--ember)", flex: "0 0 auto" },
             onclick: function () { fireWeapon(wKey); } }, "FIRE") : null
@@ -6149,7 +6155,30 @@ EN.combatView = (function () {
                       : "var(--accent)";
         var kicking = _recoil === wKey;
         if (kicking) _recoil = null;
-        kids.push(el("div.feature" + (kicking ? ".recoil" : ""), { style: { borderLeftColor: railColor } }, rowKids));
+        var wCardEl = el("div.feature" + (kicking ? ".recoil" : ""), { style: { borderLeftColor: railColor } }, rowKids);
+        if (stowBlocked) {
+          // "RACKED · TAKE OUT" stands where the action was: every HIT / THROW key on the card
+          var takeOut = function () {
+            return el("button.btn.sm.take-out", { type: "button", title: "Stowed in your " + wStow.gearName + ". Take it out (" + wStow.action + ") before you attack; its Load doesn't change.",
+              style: { color: "var(--warn)", borderColor: "var(--warn)", padding: "1px 7px", fontSize: "9.5px" },
+              onclick: function () { store.update(function (c) { eng.setInHand(c, wKey, true); }); toast(it.name + " taken out of the " + wStow.gearName + " (" + wStow.action + ")."); } },
+              "RACKED · TAKE OUT (" + wStow.action.toUpperCase() + ")");
+          };
+          Array.prototype.slice.call(wCardEl.querySelectorAll(".statwrap")).forEach(function (sw) {
+            var lbl = sw.querySelector(".lbl"), key = sw.querySelector(".statkey");
+            if (lbl && key && /^(HIT|THROW)$/.test((lbl.textContent || "").trim())) key.parentNode.replaceChild(takeOut(), key);
+          });
+          wCardEl.classList.add("stowed");
+          wCardEl.dataset.stowed = wStow.gearName;
+          if (!wCardEl.querySelector(".take-out")) rowKids.length && wCardEl.appendChild(el("div.row", { style: { marginTop: "6px" } }, [takeOut()]));
+        } else if (wEntry && eng.rackState(ch).byItem[wKey] && !wStow) {
+          // out of ordinary Carry Gear: still Racked for Load, in hand for use
+          var pb = eng.rackState(ch).byItem[wKey];
+          if (!(eng.catalogItem(pb.name) || {}).freeDraw) wCardEl.appendChild(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+            el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "In hand, out of your " + pb.name + "." }),
+            el("button.btn.sm.put-back", { type: "button", style: { fontSize: "9.5px" }, onclick: function () { store.update(function (c) { eng.setInHand(c, wKey, false); }); } }, "PUT BACK")]));
+        }
+        kids.push(wCardEl);
       });
       /* Unarmed strike. Once anything replaces, steps, rides on or LENGTHENS the
          strike it is a real attack you carry and the row is always listed; with
@@ -6517,6 +6546,7 @@ EN.combatView = (function () {
             style: { fontSize: "11px", width: "auto" },
             onchange: function () { var v = this.value; store.update(function (c) {
               c.racked = c.racked || {}; c.carry = c.carry || {};
+              if (c.inHand) delete c.inHand[key];
               if (v) { c.racked[key] = v; c.carry[key] = "racked"; }
               else { delete c.racked[key]; if (c.carry[key] === "racked") c.carry[key] = "carried"; }
             }); } },
