@@ -63,7 +63,7 @@ EN.store = (function () {
       name: composeFullName(firstName, "", lastName),
       firstName: firstName, lastName: lastName,
       identity: {
-        concept: "", handle: "", handleStory: "", whereFrom: "", backstory: "",
+        concept: "", handle: "", handleStory: "", whereFrom: "",
         facets: "", coreSparks: "", tethers: "", faultLines: "",
         appearance: "", notes: ""
       },
@@ -670,6 +670,13 @@ EN.store = (function () {
     if (["light", "standard", "heavy"].indexOf(ch.loadout) === -1) ch.loadout = "standard";
     if (["none", "lift", "dragone", "drag"].indexOf(ch.haul) === -1) ch.haul = "none";  // active Haul ("dragone": dragging one body, 2026-10-12)
     if (ch.identity && ch.identity.notes === undefined) ch.identity.notes = "";  // freeform notes, shared with the #PRINT Identity step
+    /* Backstory & Motivation folded into Where You Came From (the author, 31 Oct 2026): text in
+       the old identity.backstory goes on the end of whereFrom, once, and the old field is dropped. */
+    if (ch.identity && "backstory" in ch.identity) {
+      var bsOld = String(ch.identity.backstory || "").trim(), wfOld = String(ch.identity.whereFrom || "").trim();
+      if (bsOld && wfOld.indexOf(bsOld) === -1) ch.identity.whereFrom = wfOld ? wfOld + "\n\n" + bsOld : bsOld;
+      delete ch.identity.backstory;
+    }
     // First/Last Name split: a legacy single ch.name seeds them once (best
     // effort, split on the first space), then ch.name is recomputed as the
     // derived First "Handle" Last display string every load, so a changed

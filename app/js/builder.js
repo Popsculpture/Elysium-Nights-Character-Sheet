@@ -194,9 +194,9 @@ EN.builder = (function () {
         txt("handleStory", "How you got your Handle (optional)", "Who first called you that, and why it stuck…", true),
         el("p.help", { style: { margin: "-4px 0 10px" }, text: "A Handle is optional at Level 1. Leave it blank if you like, and add it once your Freelancer earns one in play." }),
         txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen trauma rig…", true),
-        txt("whereFrom", "Where You Came From", "Burbclave, Warrens, void station, corporate creche…", true),
-        // the long form, if the player wants one (the author, 30 Oct 2026): ch.identity.backstory
-        txt("backstory", "Backstory & Motivation (optional)", "The long version: who they were before the job, what broke, what they're after now, and what they won't do to get it…", true, true)
+        // one field for origin and backstory (the author, 31 Oct 2026; the separate Backstory &
+        // Motivation folds into it, store.js normalize)
+        txt("whereFrom", "Where You Came From", "Where you grew up (a Burbclave, the Warrens, a void station, a corporate creche), who you were before the job, what broke, what you're after now, and what you won't do to get it…", true, true)
       ], { corners: true }),
       el("div", { style: { height: "16px" } }),
       EN.ui.panel("Inner Profile", "PURE STORY · NO MECHANICS", [

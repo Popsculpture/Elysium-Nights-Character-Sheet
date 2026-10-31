@@ -6,7 +6,7 @@
      01 Front Sheet      - combat: stats, attributes, survival, skills, saves, senses, attacks, defend, conditions, proficiencies
      02 Talents & Lineage- abilities at a glance + talents + lineage + universal upgrades
      03 Gear & Holdings  - currency, inventory, equipped state
-     04 Profile          - appearance, contacts, backstory, inner profile, Cred / Heat
+     04 Profile          - where you came from, appearance, contacts, inner profile, Cred / Heat
      05 Systems          - Flow, Cyberware, #GRID (only the panels a build uses)
    =========================================================================== */
 window.EN = window.EN || {};
@@ -959,10 +959,10 @@ EN.printSheet = (function () {
   }
   function profile(ch, d) {
     var id = ch.identity || {}, body = [];
-    body.push(el("div.ps-grid2", null, [
-      pblock("Concept", id.concept, false),
-      pblock("Where you came from", id.whereFrom, false)
-    ]));
+    body.push(pblock("Concept", id.concept, false));
+    // origin and backstory are one field (the old Backstory & Motivation folded into it, 31 Oct 2026)
+    body.push(sect("Where You Came From"));
+    body.push(pblock("", id.whereFrom, true));
     if (id.handleStory) body.push(pblock("How you got your Handle", id.handleStory, false));
     body.push(sect("Appearance"));
     body.push(pblock("", id.appearance, true));
@@ -983,9 +983,6 @@ EN.printSheet = (function () {
     });
     body.push(writeLine(""));
     body.push(writeLine(""));
-    // the long-form Backstory & Motivation from the Freelancer Profile, then the free Notes
-    body.push(sect("Backstory & Motivation"));
-    body.push(pblock("", id.backstory, true));
     body.push(sect("Notes"));
     body.push(pblock("", id.notes, true));
     // Cred / Heat standing tracks (table-tracked; write-in)

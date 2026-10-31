@@ -389,7 +389,7 @@ EN.inventoryView = (function () {
     if (EN.codexView && EN.codexView.slug) return EN.codexView.slug(s);
     return String(s).toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
-  /* C1 (29 October 2026 handoff): every Stash card states its Load, 0 included, and offers the GM's
+  /* C1 (29 October 2026 handoff): every Stash card states its Load (0 dropped in r51) and offers the GM's
      adjustment. The book's Assigning Load table is a default: "the GM may lower an item's Load by 1
      if it is tiny, collapsible, worn cleanly, or designed to distribute its weight." GM -1 toggles
      e.loadLowered on this entry; engine.entryUnitLoad applies it to every Load count. `base` is the
@@ -400,6 +400,9 @@ EN.inventoryView = (function () {
        don't stack), so the GM's -1 is hidden and a flag already set waits until it is packed or
        carried (engine.entryUnitLoad reads the same rule). */
     var key = entryKey(e), low = !!e.loadLowered && !wornBreak, now = low ? Math.max(0, base - 1) : base;
+    /* r51 (the author, 31 Oct 2026): a card whose Load is 0 shows no chip, the way a vehicle shows
+       none (notCarried). A GM -1 that brought it to 0 still shows, so it can be undone. */
+    if (!(now > 0) && !low) return null;
     var color = low ? "var(--gold)" : "var(--text2)";
     var tip = "Load " + now + " per item" + (low ? " (" + base + " by the table, lowered by 1 by the GM)" : " by the Assigning Load table")
       + (wornBreak ? ", already 1 less while Worn; the GM's -1 doesn't stack with that" + (e.loadLowered ? " and comes back when it is packed or carried" : "") : "")

@@ -6512,7 +6512,7 @@ EN.combatView = (function () {
         var held = (racks.byGear[key] || []).length;
         var gearWorn = cs === "worn";
         chips.push(el("span.chip", { title: (gearWorn ? "" : "Wear it to use its racks. ") + ((gearIt && gearIt.effect) || "Carry Gear"), style: { fontSize: "9px", color: "var(--flow)", borderColor: "var(--flow)" }, text: "⧉ RACKS " + held + "/" + eng.rackLimit(gearIt) + (gearWorn ? "" : " (not worn)") }));
-        chips.push(el("span.chip", { title: "Carry Gear is Load 0 and never counts against your own Load Budget", style: { fontSize: "9px", color: "var(--text3)", borderColor: "var(--border2)" }, text: "⚖ 0" }));
+        // Carry Gear is Load 0, and a 0 shows no Load chip (r51)
       } else if ((ldTotal > 0 || rackedGear) && d.encumbrance && d.encumbrance.enabled) {
         chips.push(el("span.chip", { title: "Load " + ldTotal + (rackedGear ? " (reduced by 1 while Racked in the " + rackedGear.name + ")" : "") + (wornArmor ? " (reduced by 1 while Worn, min 0)" : "") + (e.qty > 1 && !rackedGear ? " (" + baseLd + " each)" : "") + "; spends your Load Budget while on-person",
           style: { fontSize: "9px", color: (rackedGear || wornArmor) ? "var(--success)" : "var(--text2)", borderColor: (rackedGear || wornArmor) ? "var(--success)" : "var(--border2)" },

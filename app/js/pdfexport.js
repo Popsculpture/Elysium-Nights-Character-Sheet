@@ -1172,7 +1172,9 @@ EN.pdfExport = (function () {
     var ctx = makeCtx(doc, form, fonts, { title: "PROFILE", tag: "04 · PROFILE", serial: idSerial(ch), fieldPrefix: "profile" });
 
     ctx.multiline("Concept", "concept", { value: id.concept, height: 34 });
-    ctx.multiline("Where you came from", "whereFrom", { value: id.whereFrom, height: 34 });
+    // origin and backstory are one field (the old Backstory & Motivation folded into it, 31 Oct 2026)
+    ctx.sectionTitle("Where You Came From");
+    ctx.multiline(null, "whereFrom", { value: id.whereFrom, height: 80 });
     ctx.sectionTitle("Appearance");
     ctx.multiline(null, "appearance", { value: id.appearance, height: 50 });
     ctx.sectionTitle("Inner Profile", "pure story");
@@ -1201,10 +1203,7 @@ EN.pdfExport = (function () {
       { header: "Name", key: "name", w: 1.3 }, { header: "Work", key: "work", w: 1.3 },
       { header: "Standing / State", key: "standing", w: "92px" }, { header: "Why they pick up", key: "why", w: 2 }
     ], "contactList", cts.concat([null, null]));
-    // the long-form Backstory & Motivation from the Freelancer Profile (its field is "backstory"),
-    // then the free Notes, which used to share that field and now has its own
-    ctx.sectionTitle("Backstory & Motivation");
-    ctx.multiline(null, "backstory", { value: id.backstory, height: 80 });
+    // the free Notes, on their own
     ctx.sectionTitle("Notes");
     ctx.multiline(null, "notes", { value: id.notes, height: 50 });
 
