@@ -634,6 +634,38 @@ EN.settings = (function () {
     ".set-sectitle{ font-family:var(--mono); font-size:10px; letter-spacing:.2em; color:var(--accent); margin-bottom:12px; }",
     ".set-sectitle.set-fold{ cursor:pointer; user-select:none; min-height:28px; display:flex; align-items:center; }",
     ".set-sectitle.set-fold:hover{ filter:brightness(1.25); }",
+    // the fold row reads as a disclosure: state summary (folded only) and caret on the right
+    ".set-fold .set-sum{ margin-left:auto; font-size:10px; letter-spacing:.12em; color:var(--text3); }",
+    ".set-fold .set-caret{ margin-left:auto; padding-left:8px; font-size:14px; }",
+    ".set-fold .set-sum + .set-caret{ margin-left:0; }",
+    ".set-chars{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }",
+    ".set-chars > .btn{ justify-content:center; }",
+    ".set-chars > .set-wide{ grid-column:1 / -1; }",
+    ".set-ex{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:8px; }",
+    // the DONE bar: drawn on phones and touch screens only (see the media block below)
+    ".set-foot{ display:none; position:sticky; bottom:0; z-index:2; gap:12px; align-items:center;",
+    "  padding:8px 16px calc(8px + env(safe-area-inset-bottom)); border-top:1px solid var(--border);",
+    "  background:linear-gradient(180deg,var(--bg2),var(--bg1)); }",
+    ".set-foot .set-done{ flex:1 1 auto; min-height:48px; justify-content:center; }",
+    /* PHONES AND TOUCH SCREENS (31 Oct 2026): the tray is a bottom sheet, so it lands in the same
+       place from every tab and its controls sit under the thumb; a DONE bar closes it from the
+       bottom. The sheet starts below the rail, so the Classic gear lies on the backdrop and a
+       second tap on it closes the tray; on '98 it stops above the taskbar so START still toggles
+       it. Touch targets are 44px. The desktop tray is unchanged. */
+    "@media (max-width:600px), (pointer:coarse){",
+    "  #set-ov{ align-items:flex-end; padding-top:104px; }",
+    "  #set-ov .set-card{ max-height:calc(100vh - 104px); max-height:calc(100dvh - 104px); border-bottom-left-radius:0; border-bottom-right-radius:0; }",
+    "  html.skin-98 #set-ov{ padding-bottom:40px; }",
+    "  html.skin-98 #set-ov .set-card{ max-height:calc(100vh - 144px); max-height:calc(100dvh - 144px); }",
+    "  html.skin-98 #set-ov .set-body::after{ display:none; }",
+    "  #set-ov .set-body{ padding-bottom:16px; }",
+    "  #set-ov .set-foot{ display:flex; }",
+    "}",
+    "@media (pointer:coarse){",
+    "  #set-ov .set-body .btn.sm, #set-ov .set-body select{ min-height:44px; }",
+    "  #set-ov .set-sectitle.set-fold{ min-height:44px; }",
+    "  #set-ov .set-close{ min-width:44px; min-height:44px; }",
+    "}",
     ".set-label{ display:block; font-family:var(--disp); font-weight:600; font-size:14px; letter-spacing:.08em;",
     "  color:var(--text); text-transform:uppercase; }",
     ".set-hint{ font-size:12px; color:var(--text3); margin:3px 0 14px; line-height:1.45; }",
@@ -944,7 +976,7 @@ EN.settings = (function () {
     var cv = EN.combatView;
     var em = cv.isLayoutEditMode();
     var kids = [
-      el("div.set-sectitle", { text: "// FREELANCER LAYOUT" }),
+      el("div.set-sectitle", { text: "// FREELANCER LAYOUT", dataset: { sum: em ? "ON" : "OFF" } }),
       el("label.set-label", { text: "Panel Customization" }),
       el("p.set-hint", { text: em
         ? "Drag ⠿ on a panel to rearrange; − / + sets its width (1-6 columns)."
@@ -984,7 +1016,7 @@ EN.settings = (function () {
      .primary and cannot lose contrast against the fill the way the neon green did. */
   var ICON_PHYSICAL_DICE = '<svg viewBox="0 0 118.91 122.88" fill="currentColor" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M6.41,23.43l49.53,20.15c1.57,0.64,4.17,1.04,5.74,0.4l52.42-21.41c1.57-0.64-0.02-3.49-1.62-4.05L59.62,0 c-0.4-0.14-10.33,3.48-11.72,3.97L4.79,19.38C3.12,19.97,4.26,22.55,6.41,23.43L6.41,23.43z M116.87,94.34l-51.73,28.06 c-1.49,0.81-3.56,0.69-3.56-1.01l-0.01-66.03c0-1.7,0.14-3.36,1.7-4.03l51.92-22.12c1.56-0.66,3.73-0.07,3.72,1.62l-0.34,59.48 C118.56,92,118.36,93.53,116.87,94.34L116.87,94.34z M104.99,71.09c3.52,1.5,4.55,6.77,2.28,11.78c-2.26,5-6.96,7.84-10.48,6.34 c-3.52-1.5-4.55-6.77-2.28-11.78C96.78,72.43,101.47,69.59,104.99,71.09L104.99,71.09z M86.22,57.28c3.65,1.55,4.7,7.01,2.36,12.19 c-2.34,5.18-7.2,8.12-10.85,6.57c-3.65-1.55-4.7-7.01-2.36-12.19C77.71,58.66,82.57,55.72,86.22,57.28L86.22,57.28z M1.81,93.89 l51.26,27.75c1.49,0.81,3.56,0.69,3.56-1.01l0.01-65.42c0-1.7-0.14-3.36-1.7-4.03L3.72,29.22C2.16,28.55,0,29.15,0,30.85 l0.11,59.02C0.11,91.56,0.32,93.08,1.81,93.89L1.81,93.89z M6.91,75.74c3.21-2.04,7.99,0.29,10.66,5.2s2.24,10.56-0.97,12.6 c-3.21,2.04-7.99-0.29-10.66-5.2C3.27,83.42,3.7,77.78,6.91,75.74L6.91,75.74z M22.06,64.37c3.4-2.06,8.45,0.29,11.28,5.26 c2.83,4.97,2.38,10.67-1.02,12.73c-3.4,2.06-8.45-0.29-11.28-5.26C18.2,72.14,18.66,66.44,22.06,64.37L22.06,64.37z M38.12,52.37 c3.42-2.07,8.51,0.29,11.36,5.26c2.85,4.97,2.39,10.68-1.03,12.74c-3.42,2.07-8.51-0.29-11.36-5.26 C34.24,60.14,34.7,54.44,38.12,52.37L38.12,52.37z M59.16,15.48c6.04,0,10.93,2.34,10.93,5.22c0,2.88-4.89,5.22-10.93,5.22 c-6.03,0-10.93-2.34-10.93-5.22C48.23,17.82,53.13,15.48,59.16,15.48L59.16,15.48z"/></svg>';
 
-  // Freelancer-only: how dice get rolled. Digital lets the sheet roll and makes
+  // The Freelancer desktop, on every tab (31 Oct 2026): how dice get rolled. Digital lets the sheet roll and makes
   // HIT and DMG pressable; Physical assumes real dice at the table, so those go
   // back to plain numbers and only the things that SPEND something keep a
   // button, since the app is still tracking the magazine.
@@ -1032,7 +1064,7 @@ EN.settings = (function () {
     if (imm) {
       kids.push(el("label.set-label", { style: { marginTop: "14px" }, text: "Intensity" }));
       kids.push(el("p.set-hint", { text: "Auto follows your current Strain. Pick 1-5 to pin the animation to that level." }));
-      kids.push(el("div.row.wrap", { style: { gap: "6px" } },
+      kids.push(el("div.row.wrap", { style: { gap: "8px" } },
         [{ k: "auto", label: "Auto" }, { k: "1", label: "1" }, { k: "2", label: "2" }, { k: "3", label: "3" }, { k: "4", label: "4" }, { k: "5", label: "5" }].map(function (o) {
           var on = String(intensity) === o.k;
           return el("button.btn.sm" + (on ? ".primary" : ""), { onclick: function () { fv.setIntensity(o.k); EN.app.render(); rebuild(); } }, o.label);
@@ -1041,6 +1073,48 @@ EN.settings = (function () {
     return kids;
   }
 
+  /* CHARACTERS (the author, 31 Oct 2026). The roster from any tab: swap the active Freelancer,
+     open Manage characters, import, export the active one, or register a new #PRINT. Every
+     control is #PRINT's own (builder.js), so the tray and #PRINT can never disagree. Freelancer
+     desktop only: the Admin desktop works with the crew, not a loaded character. */
+  function charactersSection() {
+    var B = EN.builder, ch = EN.store.active();
+    var kids = [el("div.set-sectitle", { text: "// CHARACTERS" })];
+    if (!ch) {
+      kids.push(el("p.set-hint", { text: "No Freelancer on file yet. Register one, or import a record (.json)." }));
+    } else {
+      kids.push(el("label.set-label", { text: "Active Freelancer" }));
+      var sel = B.switcherSelect(ch);
+      sel.classList.add("set-switch");
+      sel.style.width = "100%";
+      // after #PRINT's own handler: a pick is the whole errand, so the tray goes with it
+      sel.addEventListener("change", function () { close(); });
+      kids.push(sel);
+    }
+    var isEx = !!(EN.store.activeIsExample && EN.store.activeIsExample());
+    // an example is live but not saved: the same chip and adoption #PRINT draws (builder.js rosterSwitcher)
+    if (ch && isEx) kids.push(el("div.set-ex", null, [
+      el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
+        title: "A pre-made example. Edits are live but are not saved, and reloading restores it." }, "EXAMPLE"),
+      el("button.btn.sm", { type: "button", style: { color: "var(--accent)", borderColor: "var(--accent)" },
+        title: "Copy this example into your own roster as an editable character",
+        onclick: function () {
+          var made = EN.store.adoptExample();
+          if (made) { EN.ui.toast(made.name + " saved to your roster."); EN.app.render(); rebuild(); }
+        } }, "⇒ SAVE AS MY OWN")
+    ]));
+    kids.push(el("div.set-chars", null, [
+      el("button.btn.sm" + (ch ? "" : ".set-wide"), { type: "button", title: "Import a record, or a bundle of them (.json)",
+        onclick: function () { close(); B.importPrompt(); } }, "⤒ IMPORT"),
+      ch ? el("button.btn.sm", { type: "button", title: "Save " + (ch.name || "this Freelancer") + " as a .json file" + (isEx ? " (an example: it exports like any record)" : ""),
+        onclick: function () { B.exportChar(ch); close(); } }, "⤓ EXPORT") : null,
+      el("button.btn.sm.set-wide", { type: "button", title: "Rename, open, export or delete your records, one or many at a time",
+        onclick: function () { close(); B.openManager(); } }, "⚙ MANAGE CHARACTERS"),
+      el("button.btn.sm.primary.set-wide", { type: "button", title: "Register a new Freelancer: opens #PRINT on step 01 Identity",
+        onclick: function () { close(); B.newRecord(); } }, "+ REGISTER NEW #PRINT")
+    ]));
+    return kids;
+  }
   /* WORKSPACE. Device state, not character state: which desktop you are on.
      Storage lives entirely in app.js's en_portal_v1, so this section only
      ever calls EN.app's exported functions rather than touching a key of its
@@ -1052,7 +1126,7 @@ EN.settings = (function () {
     var admin = EN.app.portal() === "admin";
     var kids = [
       el("div.set-sectitle", { text: "// WORKSPACE" }),
-      el("label.set-label", { text: "Current desktop" }),
+      el("label.set-label", { text: "Current desktop: " + (admin ? "Admin" : "Freelancer") }),
       el("p.set-hint", { text: "Two desktops share one node. Freelancer is a player's own sheet; Admin is the table you run. Switching repaints the app and swaps the tab rail." })
     ];
     if (!EN.app.hasAdmin()) {
@@ -1196,7 +1270,7 @@ EN.settings = (function () {
   function supplementalSection() {
     var L = EN.launch, on = L.supplemental();
     return [
-      el("div.set-sectitle", { text: "// CONTENT" }),
+      el("div.set-sectitle", { text: "// CONTENT", dataset: { sum: "COMPANION: " + (on ? "ON" : "OFF") } }),
       el("label.set-label", { text: "Supplemental content" }),
       el("p.set-hint", { text: on
         ? "On: the pickers, the market and the Codex offer the Freelancer's Companion alongside the Player's Handbook: its lineages, subclasses, Backgrounds and Talents, and Culinary Tools. Saved on this device."
@@ -1215,7 +1289,7 @@ EN.settings = (function () {
     var list = L.gmControlList || [];
     var live = list.filter(function (c) { return L.gmItem(c.key); });
     return [
-      el("div.set-sectitle", { text: "// GM CONTROLS" }),
+      el("div.set-sectitle", { text: "// GM CONTROLS", dataset: { sum: on ? "ON · " + live.length + " / " + list.length : "OFF" } }),
       el("label.set-label", { text: "GM controls" }),
       el("p.set-hint", { text: on
         ? "On: " + (live.length ? live.map(function (c) { return c.name; }).join(" and ") + (live.length === 1 ? " is" : " are") + " shown." : "every control is switched off individually.") + " Saved on this device."
@@ -1289,9 +1363,9 @@ EN.settings = (function () {
     var b = document.querySelector("#set-ov .set-gm"); if (b) b.focus();
   }
   function optionalRulesSection() {
-    var L = EN.launch;
+    var L = EN.launch, rules = L.optionalRules || [];
     var kids = [
-      el("div.set-sectitle", { text: "// OPTIONAL RULES" }),
+      el("div.set-sectitle", { text: "// OPTIONAL RULES", dataset: { sum: rules.filter(function (r) { return L.rule(r.key); }).length + " / " + rules.length + " ON" } }),
       el("p.set-hint", { text: "Switch a rule off for your table. Each one is on by default, the book as written. Turning one off changes what the sheet shows and applies, not what a record holds. Saved on this device." })
     ];
     (L.optionalRules || []).forEach(function (r) {
@@ -1323,7 +1397,7 @@ EN.settings = (function () {
     if (on) {
       kids.push(el("label.set-label", { style: { marginTop: "14px" }, text: "Intensity" }));
       kids.push(el("p.set-hint", { text: "Auto follows your rig's live System Integrity. Pick 1-4 to preview a damage stage (4 is bricked)." }));
-      kids.push(el("div.row.wrap", { style: { gap: "6px" } },
+      kids.push(el("div.row.wrap", { style: { gap: "8px" } },
         [{ k: "auto", label: "Auto" }, { k: "1", label: "1" }, { k: "2", label: "2" }, { k: "3", label: "3" }, { k: "4", label: "4" }].map(function (o) {
           var sel = String(intensity) === o.k;
           return el("button.btn.sm" + (sel ? ".primary" : ""), { onclick: function () { gv.setDmgIntensity(o.k); EN.app.render(); rebuild(); } }, o.label);
@@ -1338,10 +1412,10 @@ EN.settings = (function () {
     var cur = EN.theme.getSkin();
     var pending = EN.theme.SKINS.some(function (s) { return s.key === cur && /pending/.test(s.sub); });
     return [
-      el("div.set-sectitle", { text: "// CHANGE APPEARANCE" }),
+      el("div.set-sectitle", { text: "// CHANGE APPEARANCE", dataset: { sum: (EN.theme.SKINS.filter(function (s) { return s.key === cur; })[0] || {}).name || "" } }),
       el("label.set-label", { text: "OS Skin" }),
       el("p.set-hint", { text: "The shape of the interface: type, corners, chrome. Any color theme wears any skin, and each skin remembers the last one you gave it, so the three can look like three different machines. Switching skins repaints the loaded Freelancer and saves that palette to them. Saved on this device." }),
-      el("div.row.wrap", { style: { gap: "6px" } }, EN.theme.SKINS.map(function (s) {
+      el("div.row.wrap", { style: { gap: "8px" } }, EN.theme.SKINS.map(function (s) {
         return el("button.btn.sm" + (s.key === cur ? ".primary" : ""), {
           title: s.sub,
           /* EN.app.render() so a skin change rebuilds the view, matching the layout, Flow and
@@ -1430,7 +1504,8 @@ EN.settings = (function () {
   }
 
   // (re)build the tray body. Context-sensitive sections (tied to whichever
-  // tab is active) take priority at the top; general settings sit below.
+  // tab is active) take priority at the top; general settings sit below,
+  // led by CHARACTERS and DICE on the Freelancer desktop (31 Oct 2026).
   // New general sections get appended after that split.
   function rebuild() {
     var ov = document.getElementById("set-ov");
@@ -1439,18 +1514,21 @@ EN.settings = (function () {
     clear(body);
     var sections = [];
     if (EN.app.activeTab() === "combat" && EN.combatView) sections.push(freelancerLayoutSection());
-    if (EN.app.activeTab() === "combat" && EN.combatView && EN.combatView.diceMode) sections.push(diceSection());
     if (EN.app.activeTab() === "flow" && EN.flowView && EN.flowView.isImmersive) sections.push(flowSection());
     if (EN.app.activeTab() === "grid" && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
+    // the roster, on the Freelancer desktop, first among the general sections
+    if (!EN.theme.inAdmin() && EN.builder && EN.builder.openManager) sections.push(charactersSection());
+    // dice mode on every Freelancer tab (31 Oct 2026), not only the Freelancer tab
+    if (!EN.theme.inAdmin() && EN.combatView && EN.combatView.diceMode) sections.push(diceSection());
     // general sections, shown regardless of which tab settings was opened from
     sections.push(portalSection());
+    // the GM document's backup, on the Admin desktop only, right under WORKSPACE
+    if (EN.theme.inAdmin() && EN.gmStore && EN.gmStore.exportDoc) sections.push(gmDataSection());
     // which books the pickers offer from, on both desktops
     if (EN.launch && EN.launch.setSupplemental) sections.push(supplementalSection());
     // GM controls and the optional rules, on both desktops
     if (EN.launch && EN.launch.setGmControls) sections.push(gmControlsSection());
     if (EN.launch && EN.launch.setRule) sections.push(optionalRulesSection());
-    // the GM document's backup, on the Admin desktop only: a Freelancer's tray never shows it
-    if (EN.theme.inAdmin() && EN.gmStore && EN.gmStore.exportDoc) sections.push(gmDataSection());
     // skin and palette are one section under one title: skinSection carries
     // the title, themeSection continues it, so the two are pushed as one
     sections.push(skinSection().concat(wallSection(), themeSection()));
@@ -1466,7 +1544,8 @@ EN.settings = (function () {
       head.setAttribute("tabindex", "0");
       head.setAttribute("aria-expanded", shut ? "false" : "true");
       head.title = shut ? "Show this section" : "Hide this section";
-      head.appendChild(el("span.set-caret", { text: shut ? " ▸" : " ▾" }));
+      if (shut && head.dataset.sum) head.appendChild(el("span.set-sum", { text: head.dataset.sum }));
+      head.appendChild(el("span.set-caret", { text: shut ? "▸" : "▾" }));
       var toggle = function () { setFold(key, !shut); rebuild(); };
       head.addEventListener("click", toggle);
       head.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
@@ -1480,7 +1559,7 @@ EN.settings = (function () {
      four the player rarely visits start folded; the rest start open. A fold the player sets is
      remembered on this device, keyed by the section's title. */
   var FOLD_KEY = "en_settings_fold_v1";
-  var FOLD_DEFAULT = { "// CONTENT": true, "// GM CONTROLS": true, "// OPTIONAL RULES": true, "// CHANGE APPEARANCE": true };
+  var FOLD_DEFAULT = { "// FREELANCER LAYOUT": true, "// CONTENT": true, "// GM CONTROLS": true, "// OPTIONAL RULES": true, "// CHANGE APPEARANCE": true };
   function folds() { try { var m = JSON.parse(localStorage.getItem(FOLD_KEY) || "{}"); return (m && typeof m === "object") ? m : {}; } catch (e) { return {}; } }
   function foldShut(key) { var m = folds(); return Object.prototype.hasOwnProperty.call(m, key) ? !!m[key] : !!FOLD_DEFAULT[key]; }
   function setFold(key, shut) { var m = folds(); m[key] = !!shut; try { localStorage.setItem(FOLD_KEY, JSON.stringify(m)); } catch (e) {} }
@@ -1504,7 +1583,15 @@ EN.settings = (function () {
           ]),
           el("button.set-close", { type: "button", title: "Close (Esc)", onclick: close }, "✕")
         ]),
-        el("div.set-body")
+        el("div.set-body"),
+        // phones and touch screens: close (and switch user) from the bottom, under the thumb
+        el("div.set-foot", null, [
+          (EN.app.hasAdmin() && EN.gate && EN.gate.switchUser)
+            ? el("button.btn.sm.set-foot-switch", { type: "button", title: EN.app.portal() === "admin" ? "Switch to the Freelancer profile" : "Switch to the Admin profile",
+                onclick: function () { close(); EN.gate.switchUser(EN.app.setPortal); } }, "⇄ SWITCH USER")
+            : null,
+          el("button.btn.primary.set-done", { type: "button", title: "Close Settings", onclick: close }, "DONE")
+        ])
       ])
     ]);
     document.body.appendChild(ov);
@@ -1518,8 +1605,11 @@ EN.settings = (function () {
     _gmImport = null;   // a picked GM file is dropped with the tray, so its text is not held
     closeGm();          // the GM controls pop-out goes with the tray
     var ov = document.getElementById("set-ov");
-    if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+    var had = !!(ov && ov.parentNode);
+    if (had) ov.parentNode.removeChild(ov);
     document.removeEventListener("keydown", onKey);
+    // keyboard and switch users land back on the gear (START on '98), not on <body>
+    if (had) { var g = document.querySelector("#os-tabs .os-gear"); if (g && g.offsetParent) { if (!g.hasAttribute("tabindex")) g.setAttribute("tabindex", "-1"); try { g.focus({ preventScroll: true }); } catch (e) {} } }
   }
 
   // the gear at the right end of the tab rail (toggles the tray)

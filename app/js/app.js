@@ -379,6 +379,10 @@ EN.app = (function () {
         el("div.muted-box", { style: { marginTop: "20px", padding: "40px" }, html: tab.glyph + " &nbsp; MODULE PENDING<br><br>" + tab.stub })
       ]));
     }
+    /* Manage characters opens over whichever Freelancer tab is up (31 Oct 2026), from the settings
+       tray or the roster select. #PRINT mounts it itself; every other tab gets it here. */
+    if (portal === "freelancer" && tab.key !== "print" && EN.builder && EN.builder.managerOpen && EN.builder.managerOpen())
+      view.appendChild(EN.builder.managerPanel());
     if (_lastTab === LAST[portal]) {                       // same view → stay put
       window.scrollTo(sx, sy);
       Array.prototype.forEach.call(document.querySelectorAll(WELLS), function (w, i) {

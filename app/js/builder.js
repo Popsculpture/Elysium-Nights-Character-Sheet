@@ -4226,7 +4226,8 @@ EN.builder = (function () {
     return el("select", { style: { width: "auto", minWidth: "160px" }, onchange: function (e) {
       var v = e.target.value;
       if (v === "__new") { newRecord(); return; }
-      if (v === "__manage") { openManager(); EN.app.gotoTab("print"); return; }
+      // the manager draws over whichever tab is open (app.js mounts it), so it no longer jumps to #PRINT
+      if (v === "__manage") { openManager(); return; }
       if (v.indexOf("__ex:") === 0) { store.setExample(v.slice(5)); _step = 0; EN.app.render(); return; }
       store.setActive(v); _step = 0; EN.app.render();
     } }, kids);
@@ -4510,6 +4511,9 @@ EN.builder = (function () {
   function openAdvance() { for (var i = 0; i < STEPS.length; i++) { if (STEPS[i].key === "advance") { _step = i; return; } } }
 
   return { render: render, openAdvance: openAdvance, switcherSelect: switcherSelect,
+           // the settings tray's CHARACTERS section (31 Oct 2026) and app.js's off-#PRINT manager mount
+           openManager: openManager, managerOpen: managerOpen, managerPanel: managerPanel,
+           newRecord: newRecord, importPrompt: importPrompt, exportChar: exportChar,
            // A2/A3: the #GRID tab's catch-up prompt draws this same picker
            startingCipherPicker: startingCipherPicker, startingCiphers: startingCiphers, startingCiphersOwed: startingCiphersOwed,
            // A1, 29 October: the class rig and picks, one source for every surface that lists them
