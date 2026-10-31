@@ -484,9 +484,8 @@ EN.app = (function () {
   }
   function tickClock() {
     var t = clockText();
-    var c = document.getElementById("os-clock");
-    if (c) c.textContent = t;
-    var tray = document.getElementById("os-tray-clock");   // the taskbar clock, when a skin shows one
+    // the top bar has no clock on any skin (31 Oct 2026); the '98 taskbar clock is the only one
+    var tray = document.getElementById("os-tray-clock");
     if (tray) tray.textContent = t;
   }
 

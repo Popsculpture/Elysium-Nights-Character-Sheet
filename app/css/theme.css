@@ -111,7 +111,7 @@ a{ color:var(--accent); text-decoration:none; }
 .os-status .led{ width:7px; height:7px; border-radius:50%; background:var(--success); box-shadow:0 0 8px var(--success); display:inline-block; margin-right:5px; animation:pulse 2.4s infinite; }
 @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
 .os-spacer{ flex:1; }
-.os-clock{ font-family:var(--mono); font-size:12px; color:var(--text2); letter-spacing:.08em; }
+/* No top-bar clock on any skin (the author, 31 Oct 2026): #GRIDOS '98 keeps its taskbar clock (.os-tray-clock). */
 
 /* tab rail */
 .os-tabs{ display:flex; align-items:stretch; padding:0 12px; background:var(--bg1); border-bottom:1px solid var(--border);
@@ -149,7 +149,6 @@ a{ color:var(--accent); text-decoration:none; }
    changes. */
 @media (max-width:560px){
   html:not(.skin-98):not(.skin-droid) .os-topbar{ gap:10px; padding:0 12px; }
-  html:not(.skin-98):not(.skin-droid) .os-topbar .os-clock{ display:none; }
   html:not(.skin-98):not(.skin-droid) .os-topbar > .os-status:not(#active-name){ flex:none; width:min-content; gap:10px; }
   html:not(.skin-98):not(.skin-droid) #active-name{ min-width:0; }
   html:not(.skin-98):not(.skin-droid) #active-name .an-name{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -1319,7 +1318,7 @@ html.skin-98 .os-logo{ font-family:var(--mono); font-weight:400; font-size:14px;
 html.skin-98 .os-logo b{ color:var(--accent-ink); }
 html.skin-98 .os-logo .v{ color:var(--accent-ink-2); font-size:0; }          /* "v1.0" makes way for the year */
 html.skin-98 .os-logo .v::after{ content:"'98"; font-size:14px; letter-spacing:.2em; }
-html.skin-98 .os-status > span, html.skin-98 #active-name, html.skin-98 .os-clock{
+html.skin-98 .os-status > span, html.skin-98 #active-name{
   padding:2px 8px; background:var(--bg1); border:1px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo);
   font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:var(--text2);
 }
@@ -1388,8 +1387,7 @@ html.skin-98 .os-gear:hover{ color:var(--text); }
 html.skin-98 .os-main{ padding-bottom:110px; }                       /* room for the taskbar */
 
 /* ---- the system tray, right end of the taskbar: glyph | glyph | clock ---- */
-.os-tray{ display:none; }                                             /* Classic has no taskbar; the top bar keeps the clock */
-html.skin-98 .os-topbar .os-clock{ display:none; }                    /* the clock moved to the tray */
+.os-tray{ display:none; }                                             /* Classic has no taskbar */
 html.skin-98 .os-tray{
   display:flex; align-items:center; margin-left:auto; height:30px; flex:0 0 auto;
   background:var(--bg1); border:1px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo);
@@ -1766,10 +1764,6 @@ html.skin-droid .os-badge svg{ width:100%; height:100%; display:block; }
 /* the spacer splits the row: wordmark and version at the left edge, the readouts at the right */
 html.skin-droid .os-spacer{ order:2; }
 html.skin-droid .os-topbar > .os-status:not(#active-name){ order:3; font-size:10.5px; gap:10px; }
-/* no clock: a phone's own status bar is already showing the time an inch above this one. Same
-   move '98 makes, for the same reason its clock sits in the taskbar instead. tickClock still
-   writes here, harmlessly, because it feeds that tray on the other skin. */
-html.skin-droid .os-topbar .os-clock{ display:none; }
 /* the active record takes the strip: accent fill, dark ink, the whole record on one line */
 /* One line, always. A row rather than flowed inline text: the label holds its width, the switcher
    takes whatever is left and is allowed to shrink under its own content (min-width:0), so a long
