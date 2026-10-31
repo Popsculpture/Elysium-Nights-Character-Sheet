@@ -1269,7 +1269,8 @@ EN.inventoryView = (function () {
   var STASH_CATS = ["Melee Weapons", "Ranged Weapons", "Signature Weapons", "Ammunition & Munitions",
     "Armor & Defensive Gear", "Carry Gear", "Skill Kits", "Field Devices & Gadgets", "Consumables", "Identity & Documents",
     "Flow Tonics & Resonant Devices", "Smartdecks & B&E Buddies", "Trauma Rigs", "Cipher Library", "Weapon Parts", "Armor Mods", "Vehicles", "Vehicle Mods", "Custom & Unknown"];
-  var _stashOpen = {};   // category name -> true when expanded
+  // category name -> false once collapsed; every category starts expanded (the author, 31 Oct 2026)
+  var _stashOpen = {};
   function stashCategory(it) {
     if (!it) return "Custom & Unknown";
     if (it.vehicle) return "Vehicles";
@@ -1343,7 +1344,7 @@ EN.inventoryView = (function () {
       (groups[cat] = groups[cat] || []).push({ e: e, it: it });
     });
     var catNames = STASH_CATS.filter(function (c) { return groups[c]; });
-    var allOpen = catNames.every(function (c) { return _stashOpen[c]; });
+    var allOpen = catNames.every(function (c) { return _stashOpen[c] !== false; });
     var controls = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "4px" } }, [
       el("button.btn.sm", { title: allOpen ? "Collapse every category" : "Expand every category",
         onclick: function () { var target = !allOpen; catNames.forEach(function (c) { _stashOpen[c] = target; }); EN.app.render(); } },
@@ -1354,7 +1355,7 @@ EN.inventoryView = (function () {
     var body = [loadBar, dropLog, controls].filter(Boolean);
     catNames.forEach(function (cat) {
       var list = groups[cat];
-      var open = !!_stashOpen[cat];
+      var open = _stashOpen[cat] !== false;
       body.push(el("div.section-title.clickable", {
         title: open ? "Collapse " + cat : "Expand " + cat,
         onclick: function () { _stashOpen[cat] = !open; EN.app.render(); } }, [

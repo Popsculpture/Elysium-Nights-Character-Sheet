@@ -6588,16 +6588,52 @@ EN.combatView = (function () {
           onchange: function () { setCarry(key, this.value); } }, opts);
         statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown]);
       }
-      return el("div.feature", { style: { borderLeftColor: equipped ? "var(--accent)" : cs === "worn" ? "var(--gold)" : rackedGear ? "var(--flow)" : "var(--border2)", marginLeft: nested ? "26px" : "0" } }, [
+      /* Tap the card to read what the item is (the author, 31 Oct 2026): its description, effect,
+         type and traits, folded under the row. The row's own controls (status picker, WEAR, the
+         slot chips) keep their taps; only a tap on the name or empty space toggles. */
+      var descId = "lo-desc:" + key, descOpen = !!_open[descId];
+      var descKids = [];
+      if (descOpen) {
+        var lo = { conditions: true, used: {} };
+        // the gear catalog first, then the engine's whole catalog (Parts, armor Mods, vehicles register there)
+        var di = it || (eng.catalogItem ? eng.catalogItem(e.name) : null);
+        var line = function (label, color, text) {
+          if (!text) return;
+          descKids.push(EN.ui.ruleText(el("p.help", { style: { margin: "4px 0 0", color: color } }), (label ? label + ": " : "") + text, lo));
+        };
+        if (di && di.desc) descKids.push(EN.ui.ruleText(el("p.lo-desc", { style: { margin: "6px 0 0", fontSize: "12px" } }), di.desc, lo));
+        if (di) {
+          line(/^Effect/.test(di.effect || "") ? "" : "Effect", "var(--accent)", di.effect);
+          line("Grants", "var(--accent)", di.grants);
+          line("Feeds", "var(--gold)", di.feeds);
+          line("Fits", "var(--warn)", di.fits && !/^Any\b/i.test(String(di.fits)) ? di.fits : null);
+          line("Activation", "var(--accent)", di.activation);
+          line("Limitation", "var(--warn)", di.limitation);
+          line("Drawback", "var(--danger)", di.drawback);
+          line("Synergy", "var(--flow)", di.synergy);
+          line("Powered Benefits", "var(--gold)", di.poweredBenefits);
+          if (di.damage && di.damage !== "0") line("Damage", "var(--text2)", di.damage + (di.range ? " · Range " + di.range : ""));
+          line("Type", "var(--text2)", di.type);
+          if (Array.isArray(di.traits) && di.traits.length) line("Traits", "var(--gold)", di.traits.join(", "));
+        }
+        if (!descKids.length) descKids.push(el("p.help", { style: { margin: "6px 0 0", color: "var(--text3)" }, text: "No description on file for this item." }));
+      }
+      return el("div.feature.lo-row", { dataset: { loKey: key }, title: descOpen ? "Tap to fold the description" : "Tap to read what this is",
+        style: { cursor: "pointer", borderLeftColor: equipped ? "var(--accent)" : cs === "worn" ? "var(--gold)" : rackedGear ? "var(--flow)" : "var(--border2)", marginLeft: nested ? "26px" : "0" },
+        onclick: function (ev) {
+          var t = ev && ev.target;
+          if (t && t.closest && t.closest("button, select, option, input, a, .chip")) return;
+          _open[descId] = !descOpen; EN.app.render();
+        } }, [
         el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap" } }, [
           nested ? el("span.mono", { title: "Racked inside the item above", style: { fontSize: "11px", color: "var(--flow)" }, text: "⧉" }) : null,
-          el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: e.name }),
+          el("span.lo-name", { style: { fontWeight: 600, fontSize: "13px" } }, EN.ui.nameCaret(e.name, descOpen)),
           e.qty > 1 ? el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "×" + e.qty }) : null,
           el("span", { style: { flex: "1 1 auto" } }),
           statusCtrl
         ]),
         chips.length ? el("div.row.wrap", { style: { gap: "5px", marginTop: "6px" } }, chips) : null
-      ]);
+      ].concat(descKids));
     }
 
     /* ---- NOTES tab: freeform, shared with the #PRINT Identity notes ---- */
