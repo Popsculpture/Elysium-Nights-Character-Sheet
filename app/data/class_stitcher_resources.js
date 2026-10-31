@@ -238,6 +238,8 @@ EN.classes.stitcher = {
         {
           level: 1,
           name: "Field Triage",
+          // always-on benefits; the Free Action inside (the Beacon Rig) is not the feature's cost (the author, 31 Oct 2026)
+          action: "Passive",
           text: "You gain the following benefits:\n\n• **Ranged Care:** When you use the Trauma Patch Triage Protocol, its range increases from melee reach to 6 spaces.\n• **Trauma Buffer:** Whenever you grant an ally Vigor, they gain an extra amount of Vigor equal to your Caliber.\n• **Forensic Pathology:** Out of combat, spend 10 minutes examining a biological subject (living or dead) to determine the exact cause and time of death, identify any toxins or diseases in their system, and assess their physical limitations or hidden injuries (making Medtech or Investigation Dice Pool checks if the GM rules the information is deliberately obfuscated).\n• **Beacon Rig:** You run the emitter mast open and let the rig broadcast. While it is broadcasting, allies within 3 spaces ignore the Speed reduction from being Bloodied, ignore the level of Fatigue they took for dropping to 0 Vitality, and roll Body Saves with **Edge**. That Fatigue isn't cured. It waits, and it lands the moment they step out of the broadcast or it goes quiet. You can't be Hidden while broadcasting, and anything with a scanner knows exactly where the medic is standing. Starting or stopping the broadcast is a **Free Action**. As an exception to the normal recovery rules, one ally who takes a Short Rest inside the broadcast reduces their Fatigue by 1 level."
         },
         {

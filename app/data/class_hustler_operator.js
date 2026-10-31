@@ -399,6 +399,8 @@ EN.classes.operator = {
         {
           level: 1,
           name: "CQB Tactics",
+          // always-on benefits; the Free Action inside (Breacher's Step) is not the feature's cost (the author, 31 Oct 2026)
+          action: "Passive",
           grants: { armor: ["Physical Shields"] },
           text: "You gain Proficiency with Physical Shields. While wielding a Physical Shield in one hand and a Sidearm, Simple Weapon, or Martial Weapon (without the Heavy or Two-Handed trait) in the other, you gain:\n\n• **Close Quarters Supremacy:** If you are wielding a Sidearm, your ranged attacks don't suffer Snag when fired at an enemy within melee range.\n• **Active Shielding:** Your Physical Shield works as a melee weapon dealing 1d6 Bludgeoning damage. Whenever you successfully Shove an enemy, you automatically deal this damage.\n• **Breacher's Step:** When you roll Initiative, you and up to one ally of your choice can immediately move up to 3 spaces as a Free Action."
         },
