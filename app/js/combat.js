@@ -6766,6 +6766,11 @@ EN.combatView = (function () {
         realWeaponRows.forEach(function (r) {
           var w = realMeleeWeapon(r.name);
           if (!w) return;
+          /* r56: a weapon still Racked (stowed, not taken out) parries nothing. Parry needs it
+             "equipped" in hand, and a Holster or Scabbard's free draw comes only with your first
+             attack, which a Parry is not. TAKE OUT puts it back on this list. */
+          var pE = eng.findEntry ? eng.findEntry(ch, r.key) : null;
+          if (pE && eng.stowedInfo && eng.stowedInfo(ch, pE)) return;
           var g = eng.weaponGrip(ch, w, r.key);
           var m = String(g.dice || "").match(/(\d*)d(\d+)/);
           if (!m) return;
