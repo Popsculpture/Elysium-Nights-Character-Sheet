@@ -4232,8 +4232,8 @@ EN.builder = (function () {
       store.setActive(v); _step = 0; EN.app.render();
     } }, kids);
   }
-  /* C1: NEW CHARACTER IN ONE STEP. The visible + NEW #PRINT button and the switcher's
-     "+ Register New #PRINT" both create the record and open it on step 01 Identity. The
+  /* C1: NEW CHARACTER IN ONE STEP. The switcher's "+ Register New #PRINT" and the settings
+     tray's REGISTER NEW #PRINT both create the record and open it on step 01 Identity. The
      register-or-import interstitial they used to open is gone for a player who already has a
      record (import lives in Manage characters); the empty-roster gate below stays, since with
      no record there is no wizard to open. */
@@ -4249,7 +4249,6 @@ EN.builder = (function () {
     var exActive = store.activeIsExample && store.activeIsExample();
     return el("div.row", { style: { alignItems: "center", gap: "8px" } }, [
       el("label.fl", { style: { margin: 0 }, text: "On File" }), switcherSelect(ch),
-      el("button.btn.sm.new-print", { title: "Register a new Freelancer: opens straight on step 01 Identity", onclick: function () { newRecord(); } }, "+ NEW #PRINT"),
       exActive ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
         title: "A pre-made example. Edits are live but are not saved, and reloading restores it." }, "EXAMPLE") : null,
       exActive ? el("button.btn.sm", { style: { color: "var(--accent)", borderColor: "var(--accent)" },
