@@ -3942,6 +3942,20 @@ EN.combatView = (function () {
       }
     }
 
+    /* Languages (31 Oct 2026): a Human filed before the language rule never chose a tongue. Ask once, here,
+       without blocking anything. Picking settles it; LATER hides this prompt for good (meta.languagePromptSeen),
+       and the pick stays open on the #PRINT Species step either way. */
+    if (ch.meta && ch.meta.filedAt && eng.speciesLanguageOwed && eng.speciesLanguageOwed(ch) && !ch.meta.languagePromptSeen
+        && EN.builder && EN.builder.languagePicker) {
+      var lp = EN.builder.languagePicker(ch);
+      if (lp) blocks.push(el("div.lang-prompt", { style: { marginBottom: "14px" } }, [EN.ui.panel("Choose your second language", "SPECIES · HUMAN", [
+        el("p.help", { style: { margin: "0 0 6px" }, text: "Your record has no Human language yet. Humans speak Common Trade and one more, chosen by where they grew up. Nothing else changes." }),
+        lp,
+        el("div.row", { style: { justifyContent: "flex-end" } }, [el("button.btn.sm.lang-later", { title: "Hide this prompt; you can still choose on the #PRINT Species step",
+          onclick: function () { store.update(function (c) { c.meta = c.meta || {}; c.meta.languagePromptSeen = 1; }); } }, "LATER")])
+      ], { corners: true })]));
+    }
+
     blocks.push(el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" }, html: (function () {
         var handle = (ch.identity && ch.identity.handle) || (ch.name || "Unnamed").split(" ")[0];
@@ -4067,6 +4081,9 @@ EN.combatView = (function () {
               el("div.row", { style: { gap: "6px", flexWrap: "wrap" } }, [1, 7, 30].map(function (n) {
                 return el("button.btn.sm", { style: { flex: 1 }, onclick: function () { go(n); } }, n === 1 ? "1 DAY" : n + " DAYS");
               })),
+              // Languages (31 Oct 2026): the app keeps no Downtime activity log, so this is a note only
+              el("p.dt-lang", { style: { margin: 0, fontSize: "11.5px", lineHeight: "1.45", color: "var(--text3)" },
+                text: "Learn a language: four weeks with someone who speaks it and is willing to teach. Record it under Languages on the #PRINT Advance step (+ LEARNED IN DOWNTIME)." }),
               /* DOWNTIME REST (1 WEEK): the recovery half of Downtime, nested here under DOWNTIME
                  (author's call) and set apart by its own heading, so it is not mistaken for the calendar
                  controls above it. See downtimeRest(). */
@@ -7150,6 +7167,12 @@ EN.combatView = (function () {
       profRowIf("Armor", gearChips("armor", "var(--text2)")),
       profRowIf("Tools", gearChips("tools", "var(--flow)")),
       profRowIf("Vehicles", gearChips("vehicles", "var(--success)")),
+      // Languages (31 Oct 2026): Common Trade, the species tongue, then what was learned (the #PRINT Advance step adds more)
+      profRowIf("Languages", (eng.languages ? eng.languages(ch) : []).map(function (l) {
+        var learned = l.source === "training" || l.source === "downtime";
+        return el("span.chip.lang-chip", { title: (l.source === "common" ? "Everyone speaks it" : l.source === "species" ? "Species language" : l.source === "downtime" ? "Learned in Downtime" : "Learned with a Training Point") + (l.understandOnly ? " · understand only (GM's call)" : ""),
+          style: { fontSize: "10px", color: "var(--text2)", borderColor: "var(--border2)", borderStyle: learned ? "dashed" : "solid" } }, l.name + (l.understandOnly ? " · UNDERSTAND ONLY" : ""));
+      }).concat(eng.speciesLanguageOwed && eng.speciesLanguageOwed(ch) ? [el("span.chip", { style: { fontSize: "10px", color: "var(--warn)", borderColor: "var(--warn)" } }, "HUMAN TONGUE: NOT CHOSEN")] : [])),
       profRowIf("Focus", focusChips),
       profRowIf("Spec", specChips)
     ].filter(Boolean);

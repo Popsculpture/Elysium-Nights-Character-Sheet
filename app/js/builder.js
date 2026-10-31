@@ -826,7 +826,9 @@ EN.builder = (function () {
       return el("div.opt-card" + (ch.species === s.key ? ".sel" : ""), {
         dataset: speciesLocked ? { locked: "1" } : {}, title: speciesLocked ? lockReason : "",
         style: speciesLocked ? { cursor: "default", opacity: ch.species === s.key ? "1" : ".55" } : {},
-        onclick: function () { if (speciesLocked) return; store.update(function (c) { if (isFiled(c)) return; if (c.species !== s.key) { c.species = s.key; c.lineage = null; c.lineageFeatures = []; c.size = null; } }); }
+        onclick: function () { if (speciesLocked) return; store.update(function (c) { if (isFiled(c)) return; if (c.species !== s.key) { c.species = s.key; c.lineage = null; c.lineageFeatures = []; c.size = null; c.speciesLanguage = null;
+          // a learned tongue that is now the species' own (Root-code for a new Verdine) comes off, refunding its TP
+          c.languages = (c.languages || []).filter(function (x) { return !(x && x.kind && x.kind === s.key); }); } }); }
       }, [
         el("span.check", { text: "◉ ONLINE" }),
         el("h4", { text: s.name }),
@@ -846,6 +848,7 @@ EN.builder = (function () {
         // as the book has it: "Small to Medium: Humans range from 3 to 7 feet tall."
         sizeRow(ch, lin, ((R.speciesSizeDisplay || {})[sp.key] ? (R.speciesSizeDisplay[sp.key] + (t.size ? ": " + t.size : "")) : t.size)),
         traitLine("Languages", t.languages),
+        languagePicker(ch),
         t.coreTrait ? feature(t.coreTrait.name, t.coreTrait.text, "species", "Core Trait") : null,
         t.secondaryTrait ? feature(t.secondaryTrait.name, t.secondaryTrait.text, "species", "Secondary Trait") : null
       ]));
@@ -885,6 +888,40 @@ EN.builder = (function () {
       blocks.push(el("p.help", { style: { marginTop: "8px" }, text: "Pick one now. Through Lineage Evolution (Advance step) you unlock more of your Lineage's Additive Features, and that pool also includes the core features in your Species chapter that you passed on at character creation." }));
     }
     return el("div", null, blocks);
+  }
+  /* LANGUAGES on the Species step (the Languages handoff, 31 Oct 2026). Humans choose one of four tongues,
+     required before filing, and settled once filed (a filed Human who never picked can still pick here).
+     A Chimera or an Outsider can name their dialect (optional). Verdine and Clankers need nothing: their
+     tongue is fixed and derived (engine.languages). */
+  function languagePicker(ch, opts) {
+    opts = opts || {};
+    var L = R.languages || {}, s = (L.species || {})[ch.species];
+    if (!s) return null;
+    if (s.choose) {
+      var picked = ch.speciesLanguage, locked = isFiled(ch) && !eng.speciesLanguageOwed(ch);
+      return el("div.lang-pick", { style: { margin: "4px 0 12px" } }, [
+        opts.noIntro ? null : el("p.help", { style: { margin: "0 0 6px" }, text: L.speciesText || "" }),
+        locked ? el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Picked at creation and settled when filed." }) : null
+      ].concat((L.human || []).map(function (h) {
+        var on = picked === h.name;
+        // already learned with a TP or in Downtime: not offered again as the species tongue (refund it first)
+        var learned = !on && eng.learnedLanguages(ch).some(function (x) { return String(x.name || "").trim().toLowerCase() === h.name.toLowerCase(); });
+        return el("div.feature.lang-opt", { dataset: learned ? { lang: h.name, learned: "1" } : { lang: h.name }, title: learned ? "Already learned (Advance step, Languages). Refund it there to take it as your species tongue." : "",
+          style: { cursor: locked || learned ? "default" : "pointer", opacity: on ? "1" : learned ? ".5" : ".82", borderLeftColor: on ? "var(--gold)" : "var(--border2)" },
+          onclick: function () { if (locked || learned) return; store.update(function (c) { if (isFiled(c) && !eng.speciesLanguageOwed(c) && c.speciesLanguage) return; c.speciesLanguage = on ? null : h.name; if (c.meta) delete c.meta.languagePromptSeen; }); } }, [
+          el("h4", null, [document.createTextNode(h.name), el("span.src", { text: on ? (locked ? "● SETTLED" : "● SELECTED") : (locked ? "" : "○ select") })]),
+          el("p", { text: h.text })
+        ]);
+      })));
+    }
+    if (s.dialect) {
+      return el("div.lang-pick", { style: { margin: "4px 0 12px" } }, [
+        el("label.fl", { text: "Name your " + (s.label || "dialect").toLowerCase() + " (optional)" }),
+        el("input.lang-dialect", { type: "text", value: ch.speciesLanguage || "", placeholder: s.label || "Dialect",
+          oninput: function (e) { var v = e.target.value; store.update(function (c) { c.speciesLanguage = v; }, { silent: true }); } })
+      ]);
+    }
+    return null;
   }
   function traitLine(label, val) {
     if (!val) return null;
@@ -1276,6 +1313,13 @@ EN.builder = (function () {
       if (!chips || !chips.length) return null;
       return el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "6px" } }, [rowLabel(label)].concat(chips));
     }
+    // Languages (31 Oct 2026): Common Trade, the species tongue, then what was learned; a Human with no pick is flagged
+    var langChips = eng.languages(ch).map(function (l) {
+      var learned = l.source === "training" || l.source === "downtime";
+      return el("span.chip.lang-chip", { title: (l.source === "common" ? "Everyone speaks it" : l.source === "species" ? "Species language" : l.source === "downtime" ? "Learned in Downtime" : "Learned with a Training Point") + (l.understandOnly ? " · understand only" : ""),
+        style: { fontSize: "10.5px", color: "var(--text2)", borderColor: "var(--border2)", borderStyle: learned ? "dashed" : "solid" } }, l.name + (l.understandOnly ? " · UNDERSTAND ONLY" : ""));
+    });
+    if (eng.speciesLanguageOwed(ch)) langChips.push(el("span.chip", { title: "Choose it on the Species step", style: { fontSize: "10.5px", color: "var(--warn)", borderColor: "var(--warn)" } }, "HUMAN TONGUE: NOT CHOSEN"));
     // saves (class Save Focus)
     var saveChips = R.attributes.filter(function (a) { return d.saves[a.key].focus; }).map(function (a) {
       return el("span.chip", { title: "Saving Throw Focus · d20 + mod + Caliber", style: { fontSize: "10.5px", color: "var(--gold)", borderColor: "var(--gold)" } }, a.name);
@@ -1296,6 +1340,7 @@ EN.builder = (function () {
       rowIf("Armor", gearChips("armor", "var(--text2)")),
       rowIf("Tools", gearChips("tools", "var(--flow)")),
       rowIf("Vehicles", gearChips("vehicles", "var(--success)")),
+      rowIf("Languages", langChips),
       rowIf("Saves", saveChips),
       rowIf("Focus", focusChips),
       rowIf("Spec", specChips)
@@ -2492,6 +2537,11 @@ EN.builder = (function () {
       out.push({ label: parentLabel(sp.type, sp.parent) + " · Specialization" + (sp.aspect ? " (" + sp.aspect + ")" : ""),
         cost: TP.SPEC_COST, refund: function () { store.update(function (c) { c.specializations = (c.specializations || []).filter(function (x) { return x !== sp; }); }); } });
     });
+    // a language learned with a Training Point (one learned in Downtime costs none and is not a purchase)
+    eng.learnedLanguages(ch).forEach(function (l) {
+      if (l.via !== "tp") return;
+      out.push({ label: (String(l.name || "").trim() || "Unnamed language") + " · Language", cost: TP.LANG_COST, refund: function () { removeLanguage(ch, l.id); } });
+    });
     ["weapons", "armor", "tools", "vehicles"].forEach(function (bucket) {
       R.gear[bucket].forEach(function (cat) {
         var fIdx = R.profOrder.indexOf(eng.gearFloorTier(ch, bucket, cat));
@@ -2502,6 +2552,72 @@ EN.builder = (function () {
       });
     });
     return out;
+  }
+  /* LANGUAGES (the Languages handoff, 31 Oct 2026). Common Trade and the species tongue are fixed (derived);
+     more are learned for 1 Training Point (any level) or four weeks of Downtime with a teacher, which costs no
+     TP and is not tracked as an activity (the app keeps no Downtime activity log, so the player records it
+     here). A tongue picked from the list carries its `kind`, so one that belongs to another body (Root-code,
+     Machine Cant, a Chimera dialect, an Outsider tongue) gets the "understand only" toggle, on by default. */
+  var _langPick = "";
+  function languageOptions() {
+    var L = R.languages || {};
+    return (L.human || []).map(function (h) { return { name: h.name, kind: "humans" }; })
+      .concat((L.bodyBound || []).map(function (b) { return { name: b.name, kind: b.kind }; }));
+  }
+  function addLanguage(ch, via) {
+    var opt = languageOptions().filter(function (o) { return o.name === _langPick; })[0];
+    var name = opt ? opt.name : "";
+    if (opt && eng.languages(ch).some(function (l) { return l.name.toLowerCase() === name.toLowerCase(); })) { toast("You already know " + name + "."); return; }
+    if (via === "tp") {
+      if (ch.level < TP.LANG_LEVEL_REQ) { toast("A Language requires level " + TP.LANG_LEVEL_REQ + "+."); return; }
+      if (eng.trainingBudget(ch).remaining < TP.LANG_COST) { toast("Need " + TP.LANG_COST + " Training Point."); return; }
+    }
+    store.update(function (c) {
+      c.languages = Array.isArray(c.languages) ? c.languages : [];
+      c.languages.push({ id: "lg_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name, kind: opt ? opt.kind : null, via: via, understandOnly: true });
+    });
+    _langPick = "";
+  }
+  function removeLanguage(ch, id) {
+    store.update(function (c) { c.languages = (c.languages || []).filter(function (x) { return x && x.id !== id; }); });
+  }
+  function languagesPanel(ch) {
+    var L = R.languages || {}, list = eng.languages(ch), budget = eng.trainingBudget(ch);
+    var rows = list.map(function (l) {
+      var src = l.source === "common" ? "COMMON" : l.source === "species" ? "SPECIES" : l.source === "downtime" ? "DOWNTIME" : TP.LANG_COST + " TP";
+      var rec = l.id ? (ch.languages || []).filter(function (x) { return x && x.id === l.id; })[0] : null;
+      return el("div.row.lang-row", { dataset: { lang: l.name, src: l.source }, style: { gap: "8px", alignItems: "center", padding: "5px 9px", marginBottom: "3px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "3px", flexWrap: "wrap" } }, [
+        rec ? el("input.lang-name", { type: "text", value: rec.name || "", placeholder: "Name the language", style: { flex: "1 1 160px", padding: "3px 8px", fontSize: "13px" },
+                oninput: function (e) { var v = e.target.value; store.update(function (c) { var o = (c.languages || []).filter(function (x) { return x && x.id === rec.id; })[0];
+                  if (!o) return; o.name = v;
+                  // a typed name that matches a known tongue takes its kind, so Root-code typed by hand still gets "understand only"
+                  var m = languageOptions().filter(function (x) { return x.name.toLowerCase() === v.trim().toLowerCase(); })[0];
+                  o.kind = m ? m.kind : null; }, { silent: true }); },
+                onchange: function () { EN.app.render(); } })
+            : el("span", { style: { flex: "1 1 160px", color: "var(--text2)", fontSize: "13.5px" }, text: l.name }),
+        el("span.badge", { title: l.source === "species" ? "Your species' language" : l.source === "common" ? "Everyone in Elysium speaks Common Trade" : l.source === "downtime" ? "Learned in four weeks of Downtime with a teacher" : "Learned with a Training Point", text: src }),
+        rec && eng.canUnderstandOnly(ch, rec) ? el("label.lang-uo", { title: L.bodyText || "", style: { display: "flex", alignItems: "center", gap: "4px", fontSize: "11.5px", color: "var(--text2)" } }, [
+          el("input", { type: "checkbox", checked: rec.understandOnly !== false, onchange: function (e) { var v = e.target.checked; store.update(function (c) { var o = (c.languages || []).filter(function (x) { return x && x.id === rec.id; })[0]; if (o) o.understandOnly = v; }); } }),
+          document.createTextNode("understand only")]) : null,
+        rec ? el("button.btn.sm.danger", { title: rec.via === "tp" ? "Refund this language (" + TP.LANG_COST + " TP)" : "Remove this language", style: { padding: "2px 9px" }, onclick: function () { removeLanguage(ch, rec.id); } }, "✕") : null
+      ]);
+    });
+    var opts = [el("option", { value: "", text: "Type the name after adding" })].concat(languageOptions().map(function (o) {
+      return el("option", { value: o.name, selected: _langPick === o.name, text: o.name });
+    }));
+    var tpBlocked = ch.level < TP.LANG_LEVEL_REQ || budget.remaining < TP.LANG_COST;
+    var add = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
+      el("select.lang-choose", { style: { width: "auto", fontSize: "12px" }, onchange: function (e) { _langPick = e.target.value; } }, opts),
+      el("button.btn.sm.lang-add-tp" + (tpBlocked ? "" : ".primary"), { disabled: tpBlocked, title: tpBlocked ? "Need " + TP.LANG_COST + " TP · " + budget.remaining + " left" : "Spend " + TP.LANG_COST + " Training Point",
+        onclick: function () { addLanguage(store.active(), "tp"); } }, "+ LANGUAGE (" + TP.LANG_COST + " TP)"),
+      el("button.btn.sm.lang-add-dt", { title: L.downtime + ": no Training Point. The app does not track Downtime activities, so record it here once it is done.",
+        onclick: function () { addLanguage(store.active(), "downtime"); } }, "+ LEARNED IN DOWNTIME")
+    ]);
+    return collapsiblePanel("languages", "Languages", "COMMON TRADE · SPECIES · LEARNED", [
+      el("p.help", { style: { margin: "0 0 6px" }, text: (L.commonText || "") + " " + (L.learn || "") })
+    ].concat(rows).concat([add,
+      el("p.help", { style: { margin: "8px 0 0", color: "var(--text3)" }, text: (L.bodyText || "") + " " + (L.translation || "") })
+    ]), { corners: true });
   }
   function purchaseLogPanel(ch) {
     var entries = buildPurchaseLog(ch);
@@ -2599,6 +2715,8 @@ EN.builder = (function () {
         gearSection(ch, "tools", "Tool Proficiencies", null),
         gearSection(ch, "vehicles", "Vehicle Proficiencies", null, "vc-piloting/vehicle-proficiencies")
       ), { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss", rule: "sk-skills/gear-proficiencies" }),
+      el("div", { style: { height: "14px" } }),
+      languagesPanel(ch),
       el("div", { style: { height: "14px" } }),
       purchaseLogPanel(ch),
       el("div", { style: { height: "14px" } }),
@@ -4181,7 +4299,7 @@ EN.builder = (function () {
     switch (key) {
       case "identity": return !!(ch.name || ch.identity.concept);
       case "attributes": return ch.attributeMethod === "manual" || (ch.attributeMethod === "pointbuy" ? true : Object.keys(ch.arrayAssign || {}).length === 6);
-      case "species": return !!(ch.species && ch.lineage && (ch.lineageFeatures || []).length);
+      case "species": return !!(ch.species && ch.lineage && (ch.lineageFeatures || []).length) && !(eng.speciesLanguageOwed(ch) && !isFiled(ch));   // a Human picks a tongue before filing; a filed record is only prompted (31 Oct 2026)
       case "background": return !!ch.background && !eng.pendingChoices(ch).some(function (p) { return p.source === "Background"; }) &&
         !pendingOverlaps(ch).length;
       case "class": return !!(ch.class && (!(eng.getClass(ch.class) || {}).subclasses || !((eng.getClass(ch.class) || {}).subclasses || []).length || ch.subclass)) &&
@@ -4518,7 +4636,7 @@ EN.builder = (function () {
            openManager: openManager, managerOpen: managerOpen, managerPanel: managerPanel,
            newRecord: newRecord, importPrompt: importPrompt, exportChar: exportChar,
            // A2/A3: the #GRID tab's catch-up prompt draws this same picker
-           startingCipherPicker: startingCipherPicker, startingCiphers: startingCiphers, startingCiphersOwed: startingCiphersOwed,
+           startingCipherPicker: startingCipherPicker, startingCiphers: startingCiphers, startingCiphersOwed: startingCiphersOwed, languagePicker: languagePicker,
            // A1, 29 October: the class rig and picks, one source for every surface that lists them
            repertoireCiphers: repertoireCiphers, classGear: classGear, classGearRigLine: classGearRigLine, exportPayload: exportPayload };
 })();

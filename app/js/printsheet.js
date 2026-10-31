@@ -497,6 +497,11 @@ EN.printSheet = (function () {
       var cats = proficientCats(ch, p[1]);
       if (cats.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: p[0] }), el("span.ps-proc-v", { text: cats.map(function (c) { return c + (p[1] === "tools" ? bookTag("tool", c) : ""); }).join(", ") })]));
     });
+    /* Languages, the fifth row (the printed sheets' page 2 row, formerly "Other"; 31 Oct 2026). Always printed,
+       since everyone has Common Trade. The PDF's proficiencyLines carries the same row; change one, change both. */
+    var langs = eng.languages ? eng.languages(ch).map(eng.languageLabel) : [];
+    if (eng.speciesLanguageOwed && eng.speciesLanguageOwed(ch)) langs.push("Human tongue not chosen");
+    if (langs.length) rows.push(el("div.ps-proc", null, [el("span.ps-fl", { text: "Languages" }), el("span.ps-proc-v", { text: langs.join(", ") })]));
     function fsLabel(f) {
       var parent = f.parent || f.skill;
       var name = (f.type && f.type !== "skill") ? parent : ((EN.rules.skillByKey[parent] || {}).name || parent);

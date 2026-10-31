@@ -85,6 +85,11 @@ EN.store = (function () {
       heightFt: null,                    // height in feet, inside the lineage's printed range; Size derives from it
       size: null,                        // legacy direct Size pick, honoured only for characters built before heightFt
       lineageFeatures: [],               // chosen feature names (creation + evolution)
+      // Languages (31 Oct 2026): only the choices. A Human's tongue (one of the four), or a Chimera or Outsider's
+      // dialect name; and the learned list [{ id, name, kind, via: "tp"|"downtime", understandOnly }].
+      // Common Trade and a fixed species tongue are derived (engine.languages), never stored.
+      speciesLanguage: null,
+      languages: [],
       background: null,
       backgroundSkillChoice: null,
       backgroundProfChoices: [],         // "choose one" gear picks from the background
@@ -655,6 +660,20 @@ EN.store = (function () {
     // non-true value is just noise to strip.
     if (!ch.slotInert || typeof ch.slotInert !== "object") ch.slotInert = {};
     Object.keys(ch.slotInert).forEach(function (k) { if (ch.slotInert[k] !== true) delete ch.slotInert[k]; });
+    /* Languages (31 Oct 2026). speciesLanguage is a string or null; the learned list is plain objects with a
+       string name, an id, via "tp" or "downtime", and a boolean understandOnly. Nothing is written for Common
+       Trade or the species tongue (derived), and a Human with no pick keeps null so the prompt can ask. */
+    if (typeof ch.speciesLanguage !== "string" || !ch.speciesLanguage.trim()) ch.speciesLanguage = null;
+    if (!Array.isArray(ch.languages)) ch.languages = [];
+    (function () {
+      var seen = Object.create(null);
+      ch.languages = ch.languages.filter(function (l) { return l && typeof l === "object" && !Array.isArray(l); }).map(function (l) {
+        var id = typeof l.id === "string" && l.id && !seen[l.id] ? l.id : "lg_" + uid();
+        seen[id] = 1;
+        return { id: id, name: typeof l.name === "string" ? l.name : "", kind: typeof l.kind === "string" ? l.kind : null,
+                 via: l.via === "downtime" ? "downtime" : "tp", understandOnly: l.understandOnly !== false };
+      });
+    })();
     /* Concealed (r57, the author, 31 Oct 2026): a flag per equipment entry, only === true, and only for an
        entry that is still owned. Whether it is on your person is the engine's question (isConcealed gates on
        onPerson), so a flag left on an item that went back to the stash is inert rather than deleted here. */

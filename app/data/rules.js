@@ -404,7 +404,9 @@ EN.rules = {
       { key: "expertise",  name: "Expertise",      short: "Expert",  tp: 2, level: 6,  what: "Proficient to Expertise (never Armor)" },
       { key: "mastery",    name: "Mastery",        short: "Mastery", tp: 2, level: 10, what: "Expertise to Mastery (never Armor)" },
       { key: "focus",      name: "Skill Focus",    short: "Focus",   tp: 1, level: 3,  what: "A narrow aspect of a parent you are at least Proficient in" },
-      { key: "spec",       name: "Specialization", short: "Spec",    tp: 1, level: 6,  what: "A narrow aspect of a parent you have Expertise in; one per parent" }
+      { key: "spec",       name: "Specialization", short: "Spec",    tp: 1, level: 6,  what: "A narrow aspect of a parent you have Expertise in; one per parent" },
+      // the Languages handoff, 31 Oct 2026: "1 Point | Any | Language | Learn one new language."
+      { key: "language",   name: "Language",       short: "Language", tp: 1, level: 1, what: "Learn one new language. See Languages under Species and Lineage." }
     ],
     grants: "Background and Class grants give a free Proficient floor, marked GRANTED on the sheet. Training Points are spent above that floor.",
     focus: "A Skill Focus adds your Caliber to rolls inside one narrow aspect of its parent. A parent is a Skill, a Weapon category, a Vehicle category or a Tool category, never Armor, and you must be at least Proficient in it. A parent can carry more than one Focus as long as each names a clearly distinct aspect. The Caliber from a Focus rides outside the +15 static modifier cap.",
@@ -427,6 +429,44 @@ EN.rules = {
     },
     gearRule: "Acquire a category for 1 TP. Weapons, Tools, and Vehicles upgrade to Expert (L6+) and Mastery (L10+) for 2 TP each, and can carry a Focus (1 TP, L3+) or Specialization (1 TP, L6+) on a narrow aspect. Armor can be acquired but never upgraded, and never takes a Focus or Specialization.",
     armorNote: "Acquire only; cannot be raised to higher tiers."
+  },
+
+  /* Languages (the author's handoff of 31 Oct 2026; Player's Handbook, Origin tab, Species and Lineage,
+     "Languages", quoted). Everyone has Common Trade; the species adds one (`species`); more are learned for
+     1 Training Point (training.costs "language") or four weeks of Downtime with a teacher. `kind` names
+     whose body a tongue belongs to: a learner outside that species may only understand it ("understand
+     only", on by default, the GM's call). Only what a player CHOOSES is stored (ch.speciesLanguage, the
+     learned list ch.languages); Common Trade and a fixed species tongue are derived (engine.languages). */
+  languages: {
+    common: "Common Trade",
+    commonText: "Everyone in Elysium speaks Common Trade. It grew out of contract language and street slang, passed between people who needed to get paid.",
+    speciesText: "Your species gives you one more language. Most are born with theirs. Humans choose one based on where they grew up:",
+    human: [
+      { name: "Arcology Standard", text: "The formal speech of the corporate towers. Every sentence sounds like counsel reviewed it." },
+      { name: "Undercity Patter",  text: "Tunnel slang with hand signs and pipe-tap code that carries through walls and floors." },
+      { name: "Dockside Creole",   text: "A mix of shipping tongues used on the piers, where haggling means shouting over engine noise." },
+      { name: "Old Script",        text: "National languages kept in use by churches, archivists, and stubborn grandparents." }
+    ],
+    // each species' second language (its Species Traits line); `dialect`: the player names it (free text)
+    species: {
+      humans:    { choose: true },
+      verdine:   { name: "Root-code",    kind: "verdine" },
+      clankers:  { name: "Machine Cant", kind: "clankers" },
+      chimera:   { dialect: true, label: "Chimera pack dialect", kind: "chimera" },
+      outsiders: { dialect: true, label: "Outsider tongue",      kind: "outsiders" }
+    },
+    // the four body-bound tongues, as offered when learning one
+    bodyBound: [
+      { name: "Root-code",            kind: "verdine" },
+      { name: "Machine Cant",         kind: "clankers" },
+      { name: "Chimera pack dialect", kind: "chimera" },
+      { name: "Outsider tongue",      kind: "outsiders" }
+    ],
+    learn: "Spend 1 Training Point, or four weeks of Downtime with someone who speaks it and is willing to teach.",
+    bodyText: "You can learn to understand Root-code, Machine Cant, a Chimera pack dialect, or an Outsider tongue. Speaking one back may take glands, hardware, or a throat you don't have. GM's call.",
+    noShared: "Gestures and tone can get simple ideas across: stop, danger, money, follow me. Persuasion, Deception, and Intimidation checks fail if they depend on words. The same goes for negotiations and lies.",
+    translation: "Translation apps are slow and bad at conveying tone. Social checks made through one roll with Snag, and whoever runs the app gets a copy of the conversation.",
+    downtime: "Learn a language (four weeks, with a teacher)"
   },
 
   /* Advancement, the player half of the milestone pace -----------------------

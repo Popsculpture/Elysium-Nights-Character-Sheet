@@ -252,6 +252,7 @@ EN.engine = (function () {
   var TIER_LEVEL_REQ = { proficient: 1, expertise: 6, mastery: 10 };
   var FOCUS_COST = 1, FOCUS_LEVEL_REQ = 3;
   var SPEC_COST = 1, SPEC_LEVEL_REQ = 6;
+  var LANG_COST = 1, LANG_LEVEL_REQ = 1;   // a learned Language (the Languages handoff, 31 Oct 2026)
   ((R.training && R.training.costs) || []).forEach(function (c) {
     if (!c) return;
     var tp = typeof c.tp === "number" ? c.tp : null, lv = typeof c.level === "number" ? c.level : null;
@@ -261,6 +262,9 @@ EN.engine = (function () {
     } else if (c.key === "spec") {
       if (tp !== null) SPEC_COST = tp;
       if (lv !== null) SPEC_LEVEL_REQ = lv;
+    } else if (c.key === "language") {
+      if (tp !== null) LANG_COST = tp;
+      if (lv !== null) LANG_LEVEL_REQ = lv;
     } else if (STEP_COST.hasOwnProperty(c.key)) {
       if (tp !== null) STEP_COST[c.key] = tp;
       if (lv !== null) TIER_LEVEL_REQ[c.key] = lv;
@@ -397,11 +401,55 @@ EN.engine = (function () {
     R.skills.forEach(function (s) { total += skillTierCost(ch, s.key); });
     focusList(ch).forEach(function (f) { if (!f.granted) total += FOCUS_COST; });
     total += specList(ch).length * SPEC_COST;
+    // a language learned with a Training Point; one learned in Downtime costs none
+    learnedLanguages(ch).forEach(function (l) { if (l.via === "tp") total += LANG_COST; });
     ["weapons", "armor", "tools", "vehicles"].forEach(function (bucket) {
       ((R.gear && R.gear[bucket]) || []).forEach(function (cat) { total += gearTierCost(ch, bucket, cat); });
     });
     return total;
   }
+  /* ---- Languages (the author's handoff, 31 Oct 2026) ---------------------
+     Only the player's choices are stored: ch.speciesLanguage (a Human's pick of the four, or the name a
+     Chimera or Outsider gives their dialect) and ch.languages, the learned list [{ id, name, kind, via:
+     "tp"|"downtime", understandOnly }]. Common Trade and the species tongue are derived here, so every
+     record, saved or new, has them without a write. A learned tongue that belongs to another body (Root-code,
+     Machine Cant, a Chimera dialect, an Outsider tongue) may be "understand only": on by default, GM's call. */
+  function learnedLanguages(ch) {
+    return (ch && Array.isArray(ch.languages) ? ch.languages : []).filter(function (l) { return l && typeof l === "object"; });
+  }
+  function languageRules() { return R.languages || {}; }
+  // the species' own tongue: { name, kind, dialect, chosen } or null (a Human with no pick yet: { name: null, owed: true })
+  function speciesTongue(ch) {
+    var L = languageRules(), s = ch && ch.species ? (L.species || {})[ch.species] : null;
+    if (!s) return null;
+    if (s.choose) {
+      var pick = (L.human || []).filter(function (h) { return h.name === ch.speciesLanguage; })[0];
+      return pick ? { name: pick.name, kind: "humans" } : { name: null, kind: "humans", owed: true };
+    }
+    if (s.dialect) {
+      var named = typeof ch.speciesLanguage === "string" ? ch.speciesLanguage.trim() : "";
+      return { name: named || s.label, kind: s.kind, dialect: true, named: !!named };
+    }
+    return { name: s.name, kind: s.kind };
+  }
+  function bodyBoundKind(kind) { return kind === "verdine" || kind === "clankers" || kind === "chimera" || kind === "outsiders"; }
+  // a learned body-bound tongue belongs to someone else's body unless it is your own species'
+  function canUnderstandOnly(ch, l) { return !!l && bodyBoundKind(l.kind) && l.kind !== (ch && ch.species); }
+  // the whole list, in order: Common Trade, the species tongue, then what was learned
+  function languages(ch) {
+    var L = languageRules(), out = [{ name: L.common || "Common Trade", source: "common", fixed: true }];
+    var st = speciesTongue(ch);
+    if (st && st.name) out.push({ name: st.name, source: "species", fixed: true, kind: st.kind, dialect: !!st.dialect });
+    learnedLanguages(ch).forEach(function (l) {
+      var name = String(l.name || "").trim();
+      out.push({ id: l.id, name: name || "Unnamed language", source: l.via === "downtime" ? "downtime" : "training", kind: l.kind || null,
+                 understandOnly: canUnderstandOnly(ch, l) && l.understandOnly !== false });
+    });
+    return out;
+  }
+  // a Human with no tongue chosen (blocks filing; a filed record only gets a prompt)
+  function speciesLanguageOwed(ch) { var st = speciesTongue(ch); return !!(st && st.owed); }
+  function languageLabel(l) { return l.name + (l.understandOnly ? " (understand only)" : ""); }
   function trainingBudget(ch) {
     var level = clamp(ch.level || 1, 1, R.maxLevel);
     var total = trainingPointsTotal(level);
@@ -4859,6 +4907,7 @@ EN.engine = (function () {
     if (!sp) warnings.push("No species selected.");
     if (!lin) warnings.push("No lineage selected.");
     if (lin && !(ch.lineageFeatures || []).length) warnings.push("No lineage feature chosen.");
+    if (speciesLanguageOwed(ch) && !(ch.meta && ch.meta.filedAt)) warnings.push("No Human language chosen.");   // a filed record is prompted, not blocked
     if (!bg) warnings.push("No background selected.");
     /* A duplicate Talent slot is deliberately NOT a `warnings` entry. That list renders
        on the dossier step under the heading "INCOMPLETE:", and a record carrying one is
@@ -5506,6 +5555,7 @@ EN.engine = (function () {
     aspectMatches: aspectMatches, weaponFocus: weaponFocus, weaponSpec: weaponSpec, signatureUnlocked: signatureUnlocked, signatureStatus: signatureStatus,
     overlapGrants: overlapGrants, unresolvedOverlaps: unresolvedOverlaps,
     grantSourceMap: grantSourceMap, duplicateGrants: duplicateGrants, pendingChoices: pendingChoices,
-    tp: { STEP_COST: STEP_COST, TIER_LEVEL_REQ: TIER_LEVEL_REQ, FOCUS_COST: FOCUS_COST, FOCUS_LEVEL_REQ: FOCUS_LEVEL_REQ, SPEC_COST: SPEC_COST, SPEC_LEVEL_REQ: SPEC_LEVEL_REQ }
+    tp: { STEP_COST: STEP_COST, TIER_LEVEL_REQ: TIER_LEVEL_REQ, FOCUS_COST: FOCUS_COST, FOCUS_LEVEL_REQ: FOCUS_LEVEL_REQ, SPEC_COST: SPEC_COST, SPEC_LEVEL_REQ: SPEC_LEVEL_REQ, LANG_COST: LANG_COST, LANG_LEVEL_REQ: LANG_LEVEL_REQ },
+    languages: languages, learnedLanguages: learnedLanguages, speciesTongue: speciesTongue, speciesLanguageOwed: speciesLanguageOwed, canUnderstandOnly: canUnderstandOnly, languageLabel: languageLabel
   };
 })();

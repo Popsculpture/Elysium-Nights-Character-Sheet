@@ -25,6 +25,7 @@
        patch: {                            // any character fields; objects merge deeply
          firstName: "First", lastName: "Last",
          level: 5, species: "humans", lineage: "nextgen", background: "cipher-punk",
+         speciesLanguage: "Arcology Standard",   // a Human's tongue (one of rules.js languages.human); a Chimera or Outsider may name a dialect here
          class: "codebreaker", subclass: "gridweaver",
          attributes: { TEC: 16, WIT: 15, AGI: 13, PRE: 12, MYS: 10, BOD: 10 },
          identity: { handle: "Handle", concept: "...", whereFrom: "..." },

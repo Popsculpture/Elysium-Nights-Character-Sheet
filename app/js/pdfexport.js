@@ -926,6 +926,10 @@ EN.pdfExport = (function () {
       var cats = proficientCats(ch, p[1]);
       if (cats.length) lines.push(p[0] + ": " + cats.map(function (c) { return c + (p[1] === "tools" ? bookTag("tool", c) : ""); }).join(", "));
     });
+    // Languages, the fifth row (31 Oct 2026); printsheet.js proficiencyRows carries the same row
+    var langs = eng.languages ? eng.languages(ch).map(eng.languageLabel) : [];
+    if (eng.speciesLanguageOwed && eng.speciesLanguageOwed(ch)) langs.push("Human tongue not chosen");
+    if (langs.length) lines.push("Languages: " + langs.join(", "));
     function fsLabel(f) {
       var parent = f.parent || f.skill;
       var name = (f.type && f.type !== "skill") ? parent : ((EN.rules.skillByKey[parent] || {}).name || parent);
