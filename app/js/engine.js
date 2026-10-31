@@ -2929,6 +2929,8 @@ EN.engine = (function () {
     var it = loadCatalogItem(name);
     if (!it) return 1;                                        // unknown custom item: hand-sized
     if (typeof it.load === "number") return it.load;          // explicit data override
+    // a vehicle is parked, not carried, and a vehicle mod goes in the garage (the author, 31 Oct 2026)
+    if (it.vehicle || it.vehicleMod) return 0;
     if (it.legality === "As weapon") return 0;                // loose ammo and munitions
     var traits = it.traits || [];
     function has(t) { return traits.indexOf(t) !== -1; }

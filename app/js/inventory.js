@@ -248,6 +248,8 @@ EN.inventoryView = (function () {
       if (status && status !== "stashed") EN.engine.unlogDropped(c, key);
     });
   }
+  // Things you never carry, wear or rack have no Load and no carry status (the author, 31 Oct 2026)
+  function notCarried(it) { return !!(it && (it.vehicle || it.vehicleMod)); }
   function carryCtrl(ch, it, entry) {
     var key = entryKey(entry);
     var equipped = (ch.equippedWeapons || []).indexOf(key) !== -1 || EN.engine.isSlotEquipped(ch, key);
@@ -1132,7 +1134,8 @@ EN.inventoryView = (function () {
         document.createTextNode(slotLabel)
       ]));
     }
-    if (mode === "stash" && entry) statChips.push(loadCtrl(ch, entry, ldBase, isWorn && traits.indexOf("Worn") !== -1));
+    if (notCarried(it)) { /* parked or in the garage: no Load chip */ }
+    else if (mode === "stash" && entry) statChips.push(loadCtrl(ch, entry, ldBase, isWorn && traits.indexOf("Worn") !== -1));
     else if (ld > 0 && encOn()) statChips.push(tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)"));
     // every trait tucks behind one tap-to-expand count chip instead of its own pill
     if (traits.length) statChips.push(el("span.chip", {
@@ -1191,7 +1194,7 @@ EN.inventoryView = (function () {
     var actionEl = mode === "mkt"
       ? (counter.length ? el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end", alignItems: "center" } }, [mktBtn].concat(counter)) : mktBtn)
       : el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end" } },
-          (entry ? [carryCtrl(ch, it, entry)] : []).concat(leaseBtns).concat(isWeapon(it) ? [
+          (entry && !notCarried(it) ? [carryCtrl(ch, it, entry)] : []).concat(leaseBtns).concat(isWeapon(it) ? [
             isEquipped(ch, ownedKey)
               ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(entry); } }, "✓ EQUIPPED")
               : el("button.btn.sm", { title: "Equip, add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(entry); } }, "⚔ EQUIP")
