@@ -2,7 +2,7 @@
    ELYSIUM NIGHTS // #GRID OS settings
    A settings tray opened from the gear at the right end of the tab rail.
 
-   First section: Change Sheet Appearance > Color Theme. Each theme is a named
+   Section: Change Appearance > Color Theme. Each theme is a named
    palette that sets its own accent plus a tinted-dark panel/frame/background
    set, so the whole sheet recolors, not just the accent. Most palettes are dark
    with light text; two are not (Daybreak, and #GRIDOS '98, which is the actual
@@ -346,11 +346,25 @@ EN.theme = (function () {
   var SKIN_KEY = "en_skin_v1";
   var SKINS = [
     { key: "classic", name: "Classic",     sub: "the look as shipped",             cls: null },
-    { key: "98",      name: "#GRIDOS '98", sub: "bevels, title bars, a taskbar with START", cls: "skin-98" },
-    { key: "droid",   name: "#GRIDroid",   sub: "a cyberpunk phone OS: one column at any width, the rail an app list",   cls: "skin-droid" }
+    { key: "droid",   name: "#GRIDroid",   sub: "a cyberpunk phone OS: one column at any width, the rail an app list",   cls: "skin-droid" },
+    { key: "98",      name: "#GRIDOS '98", sub: "bevels, title bars, a taskbar with START", cls: "skin-98" }
   ];
   function findSkin(k) { for (var i = 0; i < SKINS.length; i++) { if (SKINS[i].key === k) return SKINS[i]; } return SKINS[0]; }
-  function getSkin() { try { return findSkin(localStorage.getItem(SKIN_KEY) || "classic").key; } catch (e) { return "classic"; } }
+  /* A PHONE OPENS IN #GRIDroid (the author, 31 Oct 2026). Only the default: a skin the player
+     picked is stored and always wins. A phone is a touch-first device with a small screen: the
+     browser's own mobile flag where it has one (Chromium), else a mobile user agent (iPhone,
+     iPod, Android phones), else a coarse pointer on a screen under 600px on its short side.
+     Tablets keep Classic. */
+  function isPhone() {
+    try {
+      if (navigator.userAgentData && typeof navigator.userAgentData.mobile === "boolean" && navigator.userAgentData.mobile) return true;
+      if (/iPhone|iPod|Android.*Mobile|Mobile.*Android|Windows Phone|IEMobile/i.test(navigator.userAgent || "")) return true;
+      var s = window.screen || {};
+      return !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches && Math.min(s.width || 9999, s.height || 9999) < 600);
+    } catch (e) { return false; }
+  }
+  function defaultSkin() { return isPhone() ? "droid" : "classic"; }
+  function getSkin() { try { return findSkin(localStorage.getItem(SKIN_KEY) || defaultSkin()).key; } catch (e) { return defaultSkin(); } }
   function applySkin(k) {
     var root = document.documentElement;
     SKINS.forEach(function (s) { if (s.cls) root.classList.remove(s.cls); });
@@ -555,7 +569,7 @@ EN.theme = (function () {
     allThemes: allThemes, isCustom: isCustom, getCustom: getCustom, saveCustom: saveCustom,
     deleteCustom: deleteCustom, mergeCustom: mergeCustom, bundleFor: bundleFor, syncToActive: syncToActive,
     inAdmin: inAdmin,
-    SKINS: SKINS, getSkin: getSkin, setSkin: setSkin,
+    SKINS: SKINS, getSkin: getSkin, setSkin: setSkin, isPhone: isPhone,
     wallPresets: wallPresets, wallCustoms: wallCustoms, wallTileSize: wallTileSize, getWall: getWall, setWall: setWall,
     wallDim: wallDim, setWallDim: setWallDim, wallOpt: wallOpt, setWallOpt: setWallOpt,
     addWall: addWall, removeWall: removeWall, wallUrl: wallUrl
@@ -618,6 +632,8 @@ EN.settings = (function () {
     ".set-close:hover{ color:var(--accent); border-color:var(--accent); box-shadow:var(--glow-cyan); }",
     ".set-body{ padding:16px 20px 22px; }",
     ".set-sectitle{ font-family:var(--mono); font-size:10px; letter-spacing:.2em; color:var(--accent); margin-bottom:12px; }",
+    ".set-sectitle.set-fold{ cursor:pointer; user-select:none; min-height:28px; display:flex; align-items:center; }",
+    ".set-sectitle.set-fold:hover{ filter:brightness(1.25); }",
     ".set-label{ display:block; font-family:var(--disp); font-weight:600; font-size:14px; letter-spacing:.08em;",
     "  color:var(--text); text-transform:uppercase; }",
     ".set-hint{ font-size:12px; color:var(--text3); margin:3px 0 14px; line-height:1.45; }",
@@ -1322,7 +1338,7 @@ EN.settings = (function () {
     var cur = EN.theme.getSkin();
     var pending = EN.theme.SKINS.some(function (s) { return s.key === cur && /pending/.test(s.sub); });
     return [
-      el("div.set-sectitle", { text: "// CHANGE SHEET APPEARANCE" }),
+      el("div.set-sectitle", { text: "// CHANGE APPEARANCE" }),
       el("label.set-label", { text: "OS Skin" }),
       el("p.set-hint", { text: "The shape of the interface: type, corners, chrome. Any color theme wears any skin, and each skin remembers the last one you gave it, so the three can look like three different machines. Switching skins repaints the loaded Freelancer and saves that palette to them. Saved on this device." }),
       el("div.row.wrap", { style: { gap: "6px" } }, EN.theme.SKINS.map(function (s) {
@@ -1441,9 +1457,33 @@ EN.settings = (function () {
     sections.forEach(function (kids, i) {
       kids = kids.filter(function (n) { return n; });
       if (i > 0) Object.assign(kids[0].style, { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" });
-      kids.forEach(function (n) { body.appendChild(n); });
+      var head = kids[0];
+      if (!head || !head.classList || !head.classList.contains("set-sectitle")) { kids.forEach(function (n) { body.appendChild(n); }); return; }
+      // every section folds under its own title; see foldShut for which start folded
+      var key = head.textContent, shut = foldShut(key);
+      head.classList.add("set-fold");
+      head.setAttribute("role", "button");
+      head.setAttribute("tabindex", "0");
+      head.setAttribute("aria-expanded", shut ? "false" : "true");
+      head.title = shut ? "Show this section" : "Hide this section";
+      head.appendChild(el("span.set-caret", { text: shut ? " ▸" : " ▾" }));
+      var toggle = function () { setFold(key, !shut); rebuild(); };
+      head.addEventListener("click", toggle);
+      head.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+      if (shut) head.style.marginBottom = "0";
+      body.appendChild(head);
+      body.appendChild(el("div.set-sect-body", { style: shut ? { display: "none" } : null }, kids.slice(1)));
     });
   }
+
+  /* COLLAPSIBLE SECTIONS (the author, 31 Oct 2026). Each section folds under its title. The
+     four the player rarely visits start folded; the rest start open. A fold the player sets is
+     remembered on this device, keyed by the section's title. */
+  var FOLD_KEY = "en_settings_fold_v1";
+  var FOLD_DEFAULT = { "// CONTENT": true, "// GM CONTROLS": true, "// OPTIONAL RULES": true, "// CHANGE APPEARANCE": true };
+  function folds() { try { var m = JSON.parse(localStorage.getItem(FOLD_KEY) || "{}"); return (m && typeof m === "object") ? m : {}; } catch (e) { return {}; } }
+  function foldShut(key) { var m = folds(); return Object.prototype.hasOwnProperty.call(m, key) ? !!m[key] : !!FOLD_DEFAULT[key]; }
+  function setFold(key, shut) { var m = folds(); m[key] = !!shut; try { localStorage.setItem(FOLD_KEY, JSON.stringify(m)); } catch (e) {} }
 
   function open() {
     injectCss();
