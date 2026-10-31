@@ -3033,11 +3033,12 @@ EN.engine = (function () {
   }
   // the character's actually-WORN Carry Gear entries, with their catalog items.
   // A bag merely Carried (in your hands, not strapped on) racks nothing; only
-  // a Worn piece of Carry Gear functions, per its own Body Slot.
+  // a Worn piece of Carry Gear functions, per its own Body Slot. r56 (the author, 31 Oct 2026): a piece
+  // benched INERT by a Carry slot conflict racks nothing either; what was Racked in it reads adrift.
   function carryGearWorn(ch) {
-    var carry = (ch && ch.carry) || {};
+    var carry = (ch && ch.carry) || {}, inert = (ch && ch.slotInert) || {};
     return ((ch && ch.equipment) || []).filter(function (e) {
-      return e.qty > 0 && isCarryGear(loadCatalogItem(e.name)) && carry[entryKey(e)] === "worn";
+      return e.qty > 0 && isCarryGear(loadCatalogItem(e.name)) && carry[entryKey(e)] === "worn" && !inert[entryKey(e)];
     });
   }
   // validated rack assignments: byItem {itemKey: gearEntry}, byGear {gearKey: [entries]}.
