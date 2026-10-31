@@ -3200,8 +3200,18 @@ EN.combatView = (function () {
      "NO LIMIT" rather than "UNLIMITED" because the sibling label is "LIMITED", and at this cell's
      9px the two differ only by a prefix; mistaking a label for its exact opposite is the worst
      thing this column could do. Not "FREE" either, which is already an action type two cells to
-     the right. */
-  function noUseLabel(uses, limited, text) {
+     the right.
+
+     r52 (the author, 31 Oct 2026): "NO LIMIT" is retired. An ability with no stated limit is
+     still once per turn, so it reads 1/TRN; an Impulse can be taken outside your own turn, so
+     it reads 1/RND (once per round). */
+  function cadenceLabel(cost) { return cost === "Impulse" ? "1/RND" : "1/TRN"; }
+  function noUseTitle(label) {
+    return label === "1/RND" ? "Once per round: an Impulse can be used outside your own turn"
+         : label === "1/TRN" ? "Once per turn"
+         : "Costs no class resource";
+  }
+  function noUseLabel(uses, limited, text, cost) {
     if (uses && uses.max) {
       var r = String(uses.recharge || "").toLowerCase();
       var shortR = r.indexOf("long") === 0 ? "LR" : r.indexOf("short") === 0 ? "SR"
@@ -3214,8 +3224,8 @@ EN.combatView = (function () {
        is read here and nowhere else. Safe to match on: of 518 catalogue entries none writes
        "per turn" except as "once per turn", so a damage-over-time line cannot trip it. */
     var cadence = /\bonce per (turn|round)\b/i.exec(text || "");
-    if (cadence) return "1/" + cadence[1].toUpperCase();
-    return limited ? "LIMITED" : "NO LIMIT";
+    if (cadence) return /^round$/i.test(cadence[1]) ? "1/RND" : "1/TRN";   // r52: the same short forms as below
+    return limited ? "LIMITED" : cadenceLabel(cost);
   }
   function actionEntry(id, name, cost, src, text, limited, chip, uses, onUse, canUse, requirements) {
     var open = !!_open[id];
@@ -3263,7 +3273,8 @@ EN.combatView = (function () {
         /* the USE cell is always filled: el() drops a null child, and a four-child row would
            slide every column one place left in the grid. Without a button it says what the
            ability costs you instead, which is nothing, or its limit where it has one. */
-        useBtn || el("span.ab-nouse", { title: "Costs no class resource", text: noUseLabel(uses, limited, text) }),
+        useBtn || (function () { var lb = noUseLabel(uses, limited, text, cost);
+          return el("span.ab-nouse", { title: noUseTitle(lb), text: lb }); })(),
         el("span.card-name", null, EN.ui.nameCaret(name, open)),
         el("span.ab-act", null, [cost
           ? cxChip(COST_ANCHOR[cost], cost.toUpperCase(), COST_COLOR[cost], null, { fontSize: "9.5px" })
