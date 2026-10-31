@@ -1311,6 +1311,8 @@ EN.engine = (function () {
       if (!e || e.name !== name || !(e.qty > 0)) return false;
       var key = entryKey(e);
       if (eq.indexOf(key) === -1 && carry[key] !== "worn") return false;
+      // r55: equipped but Racked is stowed, not on your hands (worn gear applies only while worn)
+      if (carry[key] === "racked") return false;
       return !leaseLapsed(ch, key);
     });
   }
@@ -3113,9 +3115,36 @@ EN.engine = (function () {
        Snap-Blades gained Worn): its Load break applies, unless it is Racked, which is packing it. */
     if ((ch.equippedWeapons || []).indexOf(ek) !== -1 && !(ch.carry && ch.carry[ek] === "racked")) {
       var it = loadCatalogItem(e.name);
-      return ((it && it.traits) || []).indexOf("Worn") !== -1;
+      // a weapon worn on the body (wearable: Nanowire's wrist housing, the Pile Driver's forearm brace) is worn while equipped too
+      return ((it && it.traits) || []).indexOf("Worn") !== -1 || !!(it && it.wearable);
     }
     return false;
+  }
+  /* WEARABLE (the author, 31 Oct 2026). Gear gets no Traits, but some of it is worn: the book's Body
+     Slots rule says a worn item takes a slot only "if its entry says so", and "Other worn items don't
+     count against any slot limit" (the Whisperlink Earpiece, the Hazmat Suit). `wearable: true` on a
+     catalog row is the app's tag for that: it may take carry status "worn" with no Body Slot. It is a
+     STATUS, not the Worn trait, so it never takes 1 off Load (itemLoad reads the trait alone) and it
+     never enrols in slotState. A slotted item is wearable by its slot. Armor, shields, foci and rigs
+     are worn through their own equip slots, and a wearable weapon is worn by equipping it
+     (isWornEntry), so none of them is offered WEAR. */
+  // the same weapon test inventory.js uses (its weapon groups); `kind` is set only on signature weapons
+  var WEAPON_GROUPS_W = { Simple: 1, Martial: 1, Sidearm: 1, Longarm: 1, Heavy: 1, Launcher: 1, Thrown: 1, Bowfire: 1 };
+  function isWeaponItem(it) { return !!it && (!!WEAPON_GROUPS_W[it.group] || it.kind === "melee" || it.kind === "ranged"); }
+  function isWearable(it) {
+    if (!it || it.kind === "armor" || it.kind === "shield" || it.kind === "focus" || isWeaponItem(it)) return false;
+    return itemSlots(it).length > 0 || it.wearable === true;
+  }
+  /* The author's ruling, same day: in the app, gear that CAN be worn applies its benefits only while
+     WORN, not merely owned or carried. A weapon that is wearable is worn while equipped (isWornEntry).
+     Everything else that is not wearable keeps the old on-your-person answer. */
+  function gearBenefitOn(ch, e) {
+    if (!e || !(e.qty > 0) || !onPerson(ch, e)) return false;
+    var it = loadCatalogItem(e.name);
+    if (!isWearable(it) && !(isWeaponItem(it) && (it.wearable || hasTrait(it, "Worn")))) return true;
+    // a slotted item benched by a Body Slot conflict (INERT) is worn but "not counted toward, or benefiting from" its slot
+    if (itemSlots(it).length && ch.slotInert && ch.slotInert[entryKey(e)]) return false;
+    return isWornEntry(ch, e);
   }
   /* The Load one equipment entry costs right now, exactly as encumbranceInfo counts it: its Load times
      its quantity, less 1 once while validly Racked (min 0). `units` limits the count to that many
@@ -3825,9 +3854,24 @@ EN.engine = (function () {
 
   // Gear counts as a mitigation only when it is ON YOUR PERSON, which is the
   // Loadout's own answer (carried / worn / racked / equipped), not the stash.
+  /* r55 (the author, 31 Oct 2026): gear that can be worn applies only WHILE WORN, so the Hazmat Suit and
+     the Rebreather mitigate only when worn (gearBenefitOn), not merely carried or racked. Gear that
+     cannot be worn keeps the on-your-person answer. */
   function gearOnPerson(ch, name) {
     return ((ch && ch.equipment) || []).some(function (e) {
-      return e && e.name === name && !(e.qty != null && e.qty <= 0) && onPerson(ch, e);
+      return e && e.name === name && !(e.qty != null && e.qty <= 0) && gearBenefitOn(ch, e);
+    });
+  }
+  // worn, but benched INERT by a Body Slot conflict, for the mitigation's "why" line
+  function gearBenched(ch, name) {
+    return ((ch && ch.equipment) || []).some(function (e) {
+      return e && e.name === name && e.qty > 0 && isWornEntry(ch, e) && !!(ch.slotInert && ch.slotInert[entryKey(e)]);
+    });
+  }
+  // on your person (carried or racked) but not worn, for the mitigation's "why" line
+  function gearCarriedNotWorn(ch, name) {
+    return ((ch && ch.equipment) || []).some(function (e) {
+      return e && e.name === name && !(e.qty != null && e.qty <= 0) && onPerson(ch, e) && !gearBenefitOn(ch, e);
     });
   }
   /* Owned at all, anywhere in the stash, whether or not it is on your person.
@@ -3947,7 +3991,11 @@ EN.engine = (function () {
         why = on ? "Active feature." : "You do not have " + src.name + ".";
       } else if (src.type === "gear") {
         on = gearOnPerson(ch, src.name);
-        why = on ? "On your person." : "No " + src.name + " carried or worn.";
+        var srcIt = loadCatalogItem(src.name), srcWearable = isWearable(srcIt);
+        why = on ? (srcWearable ? "Worn." : "On your person.")
+            : srcWearable ? (gearBenched(ch, src.name) ? src.name + " is worn but benched (INERT) by a Body Slot conflict; reactivate it on the Loadout."
+                : gearCarriedNotWorn(ch, src.name) ? src.name + " is on you but not worn; it works only while worn." : "No " + src.name + " worn.")
+            : "No " + src.name + " carried or worn.";
         if (on && m.key === "hazmat" && hz.hazmatTorn) { on = false; why = "The suit is torn; the seal has failed until it is repaired and resealed."; }
         if (on && m.key === "rebreather") detail = Math.max(0, hz.rebreatherMinutes | 0) + " min left this scene";
       } else if (src.type === "armorTrait") {
@@ -5313,7 +5361,7 @@ EN.engine = (function () {
     trainingBudget: trainingBudget,
     gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
-    activeLineageFeatures: activeLineageFeatures, awakeningPick: awakeningPick, activeTalents: activeTalents, splitTalentText: splitTalentText, talentUpgradeLevel: talentUpgradeLevel, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryUnitLoad: entryUnitLoad, isWornEntry: isWornEntry, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
+    activeLineageFeatures: activeLineageFeatures, awakeningPick: awakeningPick, activeTalents: activeTalents, splitTalentText: splitTalentText, talentUpgradeLevel: talentUpgradeLevel, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryUnitLoad: entryUnitLoad, isWornEntry: isWornEntry, isWearable: isWearable, gearBenefitOn: gearBenefitOn, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
     // THE resolver for which attribute a Talent raised, and the one enumeration of every
     // post-creation attribute bump. effectiveAttributes sums attrBumpSources rather than
     // walking the upgrade slots itself, so no surface can disagree about what bumped what.

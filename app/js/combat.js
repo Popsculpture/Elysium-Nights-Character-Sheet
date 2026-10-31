@@ -6510,12 +6510,16 @@ EN.combatView = (function () {
       // their own dedicated field) gets a Wear toggle; only "worn" competes
       // for its Body Slot, so a spare merely Carried never does.
       var mySlots = it && eng.itemSlots ? eng.itemSlots(it) : [];
-      var wearable = mySlots.length > 0 && it && it.kind !== "armor" && it.kind !== "shield" && it.kind !== "focus";
+      // r55: a slotless item tagged wearable (the Whisperlink, the Hazmat Suit) is worn too, with no Body Slot
+      var wearable = eng.isWearable ? eng.isWearable(it) : (mySlots.length > 0 && it && it.kind !== "armor" && it.kind !== "shield" && it.kind !== "focus");
       var chips = [];
       if (eqLabel) chips.push(el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: eqLabel.toUpperCase() }));
-      // a worn Trauma Rig takes the same break the engine gives it (2 carried, 1 worn)
-      var wornArmor = ch.equippedArmor === key || (ch.rig && ch.rig.key === key);
-      var baseLd = eng.entryUnitLoad ? eng.entryUnitLoad(ch, e, { worn: wornArmor }) : 0;
+      /* r55: the engine decides what is worn (isWornEntry: a carried-worn Worn-trait item and an equipped
+         Worn weapon included, which this row used to miss), and the Load chip shows the break only when
+         the worn number is really lower than the unworn one, so armor (no break) never claims one. */
+      var wornNow = eng.isWornEntry ? eng.isWornEntry(ch, e) : (ch.equippedArmor === key || (ch.rig && ch.rig.key === key));
+      var baseLd = eng.entryUnitLoad ? eng.entryUnitLoad(ch, e, { worn: wornNow }) : 0;
+      var wornArmor = wornNow && eng.entryUnitLoad && baseLd < eng.entryUnitLoad(ch, e, { worn: false });
       // one rack slot holds one item: a racked entry's TOTAL drops by 1, min 0
       var ldTotal = Math.max(0, baseLd * e.qty - (rackedGear ? 1 : 0));
       if (isGear) {
@@ -6553,7 +6557,9 @@ EN.combatView = (function () {
           }
         }
       }
-      var wearBtn = wearable ? el("button.btn.sm", { title: cs === "worn" ? "Take it off; it stays Carried and keeps costing Load, but frees its Body Slot" : "Wear it; it competes for its Body Slot",
+      var wearBtn = wearable ? el("button.btn.sm", { title: mySlots.length
+          ? (cs === "worn" ? "Take it off; it stays Carried and keeps costing Load, but frees its Body Slot" : "Wear it; it competes for its Body Slot")
+          : (cs === "worn" ? "Take it off; it stays Carried, and its benefits stop until you wear it again" : "Wear it; it takes no Body Slot, and its benefits apply only while worn"),
         style: { fontSize: "10px" }, onclick: function () { toggleWorn(key); } }, cs === "worn" ? "✓ WORN" : "WEAR") : null;
       // status control: equipped gear keeps its static tag (managed in Inventory)
       // plus a rack selector; everything else folds Racked targets into the

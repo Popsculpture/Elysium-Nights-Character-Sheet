@@ -262,8 +262,11 @@ EN.inventoryView = (function () {
     // their own dedicated field) gets a Wear toggle; only "worn" competes
     // for its Body Slot, so a spare merely Carried never does.
     var mySlots = it && EN.engine.itemSlots ? EN.engine.itemSlots(it) : [];
-    var wearable = mySlots.length > 0 && it && it.kind !== "armor" && it.kind !== "shield" && it.kind !== "focus";
-    var wearBtn = wearable ? el("button.btn.sm", { title: cs === "worn" ? "Take it off; it stays Carried and keeps costing Load, but frees its Body Slot" : "Wear it; it competes for its Body Slot",
+    // r55: a slotless item tagged wearable (the Whisperlink, the Hazmat Suit) is worn too, with no Body Slot
+    var wearable = EN.engine.isWearable ? EN.engine.isWearable(it) : (mySlots.length > 0 && it && it.kind !== "armor" && it.kind !== "shield" && it.kind !== "focus");
+    var wearBtn = wearable ? el("button.btn.sm", { title: mySlots.length
+        ? (cs === "worn" ? "Take it off; it stays Carried and keeps costing Load, but frees its Body Slot" : "Wear it; it competes for its Body Slot")
+        : (cs === "worn" ? "Take it off; it stays Carried, and its benefits stop until you wear it again" : "Wear it; it takes no Body Slot, and its benefits apply only while worn"),
       style: { fontSize: "10px" }, onclick: function () { invSetCarry(key, cs === "worn" ? "carried" : "worn"); } }, cs === "worn" ? "✓ WORN" : "WEAR") : null;
     if (equipped) {
       // equip state already reads on the card; racking keeps carry status and
@@ -478,6 +481,11 @@ EN.inventoryView = (function () {
     if (!it.dumpAndRun || !entry) return null;
     var key = entryKey(entry);
     var inside = (EN.engine.rackState(ch).byGear[key] || []).map(function (x) { return x.name; });
+    // r55: worn gear applies only while worn, so the satchel is thrown off your back, not out of the stash
+    if (EN.engine.gearBenefitOn && !EN.engine.gearBenefitOn(ch, entry))
+      return el("div.row.wrap.dump-run", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
+        el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--text3)" },
+          text: (ch.carry && ch.carry[key] === "worn") ? "Benched (INERT) by a Carry slot conflict; reactivate it to Dump and Run." : "Wear it to Dump and Run." })]);
     return el("div.row.wrap.dump-run", { style: { gap: "6px", alignItems: "center", marginTop: "6px" } }, [
       el("span.help", { style: { margin: 0, fontSize: "10.5px", color: "var(--text2)" },
         text: inside.length ? "Racked in it: " + inside.join(", ") + "." : "Nothing Racked in it." }),

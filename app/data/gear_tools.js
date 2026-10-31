@@ -187,7 +187,7 @@ EN.gearCatalog.tools = {
       desc: "Specialized hardware and software for cracking electronic and hybrid security.",
       basic: "Grants Edge on in-combat Sleight or Systems d20 checks to defeat high-end digital or hybrid locks when you have at least 1 minute to work.",
       proficient: "Attempt a clean pull. On a success, you avoid the routine alarm flags that normally fire even on a successful bypass, unless the Target is explicitly hardened." },
-    { name: "Urban Infiltration Rig", bucket: "kits", group: "Infiltration & Access", price: 150, availability: "Uncommon", legality: "Licensed",
+    { name: "Urban Infiltration Rig", wearable: true, bucket: "kits", group: "Infiltration & Access", price: 150, availability: "Uncommon", legality: "Licensed",
       category: "Infiltration Tools", skill: "Acrobatics, Stealth", effect: "Reroll a failed infiltration check. Edge on a prepped route.",
       desc: "Line hooks, climbing pads, and compact tools for moving through a building like it owes you nothing.",
       basic: "Once per scene, reroll a failed in-combat Stealth or Acrobatics d20 check (or out-of-combat Dice Pool) tied to infiltration and keep the better result.",
@@ -208,7 +208,7 @@ EN.gearCatalog.tools = {
       proficient: "Run a reconstruction pass. With at least 10 minutes, ask the GM for one additional concrete detail the scan would reasonably reveal: an entry point, a hidden void, a routed cable." },
 
     /* ---- Fieldcraft & Survival (Fieldcraft Tools) ---- */
-    { name: "Climbing Gear", bucket: "kits", group: "Fieldcraft & Survival", price: 60, availability: "Common", legality: "Legal",
+    { name: "Climbing Gear", wearable: true, bucket: "kits", group: "Fieldcraft & Survival", price: 60, availability: "Common", legality: "Legal",
       category: "Fieldcraft Tools", skill: "Athletics", effect: "Edge on climbs. Prevents full falls when anchored.",
       desc: "Harness, carabiners, line, and boot spikes for going up when the stairs are watched.",
       basic: "Grants Edge on Athletics checks to climb under normal conditions, and reduces the consequences of a failed climb at GM discretion.",
@@ -389,7 +389,7 @@ EN.gearCatalog.tools = {
       synergy: "At GM discretion, impose Snag on one Enemy's Perception check per scene as the swarm distracts them." },
 
     /* ---- Comms & Signal Routing ---- */
-    { name: "Whisperlink Earpiece", load: 0, bucket: "devices", group: "Comms & Signal Routing", price: 60, availability: "Common", legality: "Legal",
+    { name: "Whisperlink Earpiece", wearable: true, load: 0, bucket: "devices", group: "Comms & Signal Routing", price: 60, availability: "Common", legality: "Legal",
       effect: "Constant voice contact with a small team and hands-free calls to the #GRID.",
       desc: "Discreet, encrypted, all but invisible.",
       limitation: "A worn device, but light enough that it doesn't occupy a Body Slot unless upgraded with serious tactical features." },
@@ -523,7 +523,7 @@ EN.gearCatalog.tools = {
       effect: "Effect (Special): The first time each day you drop to 0 Wounds, the bracer auto-fires. You are treated as Stabilized as if a successful Stabilize check had been made, and you fall Unconscious instead of spiraling into immediate worsening. It pings Allies with your status and location if they have linked comms or monitors.",
       desc: "A woven bracer that maps your vitals and Flow rhythm, riding the line between medical device and guardian charm.",
       synergy: "Guided Treatment: Once per day, when an Ally or Freelancer attempts to Treat Wounds, Treat Fatigue, or Stabilize a Target wearing the bracer, they roll that check with Edge. On a success, the Target also regains 1d4 Vitality in addition to the normal effects." },
-    { name: "Hazmat Suit", bucket: "devices", group: "Worn Tech", price: 220, availability: "Uncommon", legality: "Licensed",
+    { name: "Hazmat Suit", wearable: true, bucket: "devices", group: "Worn Tech", price: 220, availability: "Uncommon", legality: "Licensed",
       effect: "Immunity to contact and inhaled toxins while sealed.",
       desc: "A sealed chemsuit worn over your armor. While sealed and intact, it grants Immunity to many contact and inhaled toxic hazards. Take damage that can tear or slice it, and the seal fails until the suit is repaired and resealed." },
 

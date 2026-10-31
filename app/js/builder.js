@@ -1481,6 +1481,10 @@ EN.builder = (function () {
           if (!c.carry[k] || c.carry[k] === "stashed") c.carry[k] = "carried";
           // the kit's Carry Gear goes on, so it can rack from the first scene (Carry Gear only works worn)
           if (it && it.bucket === "carry") c.carry[k] = "worn";
+          /* r55: a slotless wearable (the kit's Whisperlink Earpiece) goes on as well, since its benefits
+             apply only while worn and it competes for no Body Slot. Slotted gear stays Carried, so the
+             kit never starts a Body Slot conflict. */
+          else if (it && EN.engine.isWearable && EN.engine.isWearable(it) && !EN.engine.itemSlots(it).length) c.carry[k] = "worn";
           if (it && (it.kind === "armor" || it.kind === "shield" || it.kind === "focus")) {
             var slotGet = it.kind === "armor" ? c.equippedArmor : it.kind === "shield" ? c.equippedShield : c.equippedFocus;
             if (!slotGet) EN.engine.setEquipSlot(c, it.kind, k);

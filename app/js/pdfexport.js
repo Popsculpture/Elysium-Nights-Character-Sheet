@@ -1124,7 +1124,10 @@ EN.pdfExport = (function () {
       var it = catItem(e.name);
       var key = e.id || e.name;
       var worn = (ch.equippedWeapons || []).indexOf(key) !== -1 || eng.isSlotEquipped(ch, key);
-      return { name: e.name + bookTag("item", e.name), qty: e.qty, status: worn ? "Equipped" : "Stash",
+      // r55: the same status the print sheet prints (worn gear applies only while worn)
+      var cs = (ch.carry || {})[key];
+      var where = worn ? "Equipped" : cs === "worn" ? "Worn" : cs === "racked" ? "Racked" : cs === "carried" ? "Carried" : "Stash";
+      return { name: e.name + bookTag("item", e.name), qty: e.qty, status: where,
                notes: it ? gearSummaryLine(it, eng.armorState ? eng.armorState(ch, key) : null,
                                            eng.shieldState ? eng.shieldState(ch, key) : null,
                                            eng.weaponGrip ? eng.weaponGrip(ch, it, key) : null,

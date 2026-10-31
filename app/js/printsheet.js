@@ -907,7 +907,10 @@ EN.printSheet = (function () {
            EN.launch.showAvailability() says so. The data stays on the item. */
         var showAvail = !(EN.launch && EN.launch.showAvailability) || EN.launch.showAvailability();
         var tags = it ? [it.group || it.kind || it.bucket, it.legality, showAvail ? it.availability : null].filter(Boolean).join(" · ") : "";
-        var meta = ["x" + e.qty, worn ? "equipped" : "stash"].concat(tags ? [tags] : []).join(" · ");
+        // r55: worn gear applies only while worn, so the sheet says worn / racked / carried, not just "stash"
+        var cs = (ch.carry || {})[key];
+        var where = worn ? "equipped" : cs === "worn" ? "worn" : cs === "racked" ? "racked" : cs === "carried" ? "carried" : "stash";
+        var meta = ["x" + e.qty, where].concat(tags ? [tags] : []).join(" · ");
         var block = el("div.ps-invitem", null, [
           el("div.ps-invhead", null, [el("span.ps-invname", { text: e.name + bookTag("item", e.name) }), el("span.ps-invmeta", { text: meta })])
         ]);

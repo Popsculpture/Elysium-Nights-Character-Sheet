@@ -47,11 +47,11 @@ EN.gearCatalog.signature = {
       desc: "A blade wrapped in sonic emitters that howl at a frequency just past hearing. It doesn't so much cut as shake a body apart at the seams. You feel the hum in your fillings from across the room.",
       effect: "On Hit: the target makes a Body Save vs your Weapon Save DC or is Staggered until the end of its next turn." },
     // flexible: a filament on a spool, so it caps at the higher Reach. See EN.combat.reachCap.
-    { name: "Nanowire", signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons", load: 1, flexible: true,
+    { name: "Nanowire", signature: true, wearable: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons", load: 1, flexible: true,
       price: 700, damage: "1d8 Slashing", range: "Melee (Reach 2)",
       traits: ["Finesse", "Reach 2", "Concealable", "Armor Piercing 2"], availability: "Rare", legality: "Contraband",
       desc: "A spool of nanofilament thinner than sight, weighted at the tip and slung from a wrist housing. It cuts what it touches and most of what it passes near. Reads as jewelry right up until it doesn't." },
-    { name: "Pile Driver", signature: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons",
+    { name: "Pile Driver", signature: true, wearable: true, kind: "melee", group: "Martial", proficiency: "Martial Weapons",
       price: 700, damage: "2d8 Piercing", range: "Melee",
       traits: ["Heavy", "Two-Handed", "Armor Piercing 3", "Slow", "Siege"], availability: "Rare", legality: "Restricted",
       desc: "A piston braced along the forearm that rams a hardened spike through whatever it touches, one brutal stroke at a time. Slow to reset, loud as a slammed vault door, and almost unfair against anything wearing plate. Favored by breachers, repo crews, and people with a grudge against doors.",
