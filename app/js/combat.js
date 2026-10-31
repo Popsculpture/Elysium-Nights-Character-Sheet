@@ -6641,6 +6641,7 @@ EN.combatView = (function () {
       [navRow, el("div.actions-frame", null, [el("div.actions-scroll", null, bodyKids)])],
       { corners: true });
     sectionEls.actions.classList.add("fill-col");
+    sectionEls.actions.setAttribute("data-panel", "actions");   // showAttacks scrolls to it
     if (sectionEls.actions.bodyEl) sectionEls.actions.bodyEl.classList.add("fill-body");
 
     /* ---- DEFEND, its own always-visible section (kept out of the tabs per the play spec).
@@ -7206,5 +7207,14 @@ EN.combatView = (function () {
            },
            // state only, no render: a swipe committing to another tab closes the popovers the way
            // a rail tap would, and the render that follows is the tab change's own
-           closePops: closePops };
+           closePops: closePops,
+           // Equipping a weapon in Inventory turns the Actions panel to its Weapons list, so the
+           // Freelancer tab opens on it (31 Oct 2026). State only; the next render draws it.
+           setPanelTab: function (k) { _panelTab = k; },
+           // ATTACKS ›: the Freelancer tab, the Weapons list, scrolled into view
+           showAttacks: function () {
+             _panelTab = "weapons";
+             EN.app.gotoTab("combat");
+             EN.ui.scrollUnderChrome(document.querySelector('#view [data-panel="actions"]'));
+           } };
 })();

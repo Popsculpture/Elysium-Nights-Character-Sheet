@@ -173,9 +173,39 @@ EN.inventoryView = (function () {
     // sets the player looking for something that will never appear. It DOES arrive,
     // folded into the unarmed strike, which is what to point at.
     var aug = EN.engine.isUnarmedAugmentName && EN.engine.isUnarmedAugmentName(entry.name);
+    // the Freelancer tab opens on its Weapons list next time (the unarmed strike lives there too)
+    if (on && EN.combatView && EN.combatView.setPanelTab) EN.combatView.setPanelTab("weapons");
     toast(!on ? entry.name + " unequipped."
-      : aug ? entry.name + " equipped; it augments your unarmed strike on the Freelancer tab rather than listing as a weapon of its own."
-            : entry.name + " equipped; it's live in the Attacks list on the Freelancer tab.");
+      : aug ? entry.name + " equipped; it augments your unarmed strike on the Freelancer tab's Weapons list. ATTACKS › takes you there."
+            : entry.name + " equipped; it's on the Freelancer tab's Weapons list. ATTACKS › takes you there.");
+  }
+  // ATTACKS ›: straight to the Weapons list on the Freelancer tab, scrolled into view
+  function attacksBtn() {
+    if (!EN.combatView || !EN.combatView.showAttacks) return null;
+    return el("button.btn.sm.to-attacks", { type: "button", title: "Go to the Weapons list on the Freelancer tab",
+      style: { color: "var(--accent)", borderColor: "var(--accent)" },
+      onclick: function () { EN.combatView.showAttacks(); } }, "ATTACKS ›");
+  }
+  /* A: EQUIP AT THE COUNTER (31 Oct 2026). Once you own the thing, its market card offers the
+     same equip the Stash card does, on the newest copy, so buying a weapon and readying it is
+     one more tap instead of a trip to the Stash to find it. Weapons equip to the Attacks list;
+     single-slot gear (armor, shield, Focus, Smartdeck, Trauma Rig) takes its own verb. */
+  function counterEquip(ch, it) {
+    var mine = (ch.equipment || []).filter(function (e) { return e.name === it.name; });
+    if (!mine.length || it.cyber) return [];
+    var last = mine[mine.length - 1];
+    if (isWeapon(it)) {
+      if (mine.some(function (e) { return isEquipped(ch, entryKey(e)); }))
+        return [el("span.chip.mkt-equipped", { title: "Equipped: it's on the Freelancer tab's Weapons list", style: { color: "var(--accent)", borderColor: "var(--accent)" } }, "✓ EQUIPPED"), attacksBtn()];
+      return [el("button.btn.sm.mkt-equip", { type: "button", title: "Equip your " + it.name + ": it goes on the Freelancer tab's Weapons list",
+        style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(last); } }, "⚔ EQUIP")];
+    }
+    var slot = EN.engine.equipSlotFor ? EN.engine.equipSlotFor(ch, it, last) : null;
+    if (!slot) return [];
+    if (mine.some(function (e) { return slot.get(ch) === entryKey(e); }))
+      return [el("span.chip.mkt-equipped", { title: "Live on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" } }, slot.verbs.off)];
+    return [el("button.btn.sm.mkt-equip", { type: "button", title: "Make your " + it.name + " the live one (one at a time)",
+      style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleSlotEquip(slot, it, last); } }, slot.verbs.on)];
   }
   /* SINGLE-SLOT GEAR EQUIPS FROM ITS OWN ROW: one worn armor, one wielded shield, one
      attuned Focus, one jacked-in Smartdeck, one worn Trauma Rig. Which slots exist and how
@@ -1157,14 +1187,15 @@ EN.inventoryView = (function () {
        ownedRigs require a matching tier row, so gating on the catalog field alone would offer
        EQUIP on hardware that then refuses to go live. Market rows never equip. */
     var equipSlot = (mode !== "mkt" && entry) ? EN.engine.equipSlotFor(ch, it, entry) : null;
+    var counter = mode === "mkt" ? counterEquip(ch, it) : [];
     var actionEl = mode === "mkt"
-      ? mktBtn
+      ? (counter.length ? el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end", alignItems: "center" } }, [mktBtn].concat(counter)) : mktBtn)
       : el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end" } },
           (entry ? [carryCtrl(ch, it, entry)] : []).concat(leaseBtns).concat(isWeapon(it) ? [
             isEquipped(ch, ownedKey)
               ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(entry); } }, "✓ EQUIPPED")
               : el("button.btn.sm", { title: "Equip, add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(entry); } }, "⚔ EQUIP")
-          ] : []).concat(equipSlot ? [
+          ] : []).concat(isWeapon(it) && isEquipped(ch, ownedKey) ? [attacksBtn()] : []).concat(equipSlot ? [
             equipSlot.get(ch) === ownedKey
               ? el("button.btn.sm.primary", { title: "Stow it; it stops applying on the Freelancer tab", onclick: function () { toggleSlotEquip(equipSlot, it, entry); } }, equipSlot.verbs.off)
               : el("button.btn.sm", { title: "Make this the live one (one at a time)", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleSlotEquip(equipSlot, it, entry); } }, equipSlot.verbs.on)
@@ -1181,6 +1212,12 @@ EN.inventoryView = (function () {
       el("div.row.wrap.mkt-action", { style: { gap: "6px", flex: "0 0 auto", marginLeft: "auto", justifyContent: "flex-end", alignItems: "center" } }, [actionEl])
     ]);
     // the traits chip above only shows a count; tapping it opens this row with the real trait chips
+    /* C: SHORTER SHELVES (31 Oct 2026). A listing you can't afford, and don't own, folds to its
+       one-line head (name, legality, price in red) until tapped open, so a shelf of Restricted
+       stock out of reach doesn't push what you can buy three screens down. */
+    if (mode === "mkt" && !open && !afford && !ownedTotal && _mode !== "fivefinger" && !it.upkeep && it.vendor !== false && !it.cyber)
+      return el("div.feature.mkt-card.mkt-short", { title: "Can't afford it at " + fmtG(sp) + ". Tap to read it.",
+        style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)", opacity: 0.72 } }, [head]);
     var traitsExpandRow = (traits.length && traitsOpen)
       ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", paddingTop: "6px", borderTop: "1px dashed var(--border)" } },
           traits.map(function (t) { return traitChip(t, armorFirst); }))
@@ -1912,8 +1949,10 @@ EN.inventoryView = (function () {
         if (!open) return;
         // every subsection is collapsible (default collapsed); a filter/search forces them open
         var subKey = "mktz-" + c.key + "-" + sub.label;
-        var subOpen = anyFilter ? true : !!_open[subKey];
-        subBlocks.push(collapsibleSubLabel(sub.label + " · " + items.length, subKey, subOpen, !anyFilter));
+        // a category with one stocked section has nothing to choose between: open it with the category
+        var lone = c.subs.filter(function (s) { return (s.items || []).length; }).length === 1;
+        var subOpen = anyFilter || lone ? true : !!_open[subKey];
+        subBlocks.push(collapsibleSubLabel(sub.label + " · " + items.length, subKey, subOpen, !anyFilter && !lone));
         if (!subOpen) return;
         if (sub.intro) subBlocks.push(introP(sub.intro));
         if (sub.byTier) {
@@ -1935,10 +1974,21 @@ EN.inventoryView = (function () {
       body = body.concat(subBlocks);
       var p = EN.ui.panel(c.title, shown + (shown === 1 ? " LISTING" : " LISTINGS"), body, { corners: true });
       p.classList.add("mkt-cat");                // skin hook, see marketView's note
+      p.setAttribute("data-mkt-cat", c.key);
       var head = p.querySelector(".panel-h");
       if (head) {
         head.classList.add("clickable");
-        if (!anyFilter) head.onclick = function () { _panelOpen[c.key] = !_panelOpen[c.key]; EN.app.render(); };
+        /* One category open at a time (31 Oct 2026): opening one closes the rest, and the one
+           opened is brought up under the sticky bar, since closing a long one above it would
+           otherwise leave the player staring at the middle of the next shelf. ⊟ ALL still
+           opens or closes every one. */
+        if (!anyFilter) head.onclick = function () {
+          var was = !!_panelOpen[c.key];
+          Object.keys(_panelOpen).forEach(function (k) { _panelOpen[k] = false; });
+          _panelOpen[c.key] = !was;
+          EN.app.render();
+          if (!was) EN.ui.scrollUnderChrome(document.querySelector('#view [data-mkt-cat="' + c.key + '"]'), true);
+        };
         var h3 = head.querySelector("h3");
         // EN.ui.panel already wrote c.title into the h3, so all this line ever added was a leading
         // glyph. As a real element the caret trails the title and picks up the shared caret rules;

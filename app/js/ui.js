@@ -804,10 +804,31 @@ EN.ui = (function () {
     }, armed ? (opts.armedLabel || "SURE?") : opts.label);
   }
 
+  /* Scroll a node in #view so its top sits just under whatever is pinned at the top of the
+     screen: the Classic top bar and rail, '98's title bar, and a view's own sticky bar (the
+     Inventory sub-tab bar, the #PRINT step rail). Only sticky or fixed chrome near the top
+     counts, so '98's bottom taskbar and #GRIDroid's bottom dock are left out on their own. */
+  var PINNED = [".os-topbar", "#os-tabs", "#view .inv-bar", "#view .wizard-rail"];
+  function scrollUnderChrome(node, onlyIfHidden) {
+    if (!node || !node.getBoundingClientRect) return;
+    var pin = 0;
+    PINNED.forEach(function (s) {
+      var n = document.querySelector(s);
+      if (!n) return;
+      var pos = getComputedStyle(n).position;
+      if (pos !== "sticky" && pos !== "fixed") return;
+      var r = n.getBoundingClientRect();
+      if (r.height && r.top < 300 && r.bottom > pin) pin = r.bottom;
+    });
+    var top = node.getBoundingClientRect().top;
+    if (onlyIfHidden && top >= pin && top < window.innerHeight - 40) return;
+    window.scrollTo(window.scrollX, Math.max(0, top + window.scrollY - pin - 8));
+  }
+
   return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline, proseP: proseP, nameCaret: nameCaret,
            ruleLink: ruleLink, ruleChip: ruleChip, ruleText: ruleText, damageIcon: damageIcon, damageText: damageText, damageTie: damageTie,
            currencyGlyphsOk: currencyGlyphsOk, substituteCurrencyGlyphs: substituteCurrencyGlyphs,
            dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled,
-           armButton: armButton, disarm: disarm, isArmed: isArmed,
+           armButton: armButton, disarm: disarm, isArmed: isArmed, scrollUnderChrome: scrollUnderChrome,
            heldChip: heldChip, heldSuffix: heldSuffix };
 })();
