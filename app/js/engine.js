@@ -3136,6 +3136,44 @@ EN.engine = (function () {
     if (!it || it.kind === "armor" || it.kind === "shield" || it.kind === "focus" || isWeaponItem(it)) return false;
     return itemSlots(it).length > 0 || it.wearable === true;
   }
+  /* CONCEALED (r57, the author, 31 Oct 2026). A flag per equipment entry (ch.concealed[key] === true) that
+     layers on Carried, Racked, Worn or Equipped; it never touches Load, racking or the dropped log. The book
+     has no general hiding procedure (Sleight covers "Conceal an object"; the GM rules what your silhouette
+     could hide), sets no item limit, and says only that Bulky "Can't be Concealable". So the author ruled:
+     anything on your person except Bulky gear, each item on its own (a concealed bag does not hide what is
+     Racked in it). A flag on an item that is not on your person reads as not concealed. */
+  function canConceal(ch, e) {
+    if (!e || !(e.qty > 0) || !onPerson(ch, e)) return false;
+    var it = loadCatalogItem(e.name);
+    if (it && (it.vehicle || it.vehicleMod)) return false;
+    return !hasTrait(it, "Bulky");
+  }
+  function isConcealed(ch, e) {
+    return !!(e && ch && ch.concealed && ch.concealed[entryKey(e)] === true && canConceal(ch, e));
+  }
+  /* How well a concealed item is hidden, for the CONCEALED chip, from the book's three levels of search:
+     a casual search, a deliberate pat-down, a scanner. Deep Pockets (the Smuggler's Level 1 feature):
+     "perfectly conceal a Sidearm or a Light melee weapon even from a thorough physical pat-down", and Edge
+     on the Sleight or Stealth check to hide anything. Concealable (its own trait, or a fitted Part that
+     grants it): a casual search spots it with Snag; a pat-down or scanner still finds it. Light: "carried
+     discreetly under loose clothing without counting as Concealable". */
+  function concealInfo(ch, e) {
+    var it = loadCatalogItem(e && e.name), key = e ? entryKey(e) : null;
+    var smuggler = !!ch && ch["class"] === "scoundrel" && ch.subclass === "smuggler";
+    var melee = !!it && (it.group === "Simple" || it.group === "Martial" || it.kind === "melee");
+    var deep = smuggler && !!it && (it.group === "Sidearm" || (melee && hasTrait(it, "Light")));
+    var partGrants = key ? weaponPartsOn(ch, key).some(function (p) { return /\bConcealable\b/.test(p.grants || ""); }) : false;
+    var concealable = hasTrait(it, "Concealable") || partGrants;
+    // Light means "carried discreetly" only on a weapon; on a shield it is the light-shield trait
+    var light = hasTrait(it, "Light") && !(it.kind === "armor" || it.kind === "shield" || it.kind === "focus");
+    var level = deep ? "pat-down" : concealable ? "casual" : light ? "discreet" : "plain";
+    var note = deep ? "Deep Pockets: perfectly concealed, even from a thorough physical pat-down."
+             : concealable ? "Concealable: a casual search spots it with Snag. A deliberate pat-down or a scanner still finds it."
+             : light ? "Light: carried discreetly under loose clothing, but not Concealable, so a search gets no Snag."
+             : "Hidden as best you can. The GM rules what your silhouette could hide, and a search finds it normally.";
+    if (smuggler) note += " Deep Pockets gives Edge on the Sleight or Stealth check to hide it.";
+    return { level: level, deepPockets: deep, smuggler: smuggler, concealable: concealable, light: light, note: note };
+  }
   /* The author's ruling, same day: in the app, gear that CAN be worn applies its benefits only while
      WORN, not merely owned or carried. A weapon that is wearable is worn while equipped (isWornEntry).
      Everything else that is not wearable keeps the old on-your-person answer. */
@@ -3725,6 +3763,10 @@ EN.engine = (function () {
   }
   function setEquipSlot(c, slotId, key) {
     var s = equipSlotById(slotId);
+    // r57: whatever leaves the slot (stowed, or swapped out) and has no carry status falls to the stash,
+    // so it is no longer concealed; the same rule toggleEquip applies to a weapon
+    var prev = s ? s.get(c) : null;
+    if (prev && prev !== key && c.concealed && !(c.carry && c.carry[prev])) delete c.concealed[prev];
     if (s) s.set(c, key || null);
     if (s && key) unlogDropped(c, key);   // equipping a dropped item picks it back up (Packed It counts it once)
   }
@@ -5362,7 +5404,7 @@ EN.engine = (function () {
     trainingBudget: trainingBudget,
     gearFloorTier: gearFloorTier, effectiveGearTier: effectiveGearTier,
     sizeFromHeightFt: sizeFromHeightFt, lineageHeightFt: lineageHeightFt,
-    activeLineageFeatures: activeLineageFeatures, awakeningPick: awakeningPick, activeTalents: activeTalents, splitTalentText: splitTalentText, talentUpgradeLevel: talentUpgradeLevel, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryUnitLoad: entryUnitLoad, isWornEntry: isWornEntry, isWearable: isWearable, gearBenefitOn: gearBenefitOn, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
+    activeLineageFeatures: activeLineageFeatures, awakeningPick: awakeningPick, activeTalents: activeTalents, splitTalentText: splitTalentText, talentUpgradeLevel: talentUpgradeLevel, leaseLapsed: leaseLapsed, premiumOn: premiumOn, premiumBonus: premiumBonus, itemLoad: itemLoad, entryUnitLoad: entryUnitLoad, isWornEntry: isWornEntry, isWearable: isWearable, gearBenefitOn: gearBenefitOn, canConceal: canConceal, isConcealed: isConcealed, concealInfo: concealInfo, entryLoadNow: entryLoadNow, logDropped: logDropped, unlogDropped: unlogDropped,
     // THE resolver for which attribute a Talent raised, and the one enumeration of every
     // post-creation attribute bump. effectiveAttributes sums attrBumpSources rather than
     // walking the upgrade slots itself, so no surface can disagree about what bumped what.

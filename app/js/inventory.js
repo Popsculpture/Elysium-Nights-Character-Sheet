@@ -167,7 +167,11 @@ EN.inventoryView = (function () {
       c.equippedWeapons = c.equippedWeapons || [];
       var i = c.equippedWeapons.indexOf(key);
       if (i === -1) { c.equippedWeapons.push(key); EN.engine.unlogDropped(c, key); }   // equipping a dropped item picks it back up
-      else c.equippedWeapons.splice(i, 1);
+      else {
+        c.equippedWeapons.splice(i, 1);
+        // r57: unequipped with no carry status, it falls back to the stash, so it is no longer concealed
+        if (c.concealed && !(c.carry && c.carry[key])) delete c.concealed[key];
+      }
     });
     // An unarmed augment gets no row of its own on the Attacks list, so promising one
     // sets the player looking for something that will never appear. It DOES arrive,
@@ -244,9 +248,25 @@ EN.inventoryView = (function () {
         delete c.racked[key];
         if (!status || status === "stashed") delete c.carry[key]; else c.carry[key] = status;
       }
+      // r57: back in the stash and not equipped, it is no longer hidden on you
+      if ((!status || status === "stashed") && c.concealed && (c.equippedWeapons || []).indexOf(key) === -1 && !EN.engine.isSlotEquipped(c, key)) delete c.concealed[key];
       // back on your person: a dropped item picked back up is no longer dropped (Packed It counts it once)
       if (status && status !== "stashed") EN.engine.unlogDropped(c, key);
     });
+  }
+  // r57: CONCEAL / CONCEALED, a flag on top of Carried, Racked, Worn or Equipped (engine.canConceal)
+  function invToggleConceal(key) {
+    store.update(function (c) {
+      c.concealed = c.concealed || {};
+      if (c.concealed[key]) delete c.concealed[key]; else c.concealed[key] = true;
+    });
+  }
+  function concealBtn(ch, entry) {
+    if (!EN.engine.canConceal || !EN.engine.canConceal(ch, entry)) return null;
+    var on = EN.engine.isConcealed(ch, entry), info = EN.engine.concealInfo(ch, entry);
+    return el("button.btn.sm.conceal-btn" + (on ? ".primary" : ""), {
+      title: on ? "Concealed. " + info.note + " Click to stop hiding it." : "Hide it on your person. It keeps its Load and its place. " + info.note,
+      style: { fontSize: "10px" }, onclick: function () { invToggleConceal(entryKey(entry)); } }, on ? "✓ CONCEALED" : "CONCEAL");
   }
   // Things you never carry, wear or rack have no Load and no carry status (the author, 31 Oct 2026)
   function notCarried(it) { return !!(it && (it.vehicle || it.vehicleMod)); }
@@ -273,8 +293,10 @@ EN.inventoryView = (function () {
       // the rack target in lockstep, and a stale assignment renders as
       // "adrift" so it can always be cleared
       var staleKey = !rackedGear ? (ch.racked || {})[key] : null;
-      if (!targets.length && !rackedGear && !staleKey) return null;
-      return el("select", { title: "Rack this in worn Carry Gear: Load reduced by 1, and a Holster, Scabbard, Back Scabbard or Weapon Sling draws it free on your first attack each encounter",
+      // r57: an equipped item can be concealed too (a holster-less pistol used to get no control at all)
+      var cbEq = concealBtn(ch, entry);
+      if (!targets.length && !rackedGear && !staleKey) return cbEq ? el("div.row", { style: { gap: "6px", alignItems: "center" } }, [cbEq]) : null;
+      var rackSel = el("select", { title: "Rack this in worn Carry Gear: Load reduced by 1, and a Holster, Scabbard, Back Scabbard or Weapon Sling draws it free on your first attack each encounter",
         style: { fontSize: "11px", width: "auto" },
         onchange: function () { var v = this.value; store.update(function (c) {
           c.racked = c.racked || {}; c.carry = c.carry || {};
@@ -287,11 +309,12 @@ EN.inventoryView = (function () {
           return el("option", { value: gk, selected: !!(rackedGear && entryKey(rackedGear) === gk) || staleKey === gk, text: "⧉ " + g.name });
         })).concat(staleKey && !targets.some(function (g) { return entryKey(g) === staleKey; })
           ? [el("option", { value: staleKey, selected: true, text: "⧉ racked (adrift)" })] : []));
+      return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [rackSel, cbEq]);
     }
     if (cs === "worn") {
       // worn is exclusive with Carried/Racked (one carry status per item), so
       // taking it off (falling back to Carried) is the only control needed here
-      return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn]);
+      return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, concealBtn(ch, entry)]);
     }
     var opts = [["stashed", "Stashed"], ["carried", "Carried"]].map(function (o) {
       return el("option", { value: o[0], selected: cs === o[0], text: o[1] });
@@ -302,7 +325,7 @@ EN.inventoryView = (function () {
     if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
     var dropdown = el("select", { title: "Loadout status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
       onchange: function () { invSetCarry(key, this.value); } }, opts);
-    return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown]);
+    return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown, concealBtn(ch, entry)]);
   }
 
   // called after an entry's qty drops to <=0 (sell/drop); key is the specific
@@ -323,6 +346,7 @@ EN.inventoryView = (function () {
       if (c.equippedWeapons) c.equippedWeapons = c.equippedWeapons.filter(function (n) { return n !== key; });
       EN.engine.releaseEntry(c, key);                          // a sold/dropped piece can't stay equipped in any slot
       if (c.carry) delete c.carry[key];                        // drop its Loadout carry status too (no orphaned key)
+      if (c.concealed) delete c.concealed[key];                // r57: and its concealed flag, so a PICK UP or a rebuy starts plain
       if (c.racked) {
         delete c.racked[key];                                  // it can't stay racked anywhere
         Object.keys(c.racked).forEach(function (k) {           // and nothing can stay racked IN it
@@ -500,6 +524,7 @@ EN.inventoryView = (function () {
             keys.forEach(function (k) {
               if (c.carry) delete c.carry[k];
               if (c.racked) delete c.racked[k];
+              if (c.concealed) delete c.concealed[k];   // r57
               if (Array.isArray(c.equippedWeapons)) c.equippedWeapons = c.equippedWeapons.filter(function (w) { return w !== k; });
             });
           });
@@ -1148,6 +1173,12 @@ EN.inventoryView = (function () {
     if (notCarried(it)) { /* parked or in the garage: no Load chip */ }
     else if (mode === "stash" && entry) statChips.push(loadCtrl(ch, entry, ldBase, isWorn && traits.indexOf("Worn") !== -1));
     else if (ld > 0 && encOn()) statChips.push(tagChip("⚖ " + ld, "var(--text2)", "Load " + ld + "; spends your Load Budget while on-person (equipped, carried, worn, or racked)"));
+    // r57: hidden on your person; the hover says how well (Deep Pockets, Concealable, Light, or as best you can)
+    if (mode === "stash" && entry && EN.engine.isConcealed && EN.engine.isConcealed(ch, entry)) {
+      var cInfo = EN.engine.concealInfo(ch, entry);
+      statChips.push(el("span.chip.concealed-chip", { title: cInfo.note,
+        style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, cInfo.deepPockets ? "◌ CONCEALED · PAT-DOWN PROOF" : "◌ CONCEALED"));
+    }
     // every trait tucks behind one tap-to-expand count chip instead of its own pill
     if (traits.length) statChips.push(el("span.chip", {
       title: "Traits: " + traits.join(", "),
@@ -1360,7 +1391,7 @@ EN.inventoryView = (function () {
       el("button.btn.sm", { title: allOpen ? "Collapse every category" : "Expand every category",
         onclick: function () { var target = !allOpen; catNames.forEach(function (c) { _stashOpen[c] = target; }); EN.app.render(); } },
         allOpen ? "▾ COLLAPSE ALL" : "▸ EXPAND ALL"),
-      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Sorted by category. Set each item's loadout status (carried, worn, racked) right on its card." })
+      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Sorted by category. Set each item's loadout status (carried, worn, racked, concealed) right on its card." })
     ]);
     if (!enc.enabled) { loadBar = null; dropLog = null; }   // Encumbrance is off (Settings, Optional Rules)
     var body = [loadBar, dropLog, controls].filter(Boolean);

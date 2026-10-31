@@ -3450,6 +3450,8 @@ EN.combatView = (function () {
         delete c.racked[key];
         if (!status || status === "stashed") delete c.carry[key]; else c.carry[key] = status;
       }
+      // r57: back in the stash and not equipped, it is no longer hidden on you
+      if ((!status || status === "stashed") && c.concealed && (c.equippedWeapons || []).indexOf(key) === -1 && !eng.isSlotEquipped(c, key)) delete c.concealed[key];
       // back on your person (Carried, Worn or Racked, from this select or ADD TO LOADOUT): a dropped
       // item picked back up is no longer dropped, so its Packed It row comes off (it counts once)
       if (status && status !== "stashed") eng.unlogDropped(c, key);
@@ -3457,6 +3459,13 @@ EN.combatView = (function () {
   }
   // Body Slot conflict resolution: benching an item stops it from counting
   // toward (or benefiting from) its slot, without touching its Load or rack state.
+  // r57: CONCEAL / CONCEALED, a flag on top of Carried, Racked, Worn or Equipped (engine.canConceal)
+  function toggleConceal(key) {
+    store.update(function (c) {
+      c.concealed = c.concealed || {};
+      if (c.concealed[key]) delete c.concealed[key]; else c.concealed[key] = true;
+    });
+  }
   function toggleSlotInert(key) {
     store.update(function (c) {
       c.slotInert = c.slotInert || {};
@@ -5885,6 +5894,11 @@ EN.combatView = (function () {
         var wStow = (wEntry && eng.stowedInfo) ? eng.stowedInfo(ch, wEntry) : null;
         var stowBlocked = !!(wStow && !wStow.freeDraw);
         var drawIt = drawGear ? eng.catalogItem(drawGear.name) : null;
+        /* r57: Deep Pockets' own Quick Draw (not the weapon trait of the same name): "whenever you draw a
+           concealed weapon and attack with it on the same turn, you gain Edge on that first attack roll". */
+        var dpChip = (wEntry && eng.isConcealed && eng.isConcealed(ch, wEntry) && eng.concealInfo(ch, wEntry).smuggler)
+          ? el("span.chip.dp-draw", { title: "Deep Pockets: draw this concealed weapon and attack with it on the same turn, and that first attack roll has Edge. It can set up your Cheap Shot from a seemingly unarmed position.",
+              style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "◌ CONCEALED · EDGE ON THE DRAW") : null;
         var drawChip = (drawIt && drawIt.freeDraw && (it.traits || []).indexOf("Quick Draw") === -1)
           ? el("span.chip.free-draw", { title: "Racked in your " + drawGear.name + ": draw it as part of your first attack each encounter, not a separate action. Quick Draw doesn't stack.",
               style: { fontSize: "9px", color: "var(--success)", borderColor: "var(--success)" } }, "DRAWS FREE · " + drawGear.name.toUpperCase()) : null;
@@ -5897,7 +5911,7 @@ EN.combatView = (function () {
           snagWhy ? snagChip(snagWhy) : null,
           h.focus ? el("span.chip", { title: "Skill Focus: " + h.cat + " (" + h.focus.aspect + ")" + (h.focus.granted ? " · Free overlap Focus" : "") + ". Adds Caliber (" + eng.fmtMod(h.focusCal) + ") to attack rolls with this weapon type, outside the +15 static cap.",
             style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "FOCUS +" + h.focusCal) : null
-        ].concat(critChips).concat([drawChip,
+        ].concat(critChips).concat([drawChip, dpChip,
           el("span", { style: { fontSize: "10px", color: "var(--text3)", flex: "1 1 auto" }, text: subtype }),
           // real dice roll on the table, but the magazine is still the app's job; a Jammed firearm can't fire
           (physicalDice() && isRanged && !stowBlocked && !(isJammed(ch, jamKeyOf(wKey, it.name)) && !/Bowfire/i.test(h.cat || ""))) ? el("button.btn.sm", {
@@ -6419,9 +6433,10 @@ EN.combatView = (function () {
       var inScene = owned.filter(function (e) { return isEquippedAny(ch, entryKey(e)) || carryStatus(ch, entryKey(e)) !== "stashed"; });
       var racks = eng.rackState(ch);
       var slotConflicts = eng.slotConflicts ? eng.slotConflicts(ch) : {};
-      var nCarried = 0, nWorn = 0, nEquipped = 0, nRacked = 0, nHeavy = 0;
+      var nCarried = 0, nWorn = 0, nEquipped = 0, nRacked = 0, nHeavy = 0, nConcealed = 0;
       inScene.forEach(function (e) {
         var it = invItem(e.name), cs = carryStatus(ch, entryKey(e));
+        if (eng.isConcealed && eng.isConcealed(ch, e)) nConcealed++;   // r57: its own count; it layers on the others
         // equipped wins; an equipped item is never also tallied as carried/worn
         if (isEquippedAny(ch, entryKey(e))) nEquipped++;
         else if (cs === "carried") nCarried++;
@@ -6455,7 +6470,7 @@ EN.combatView = (function () {
             }))) : null
         ]),
         el("p.help", { style: { margin: 0, flex: "1 1 auto" }, text: "What you brought to the scene. "
-          + nEquipped + " equipped · " + nCarried + " carried" + (nWorn ? " · " + nWorn + " worn" : "") + (nRacked ? " · " + nRacked + " racked" : "") + (nHeavy ? " · " + nHeavy + " heavy" : "") + "." })
+          + nEquipped + " equipped · " + nCarried + " carried" + (nWorn ? " · " + nWorn + " worn" : "") + (nRacked ? " · " + nRacked + " racked" : "") + (nConcealed ? " · " + nConcealed + " concealed" : "") + (nHeavy ? " · " + nHeavy + " heavy" : "") + "." })
       ]));
       if (!inScene.length) {
         kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Nothing in your loadout yet. Equip gear in Inventory, or use ＋ ADD TO LOADOUT above." }));
@@ -6514,6 +6529,13 @@ EN.combatView = (function () {
       var wearable = eng.isWearable ? eng.isWearable(it) : (mySlots.length > 0 && it && it.kind !== "armor" && it.kind !== "shield" && it.kind !== "focus");
       var chips = [];
       if (eqLabel) chips.push(el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" }, text: eqLabel.toUpperCase() }));
+      // r57: hidden on your person; the hover says how well
+      var concealedNow = !!(eng.isConcealed && eng.isConcealed(ch, e)), cInfo = concealedNow ? eng.concealInfo(ch, e) : null;
+      if (concealedNow) chips.push(el("span.chip.concealed-chip", { title: cInfo.note, style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" },
+        text: cInfo.deepPockets ? "◌ CONCEALED · PAT-DOWN PROOF" : "◌ CONCEALED" }));
+      var concealCtl = (eng.canConceal && eng.canConceal(ch, e)) ? el("button.btn.sm.conceal-btn" + (concealedNow ? ".primary" : ""), {
+        title: concealedNow ? "Concealed. " + cInfo.note + " Click to stop hiding it." : "Hide it on your person. It keeps its Load and its place. " + eng.concealInfo(ch, e).note,
+        style: { fontSize: "10px" }, onclick: function () { toggleConceal(key); } }, concealedNow ? "✓ CONCEALED" : "CONCEAL") : null;
       /* r55: the engine decides what is worn (isWornEntry: a carried-worn Worn-trait item and an equipped
          Worn weapon included, which this row used to miss), and the Load chip shows the break only when
          the worn number is really lower than the unworn one, so armor (no break) never claims one. */
@@ -6585,12 +6607,13 @@ EN.combatView = (function () {
               var gk = entryKey(g);
               return el("option", { value: gk, selected: !!(rackedGear && entryKey(rackedGear) === gk) || staleKey === gk, text: "⧉ " + g.name });
             })).concat(staleKey && !targets.some(function (g) { return entryKey(g) === staleKey; })
-              ? [el("option", { value: staleKey, selected: true, text: "⧉ racked (adrift)" })] : [])) : null
+              ? [el("option", { value: staleKey, selected: true, text: "⧉ racked (adrift)" })] : [])) : null,
+          concealCtl
         ]);
       } else if (cs === "worn") {
         // worn is exclusive with Carried/Racked (one carry status per item), so
         // taking it off (falling back to Carried) is the only control needed here
-        statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn]);
+        statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, concealCtl]);
       } else {
         var opts = [["stashed", "Stashed"], ["carried", "Carried"]].map(function (o) {
           return el("option", { value: o[0], selected: cs === o[0] && !(cs === "racked"), text: o[1] });
@@ -6603,7 +6626,7 @@ EN.combatView = (function () {
         if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
         var dropdown = el("select", { title: "Carry status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
           onchange: function () { setCarry(key, this.value); } }, opts);
-        statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown]);
+        statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown, concealCtl]);
       }
       /* Tap the card to read what the item is (the author, 31 Oct 2026): its description, effect,
          type and traits, folded under the row. The row's own controls (status picker, WEAR, the

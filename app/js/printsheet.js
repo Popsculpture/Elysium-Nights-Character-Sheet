@@ -910,6 +910,7 @@ EN.printSheet = (function () {
         // r55: worn gear applies only while worn, so the sheet says worn / racked / carried, not just "stash"
         var cs = (ch.carry || {})[key];
         var where = worn ? "equipped" : cs === "worn" ? "worn" : cs === "racked" ? "racked" : cs === "carried" ? "carried" : "stash";
+        if (eng.isConcealed && eng.isConcealed(ch, e)) where += ", concealed";   // r57
         var meta = ["x" + e.qty, where].concat(tags ? [tags] : []).join(" · ");
         var block = el("div.ps-invitem", null, [
           el("div.ps-invhead", null, [el("span.ps-invname", { text: e.name + bookTag("item", e.name) }), el("span.ps-invmeta", { text: meta })])

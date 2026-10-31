@@ -228,6 +228,7 @@ EN.store = (function () {
       carry: {},                         // Loadout carry status per entry key: "carried" | "worn" | "racked" (absent = stashed)
       racked: {},                        // Racked assignments: {itemEntryKey: carryGearEntryKey} (Carry Gear, one rack per item)
       slotInert: {},                     // Body Slot conflicts: {itemEntryKey: true} for on-person items the player benched
+      concealed: {},                     // Concealed gear (r57): {itemEntryKey: true} for on-person items the player hides; layers on carried/racked/worn/equipped, no Load effect
       // The three per-piece degradation maps, born NULL-PROTOTYPE like every other
       // map in this app that is keyed on a user-supplied string. migrate() rebuilds
       // them that way and the split's id maps are that way, but a character created
@@ -654,6 +655,15 @@ EN.store = (function () {
     // non-true value is just noise to strip.
     if (!ch.slotInert || typeof ch.slotInert !== "object") ch.slotInert = {};
     Object.keys(ch.slotInert).forEach(function (k) { if (ch.slotInert[k] !== true) delete ch.slotInert[k]; });
+    /* Concealed (r57, the author, 31 Oct 2026): a flag per equipment entry, only === true, and only for an
+       entry that is still owned. Whether it is on your person is the engine's question (isConcealed gates on
+       onPerson), so a flag left on an item that went back to the stash is inert rather than deleted here. */
+    if (!ch.concealed || typeof ch.concealed !== "object") ch.concealed = {};
+    (function () {
+      var owned = Object.create(null);
+      (Array.isArray(ch.equipment) ? ch.equipment : []).forEach(function (e) { if (e && e.qty > 0) owned[e.id || e.name] = 1; });
+      Object.keys(ch.concealed).forEach(function (k) { if (ch.concealed[k] !== true || !owned[k]) delete ch.concealed[k]; });
+    })();
     // ch.shieldWear, ch.armorWear and ch.armorGuard are keyed on the equipment
     // ENTRY, so they are normalized AFTER the instance-id split, not here beside
     // the other gear defaults. See the ordering rule at the split.
@@ -966,7 +976,7 @@ EN.store = (function () {
         if (e && typeof e.name === "string" && WEAPON_RENAMES[e.name]) e.name = WEAPON_RENAMES[e.name];
       });
     }
-    ["weaponAmmo", "weaponGrip", "weaponParts", "armorMods", "vehicleMods", "carry", "slotInert", "shieldWear", "armorWear", "armorGuard", "racked"].forEach(function (bag) {
+    ["weaponAmmo", "weaponGrip", "weaponParts", "armorMods", "vehicleMods", "carry", "slotInert", "concealed", "shieldWear", "armorWear", "armorGuard", "racked"].forEach(function (bag) {
       var m = ch[bag];
       if (!m || typeof m !== "object") return;
       Object.keys(m).forEach(function (k) {
@@ -1313,6 +1323,11 @@ EN.store = (function () {
         Object.keys(ch.slotInert).forEach(function (name) { newSlotInert[nameToIds[name] ? firstId(name) : name] = ch.slotInert[name]; });
         ch.slotInert = newSlotInert;
       }
+      if (ch.concealed && typeof ch.concealed === "object") {
+        var newConcealed = {};
+        Object.keys(ch.concealed).forEach(function (name) { newConcealed[nameToIds[name] ? firstId(name) : name] = ch.concealed[name]; });
+        ch.concealed = newConcealed;
+      }
       // ch.racked is the one per-entry map that maps an entry to ANOTHER entry
       // ({itemEntryKey: carryGearEntryKey}), so BOTH sides rekey. It was the only map
       // this pass forgot, and the omission did not just orphan a rack, it made the
@@ -1395,7 +1410,7 @@ EN.store = (function () {
        summing counter already handles, and no state is destroyed to tidy a display. */
     if (Array.isArray(ch.equipment)) {
       var claimed = Object.create(null);
-      [ch.carry, ch.slotInert, ch.racked, ch.armorWear, ch.armorGuard, ch.shieldWear].forEach(function (m) {
+      [ch.carry, ch.slotInert, ch.concealed, ch.racked, ch.armorWear, ch.armorGuard, ch.shieldWear].forEach(function (m) {
         if (m && typeof m === "object") Object.keys(m).forEach(function (k) { claimed[k] = 1; });
       });
       if (ch.racked && typeof ch.racked === "object") {

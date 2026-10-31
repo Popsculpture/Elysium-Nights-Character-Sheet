@@ -1127,6 +1127,7 @@ EN.pdfExport = (function () {
       // r55: the same status the print sheet prints (worn gear applies only while worn)
       var cs = (ch.carry || {})[key];
       var where = worn ? "Equipped" : cs === "worn" ? "Worn" : cs === "racked" ? "Racked" : cs === "carried" ? "Carried" : "Stash";
+      if (eng.isConcealed && eng.isConcealed(ch, e)) where += ", Concealed";   // r57
       return { name: e.name + bookTag("item", e.name), qty: e.qty, status: where,
                notes: it ? gearSummaryLine(it, eng.armorState ? eng.armorState(ch, key) : null,
                                            eng.shieldState ? eng.shieldState(ch, key) : null,
@@ -1135,7 +1136,7 @@ EN.pdfExport = (function () {
     });
     if (!invRows.length) invRows.push({ name: "", qty: "", status: "", notes: "" });
     ctx.table(
-      [{ header: "Item", key: "name", w: 2 }, { header: "Qty", key: "qty", w: "40px", align: "center" }, { header: "Status", key: "status", w: "70px", type: "static" }, { header: "Notes", key: "notes", w: 3 }],
+      [{ header: "Item", key: "name", w: 2 }, { header: "Qty", key: "qty", w: "40px", align: "center" }, { header: "Status", key: "status", w: "100px", type: "static" }, { header: "Notes", key: "notes", w: 3 }],
       "inv", invRows
     );
 
