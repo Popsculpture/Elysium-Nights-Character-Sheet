@@ -71,7 +71,8 @@ EN.tour = (function () {
     },
     "inventory-rack": function (c) { return Object.keys(E().rackState(c).byItem || {}).length > 0; },
     // click steps whose result shows on the record or the page
-    "register": function () { return realRecord() && !document.querySelector('[data-tour="register-print"]'); },
+    // a NEW record registered during this tour (the record open when the tour started does not count)
+    "register": function () { return realRecord() && !document.querySelector('[data-tour="register-print"]') && !!S && ch().meta.id !== S.startId && !filed(); },
     "attr-method": function (c) {
       if (c.attributeMethod === "manual") return true;
       if (Object.keys(c.arrayAssign || {}).length) return true;
@@ -173,7 +174,7 @@ EN.tour = (function () {
     return "Nothing you carry fits your worn carry gear right now, so there is nothing to rack yet.";
   }
   function actionPrompt(st) {
-    if (st.id === "register" && !document.querySelector('[data-tour="register-print"]')) return "Register a new #PRINT to continue.";
+    if (st.id === "register") return "Select REGISTER NEW #PRINT to continue.";
     if (st.id === "next-button") return "Click NEXT at the bottom of the page to continue.";
     if (st.id === "contacts-modal") return "Name both contacts, then close the window to continue.";
     if (st.id === "class-free-focus") return "Name your Focus and claim it to continue.";
@@ -193,7 +194,7 @@ EN.tour = (function () {
     var noLineage = (st.id === "species-height" || st.id === "lineage-feature") && realRecord() && !ch().lineage;
     if (needsFiled(st) && !filed()) notes.push("This part opens once your record is filed.");
     else if (noLineage && !away) notes.push("Pick a lineage card first; this opens once you have one.");
-    else if (!anchor && !away) notes.push("Look for it on this page; it may sit further down, or open once an earlier pick is made.");
+    else if (!anchor && !away && st.id !== "register") notes.push("Look for it on this page; it may sit further down, or open once an earlier pick is made.");
     else if (!anchor && away) notes.push("This step is on another screen.");
     var extra = null;
     // the register step on a roster that already has records: the gate is not on screen, so offer the button here
@@ -411,7 +412,8 @@ EN.tour = (function () {
     if (!enabled() || !data() || !EN.ui) return false;
     stop();
     injectCss();
-    S = { steps: data().steps.slice(), i: 0, dir: 1, entered: Date.now(), wasDone: null, scrolledFor: -1, sheetFor: -1, pendingNav: false, overlayAt: 0 };
+    S = { steps: data().steps.slice(), i: 0, dir: 1, entered: Date.now(), wasDone: null, scrolledFor: -1, sheetFor: -1, pendingNav: false, overlayAt: 0,
+          startId: realRecord() ? ch().meta.id : null };   // step 1 needs a record registered after this
     spot = el("div#tour-spot", { "aria-hidden": "true" });
     card = el("div#tour-card", { dataset: { noSwipe: "1" } });
     caret = el("div#tour-caret", { "aria-hidden": "true" });
