@@ -11,8 +11,9 @@ window.EN = window.EN || {};
 EN.tourData = EN.tourData || {};
 EN.tourData["character-creation"] = {
  "tour": "character-creation",
- "version": "0.1.3",
+ "version": "0.1.4",
  "changelog": [
+  "0.1.4: gear-claim reports Load against the Load Budget, the same name and number the Inventory readout uses (the author, 31 Oct 2026).",
   "0.1.3: In the app (31 Oct 2026), with copy brought up to date with the app. register: mentions the pre-mades. wizard-rail: Advance reads NOT YET until there are Training Points. identity-notes: backstory goes in Where You Came From and languages are tracked; example drops the languages. attr-assign and class-free-focus: completeWhen matches the screen (CLAIMED is a chip). species-traits: languages, the Human pick and dialect names; example adds Common Trade and Machine Cant. lineage-feature: pick the lineage first when there is more than one. background-cards: no fixed count. contacts-modal: the cards are under Social, Contacts once filed. background-prompts: the item goes in Notes, the hook in Where You Came From. class-maneuvers: retitled Pick your starting abilities, covers every pick class. class-free-focus warning: Background and Class both lose their checks. subclass: no fixed count. gear-slots: the free Class Item. advance: Languages live here too. print-skills: the Focus row is no longer last. print-certify: the box stays locked until every tab is checked. inventory-rack: Carry Gear racks only while worn. inventory-load: the Inventory readout is the Loadout's Load Budget. social-contacts: open Social and tap CONTACTS (action click). Screenshot fields dropped.",
   "0.1.2: Bollard examples updated to his revised profile (last name Seven, Marigold Court, Clean Slate Demolition). Where You Came From advice now says open with the place.",
   "0.1.1: Identity merged Backstory & Motivation into Where You Came From. Updated identity-origin anchor, copy and example; flagged identity screenshots for reshoot."
@@ -630,7 +631,7 @@ EN.tourData["character-creation"] = {
    "action": "click",
    "advanceOn": "click",
    "title": "Claim it",
-   "body": "The app equips your weapon, wears your armor, and reports Load against your Encumbrance Threshold. Undo is right there if you change your mind.",
+   "body": "The app equips your weapon, wears your armor, and reports Load against your Load Budget. Undo is right there if you change your mind.",
    "example": "Load 9 / 11 right after claiming.",
    "warning": "Load looks high because nothing is racked yet. The rack step after filing brings it down.",
    "optional": false,

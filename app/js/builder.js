@@ -1489,7 +1489,7 @@ EN.builder = (function () {
        a choice (the Weapon slot, or a Subclass Extra that replaces it, like the Toxicologist's
        Dart Gun), otherwise the first weapon the kit holds. A shield or Warding Focus in the kit
        goes into its empty slot the same way. Nothing is ever stashed to make room: if Carried
-       Load passes the Encumbrance Threshold the panel says so and leaves the choice to the
+       Load passes the Load Budget the panel says so and leaves the choice to the
        player. Only empty slots are filled, so gear the record already wears stays on. */
     var weaponFrom = null;
     sel.slots.forEach(function (s) { if (s.def.key === "weapon" && !s.replaced && s.pick != null) weaponFrom = s.def.options[s.pick].items; });
@@ -1551,13 +1551,16 @@ EN.builder = (function () {
     }, { ledger: "Starting kit claimed: the leftover goes on your Glimmer Stick" });
     var enc = (eng.derive(store.active()) || {}).encumbrance || null;
     if (enc && !enc.enabled) enc = null;   // Encumbrance is off (Settings, Optional Rules)
-    var loadLine = enc ? " Load " + enc.current + " of Threshold " + enc.threshold + "." : "";
-    var over = enc && enc.current > enc.threshold;
+    /* One name for one number (the author, 31 Oct 2026): the Load Budget, the declared Loadout's cap,
+       which is what the Inventory and Freelancer readouts show. A new record's Standard Loadout makes it
+       equal to the Encumbrance Threshold; a Light or Heavy one moves it 3 either way. */
+    var loadLine = enc ? " Load " + enc.current + " of Load Budget " + enc.budget + "." : "";
+    var over = enc && enc.current > enc.budget;
     var ciDef = CLASS_ITEMS[ch.class];
     var ciNow = ciDef ? store.active() : null;
     var ciLine = ciDef && ciNow && ciDef.held(ciNow) ? " " + ciDef.name + " " + ciDef.verb + "." : "";
     toast("Starting kit claimed: everything Carried, armor worn, " + (weaponNames.length ? weaponNames.join(" and ") + " equipped" : "no weapon in this kit") +
-      ", and 𝒢" + sel.leftover + " on the Glimmer Stick." + ciLine + loadLine + (over ? " Over your Encumbrance Threshold: nothing was stashed; stash something from Inventory if you need to." : ""));
+      ", and 𝒢" + sel.leftover + " on the Glimmer Stick." + ciLine + loadLine + (over ? " Over your Load Budget: nothing was stashed; stash something from Inventory if you need to." : ""));
   }
   var KIT_WEAPON_GROUPS = { Simple: 1, Martial: 1, Sidearm: 1, Longarm: 1, Heavy: 1, Launcher: 1, Thrown: 1, Bowfire: 1 };   // inventory.js isWeapon
   function kitIsWeapon(name) { var it = kitCatalogItem(name); return !!(it && KIT_WEAPON_GROUPS[it.group]); }
@@ -1694,17 +1697,17 @@ EN.builder = (function () {
       ]));
       if (mismatch) kids.push(el("p.help", { style: { margin: "6px 0 0", color: "var(--warn)" },
         text: "⚠ Claimed as " + claimedClsName.replace(/^The\s+/, "") + "; UNDO the claim to take that gear back before claiming this kit." }));
-      // B2: the Load the claimed kit puts on the character, against the Encumbrance Threshold
+      // B2: the Load the claimed kit puts on the character, against the Load Budget (the Inventory's number)
       var enc = eng.derive(ch).encumbrance;
       if (enc && enc.enabled) {
-        var over = enc.current > enc.threshold;
+        var over = enc.current > enc.budget;
         kids.push(el("div.row.wrap.kit-load", { style: { gap: "14px", alignItems: "center", margin: "8px 0 0" } }, [
           el("span.mono", { style: { fontSize: "14px", color: over ? "var(--warn)" : "var(--text)" } },
-            "LOAD CARRIED " + enc.current + " / ENCUMBRANCE THRESHOLD " + enc.threshold),
+            "LOAD CARRIED " + enc.current + " / LOAD BUDGET " + enc.budget),
           EN.ui.ruleChip("sk-load", { title: "Encumbrance & Load" })
         ]));
         if (over) kids.push(el("p.help.kit-over", { style: { margin: "4px 0 0", color: "var(--warn)" },
-          text: "⚠ Carried Load is over your Encumbrance Threshold. Nothing was stashed for you: decide what stays behind in Inventory." }));
+          text: "⚠ Carried Load is over your Load Budget. Nothing was stashed for you: decide what stays behind in Inventory." }));
       }
     } else {
       kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
