@@ -31,7 +31,7 @@ EN.tour = (function () {
   var Z = 3950;   // above the contacts dialog (3900), under the filing animation (4000) and every other overlay
   var PAUSE_IDS = ["filed-ov", "mgr", "set-ov", "gmc-ov", "gate", "gate-coach", "recov", "codex-peek", "boot"];
   var S = null;   // { steps, i, entered, wasDone, scrolledFor, clickedAt }
-  var spot = null, card = null, obs = null, timer = null, raf = 0;
+  var spot = null, card = null, caret = null, obs = null, timer = null, raf = 0;
 
   function el(t, a, c) { return EN.ui.el(t, a, c); }
   function enabled() { try { return localStorage.getItem(KEY) !== "0"; } catch (e) { return true; } }
@@ -195,6 +195,7 @@ EN.tour = (function () {
         var ar = anchor.getBoundingClientRect(), ct = card.getBoundingClientRect().top;
         if (ar.bottom > ct - 8) window.scrollBy(0, Math.min(ar.top - 90, ar.bottom - ct + 16));
       }
+      pointer(anchor);
       return;
     }
     var cw = card.offsetWidth || 340, chh = card.offsetHeight || 180, x, y;
@@ -205,11 +206,44 @@ EN.tour = (function () {
       if (want === "left" && a.left - cw - 14 > 8) { x = a.left - cw - 14; y = a.top; }
       else if (want === "right" && a.right + cw + 14 < vw - 8) { x = a.right + 14; y = a.top; }
       else if (want === "top" ? above > 60 : below + chh > vh - 50 && above > 60) { y = above; x = a.left; }
+      // a tall element with no room above or below (the Actions panel on a short window): beside it, if it fits
+      else if (below + chh > vh - 8 && above <= 60 && a.right + cw + 14 < vw - 8) { x = a.right + 14; y = Math.max(a.top, 70); }
+      else if (below + chh > vh - 8 && above <= 60 && a.left - cw - 14 > 8) { x = a.left - cw - 14; y = Math.max(a.top, 70); }
       else { y = below; x = a.left; }
       if (y + chh > vh - 8) y = Math.max(60, vh - chh - 8);
     }
     card.style.left = Math.round(Math.max(8, Math.min(x, vw - cw - 8))) + "px";
     card.style.top = Math.round(Math.max(8, Math.min(y, vh - chh - 8))) + "px";
+    pointer(anchor);
+  }
+  /* The card's pointer (the author, 31 Oct 2026: "make each step point at the thing it is describing"):
+     an arrow on whichever edge of the card faces the spotlit element, slid along that edge to line up
+     with the visible middle of it. Works for the floating card and the phone sheet alike; no arrow when
+     the card overlaps the element or there is nothing to point at. */
+  function pointer(anchor) {
+    // its own fixed element, not a pseudo-element on the card: the phone sheet scrolls, and would clip it
+    if (!caret) return;
+    caret.style.display = "none"; caret.removeAttribute("data-side");
+    if (!anchor || card.style.display === "none") return;
+    var a = anchor.getBoundingClientRect(), c = card.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+    // the part of the element actually on screen
+    var top = Math.max(a.top, 0), bot = Math.min(a.bottom, vh), left = Math.max(a.left, 0), right = Math.min(a.right, vw);
+    if (bot <= top || right <= left) return;
+    var mx = (left + right) / 2, my = (top + bot) / 2, side = null;
+    // sides are judged against the part of the element on screen, so a tall one scrolled half out still counts
+    if (c.top >= bot - 2) side = "top";
+    else if (c.bottom <= top + 2) side = "bottom";
+    else if (c.left >= right - 2) side = "left";
+    else if (c.right <= left + 2) side = "right";
+    // the card had to sit over a tall element: point up into the part showing above the card
+    else if (c.top > top + 24) { side = "top"; my = (top + c.top) / 2; }
+    if (!side) return;
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+    var x, y;
+    if (side === "top" || side === "bottom") { x = clamp(mx, c.left + 18, c.right - 18) - 7; y = side === "top" ? c.top - 7 : c.bottom - 7; }
+    else { y = clamp(my, c.top + 18, c.bottom - 18) - 7; x = side === "left" ? c.left - 7 : c.right - 7; }
+    caret.style.left = Math.round(x) + "px"; caret.style.top = Math.round(y) + "px";
+    caret.setAttribute("data-side", side); caret.style.display = "block";
   }
 
   /* ---- the loop: find, draw, check ---- */
@@ -217,7 +251,7 @@ EN.tour = (function () {
     raf = 0;
     if (!S) return;
     var st = step();
-    if (paused()) { spot.style.display = "none"; card.style.display = "none"; return; }
+    if (paused()) { spot.style.display = "none"; card.style.display = "none"; if (caret) caret.style.display = "none"; return; }
     card.style.display = "";
     if (!applies(st)) { go(S.i + (S.dir < 0 ? -1 : 1), S.dir); return; }
     var anchor = anchorFor(st);
@@ -303,7 +337,16 @@ EN.tour = (function () {
       "#tour-card.tour-sheet.tour-sheet-top{top:8px !important;bottom:auto;}",
       "html.skin-98 #tour-spot,html.skin-98 #tour-card{border-radius:0;}",
       "@media (pointer:coarse){#tour-card .btn{min-height:40px;}}",
-      "@media (prefers-reduced-motion:reduce){#tour-spot{transition:none;}}"
+      // the pointer: a square turned 45 degrees on the card's edge, showing only the two borders that face out
+      "#tour-caret{position:fixed;z-index:" + (Z + 2) + ";width:14px;height:14px;box-sizing:border-box;background:var(--bg2);border:1px solid var(--accent);transform:rotate(45deg);pointer-events:none;display:none;}",
+      "#tour-caret[data-side=top]{border-right-color:transparent;border-bottom-color:transparent;}",
+      "#tour-caret[data-side=bottom]{border-left-color:transparent;border-top-color:transparent;}",
+      "#tour-caret[data-side=left]{border-top-color:transparent;border-right-color:transparent;}",
+      "#tour-caret[data-side=right]{border-left-color:transparent;border-bottom-color:transparent;}",
+      // the spotlight breathes, so the eye finds it
+      "@keyframes tourPulse{0%,100%{outline:2px solid transparent;outline-offset:2px;}50%{outline:2px solid var(--accent);outline-offset:5px;}}",
+      "#tour-spot{animation:tourPulse 1.8s ease-in-out infinite;}",
+      "@media (prefers-reduced-motion:reduce){#tour-spot{transition:none;animation:none;}}"
     ];
     var st = document.createElement("style"); st.id = "tour-css"; st.textContent = css.join("\n"); document.head.appendChild(st);
   }
@@ -315,7 +358,8 @@ EN.tour = (function () {
     S = { steps: data().steps.slice(), i: 0, dir: 1, entered: Date.now(), wasDone: null, scrolledFor: -1, sheetFor: -1, pendingNav: false, overlayAt: 0 };
     spot = el("div#tour-spot", { "aria-hidden": "true" });
     card = el("div#tour-card", { dataset: { noSwipe: "1" } });
-    document.body.appendChild(spot); document.body.appendChild(card);
+    caret = el("div#tour-caret", { "aria-hidden": "true" });
+    document.body.appendChild(spot); document.body.appendChild(card); document.body.appendChild(caret);
     obs = new MutationObserver(schedule);
     obs.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("resize", schedule); window.addEventListener("scroll", schedule, true);
@@ -337,7 +381,8 @@ EN.tour = (function () {
     document.removeEventListener("keydown", onKey);
     if (spot && spot.parentNode) spot.parentNode.removeChild(spot);
     if (card && card.parentNode) card.parentNode.removeChild(card);
-    spot = card = null; S = null;
+    if (caret && caret.parentNode) caret.parentNode.removeChild(caret);
+    spot = card = caret = null; S = null;
   }
 
   /* ---- the entry points other modules ask for (each guarded at its call site) ---- */

@@ -1789,7 +1789,7 @@ EN.builder = (function () {
       // core traits panel
       var corePb = [];
       var prio = priorityParts(cls);
-      corePb.push(el("div.row.wrap", { style: { gap: "8px", marginBottom: "10px" } }, [
+      corePb.push(el("div.row.wrap", { dataset: { tour: "class-core" }, style: { gap: "8px", marginBottom: "10px" } }, [
         el("span.chip.on", { text: "VIT " + (R.classVitality[ch.class].start) + " + Body" }),
         el("span.chip", { text: "RES d" + R.classVitality[ch.class].resilience }),
         prio.short.length ? el("span.chip", { text: "PRIORITY: " + prio.short.join(" › ") }) : null,
@@ -1840,7 +1840,7 @@ EN.builder = (function () {
         profChipRow("Tools", sp.tools, "var(--flow)", { ch: ch, bucket: "tools" }),
         profChipRow("Saves", sp.saves, "var(--gold)")
       ]));
-      blocks.push(EN.ui.panel(cls.name + " · Core Traits", "CLASS.SYS", corePb, { corners: true, tour: "class-core" }));
+      blocks.push(EN.ui.panel(cls.name + " · Core Traits", "CLASS.SYS", corePb, { corners: true }));
       blocks.push(overlapBox(ch));
 
       // subclass

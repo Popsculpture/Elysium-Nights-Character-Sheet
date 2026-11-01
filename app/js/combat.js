@@ -6735,6 +6735,7 @@ EN.combatView = (function () {
       { corners: true });
     sectionEls.actions.classList.add("fill-col");
     sectionEls.actions.setAttribute("data-panel", "actions");   // showAttacks scrolls to it
+    sectionEls.actions.dataset.tour = "sheet-actions";            // the guided tour points here (js/tour.js)
     if (sectionEls.actions.bodyEl) sectionEls.actions.bodyEl.classList.add("fill-body");
 
     /* ---- DEFEND, its own always-visible section (kept out of the tabs per the play spec).
