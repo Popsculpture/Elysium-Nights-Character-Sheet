@@ -1,9 +1,10 @@
 /* ===========================================================================
    ELYSIUM NIGHTS - Pre-made example Freelancers
 
-   The five pre-mades (31 October 2026) are the author's own Level 1 records, exported
-   from the app and dropped in as patches: Nessa (Codebreaker), BOLLARD-7 (Fury), Cassia
-   (Stitcher), Arlo (Scoundrel) and Pip (Hustler). The seven originals were retired on
+   The pre-mades are the author's own Level 1 records, exported from the app and dropped
+   in as patches: Nessa (Codebreaker), BOLLARD-7 (Fury), Cassia (Stitcher), Arlo
+   (Scoundrel) and Pip (Hustler) of Last Light Recovery (31 October 2026), then Vesk
+   (Operator) and Ines (Shaper) of Dead End (1 November 2026). The seven originals were retired on
    28 October 2026. If this list is ever emptied, the gate shows no pre-made section,
    the switcher and Manage characters list no examples, and everything else behaves as
    if the feature were not there.
@@ -2379,6 +2380,902 @@ EN.examples = [
   "weaponParts": {},
   "armorMods": {},
   "concealed": {}
+ }
+},
+{
+ "key": "operator",
+ "name": "Vesk \"Tripwire\"",
+ "label": "Operator",
+ "blurb": "A drain-raised Skarn tracker who closes the exits one by one, then cuffs whoever's left inside.",
+ "patch": {
+  "firstName": "Vesk",
+  "lastName": "",
+  "identity": {
+   "concept": "A drain-raised Skarn tracker who closes the exits one by one, then cuffs whoever's left inside.",
+   "handle": "Tripwire",
+   "handleStory": "Vesk's corner of the clutch's drain has more tripwires than furniture, including one nobody remembers putting in. The Sump Rats gave them the name after Brannock stepped on one, back when he still came to visit.",
+   "whereFrom": "Vesk hatched in a Skarn clutch in the storm drains beneath the South Sprawl. They grew up running pipe for the Sump Rats, who keep certain Sumpside blocks dry with stolen pumps and rewired lines. Vesk knows every drain, crawlspace, and runoff channel under the district. They've rigged about half of them. Like most Skarn, they say \"we\" instead of \"I,\" even when they're alone. They still wear their Sump Rats jacket, though they've painted over the tag. You can still make it out.\n\nThe Rats paid in favors. Bounties paid in Glimmer. Vesk worked out quickly which bought more and went where the money was. When a bounty heads into the tunnels, they start closing exits until the only way out has Vesk standing in it. They talk through the whole process. Usually, they're quoting a price.\n\nDead End began with a bail jumper in a Hollow Bend pump house. Vesk had latched every exit. Ines, who'd been tracking the same bounty, was already inside with him. They could have fought over the fee; they split it instead, and they've split everything since.\n\nThese days, they take bounties on anyone the Undercity is hiding. Bail jumpers, people who've skipped out on a Kindred implant bill. The client pays half up front, and Dead End gets to work. They keep chasing the same people as Last Light Recovery, which makes for a mostly friendly rivalry. Once, they sold Last Light a hiding place at a discount, then sold it to the client an hour later. Same hiding place, two payments.\n\nLeaving the Rats came with unfinished business. Vesk took their routes with them, and Brannock, the lieutenant they used to run for, wants them back. He knows which drain the clutch sleeps in. Pell, Vesk's oldest friend, still runs pipe for him and still saves Vesk a seat at clutch dinners.\n\nVesk expects a trap in every handshake and tends to build two of their own in response. Keeping track of them all is where it gets difficult. Ines is the only person they let walk point. She flinches before the floor gives way, and Vesk appreciates that.",
+   "facets": "Vesk talks constantly, usually about what something costs. They say \"we\" instead of \"I,\" tap on pipes while thinking, and check how a door is hung before they'll walk through it.",
+   "coreSparks": "A trap that works on the first try. A bounty that pays more than it should. Being the only one who knows the way out.",
+   "tethers": "The clutch beneath the South Sprawl, especially Tallow. Pell, still running pipe for the Rats and keeping a place for Vesk at dinner. Ines, who walks point.",
+   "faultLines": "Vesk's paranoia leaves them with more traps than they can reliably remember. They'll sell a route to anyone, but never a way into the clutch's tunnels. Their quiet fear is that the clutch will one day vote to move on without them.",
+   "appearance": "Vesk stands three foot six, usually hunched, with pebbled green-gray scales and a stiff tail for balance. They keep stuffing their crest of neon-orange proto-feathers under a cap. Their sickle claws click on concrete. The old Sump Rats jacket still has its badly painted-over tag, and there's always a pair of cuffs on their belt.",
+   "notes": "Backstory hook: Brannock wants Vesk's routes back. Pell, the friend Vesk left behind, still runs pipe for him.\n\nPersonal item: a Sump Rats jacket with the tag painted over. It has no mechanical benefit."
+  },
+  "level": 1,
+  "xp": 0,
+  "useXp": false,
+  "milestones": {
+   "major": 0,
+   "minor": 0,
+   "notes": ""
+  },
+  "attributeMethod": "array",
+  "attributes": {
+   "BOD": 14,
+   "AGI": 16,
+   "WIT": 16,
+   "TEC": 12,
+   "MYS": 8,
+   "PRE": 12
+  },
+  "rollGroups": [],
+  "arrayAssign": {
+   "BOD": 14,
+   "AGI": 16,
+   "WIT": 16,
+   "TEC": 12,
+   "MYS": 8,
+   "PRE": 12
+  },
+  "overclocked": {
+   "grid": [],
+   "pick": null,
+   "allowDiagonals": false
+  },
+  "species": "chimera",
+  "lineage": "skarn",
+  "heightFt": 3.5,
+  "size": null,
+  "lineageFeatures": [
+   "Prey Stalker's Grip"
+  ],
+  "speciesLanguage": "Packsign",
+  "languages": [],
+  "background": "ganger",
+  "backgroundSkillChoice": "stealth",
+  "backgroundProfChoices": [
+   "Security Tools",
+   "Sidearms"
+  ],
+  "class": "operator",
+  "subclass": "the_headhunter",
+  "classSkillChoices": [
+   "intuition"
+  ],
+  "classGearChoices": {
+   "weapons": [],
+   "armor": [],
+   "tools": [
+    "Fieldcraft Tools"
+   ],
+   "vehicles": []
+  },
+  "startingKit": {
+   "claimed": true,
+   "picks": {
+    "weapon": 0,
+    "carry": 1
+   },
+   "alt": false,
+   "granted": [
+    {
+     "key": "eq_xp7jhdg",
+     "qty": 1
+    },
+    {
+     "key": "eq_vjzhby0",
+     "qty": 1
+    },
+    {
+     "key": "Data Drive",
+     "qty": 1
+    },
+    {
+     "key": "Basic Rations",
+     "qty": 2
+    },
+    {
+     "key": "Water Purification Tabs",
+     "qty": 1
+    },
+    {
+     "key": "Glimmer Stick",
+     "qty": 1
+    },
+    {
+     "key": "eq_ful763w",
+     "qty": 1
+    },
+    {
+     "key": "eq_rz9a1qi",
+     "qty": 1
+    },
+    {
+     "key": "Pistol Ammo",
+     "qty": 1
+    },
+    {
+     "key": "eq_7jhn5mb",
+     "qty": 1
+    },
+    {
+     "key": "eq_zk3uw8r",
+     "qty": 1
+    },
+    {
+     "key": "eq_7p3a2at",
+     "qty": 1
+    }
+   ],
+   "glimmerGranted": 90,
+   "claimedClass": "operator",
+   "claimedSubclass": "the_headhunter",
+   "claimedBudget": 800
+  },
+  "startingCiphers": [],
+  "proficiencies": {
+   "skills": {},
+   "saves": [],
+   "weapons": {},
+   "armor": {},
+   "tools": {},
+   "vehicles": {}
+  },
+  "versatile": {
+   "insight": {
+    "attr": "",
+    "skill": ""
+   },
+   "performance": {
+    "attr": "",
+    "skill": ""
+   },
+   "intimidation": {
+    "attr": "",
+    "skill": ""
+   }
+  },
+  "skillFocuses": [
+   {
+    "type": "skill",
+    "parent": "intuition",
+    "aspect": "Spotting lies",
+    "granted": true
+   },
+   {
+    "type": "weapons",
+    "parent": "Sidearms",
+    "aspect": "Pistol",
+    "granted": true
+   },
+   {
+    "type": "tools",
+    "parent": "Security Tools",
+    "aspect": "Restraints",
+    "granted": true
+   }
+  ],
+  "specializations": [],
+  "talents": [],
+  "talentAttrPicks": {},
+  "resistPicks": {},
+  "attackAttr": {},
+  "customFeatures": [],
+  "featureAnnotations": {},
+  "universalUpgrades": {},
+  "awakeningEvolution": null,
+  "retrains": {},
+  "editFreely": false,
+  "freelyFreed": {},
+  "cyberware": [],
+  "cyberStash": [],
+  "grid": {
+   "deckKey": null,
+   "deckHpSpent": {},
+   "deckMods": {},
+   "links": []
+  },
+  "rig": {
+   "key": null,
+   "scrap": false,
+   "hp": {}
+  },
+  "trainingPoints": {
+   "spent": 0,
+   "allocations": []
+  },
+  "resources": {
+   "current": {}
+  },
+  "vitality": {
+   "current": null,
+   "temp": 0
+  },
+  "wounds": {
+   "current": null
+  },
+  "flow": {
+   "current": null,
+   "strain": 0,
+   "strainPoints": 0,
+   "sustained": null,
+   "breakflow": false,
+   "patterns": []
+  },
+  "resonances": [],
+  "resilience": {
+   "spent": 0
+  },
+  "featureUses": {},
+  "scrapCompanion": {
+   "resident": null,
+   "movement": null,
+   "size": null,
+   "rig": null,
+   "active": false,
+   "vitLost": 0,
+   "symbiosis": false,
+   "rigPick": null
+  },
+  "fatigue": 0,
+  "deathSaves": {
+   "s": 0,
+   "f": 0
+  },
+  "stable": false,
+  "conditions": [],
+  "conditionLevels": {},
+  "hazards": {
+   "exposures": {},
+   "deprivation": {
+    "water": {
+     "days": 0,
+     "saves": 0,
+     "fatigue": 0
+    },
+    "food": {
+     "days": 0,
+     "saves": 0,
+     "fatigue": 0
+    },
+    "sleep": {
+     "days": 0,
+     "saves": 0,
+     "fatigue": 0
+    }
+   },
+   "breath": {
+    "drowning": {
+     "active": false,
+     "rounds": 0,
+     "saves": 0
+    },
+    "vacuum": {
+     "active": false,
+     "rounds": 0,
+     "saves": 0
+    }
+   },
+   "caustic": {
+    "inside": false,
+    "lingering": false,
+    "sceneTicks": 0
+   },
+   "thermalWeave": {},
+   "hazmatTorn": false,
+   "rebreatherMinutes": 60,
+   "thinAirFatigue": 0,
+   "applied": {}
+  },
+  "bonuses": {},
+  "equipment": [
+   {
+    "id": "eq_xp7jhdg",
+    "name": "Whisperlink Earpiece",
+    "qty": 1
+   },
+   {
+    "id": "eq_vjzhby0",
+    "name": "Flashlight",
+    "qty": 1
+   },
+   {
+    "name": "Data Drive",
+    "qty": 1
+   },
+   {
+    "name": "Basic Rations",
+    "qty": 2
+   },
+   {
+    "name": "Water Purification Tabs",
+    "qty": 1
+   },
+   {
+    "name": "Glimmer Stick",
+    "qty": 1
+   },
+   {
+    "id": "eq_ful763w",
+    "name": "Liner Mesh",
+    "qty": 1
+   },
+   {
+    "id": "eq_rz9a1qi",
+    "name": "Pistol",
+    "qty": 1
+   },
+   {
+    "name": "Pistol Ammo",
+    "qty": 1
+   },
+   {
+    "id": "eq_7jhn5mb",
+    "name": "Utility Belt",
+    "qty": 1
+   },
+   {
+    "id": "eq_zk3uw8r",
+    "name": "Custody and Control Kit",
+    "qty": 1
+   },
+   {
+    "id": "eq_7p3a2at",
+    "name": "Standard Cuffs",
+    "qty": 1
+   }
+  ],
+  "equippedWeapons": [
+   "eq_rz9a1qi"
+  ],
+  "equippedArmor": "eq_ful763w",
+  "equippedShield": null,
+  "equippedFocus": null,
+  "weaponAmmo": {},
+  "weaponGrip": {},
+  "carry": {
+   "eq_xp7jhdg": "worn",
+   "eq_vjzhby0": "carried",
+   "Data Drive": "carried",
+   "Basic Rations": "carried",
+   "Water Purification Tabs": "carried",
+   "Glimmer Stick": "carried",
+   "eq_ful763w": "carried",
+   "eq_rz9a1qi": "carried",
+   "Pistol Ammo": "carried",
+   "eq_7jhn5mb": "worn",
+   "eq_zk3uw8r": "racked",
+   "eq_7p3a2at": "racked"
+  },
+  "racked": {
+   "eq_zk3uw8r": "eq_7jhn5mb",
+   "eq_7p3a2at": "eq_7jhn5mb"
+  },
+  "slotInert": {},
+  "concealed": {},
+  "shieldWear": {},
+  "armorWear": {},
+  "armorGuard": {},
+  "armorResistPicks": {},
+  "ablativeCoating": {},
+  "loadout": "standard",
+  "haul": "none",
+  "glimmer": 90,
+  "nexus": 0,
+  "ledger": [
+   {
+    "t": 1793512721629,
+    "m": "Starting kit claimed: the leftover goes on your Glimmer Stick",
+    "g": 90,
+    "n": 0,
+    "gb": 90,
+    "nb": 0
+   }
+  ],
+  "log": [],
+  "face": {
+   "profiles": [],
+   "factions": [],
+   "cred": [],
+   "heat": [],
+   "debts": [],
+   "personas": [],
+   "post": [],
+   "contacts": [
+    {
+     "id": "ct_y25yhxamvxf52pf",
+     "name": "Nan Oduya",
+     "print": "",
+     "handle": "",
+     "kind": "professional",
+     "work": "Go-between",
+     "why": "Sets up neutral meetings between the Sump Rats and whoever they aren't shooting at this week.",
+     "offers": "",
+     "fence": "",
+     "origin": "background",
+     "disposition": "neutral",
+     "state": "open",
+     "faction": "",
+     "tell": "",
+     "notes": ""
+    },
+    {
+     "id": "ct_x8fxwalmvxf58qz",
+     "name": "Tallow",
+     "print": "",
+     "handle": "",
+     "kind": "professional",
+     "work": "Eldest of the clutch",
+     "why": "Still keeps Vesk's bedroll in the drain.",
+     "offers": "",
+     "fence": "",
+     "origin": "background",
+     "disposition": "neutral",
+     "state": "open",
+     "faction": "",
+     "tell": "",
+     "notes": ""
+    }
+   ]
+  },
+  "subclassSkillPicks": {},
+  "gambits": []
+ }
+},
+{
+ "key": "shaper",
+ "name": "Ines \"Stutterstep\" Duarte",
+ "label": "Shaper",
+ "blurb": "A Warrens-born bounty hunter who feels a hit half a second before it lands and usually brings her bounties in breathing.",
+ "patch": {
+  "firstName": "Ines",
+  "lastName": "Duarte",
+  "identity": {
+   "concept": "A Warrens-born bounty hunter who feels a hit half a second before it lands and usually brings her bounties in breathing.",
+   "handle": "Stutterstep",
+   "handleStory": "A Ferryman took four swings at Ines during a river crossing. All four missed. Each time, she seemed to hitch half a second before he committed. Afterward, he told everyone she fought with a stutterstep. He meant it as an insult. Everyone else made it sound like a compliment, and the name stuck.",
+   "whereFrom": "Ines grew up in the Warrens, under dripping ceilings and on walkways barely wide enough for one person. She's always been half a second ahead: flinching before a punch, stepping aside before a shot. Her family learned early to keep that out of conversations with clinicians. An old blade teacher with a practice room behind a laundry taught her to move with the warning instead of fighting it. They trained her with a kitchen knife, because that's what people in the Warrens actually carry. These days, the Flow runs through the blade as easily as it runs through her nerves.\n\nHer first bounty covered the teacher's rent. After that, she kept taking the work. Alive pays better than dead, so she usually brings people in breathing.\n\nShe met Vesk on a job in Hollow Bend. They'd both tracked the same bail jumper to a pump house; Ines was inside with him, and Vesk had latched every way out. They split the fee instead of fighting over it. They've split everything since. That was the start of Dead End.\n\nNow they take bounties on whoever the Undercity is hiding, from bail jumpers to people who've skipped out on a Kindred implant bill. Half up front is the arrangement. They cross paths with Last Light Recovery often enough to keep the rivalry friendly, mostly. Once, they sold the same hiding place twice in one night: to Last Light at a discount, then to the client an hour later.\n\nOne bounty still goes uncollected. Fullwell put a price on a pump engineer who'd leaked a block's shutoff schedule to the people living there. Ines cornered him beneath the Hollow Bend stilt lanes, then let him walk. She paid back the deposit out of her own cut. She won't explain why. Vesk has stopped asking, but the client hasn't stopped looking.\n\nInes trusts the prickle in her spine more than a client, a piece of evidence, or even her partner. Usually, she's right. When she's wrong, she's wrong at full speed. Vesk handles the talking, which suits her fine.",
+   "facets": "Ines keeps quiet and pays attention. If a room feels wrong, she'll stop halfway through a sentence. She flinches half a second before anyone else hears the noise. When she eats, she stands facing the door.",
+   "coreSparks": "Getting paid. Being proved right after nobody believed her. Watching a runner realize there's nowhere left to go.",
+   "tethers": "The old blade teacher still running the practice room behind the laundry. Vesk, though she'd never tell them that to their face. And the pump engineer she let walk, wherever he ended up.",
+   "faultLines": "She'll trust her nerves over the evidence, the client, and her partner, even when they all disagree. She won't take a bounty on another working crew; that rule is the only reason Last Light has stayed off her list. What she keeps to herself is the fear that, one day, the warning will come too late.",
+   "appearance": "Ines is five foot seven and lean, with a long scar down the forearm she uses to block. Her gaze always seems a little ahead of whatever she's watching. People find it unsettling. She wears tape-wrapped shock gloves and carries a kitchen knife on her hip. She's cut the lining out of her long coat so it won't slow her down.",
+   "notes": "Backstory hook: the bounty she let walk, and the reason she still won't give for doing it.\n\nPersonal item: a bent Tollgate token from the contract that nearly killed her. It has no mechanical benefit."
+  },
+  "level": 1,
+  "xp": 0,
+  "useXp": false,
+  "milestones": {
+   "major": 0,
+   "minor": 0,
+   "notes": ""
+  },
+  "attributeMethod": "array",
+  "attributes": {
+   "BOD": 16,
+   "AGI": 16,
+   "WIT": 14,
+   "TEC": 8,
+   "MYS": 12,
+   "PRE": 12
+  },
+  "rollGroups": [],
+  "arrayAssign": {
+   "BOD": 16,
+   "AGI": 16,
+   "WIT": 14,
+   "TEC": 8,
+   "MYS": 12,
+   "PRE": 12
+  },
+  "overclocked": {
+   "grid": [],
+   "pick": null,
+   "allowDiagonals": false
+  },
+  "species": "humans",
+  "lineage": "phasebound",
+  "heightFt": 5.583333333333333,
+  "size": null,
+  "lineageFeatures": [
+   "Static Premonition"
+  ],
+  "speciesLanguage": "Undercity Patter",
+  "languages": [],
+  "background": "hired-gun",
+  "backgroundSkillChoice": "perception",
+  "backgroundProfChoices": [
+   "Security Tools",
+   "Longarms"
+  ],
+  "class": "shaper",
+  "subclass": "kensei",
+  "classSkillChoices": [
+   "athletics"
+  ],
+  "classGearChoices": {
+   "weapons": [],
+   "armor": [],
+   "tools": [
+    "Investigation Tools"
+   ],
+   "vehicles": []
+  },
+  "startingKit": {
+   "claimed": true,
+   "picks": {
+    "gear": 1,
+    "carry": 1
+   },
+   "alt": false,
+   "granted": [
+    {
+     "key": "eq_ipklb2k",
+     "qty": 1
+    },
+    {
+     "key": "eq_wijgfju",
+     "qty": 1
+    },
+    {
+     "key": "Data Drive",
+     "qty": 1
+    },
+    {
+     "key": "Basic Rations",
+     "qty": 2
+    },
+    {
+     "key": "Water Purification Tabs",
+     "qty": 1
+    },
+    {
+     "key": "Glimmer Stick",
+     "qty": 1
+    },
+    {
+     "key": "eq_sz2uhlx",
+     "qty": 1
+    },
+    {
+     "key": "eq_xeln06l",
+     "qty": 1
+    },
+    {
+     "key": "eq_1l0mwrw",
+     "qty": 1
+    },
+    {
+     "key": "eq_8t6pk07",
+     "qty": 1
+    },
+    {
+     "key": "eq_v3a4k48",
+     "qty": 1
+    },
+    {
+     "key": "eq_1htscus",
+     "qty": 1
+    }
+   ],
+   "glimmerGranted": 200,
+   "claimedClass": "shaper",
+   "claimedSubclass": "kensei",
+   "claimedBudget": 800
+  },
+  "startingCiphers": [],
+  "proficiencies": {
+   "skills": {},
+   "saves": [],
+   "weapons": {},
+   "armor": {},
+   "tools": {},
+   "vehicles": {}
+  },
+  "versatile": {
+   "insight": {
+    "attr": "",
+    "skill": ""
+   },
+   "performance": {
+    "attr": "",
+    "skill": ""
+   },
+   "intimidation": {
+    "attr": "",
+    "skill": ""
+   }
+  },
+  "skillFocuses": [
+   {
+    "type": "skill",
+    "parent": "athletics",
+    "aspect": "Grappling",
+    "granted": true
+   }
+  ],
+  "specializations": [],
+  "talents": [],
+  "talentAttrPicks": {},
+  "resistPicks": {},
+  "attackAttr": {},
+  "customFeatures": [],
+  "featureAnnotations": {},
+  "universalUpgrades": {},
+  "awakeningEvolution": null,
+  "retrains": {},
+  "editFreely": false,
+  "freelyFreed": {},
+  "cyberware": [],
+  "cyberStash": [],
+  "grid": {
+   "deckKey": null,
+   "deckHpSpent": {},
+   "deckMods": {},
+   "links": []
+  },
+  "rig": {
+   "key": null,
+   "scrap": false,
+   "hp": {}
+  },
+  "trainingPoints": {
+   "spent": 0,
+   "allocations": []
+  },
+  "resources": {
+   "current": {}
+  },
+  "vitality": {
+   "current": null,
+   "temp": 0
+  },
+  "wounds": {
+   "current": null
+  },
+  "flow": {
+   "current": null,
+   "strain": 0,
+   "strainPoints": 0,
+   "sustained": null,
+   "breakflow": false,
+   "patterns": []
+  },
+  "resonances": [
+   "kinetic",
+   "visceral",
+   "spatial"
+  ],
+  "resilience": {
+   "spent": 0
+  },
+  "featureUses": {},
+  "scrapCompanion": {
+   "resident": null,
+   "movement": null,
+   "size": null,
+   "rig": null,
+   "active": false,
+   "vitLost": 0,
+   "symbiosis": false,
+   "rigPick": null
+  },
+  "fatigue": 0,
+  "deathSaves": {
+   "s": 0,
+   "f": 0
+  },
+  "stable": false,
+  "conditions": [],
+  "conditionLevels": {},
+  "hazards": {
+   "exposures": {},
+   "deprivation": {
+    "water": {
+     "days": 0,
+     "saves": 0,
+     "fatigue": 0
+    },
+    "food": {
+     "days": 0,
+     "saves": 0,
+     "fatigue": 0
+    },
+    "sleep": {
+     "days": 0,
+     "saves": 0,
+     "fatigue": 0
+    }
+   },
+   "breath": {
+    "drowning": {
+     "active": false,
+     "rounds": 0,
+     "saves": 0
+    },
+    "vacuum": {
+     "active": false,
+     "rounds": 0,
+     "saves": 0
+    }
+   },
+   "caustic": {
+    "inside": false,
+    "lingering": false,
+    "sceneTicks": 0
+   },
+   "thermalWeave": {},
+   "hazmatTorn": false,
+   "rebreatherMinutes": 60,
+   "thinAirFatigue": 0,
+   "applied": {}
+  },
+  "bonuses": {},
+  "equipment": [
+   {
+    "id": "eq_ipklb2k",
+    "name": "Whisperlink Earpiece",
+    "qty": 1
+   },
+   {
+    "id": "eq_wijgfju",
+    "name": "Flashlight",
+    "qty": 1
+   },
+   {
+    "name": "Data Drive",
+    "qty": 1
+   },
+   {
+    "name": "Basic Rations",
+    "qty": 2
+   },
+   {
+    "name": "Water Purification Tabs",
+    "qty": 1
+   },
+   {
+    "name": "Glimmer Stick",
+    "qty": 1
+   },
+   {
+    "id": "eq_sz2uhlx",
+    "name": "Scrap Ward",
+    "qty": 1
+   },
+   {
+    "id": "eq_xeln06l",
+    "name": "Rite Calibration Kit",
+    "qty": 1
+   },
+   {
+    "id": "eq_1l0mwrw",
+    "name": "Liner Mesh",
+    "qty": 1
+   },
+   {
+    "id": "eq_8t6pk07",
+    "name": "Knife",
+    "qty": 1
+   },
+   {
+    "id": "eq_v3a4k48",
+    "name": "Backpack",
+    "qty": 1
+   },
+   {
+    "id": "eq_1htscus",
+    "name": "Shock Gloves",
+    "qty": 1
+   }
+  ],
+  "equippedWeapons": [
+   "eq_8t6pk07",
+   "eq_1htscus"
+  ],
+  "equippedArmor": "eq_1l0mwrw",
+  "equippedShield": null,
+  "equippedFocus": "eq_sz2uhlx",
+  "weaponAmmo": {},
+  "weaponGrip": {},
+  "carry": {
+   "eq_ipklb2k": "worn",
+   "eq_wijgfju": "racked",
+   "Data Drive": "carried",
+   "Basic Rations": "carried",
+   "Water Purification Tabs": "carried",
+   "Glimmer Stick": "carried",
+   "eq_sz2uhlx": "carried",
+   "eq_xeln06l": "racked",
+   "eq_1l0mwrw": "carried",
+   "eq_8t6pk07": "carried",
+   "eq_v3a4k48": "worn",
+   "eq_1htscus": "carried"
+  },
+  "racked": {
+   "eq_xeln06l": "eq_v3a4k48",
+   "eq_wijgfju": "eq_v3a4k48"
+  },
+  "slotInert": {},
+  "concealed": {},
+  "shieldWear": {},
+  "armorWear": {},
+  "armorGuard": {},
+  "armorResistPicks": {},
+  "ablativeCoating": {},
+  "loadout": "standard",
+  "haul": "none",
+  "glimmer": 200,
+  "nexus": 0,
+  "ledger": [
+   {
+    "t": 1793512560595,
+    "m": "Starting kit claimed: the leftover goes on your Glimmer Stick",
+    "g": 200,
+    "n": 0,
+    "gb": 200,
+    "nb": 0
+   }
+  ],
+  "log": [],
+  "face": {
+   "profiles": [],
+   "factions": [],
+   "cred": [],
+   "heat": [],
+   "debts": [],
+   "personas": [],
+   "post": [],
+   "contacts": [
+    {
+     "id": "ct_4n8qzormvxf0tqv",
+     "name": "Odile Brask",
+     "print": "",
+     "handle": "",
+     "kind": "professional",
+     "work": "South Sprawl fixer",
+     "why": "Sends Dead End half its work and takes a cut of all of it.",
+     "offers": "",
+     "fence": "",
+     "origin": "background",
+     "disposition": "neutral",
+     "state": "open",
+     "faction": "",
+     "tell": "",
+     "notes": ""
+    },
+    {
+     "id": "ct_rqj2qx4mvxf10sj",
+     "name": "Sol Akande",
+     "print": "",
+     "handle": "",
+     "kind": "professional",
+     "work": "Former client",
+     "why": "Still owes her the second half.",
+     "offers": "",
+     "fence": "",
+     "origin": "background",
+     "disposition": "neutral",
+     "state": "open",
+     "faction": "",
+     "tell": "",
+     "notes": ""
+    }
+   ]
+  },
+  "subclassSkillPicks": {},
+  "gambits": []
  }
 }
 ];
