@@ -45,11 +45,11 @@ EN.launch = (function () {
   var holds = { lineup: true, availability: true, toolkit: true };
 
   /* ---- Supplemental content: a device setting, like the skin ----------------
-     Off by default (core Handbook only). Stored per device, never on a character
+     On by default (Handbook plus Companion); someone can turn it off for the Handbook alone. Stored per device, never on a character
      and never in an export: it decides what the pickers OFFER, not what a saved
      character may keep. Settings (js/settings.js) flips it. */
   var SUPP_KEY = "en_supplemental_v1";
-  function supplemental() { try { return localStorage.getItem(SUPP_KEY) === "1"; } catch (e) { return false; } }
+  function supplemental() { try { return localStorage.getItem(SUPP_KEY) !== "0"; } catch (e) { return true; } }
   function setSupplemental(on) { try { localStorage.setItem(SUPP_KEY, on ? "1" : "0"); } catch (e) {} }
 
   /* ---- GM controls: a device setting (29 Oct 2026) ---------------------------

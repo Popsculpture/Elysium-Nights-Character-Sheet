@@ -1264,7 +1264,7 @@ EN.settings = (function () {
 
   /* CONTENT. Which books the pickers offer from. Device state, like the skin: it is
      EN.launch's (en_supplemental_v1), never on a character and never exported, and it
-     reads the same on both desktops. Off by default, the Player's Handbook alone. It
+     reads the same on both desktops. On by default; off is the Player's Handbook alone. It
      only decides what is OFFERED: a Freelancer who already has Companion content keeps
      it either way, marked COMPANION. */
   function supplementalSection() {
