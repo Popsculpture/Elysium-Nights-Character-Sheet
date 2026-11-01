@@ -526,12 +526,12 @@ EN.examples = [
 },
 {
  "key": "fury",
- "name": "BOLLARD-7 \"Bollard\" Seven",
+ "name": "BOLLARD-7 \"Bollard\"",
  "label": "Fury",
  "blurb": "A demolition Clanker who woke up during a job and now holds buildings up until everyone is out.",
  "patch": {
   "firstName": "BOLLARD-7",
-  "lastName": "Seven",
+  "lastName": "",
   "identity": {
    "concept": "A demolition Clanker who woke up during a job and now holds buildings up until everyone is out.",
    "handle": "Bollard",

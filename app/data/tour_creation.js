@@ -11,8 +11,9 @@ window.EN = window.EN || {};
 EN.tourData = EN.tourData || {};
 EN.tourData["character-creation"] = {
  "tour": "character-creation",
- "version": "0.2.0",
+ "version": "0.2.1",
  "changelog": [
+  "0.2.1: Bollard has no last name (the author, 31 Oct 2026): the pre-made and the examples in steps 3 and 36 drop Seven.",
   "0.2.0: the author's revised copy for all 40 steps (31 Oct 2026). Its three em dashes became a comma or a colon. Step 39 (You're on the #GRID) now points at the Actions panel its copy describes; step 22 (Read the core traits) points at the core trait chips; every card carries a pointer toward what it describes.",
   "0.1.4: gear-claim reports Load against the Load Budget, the same name and number the Inventory readout uses (the author, 31 Oct 2026).",
   "0.1.3: In the app (31 Oct 2026), with copy brought up to date with the app. register: mentions the pre-mades. wizard-rail: Advance reads NOT YET until there are Training Points. identity-notes: backstory goes in Where You Came From and languages are tracked; example drops the languages. attr-assign and class-free-focus: completeWhen matches the screen (CLAIMED is a chip). species-traits: languages, the Human pick and dialect names; example adds Common Trade and Machine Cant. lineage-feature: pick the lineage first when there is more than one. background-cards: no fixed count. contacts-modal: the cards are under Social, Contacts once filed. background-prompts: the item goes in Notes, the hook in Where You Came From. class-maneuvers: retitled Pick your starting abilities, covers every pick class. class-free-focus warning: Background and Class both lose their checks. subclass: no fixed count. gear-slots: the free Class Item. advance: Languages live here too. print-skills: the Focus row is no longer last. print-certify: the box stays locked until every tab is checked. inventory-rack: Carry Gear racks only while worn. inventory-load: the Inventory readout is the Loadout's Load Budget. social-contacts: open Social and tap CONTACTS (action click). Screenshot fields dropped.",
@@ -21,7 +22,7 @@ EN.tourData["character-creation"] = {
  ],
  "rulesSource": "Elysium Nights Player's Handbook, Playtest October 2026",
  "exampleCharacter": {
-  "name": "BOLLARD-7 \"Bollard\" Seven",
+  "name": "BOLLARD-7 \"Bollard\"",
   "build": "Clanker / Laborframes, Fury / The Juggernaut, Gearhead, level 1",
   "registryTag": "RF-WKTKZM"
  },
@@ -83,7 +84,7 @@ EN.tourData["character-creation"] = {
    "advanceOn": "next",
    "title": "Name and handle",
    "body": "Your name appears as First \"Handle\" Last. Use the handle people know you by, or leave it blank for now. You don't need one at level one. Give your crew time; they'll probably find something to call you.",
-   "example": "First: BOLLARD-7. Handle: Bollard. Last: Seven.",
+   "example": "First: BOLLARD-7. Handle: Bollard. Last: left blank.",
    "optional": false,
    "tab": "print",
    "wizard": "identity"
@@ -780,7 +781,7 @@ EN.tourData["character-creation"] = {
    "advanceOn": "click",
    "title": "Submit & File",
    "body": "Select Submit & File to register your Freelancer. Filing issues your Identity Network Tag and opens your live Freelancer sheet. Keep that tag handy. The registry has a lot of names to keep straight.",
-   "example": "Bollard is filed as BOLLARD-7 \"Bollard\" Seven, tag RF-WKTKZM.",
+   "example": "Bollard is filed as BOLLARD-7 \"Bollard\", tag RF-WKTKZM.",
    "optional": false,
    "tab": "print",
    "wizard": "dossier"
