@@ -57,7 +57,7 @@ EN.builder = (function () {
     if (opts.rule) head.push(EN.ui.ruleChip(opts.rule));
     head.push(el("span.attn-spacer"));
     if (attnShown(id, opts.attention, opts.dismissKey)) head.push(attnDot(id, opts.dismissKey, opts.attentionTitle));
-    var node = el("div.panel", null, [
+    var node = el("div.panel", opts.tour ? { dataset: { tour: opts.tour } } : null, [
       el("div.panel-h.clickable", { onclick: function () { toggleCollapse(id); } }, head),
       el("div.panel-b", collapsed ? { style: { display: "none" } } : null, bodyChildren)
     ]);
@@ -114,7 +114,7 @@ EN.builder = (function () {
     if (d.resource) items.push(ruleStat(EN.ui.stat(d.resource.name.toUpperCase(), d.resource.max, d.resource.attributeName),
       ".k", resourceAnchor(d.resource.name), d.resource.name.toUpperCase()));
     if (d.flow) items.push(ruleStat(EN.ui.stat("FLOW", d.flow.max, "DC " + d.flow.dc, true), ".k", "fl-core", "FLOW"));
-    return el("div.stat-row", null, items);   // the heading after it brings its own gap
+    return el("div.stat-row", { dataset: { tour: "print-vitals" } }, items);   // the heading after it brings its own gap
   }
   /* The word `word` inside a stat's label (sel ".k") or caption (".s") becomes a Codex link,
      so the strip's own numbers lead to the rule behind them. A label whose rule does not
@@ -139,9 +139,9 @@ EN.builder = (function () {
 
   /* ---------- STEP 1: IDENTITY ---------- */
   function stepIdentity(ch) {
-    function txt(field, label, ph, area, tall) {
+    function txt(field, label, ph, area, tall, tour) {
       var node = el(area ? "textarea" : "input", {
-        type: "text", value: (ch.identity[field] || ""), placeholder: ph || "",
+        type: "text", value: (ch.identity[field] || ""), placeholder: ph || "", dataset: tour ? { tour: tour } : null,
         style: tall ? { minHeight: "160px" } : null,
         oninput: function (e) { store.update(function (c) { c.identity[field] = e.target.value; }, { silent: true }); }
       });
@@ -185,18 +185,18 @@ EN.builder = (function () {
     });
     return el("div", null, [
       EN.ui.panel("Freelancer Profile", "IDENTITY.SYS", [
-        el("div.grid3", null, [
+        el("div.grid3", { dataset: { tour: "identity-names" } }, [
           el("div.field", null, [el("label.fl", { text: "First Name" }), nameFieldNode("firstName", "First name…")]),
           el("div.field", null, [el("label.fl", { text: "Handle" }), handleNode]),
           el("div.field", null, [el("label.fl", { text: "Last Name" }), nameFieldNode("lastName", "Last name…")])
         ]),
         el("p.help", { style: { margin: "6px 0 10px" }, text: 'Full name displays as First "Handle" Last.' }),
-        txt("handleStory", "How you got your Handle (optional)", "Who first called you that, and why it stuck…", true),
+        txt("handleStory", "How you got your Handle (optional)", "Who first called you that, and why it stuck…", true, false, "identity-handle-story"),
         el("p.help", { style: { margin: "-4px 0 10px" }, text: "A Handle is optional at Level 1. Leave it blank if you like, and add it once your Freelancer earns one in play." }),
-        txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen trauma rig…", true),
+        txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen trauma rig…", true, false, "identity-concept"),
         // one field for origin and backstory (the author, 31 Oct 2026; the separate Backstory &
         // Motivation folds into it, store.js normalize)
-        txt("whereFrom", "Where You Came From", "Where you grew up (a Burbclave, the Warrens, a void station, a corporate creche), who you were before the job, what broke, what you're after now, and what you won't do to get it…", true, true)
+        txt("whereFrom", "Where You Came From", "Where you grew up (a Burbclave, the Warrens, a void station, a corporate creche), who you were before the job, what broke, what you're after now, and what you won't do to get it…", true, true, "identity-origin")
       ], { corners: true }),
       el("div", { style: { height: "16px" } }),
       EN.ui.panel("Inner Profile", "PURE STORY · NO MECHANICS", [
@@ -209,8 +209,8 @@ EN.builder = (function () {
           txt("faultLines", "Fault Lines, fears & hard limits", R.innerProfile.faultLines, true)
         ]),
         txt("appearance", "Appearance & style", "Neon rain, scavenged chrome, biometric tattoos…", true),
-        txt("notes", "Notes", "", true)
-      ])
+        txt("notes", "Notes", "", true, false, "identity-notes")
+      ], { tour: "identity-inner-profile" })
     ]);
   }
 
@@ -224,7 +224,7 @@ EN.builder = (function () {
         if (m === "array" || m === "overclocked") { R.attributes.forEach(function (a) { c.attributes[a.key] = 10; }); c.arrayAssign = {}; }
       });
     }
-    var methodRow = el("div.row.wrap", { style: { marginBottom: "14px" } }, [
+    var methodRow = el("div.row.wrap", { dataset: { tour: "attr-method" }, style: { marginBottom: "14px" } }, [
       ["pointbuy", "Point Buy"], ["array", "Standard Array"], ["manual", "Manual/Roll"], ["overclocked", "Overclocked Array"]
     ].map(function (m) {
       /* Overclocked Array is the author's own addition (4 July): no Handbook method matches it.
@@ -303,7 +303,7 @@ EN.builder = (function () {
 
     return el("div", null, [
       EN.ui.panel("Attribute Matrix", "BIOMETRIC PROFILE", [
-        methodRow, info, el("div.attr-grid", null, cells),
+        methodRow, info, el("div.attr-grid", { dataset: { tour: "attr-grid" } }, cells),
         EN.ui.ruleText(el("p.help", { style: { marginTop: "12px" } }), "Modifier = ⌊(score − 10) / 2⌋. Increases from Universal Upgrades and from Talents that raise an Attribute (▲) are applied on top; hover a score to see which. Both are chosen in the Advance step."),
         method === "manual" ? rollGroupsSection(ch) : method === "overclocked" ? overclockedSection(ch) : null
       ], { corners: true })
@@ -822,7 +822,7 @@ EN.builder = (function () {
 
     blocks.push(EN.ui.sectionTitle("Choose a Species"));
     if (speciesLocked) blocks.push(el("p.help", { dataset: { speciesLock: "1" }, style: { margin: "0 0 8px", color: "var(--text3)" }, text: lockReason + " Species and lineage are settled once you Submit & File." }));
-    blocks.push(el("div.card-grid", null, (EN.species || []).map(function (s) {
+    blocks.push(el("div.card-grid", { dataset: { tour: "species-cards" } }, (EN.species || []).map(function (s) {
       return el("div.opt-card" + (ch.species === s.key ? ".sel" : ""), {
         dataset: speciesLocked ? { locked: "1" } : {}, title: speciesLocked ? lockReason : "",
         style: speciesLocked ? { cursor: "default", opacity: ch.species === s.key ? "1" : ".55" } : {},
@@ -842,7 +842,7 @@ EN.builder = (function () {
       blocks.push(el("div", { style: { height: "18px" } }));
       blocks.push(EN.ui.sectionTitle(sp.name + " · Species Traits"));
       var t = sp.traits || {};
-      blocks.push(el("div", null, [
+      blocks.push(el("div", { dataset: { tour: "species-traits" } }, [
         // the Size category comes from rules.js so there is one source of truth;
         // species.js carries only the height sentence, so the label prints once,
         // as the book has it: "Small to Medium: Humans range from 3 to 7 feet tall."
@@ -877,7 +877,7 @@ EN.builder = (function () {
          freely on or off (author, 24 October 2026). Before filing it stays open. */
       var creationLocked = isFiled(ch) && chosen.length > 0;
       if (creationLocked) blocks.push(el("p.help", { style: { margin: "0 0 8px", color: "var(--text3)" }, text: "Picked at creation and settled when filed. The Lineage feature you start with is not retrained; Lineage Evolutions on the Advance step are." }));
-      blocks.push(el("div", null, creationFeatures(lin).map(function (f) {
+      blocks.push(el("div", { dataset: { tour: "lineage-features" } }, creationFeatures(lin).map(function (f) {
         var on = chosen.indexOf(f.name) !== -1;
         return el("div.feature.lineage", { dataset: creationLocked ? { locked: "1" } : {}, style: { cursor: creationLocked ? "default" : "pointer", opacity: on ? "1" : ".82", borderLeftColor: on ? "var(--gold)" : "var(--border2)" },
           onclick: function () { if (creationLocked) return; store.update(function (c) { c.lineageFeatures = on ? [] : [f.name]; }); } }, [
@@ -950,13 +950,13 @@ EN.builder = (function () {
     var band = (R.lineageHeight || {})[lin.key];
     var current = effectiveSize(ch);
     var kids = [el("span.chip", { text: "Your Size" }), solidChip(current || "choose a height", "var(--accent)"), EN.ui.ruleChip("ref-size")];
-    if (!band) return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
+    if (!band) return el("div.row.wrap", { dataset: { tour: "species-height" }, style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
 
     var lbl = { fontSize: "10px", color: "var(--text3)", letterSpacing: ".08em" };
     if (band.fixed) {
       kids.push(el("span.mono", { dataset: { heightLock: "1" }, style: { fontSize: "10px", color: "var(--text3)" },
         text: "HEIGHT " + fmtFtIn(band.min) + " (" + ftToCm(band.min) + " cm), locked: every " + lin.name.replace(/s$/, "") + " is exactly " + band.min + " ft" }));
-      return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
+      return el("div.row.wrap", { dataset: { tour: "species-height" }, style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
     }
     /* C3: feet and inches, in 1-inch steps, plus a cm field. The record stores decimal feet
        (heightFt = feet + inches / 12), clamped to the lineage's printed range; a cm entry is
@@ -1001,7 +1001,7 @@ EN.builder = (function () {
       } }));
     kids.push(el("span.mono", { style: { fontSize: "10px", color: "var(--text4)" },
       text: "cm · range " + fmtFtIn(band.min) + " to " + fmtFtIn(band.max) + " (" + ftToCm(band.min) + " to " + ftToCm(band.max) + " cm)" }));
-    return el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
+    return el("div.row.wrap", { dataset: { tour: "species-height" }, style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, kids);
   }
   function ftToCm(ft) { return Math.round(ft * 30.48); }
   function fmtFtIn(ft) { var t = Math.round(ft * 12); return Math.floor(t / 12) + " ft " + (t % 12) + " in"; }
@@ -1010,7 +1010,7 @@ EN.builder = (function () {
   function stepBackground(ch) {
     var bg = eng.getBackground(ch.background);
     var blocks = [EN.ui.sectionTitle("Choose a Background")];
-    blocks.push(el("div.card-grid", null, (EN.backgrounds || []).filter(function (b) { return offered("background", b.key, ch.background); }).map(function (b) {
+    blocks.push(el("div.card-grid", { dataset: { tour: "background-cards" } }, (EN.backgrounds || []).filter(function (b) { return offered("background", b.key, ch.background); }).map(function (b) {
       return el("div.opt-card" + (ch.background === b.key ? ".sel" : ""), {
         onclick: function () {
           store.update(function (c) { if (c.background !== b.key) { c.background = b.key; c.backgroundSkillChoice = null; c.backgroundProfChoices = []; pruneGrantedFocuses(c); } });
@@ -1028,13 +1028,14 @@ EN.builder = (function () {
       blocks.push(EN.ui.panel(bg.name, "BACKGROUND DOSSIER", [
         el("label.fl", { text: "Skills & Proficiencies" }),
         el("p.help", { style: { margin: "0 0 6px" }, text: "Dashed chips are background options; click one to lock in your pick." }),
-        bgSkillChipRow(ch, bg),
-        (bg.proficiencies || []).length ? el("div", null, bg.proficiencies.map(function (p, idx) { return bgProfChipRow(ch, p, idx); })) : null,
+        el("div", { dataset: { tour: "background-chips" } }, [bgSkillChipRow(ch, bg),
+          (bg.proficiencies || []).length ? el("div", null, bg.proficiencies.map(function (p, idx) { return bgProfChipRow(ch, p, idx); })) : null]),
         bg.feature ? feature(bg.feature.name, bg.feature.text, "", "Background Feature") : null,
         bg.contacts ? bgContactsBlock(ch, bg) : null,
-        bg.personalItem ? infoBlock("Personal Item", bg.personalItem) : null,
-        (bg.hooks || []).length ? el("div", { style: { marginTop: "10px" } }, [el("label.fl", { text: "Backstory Hook" })].concat(
-          bg.hooks.map(function (h) { return el("p.help", { text: h }); }))) : null
+        el("div", { dataset: { tour: "background-prompts" } }, [
+          bg.personalItem ? infoBlock("Personal Item", bg.personalItem) : null,
+          (bg.hooks || []).length ? el("div", { style: { marginTop: "10px" } }, [el("label.fl", { text: "Backstory Hook" })].concat(
+            bg.hooks.map(function (h) { return el("p.help", { text: h }); }))) : null])
       ]));
       blocks.push(overlapBox(ch));
     }
@@ -1052,7 +1053,7 @@ EN.builder = (function () {
       have.length ? el("ul.bgct-list", null, have.map(function (c) {
         return el("li", null, [el("span", { style: { fontWeight: 600 }, text: c.name }), c.work ? el("span", { style: { color: "var(--text3)" }, text: " · " + c.work }) : null]);
       })) : null,
-      FV.bgContactsDialog ? el("button.btn.sm" + (have.length < want ? ".primary" : ""), { dataset: { bgContact: "open" },
+      FV.bgContactsDialog ? el("button.btn.sm" + (have.length < want ? ".primary" : ""), { dataset: { bgContact: "open", tour: "background-contacts" },
         onclick: function () { FV.bgContactsDialog(); } },
         have.length ? "✎ EDIT CONTACTS (" + have.length + " of " + want + ")" : "+ ADD YOUR CONTACTS") : null
     ]);
@@ -1262,7 +1263,7 @@ EN.builder = (function () {
     kids.push(el("p.help.overlap-status", { style: { margin: "8px 0 0", color: open.length ? "var(--warn)" : "var(--success)" },
       text: open.length ? "Name the aspect and claim it to finish this step. You can edit it later on the Advance tab's Skill Loadout."
         : "All overlap Focuses claimed. Edit their aspects on the Advance tab's Skill Loadout." }));
-    return el("div.muted-box", { style: { borderColor: "var(--warn)", color: "var(--warn)", textAlign: "left", margin: "14px 0 0" } }, kids);
+    return el("div.muted-box", { dataset: { tour: "class-free-focus" }, style: { borderColor: "var(--warn)", color: "var(--warn)", textAlign: "left", margin: "14px 0 0" } }, kids);
   }
 
   // Dismissible warning box (Dossier): ACKNOWLEDGE hides it until its content
@@ -1361,7 +1362,7 @@ EN.builder = (function () {
     var dupBox = pendingOverlaps(ch).length ? overlapBox(ch) : null;
     return EN.ui.panel("Skills & Proficiencies", "COMBINED · BACKGROUND + CLASS + ADVANCE", [
       el("p.help", { style: { margin: "0 0 8px" }, text: "Everything granted or purchased, at its effective tier. Hover a chip for its source. ⊕ marks an overlapping Background/Class grant; the proficiency applies once and the overlap grants a Free Skill Focus." })
-    ].concat(rows).concat([pendingBox, dupBox]), { corners: true });
+    ].concat(rows).concat([pendingBox, dupBox]), { corners: true, tour: "print-skills" });
   }
 
   // Normalize attributePriorities (data is either ["Tech","Wits"] or
@@ -1674,7 +1675,7 @@ EN.builder = (function () {
       shownCost = (sk.claimedBudget || 700) + (sel.extraGlimmer || 0) - shownLeft;
     }
     var budgetColor = shownLeft < 0 ? "var(--danger)" : "var(--success)";
-    kids.push(el("div.row.wrap.kit-totals", { style: { gap: "14px", alignItems: "center", margin: "8px 0 6px" } }, [
+    kids.push(el("div.row.wrap.kit-totals", { dataset: { tour: "kit-totals" }, style: { gap: "14px", alignItems: "center", margin: "8px 0 6px" } }, [
       // the kits' GM Guidance box moved to the Game Master's Toolkit (handoff 16 Oct, section 8),
       // so the player builder no longer carries it as this hover text; EN.kits.gmGuidance stays in the data
       el("span.mono", { style: { fontSize: "14px", color: "var(--text)" } }, "KIT TOTAL " + G + shownCost),
@@ -1709,11 +1710,11 @@ EN.builder = (function () {
       kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
         el("button.btn.primary", { disabled: !sel.ready,
           title: sel.ready ? "Add every line as Carried, wear the kit's armor, equip its weapon, and load the leftover onto the Glimmer Stick" : "Pick a Subclass and every kit slot first",
-          onclick: function () { claimKit(ch); } }, "⛭ CLAIM STARTING KIT"),
+          dataset: { tour: "claim-kit" }, onclick: function () { claimKit(ch); } }, "⛭ CLAIM STARTING KIT"),
         !sel.ready ? el("span.help", { style: { margin: 0, color: "var(--warn)" }, text: "Pick a Subclass and every slot first." }) : null
       ]));
     }
-    return EN.ui.panel("Starting Gear Kit", G + (K.budget || 800) + " BUDGET · CORE PACK + CLASS KIT + SUBCLASS EXTRA", kids, { corners: true });
+    return EN.ui.panel("Starting Gear Kit", G + (K.budget || 800) + " BUDGET · CORE PACK + CLASS KIT + SUBCLASS EXTRA", kids, { corners: true, tour: "gear-kit" });
   }
 
   /* A subclass feature that prints "You gain Proficiency in the Stealth or Acrobatics skill (your
@@ -1760,7 +1761,7 @@ EN.builder = (function () {
     (PICK.intro || []).forEach(function (p, i) {
       blocks.push(el("p.help", { style: { margin: i ? "0 0 8px" : "0 0 6px", color: i ? "var(--text3)" : "var(--text2)" }, text: p }));
     });
-    blocks.push(el("div.card-grid", null, clsKeys.map(function (k) {
+    blocks.push(el("div.card-grid", { dataset: { tour: "class-cards" } }, clsKeys.map(function (k) {
       var c = eng.getClass(k); if (!c) return null;
       var pk = (PICK.classes || {})[k] || {};
       var sel = ch.class === k;
@@ -1827,7 +1828,7 @@ EN.builder = (function () {
       }
       // starting proficiencies, color-coded chip rows
       var sp = cls.startingProficiencies || {};
-      corePb.push(el("div", { style: { marginTop: "6px" } }, [
+      corePb.push(el("div", { dataset: { tour: "class-proficiencies" }, style: { marginTop: "6px" } }, [
         el("label.fl", { text: "Starting Proficiencies" }),
         el("p.help", { style: { margin: "0 0 6px" }, text: "Dashed chips are class options; click one to lock in your pick." }),
         profChipRow("Skills", sp.skills, "var(--accent)", { ch: ch, bucket: "skills" }),
@@ -1836,7 +1837,7 @@ EN.builder = (function () {
         profChipRow("Tools", sp.tools, "var(--flow)", { ch: ch, bucket: "tools" }),
         profChipRow("Saves", sp.saves, "var(--gold)")
       ]));
-      blocks.push(EN.ui.panel(cls.name + " · Core Traits", "CLASS.SYS", corePb, { corners: true }));
+      blocks.push(EN.ui.panel(cls.name + " · Core Traits", "CLASS.SYS", corePb, { corners: true, tour: "class-core" }));
       blocks.push(overlapBox(ch));
 
       // subclass
@@ -1844,7 +1845,7 @@ EN.builder = (function () {
         blocks.push(el("div", { style: { height: "16px" } }));
         blocks.push(EN.ui.sectionTitle("Subclass"));
         var subPick = ((PICK.classes || {})[ch.class] || {}).subs || {};
-        blocks.push(el("div.card-grid", null, cls.subclasses.filter(function (s) { return offered("subclass", s.key, ch.subclass); }).map(function (s) {
+        blocks.push(el("div.card-grid", { dataset: { tour: "subclass-cards" } }, cls.subclasses.filter(function (s) { return offered("subclass", s.key, ch.subclass); }).map(function (s) {
           var sp = subPick[s.key] || {}, ssel = ch.subclass === s.key;
           return el("div.opt-card" + (ssel ? ".sel" : ""), {
             onclick: function () { store.update(function (c) { if (c.subclass !== s.key) c.subclassSkillPicks = Object.create(null); if (c.subclass !== s.key && c.startingKit && !c.startingKit.claimed) c.startingKit.alt = false; c.subclass = s.key; }); }
@@ -1868,7 +1869,9 @@ EN.builder = (function () {
 
       // full class progression, all 10 levels as collapsible boxes (collapsed by default)
       blocks.push(el("div", { style: { height: "16px" } }));
-      blocks.push(EN.ui.sectionTitle("Class Progression · Level " + ch.level + " / 10"));
+      var progHead = EN.ui.sectionTitle("Class Progression · Level " + ch.level + " / 10");
+      progHead.dataset.tour = "class-progression";
+      blocks.push(progHead);
       (function() {
         var progIds = [];
         for (var k = 1; k <= R.maxLevel; k++) progIds.push("clsprog-" + k);
@@ -2041,7 +2044,7 @@ EN.builder = (function () {
     var repickNote = repick && repick.length ? el("div.man-repick", {
       style: { margin: "0 0 8px", padding: "7px 10px", border: "1px solid var(--warn, var(--gold))", borderRadius: "4px", color: "var(--text2)", fontSize: "11.5px" }
     }, "⚠ Pick again: this save held an old Maneuver name with no date on it, and that name has meant two Maneuvers, Teardown (the melee strike) and Wrecker (the structure demolition). It was left out rather than guessed.") : null;
-    return el("div", null, [head, repickNote, chipRow]);
+    return el("div", { dataset: { tour: "class-maneuvers" } }, [head, repickNote, chipRow]);
   }
 
   /* THE FOUR STARTING CIPHERS (A2, 28 October 2026 handoff). Handbook, Your Repertoire, as ruled
@@ -2705,7 +2708,7 @@ EN.builder = (function () {
         el("div.section-title", null, [document.createTextNode("Skill Tiers"), EN.ui.ruleChip("sk-skills/proficiency-tiers"), el("span.line")]),
         EN.ui.ruleText(el("p.help", { style: { marginBottom: "6px" } }), (T.grants ? T.grants + " " : "") + "Focus & Specialization buttons appear once a skill qualifies."),
         el("div", null, d.skills.map(function (s) { return skillRow(ch, s); }))
-      ], { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss", rule: "sk-skills/training-points" }),
+      ], { corners: true, attention: b.remaining > 0, dismissKey: tpKey, attentionTitle: "Unspent Training Points; click to dismiss", rule: "sk-skills/training-points", tour: "skill-loadout" }),
       el("div", { style: { height: "14px" } }),
       collapsiblePanel("gearProficiencies", "Gear Proficiencies", "WEAPONS · ARMOR · TOOLS · VEHICLES", [].concat(
         // "Vehicles" here is a proficiency bucket, not the Vehicles rules panel, so that one link is held back
@@ -3903,7 +3906,7 @@ EN.builder = (function () {
       ? "Resolve the incomplete fields flagged above before this record can be certified and filed."
       : "One or more steps are still incomplete (check the step rail above). Every step must be complete before this record can be certified and filed." }));
     var certd = _certifiedFor === (ch.meta && ch.meta.id);
-    blocks.push(el("label.certify-row" + (!recordComplete ? ".disabled" : (certd ? ".on" : "")), null, [
+    blocks.push(el("label.certify-row" + (!recordComplete ? ".disabled" : (certd ? ".on" : "")), { dataset: { tour: "print-certify" } }, [
       el("input", { type: "checkbox", checked: certd, disabled: !recordComplete,
         onchange: function (e) { _certifiedFor = e.target.checked ? (ch.meta && ch.meta.id) : null; EN.app.render(); } }),
       el("span", { text: "I certify that the record above is accurate and complete, and I authorize its filing with the Freelancer Registry." })
@@ -4109,7 +4112,7 @@ EN.builder = (function () {
     /* wizard rail. A tick means the step has been DONE. Advance at Level 1 has nothing to do
        (no Universal Upgrade slot, no Training Points yet), so it shows a neutral "Not yet"
        rather than a tick that claims work the player never did. */
-    var rail = el("div.wizard-rail", null, STEPS.map(function (s, i) {
+    var rail = el("div.wizard-rail", { dataset: { tour: "wizard-rail" } }, STEPS.map(function (s, i) {
       var idle = s.key === "advance" && !advanceHasWork(ch, d);
       var done = !idle && stepComplete(ch, s.key);
       return el("div.wstep" + (i === _step ? ".active" : (done ? ".done" : (idle ? ".idle" : ""))), {
@@ -4136,7 +4139,7 @@ EN.builder = (function () {
     var canFile = recordComplete && _certifiedFor === (ch.meta && ch.meta.id);
     var primaryBtn = isLast
       ? el("button.btn.primary", { disabled: !canFile, title: canFile ? "File this record and open the Freelancer sheet" : (recordComplete ? "Certify the record below to file" : "Complete every step first"), onclick: function () { submitRecord(ch); } }, "◈ SUBMIT & FILE")
-      : el("button.btn.primary", { onclick: function () { _step = Math.min(STEPS.length - 1, _step + 1); EN.app.render(); } }, "NEXT ►");
+      : el("button.btn.primary", { dataset: { tour: "wizard-next" }, onclick: function () { _step = Math.min(STEPS.length - 1, _step + 1); EN.app.render(); } }, "NEXT ►");
     var foot = el("div.wizard-foot", null, [
       el("button.btn.ghost", { disabled: _step === 0, onclick: function () { _step = Math.max(0, _step - 1); EN.app.render(); } }, "◄ BACK"),
       el("span.help", { text: isLast ? (canFile ? "Ready to file · issues your Identity Network Tag" : (recordComplete ? "Certify the record below to file" : "Complete every step above to file")) : (STEPS[_step].n + " / " + STEPS.length + "  ·  " + STEPS[_step].t) }),
@@ -4464,7 +4467,9 @@ EN.builder = (function () {
     return el("div", { style: { textAlign: "center", paddingTop: "60px" } }, [
       el("h1", { style: { fontSize: "26px", marginBottom: "8px" }, text: hasExisting ? "NEW #PRINT" : "NO #PRINT ON FILE" }),
       el("p.help", { style: { marginBottom: "20px" }, text: "Register a new Freelancer to issue a verified #PRINT identity, or import an exported record (.JSON)." }),
-      el("button.btn.primary", { onclick: function () { _intake = false; store.createAndActivate(""); _step = 0; EN.app.render(); } }, "+ REGISTER NEW #PRINT"),
+      el("button.btn.primary", { dataset: { tour: "register-print" }, onclick: function () { _intake = false; store.createAndActivate(""); _step = 0; EN.app.render(); } }, "+ REGISTER NEW #PRINT"),
+      // the guided tour (js/tour.js) offers itself here when it is switched on; nothing when it is off or removed
+      EN.tour && EN.tour.gateButton ? EN.tour.gateButton() : null,
       el("div", { style: { height: "12px" } }),
       el("button.btn.ghost", { onclick: function () { importPrompt(); } }, "⤒ IMPORT RECORD (.JSON)"),
       premadeGrid(),
@@ -4630,8 +4635,11 @@ EN.builder = (function () {
 
   // Jump the wizard to the Advance step (used by the "#PRINT" tab).
   function openAdvance() { for (var i = 0; i < STEPS.length; i++) { if (STEPS[i].key === "advance") { _step = i; return; } } }
+  // the guided tour (js/tour.js) moves the wizard by step key and asks which step is showing
+  function goStep(key) { for (var i = 0; i < STEPS.length; i++) { if (STEPS[i].key === key) { if (_step !== i) { _step = i; EN.app.render(); } return true; } } return false; }
+  function stepKey() { return (STEPS[_step] || {}).key || null; }
 
-  return { render: render, openAdvance: openAdvance, switcherSelect: switcherSelect,
+  return { render: render, openAdvance: openAdvance, goStep: goStep, stepKey: stepKey, switcherSelect: switcherSelect,
            // the settings tray's CHARACTERS section (31 Oct 2026) and app.js's off-#PRINT manager mount
            openManager: openManager, managerOpen: managerOpen, managerPanel: managerPanel,
            newRecord: newRecord, importPrompt: importPrompt, exportChar: exportChar,

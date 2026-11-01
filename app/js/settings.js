@@ -1529,6 +1529,8 @@ EN.settings = (function () {
     // GM controls and the optional rules, on both desktops
     if (EN.launch && EN.launch.setGmControls) sections.push(gmControlsSection());
     if (EN.launch && EN.launch.setRule) sections.push(optionalRulesSection());
+    // the guided tour draws its own section (js/tour.js); absent or empty when the tour is removed
+    if (!EN.theme.inAdmin() && EN.tour && EN.tour.settingsSection) { var tourSect = EN.tour.settingsSection({ rebuild: rebuild, close: close }); if (tourSect && tourSect.length) sections.push(tourSect); }
     // skin and palette are one section under one title: skinSection carries
     // the title, themeSection continues it, so the two are pushed as one
     sections.push(skinSection().concat(wallSection(), themeSection()));
@@ -1559,7 +1561,7 @@ EN.settings = (function () {
      four the player rarely visits start folded; the rest start open. A fold the player sets is
      remembered on this device, keyed by the section's title. */
   var FOLD_KEY = "en_settings_fold_v1";
-  var FOLD_DEFAULT = { "// FREELANCER LAYOUT": true, "// CONTENT": true, "// GM CONTROLS": true, "// OPTIONAL RULES": true, "// CHANGE APPEARANCE": true };
+  var FOLD_DEFAULT = { "// FREELANCER LAYOUT": true, "// CONTENT": true, "// GM CONTROLS": true, "// OPTIONAL RULES": true, "// CHANGE APPEARANCE": true, "// GUIDED TOUR": true };
   function folds() { try { var m = JSON.parse(localStorage.getItem(FOLD_KEY) || "{}"); return (m && typeof m === "object") ? m : {}; } catch (e) { return {}; } }
   function foldShut(key) { var m = folds(); return Object.prototype.hasOwnProperty.call(m, key) ? !!m[key] : !!FOLD_DEFAULT[key]; }
   function setFold(key, shut) { var m = folds(); m[key] = !!shut; try { localStorage.setItem(FOLD_KEY, JSON.stringify(m)); } catch (e) {} }

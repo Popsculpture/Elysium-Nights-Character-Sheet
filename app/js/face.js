@@ -712,7 +712,7 @@ EN.faceView = (function () {
     var opener = document.activeElement;
     var body = el("div.bgct-body");
     var closeBtn = el("button.btn.sm.ghost", { title: "Close (Esc)", "aria-label": "Close", onclick: close }, "✕ CLOSE");
-    var card = el("div.bgct-card", { role: "dialog", "aria-modal": "true", "aria-labelledby": "bgct-title", tabindex: "-1" }, [
+    var card = el("div.bgct-card", { dataset: { tour: "contacts-modal" }, role: "dialog", "aria-modal": "true", "aria-labelledby": "bgct-title", tabindex: "-1" }, [
       el("div.bgct-head", null, [
         el("div", null, [el("div.bgct-kick", { text: "BACKGROUND CONTACTS" }), el("div.bgct-title", { id: "bgct-title" })]),
         closeBtn
@@ -1055,7 +1055,7 @@ EN.faceView = (function () {
     function subTab(key, label) {
       var kids = Array.isArray(label) ? [el("span", { html: label[0] }), document.createTextNode(" " + label[1])] : [document.createTextNode(label)];
       return el("button.btn.sm" + (_sub === key ? ".primary" : ""),
-        { onclick: function () { _sub = key; EN.app.render(); } }, kids);
+        { dataset: { tour: "social-" + key }, onclick: function () { _sub = key; EN.app.render(); } }, kids);   // social-contacts is a tour anchor
     }
     blocks.push(el("div.row.wrap.face-bar", { style: { gap: "6px", marginBottom: "12px" } }, [
       subTab("ledger", [ICON_LEDGER, "LEDGER"]),

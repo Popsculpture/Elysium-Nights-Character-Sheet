@@ -4285,7 +4285,7 @@ EN.combatView = (function () {
       if (colorFn) colorFn(n);
       return n;
     }
-    blocks.push(el("div.stat-row", { style: { marginBottom: _open.statbd ? "8px" : "16px" } }, [
+    blocks.push(el("div.stat-row", { dataset: { tour: "sheet-vitals" }, style: { marginBottom: _open.statbd ? "8px" : "16px" } }, [
       statEl("DEF", "DEF", d.defense, defAttrName + (dg.shield ? " " + (dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " shield" : "")),
       statEl("DR", "DR", d.totalDR || 0, dg.armor ? dg.armor.name : (d.naturalDR ? "natural · lineage" : (d.cyberDR ? "chrome · subdermal" : "no armor")), function (n) { if (!(d.totalDR > 0)) n.querySelector(".v").style.color = "var(--text3)"; }),
       statEl("SPD", "SPD", spDisplay, spDisplay < d.speed ? "of " + d.speed + ", conditions" : "spaces", function (n) { if (spDisplay < d.speed) n.querySelector(".v").style.color = "var(--danger)"; }),

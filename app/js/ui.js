@@ -101,7 +101,8 @@ EN.ui = (function () {
     if (is98 && hr) children.push(el("div.win-tools", null, [hr]));
     children.push(body);
     children.push(winStatus());
-    var p = el("div.panel" + (opts.glow ? ".glow" : ""), null, children);
+    // opts.tour: a data-tour anchor for the guided tour (js/tour.js); inert without it
+    var p = el("div.panel" + (opts.glow ? ".glow" : ""), opts.tour ? { dataset: { tour: opts.tour } } : null, children);
     if (opts.corners) { ["tl", "tr", "bl", "br"].forEach(function (c) { p.appendChild(el("span.corner." + c)); }); }
     p.bodyEl = body;
     return p;

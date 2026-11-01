@@ -323,7 +323,7 @@ EN.inventoryView = (function () {
       return el("option", { value: "racked|" + gk, selected: cs === "racked" && (ch.racked || {})[key] === gk, text: "⧉ Racked: " + g.name });
     }));
     if (cs === "racked" && !rackedGear) opts.push(el("option", { value: "racked|" + ((ch.racked || {})[key] || ""), selected: true, text: "⧉ Racked (adrift)" }));
-    var dropdown = el("select", { title: "Loadout status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
+    var dropdown = el("select", { dataset: { tour: "inventory-rack" }, title: "Loadout status; Racked stows it in worn Carry Gear for 1 less Load", style: { fontSize: "11px", width: "auto" },
       onchange: function () { invSetCarry(key, this.value); } }, opts);
     return el("div.row", { style: { gap: "6px", alignItems: "center" } }, [wearBtn, dropdown, concealBtn(ch, entry)]);
   }
@@ -1346,7 +1346,7 @@ EN.inventoryView = (function () {
     var encWhen = function (k) { var sd = encStates[k]; return sd && sd.when ? "\n" + sd.name + ": " + sd.when : ""; };
     var stateColor = enc.state === "overloaded" ? "var(--danger)" : enc.state === "encumbered" ? "var(--warn)" : "var(--success)";
     var tierColor = enc.tier === "light" ? "var(--success)" : enc.tier === "standard" ? "var(--accent)" : enc.tier === "heavy" ? "var(--warn)" : "var(--danger)";
-    var loadBar = el("div.row.wrap", { style: { gap: "10px", alignItems: "center", padding: "7px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", marginBottom: "10px" } }, [
+    var loadBar = el("div.row.wrap", { dataset: { tour: "inventory-load" }, style: { gap: "10px", alignItems: "center", padding: "7px 10px", border: "1px solid var(--border)", borderRadius: "4px", background: "rgba(0,0,0,.15)", marginBottom: "10px" } }, [
       el("span.mono", { title: "On-person Load (equipped + carried + worn + racked gear). Each item's ⚖ chip is its Load; 0-Load gear rides free, and a Racked item carries 1 less.\nLight ≤ " + encBands.light + " · Standard ≤ " + encBands.standard + " · Heavy ≤ " + encBands.heavy + encWhen("unencumbered") + encWhen("encumbered"),
         style: { fontSize: "16px", color: "var(--text)" },
         html: "LOAD " + enc.current + " <span style='font-size:11px;color:var(--text3)'>/ " + enc.budget + "</span>" }),
