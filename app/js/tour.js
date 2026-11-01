@@ -69,11 +69,26 @@ EN.tour = (function () {
       var b = document.querySelector('[data-tour="claim-kit"]');
       return !!b && !b.disabled;
     },
-    "inventory-rack": function (c) {
-      var e = E(), rs = e.rackState(c);
-      var worn = (c.equipment || []).filter(function (g) { return g.qty > 0 && e.isCarryGear(e.catalogItem(g.name)) && (c.carry || {})[g.id || g.name] === "worn"; });
-      return worn.length > 0 && worn.every(function (g) { return (rs.byGear[g.id || g.name] || []).length >= e.rackLimit(e.catalogItem(g.name)); });
-    }
+    "inventory-rack": function (c) { return Object.keys(E().rackState(c).byItem || {}).length > 0; },
+    // click steps whose result shows on the record or the page
+    "register": function () { return realRecord() && !document.querySelector('[data-tour="register-print"]'); },
+    "attr-method": function (c) {
+      if (c.attributeMethod === "manual") return true;
+      if (Object.keys(c.arrayAssign || {}).length) return true;
+      var a = c.attributes || {};
+      return Object.keys(a).some(function (k) { return a[k] !== 10; });
+    },
+    // left Identity, by the wizard's NEXT or a tab on the rail
+    "next-button": function () { return !!(EN.builder && EN.builder.stepKey && EN.builder.stepKey() !== "identity"); },
+    "species-cards": function (c) { return !!c.species; },
+    "lineage-feature": function (c) { return !!(c.lineageFeatures || []).length; },
+    "background-cards": function (c) { return !!c.background; },
+    "background-contacts": function (c) { return DONE["contacts-modal"](c) || !!document.getElementById("bgct-ov"); },
+    "class-cards": function (c) { return !!c["class"]; },
+    "subclass": function (c) { return !!c.subclass; },
+    "gear-claim": function (c) { return !!(c.startingKit && c.startingKit.claimed); },
+    "print-certify": function () { return !!document.querySelector('[data-tour="print-certify"].on'); },
+    "print-submit": function () { return filed(); }
   };
   /* steps that belong to only some builds. A step is passed over only when this says it does not
      apply to the record (a class with no starting picks, no Background/Class overlap, a background with
@@ -135,9 +150,45 @@ EN.tour = (function () {
 
   /* ---- the callout ---- */
   function btn(label, cls, title, fn) { return el("button.btn.sm" + (cls || ""), { type: "button", title: title || "", onclick: fn }, label); }
+  /* An action step (advanceOn click or condition) waits for the player to do the thing in the app; its card
+     shows a prompt where NEXT would be (the author, 31 Oct 2026), because NEXT alone would move the tour on and
+     leave the app behind. Once the move is made the tour moves on by itself; a step already done on entry
+     shows NEXT. BACK and END are always there. */
+  function isAction(st) { return st.advanceOn === "click" || st.advanceOn === "condition"; }
+  function doneNow(st) {
+    var f = DONE[st.id];
+    if (!f) return false;
+    if (st.id === "register") return f();
+    return realRecord() && !!f(ch());
+  }
+  /* An action that cannot be done with this record shows NEXT instead of a prompt, with a note saying why,
+     so no step is a dead end: racking needs an item that fits worn Carry Gear (a Holster takes Sidearms only,
+     a Scabbard one-handed melee only). */
+  function cannotAct(st) {
+    if (st.id !== "inventory-rack" || !realRecord() || !filed()) return null;
+    var c = ch(), e = E();
+    var fits = (c.equipment || []).some(function (x) { return x && x.qty > 0 && (e.rackTargets(c, x) || []).length > 0; });
+    var gear = (c.equipment || []).some(function (x) { return x && x.qty > 0 && e.isCarryGear(e.catalogItem(x.name)) && (c.carry || {})[x.id || x.name] !== "worn"; });
+    if (fits || gear) return null;
+    return "Nothing you carry fits your worn carry gear right now, so there is nothing to rack yet.";
+  }
+  function actionPrompt(st) {
+    if (st.id === "register" && !document.querySelector('[data-tour="register-print"]')) return "Register a new #PRINT to continue.";
+    if (st.id === "next-button") return "Click NEXT at the bottom of the page to continue.";
+    if (st.id === "contacts-modal") return "Name both contacts, then close the window to continue.";
+    if (st.id === "class-free-focus") return "Name your Focus and claim it to continue.";
+    if (st.id === "print-certify") return "Tick the box to continue. It unlocks once every tab has its check.";
+    if (st.id === "print-submit") return "Select SUBMIT & FILE to continue.";
+    if ({ "species-cards": 1, "lineage-feature": 1, "background-cards": 1, "class-cards": 1, "subclass": 1 }[st.id]) return "Pick one of the highlighted cards to continue.";
+    if (st.action === "select") return "Make your selection to continue.";
+    if (st.action === "type") return "Fill it in to continue.";
+    return st.advanceOn === "condition" ? "Make your picks to continue." : "Click the highlighted item to continue.";
+  }
   function buildCard(st, anchor) {
     var n = S.steps.length, last = S.i === n - 1;
-    var done = st.advanceOn === "condition" && DONE[st.id] && realRecord() && DONE[st.id](ch());
+    var done = isAction(st) && doneNow(st);
+    var stuck = isAction(st) && !done ? cannotAct(st) : null;
+    var waiting = isAction(st) && !done && !last && !stuck;
     var notes = [], away = awayFrom(st);
     var noLineage = (st.id === "species-height" || st.id === "lineage-feature") && realRecord() && !ch().lineage;
     if (needsFiled(st) && !filed()) notes.push("This part opens once your record is filed.");
@@ -159,12 +210,15 @@ EN.tour = (function () {
     if (st.example) kids.push(el("p.tour-ex", null, [el("span.tour-exk", { text: "E.G. " }), document.createTextNode(st.example)]));
     if (st.warning) kids.push(el("p.tour-warn", { text: "⚠ " + st.warning }));
     notes.forEach(function (t) { kids.push(el("p.tour-note", { text: t })); });
-    if (done) kids.push(el("p.tour-done", { text: "✓ Done. Press NEXT." }));
+    if (done && isAction(st)) kids.push(el("p.tour-done", { text: "✓ Done. Press NEXT." }));
+    if (stuck) kids.push(el("p.tour-note", { text: stuck }));
     if (!extra && away && !(needsFiled(st) && !filed())) extra = btn("SHOW ME", "", "Go to this step's screen", function () { navigate(st); card.dataset.sig = ""; schedule(); });
     if (extra) kids.push(el("div.tour-extra", null, [extra]));
     kids.push(el("div.tour-btns", null, [
       S.i > 0 ? btn("◀ BACK", "", "Previous step", function () { go(S.i - 1, -1); }) : el("span"),
-      btn(last ? "FINISH" : (st.optional ? "SKIP ▶" : "NEXT ▶"), ".primary", last ? "End the tour" : "Next step", function () { last ? stop() : go(S.i + 1); })
+      waiting
+        ? el("p.tour-act", { role: "status", text: "▶ " + actionPrompt(st) })
+        : btn(last ? "FINISH" : (st.optional ? "SKIP ▶" : "NEXT ▶"), ".primary", last ? "End the tour" : "Next step", function () { last ? stop() : go(S.i + 1); })
     ]));
     return el("div#tour-card", { role: "dialog", "aria-live": "polite", "aria-label": "Character creation tour", dataset: { noSwipe: "1", step: st.id } }, kids);
   }
@@ -257,7 +311,7 @@ EN.tour = (function () {
     var anchor = anchorFor(st);
     if (anchor && S.scrolledFor !== S.i) { S.scrolledFor = S.i; if (EN.ui.scrollUnderChrome) EN.ui.scrollUnderChrome(anchor, true); }
     // rebuild the card only when what it says changes (never on every reposition, so focus and hover hold)
-    var sig = S.i + "|" + !!anchor + "|" + awayFrom(st) + "|" + filed() + "|" + !!(realRecord() && ch().lineage) + "|" + (st.advanceOn === "condition" && DONE[st.id] && realRecord() ? !!DONE[st.id](ch()) : "") + "|" + !!document.querySelector('[data-tour="register-print"]');
+    var sig = S.i + "|" + !!anchor + "|" + awayFrom(st) + "|" + filed() + "|" + !!(realRecord() && ch().lineage) + "|" + (isAction(st) ? doneNow(st) + "/" + !!cannotAct(st) : "") + "|" + !!document.querySelector('[data-tour="register-print"]');
     if (card.dataset.sig !== sig) {
       var hadFocus = card.contains(document.activeElement);
       var fresh = buildCard(st, anchor);
@@ -275,8 +329,8 @@ EN.tour = (function () {
     if (!S || paused()) return;
     var st = step();
     // a condition step moves on when its check turns true (not when it was already true on entry)
-    if (st.advanceOn === "condition" && DONE[st.id] && realRecord()) {
-      var now = !!DONE[st.id](ch());
+    if (isAction(st) && DONE[st.id]) {
+      var now = doneNow(st);
       if (now && S.wasDone === false && Date.now() - S.entered > 400) { go(S.i + 1); return; }
       S.wasDone = now;
     }
@@ -289,6 +343,7 @@ EN.tour = (function () {
     if (!S || paused()) return;
     var st = step();
     if (!st || st.advanceOn !== "click") return;
+    if (st.id === "print-certify") return;   // ticked is read off the row (DONE); a click on the locked row does nothing
     var a = anchorFor(st);
     if (!a || !a.contains(e.target)) return;
     var at = S.i;
@@ -307,7 +362,7 @@ EN.tour = (function () {
     S.i = i; S.dir = dir || 1; S.entered = Date.now(); S.wasDone = null; S.scrolledFor = -1; S.sheetFor = -1; S.pendingNav = false;
     navigate(step());
     var st = step();
-    S.wasDone = st.advanceOn === "condition" && DONE[st.id] && realRecord() ? !!DONE[st.id](ch()) : null;
+    S.wasDone = isAction(st) && DONE[st.id] ? doneNow(st) : null;
     card.dataset.sig = "";
     schedule();
   }
@@ -329,6 +384,7 @@ EN.tour = (function () {
       "#tour-card .tour-warn{color:var(--warn);font-size:12.5px;}",
       "#tour-card .tour-note{color:var(--text3);font-size:12px;font-style:italic;}",
       "#tour-card .tour-done{color:var(--success);font-size:12.5px;}",
+      "#tour-card .tour-act{margin:0;align-self:center;text-align:right;font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--accent);max-width:72%;}",
       "#tour-card .tour-extra{margin:0 0 8px;}",
       "#tour-card .tour-btns{display:flex;justify-content:space-between;gap:8px;}",
       "#tour-card.tour-sheet{left:8px !important;right:8px;top:auto !important;bottom:12px;width:auto;max-height:46vh;overflow:auto;}",
