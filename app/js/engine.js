@@ -5139,6 +5139,13 @@ EN.engine = (function () {
       effectObj = (R.empowered || []).find(function (e) { return e.name === form.empoweredEffect; }) || null;
     }
 
+    /* the Base effect carried (Base Force feeding an effect): one of the Resonance's baseOptions.
+       A formulation saved before the picker existed names none, so it carries none. */
+    var baseObj = null;
+    if (!empowered && hasEffect && R && form.baseEffect) {
+      baseObj = (R.baseOptions || []).find(function (e) { return e.name === form.baseEffect; }) || null;
+    }
+
     /* sustain compatibility + warnings */
     var warnings = [];
     if (R && R.unlock > (d.level || 1)) warnings.push(R.name + " Resonance unlocks at Level " + R.unlock + ".");
@@ -5157,7 +5164,7 @@ EN.engine = (function () {
       resonance: R, baseFp: baseFp, fp: fp, breakdown: breakdown,
       damageDice: damageDice, damageText: damageText,
       resolution: resolution, resolutionText: resolutionText,
-      empoweredEffect: effectObj, hasEffect: hasEffect, hasDamage: hasDamage,
+      empoweredEffect: effectObj, baseEffect: baseObj, hasEffect: hasEffect, hasDamage: hasDamage,
       sustainable: sustainable, warnings: warnings
     };
   }

@@ -92,6 +92,11 @@ EN.flow = {
     { key: "kinetic", name: "Kinetic", unlock: 1, focus: "Mass and Momentum", damage: "Bludgeoning / Force",
       resolution: "attack",
       base: "Push or pull a target up to 2 spaces (an unwilling target makes a Flow Save DC, Body or Agility, to resist), or cushion a fall to negate impact damage.",
+      /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
+      baseOptions: [
+        { name: "Push or Pull", text: "Push or pull a target up to 2 spaces (an unwilling target makes a Flow Save DC, Body or Agility, to resist)." },
+        { name: "Cushion a Fall", text: "Cushion a fall to negate impact damage." }
+      ],
       empowered: [
         { name: "Kinetic Barrier", sustain: true, text: "Solidify the air into an Area 2 line as a physical barrier, granting Half Cover (+2 Defense) to targets behind it." },
         { name: "Gravity Pin", sustain: true, text: "Target makes a Flow Save DC (Body or Agility) or is Restrained. They can use an Action to make a physical check vs your Flow Save DC to break free, or repeat the save at the start of each turn." }
@@ -99,6 +104,12 @@ EN.flow = {
     { key: "thermal", name: "Thermal", unlock: 1, focus: "Molecular Speed", damage: "Fire / Cold",
       resolution: "attack",
       base: "Ignite flammable objects (if worn or carried by an unwilling target, they make a Flow Save DC, Agility, to smother it), instantly freeze a small body of liquid, or regulate the ambient temperature of an area.",
+      /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
+      baseOptions: [
+        { name: "Ignite", text: "Ignite flammable objects (if worn or carried by an unwilling target, they make a Flow Save DC, Agility, to smother it)." },
+        { name: "Freeze", text: "Instantly freeze a small body of liquid." },
+        { name: "Regulate Temperature", text: "Regulate the ambient temperature of an area." }
+      ],
       empowered: [
         { name: "Structural Melt", sustain: true, text: "Soften physical cover or armor until it runs. For the duration, cover the target is using counts as one grade lower, and armor the target is wearing has its DR reduced by 1." },
         { name: "Thermal Fog", sustain: true, text: "Flood up to an Area 3 sphere with blinding steam or frost. The area becomes Heavily Obscured, blocking line of sight." }
@@ -106,6 +117,12 @@ EN.flow = {
     { key: "electromagnetic", name: "Electromagnetic", unlock: 1, focus: "Charge, Magnetism, and Light", damage: "Electric / Energy",
       resolution: "attack",
       base: "Choose one: Magnetize (a target holding or wearing metal makes a Flow Save DC, Body or Agility, or the object tears free and loose metal leaps to your hand); Live Current (light a spark, deal 1 Electric damage to a target you touch or see, or push power into a dead device or rip it out of a live one; you can break or feed a machine, never command it); Flare (brighten a dark space to daylight, or lance a beam a target must make a Flow Save DC, Agility, to avoid or be dazzled, taking Snag on their next attack roll).",
+      /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
+      baseOptions: [
+        { name: "Magnetize", text: "A target holding or wearing metal makes a Flow Save DC, Body or Agility, or the object tears free and loose metal leaps to your hand." },
+        { name: "Live Current", text: "Light a spark, deal 1 Electric damage to a target you touch or see, or push power into a dead device or rip it out of a live one; you can break or feed a machine, never command it." },
+        { name: "Flare", text: "Brighten a dark space to daylight, or lance a beam a target must make a Flow Save DC, Agility, to avoid or be dazzled, taking Snag on their next attack roll." }
+      ],
       empowered: [
         { name: "Optic Scramble", sustain: true, text: "A blaze of light and current overloads everything watching. Cameras, drone eyes, and cybernetic optics in the area go dark for the duration. Organic targets make a Flow Save DC (Body) or are Blinded." },
         { name: "Overload", sustain: false, text: "Drive raw current through a target. They make a Flow Save DC (Body) or are Staggered until the end of their next turn. A target in metal armor or running cyberware rolls this save with Snag; the metal carries the charge." },
@@ -115,6 +132,12 @@ EN.flow = {
       resolution: "attack",
       targeting: "Applies to living and resonant targets. Against a Clanker it manifests through the resonance lattice. The mechanics are identical; only the fiction shifts.",
       base: "Choose one: Patch (a willing target regains 1d4 Vitality); Purge (remove one mundane toxin, drug, or low-severity bio-effect from a willing target); Faltering Pulse (an unwilling target makes a Flow Save DC, Body, or takes -1d4 on their next physical check or attack).",
+      /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
+      baseOptions: [
+        { name: "Patch", text: "A willing target regains 1d4 Vitality." },
+        { name: "Purge", text: "Remove one mundane toxin, drug, or low-severity bio-effect from a willing target." },
+        { name: "Faltering Pulse", text: "An unwilling target makes a Flow Save DC, Body, or takes -1d4 on their next physical check or attack." }
+      ],
       empowered: [
         { name: "Adrenal Overclock", sustain: false, text: "Grant a willing target Edge on physical checks and a +2 bonus to Speed until the end of their next turn." },
         { name: "Forceful Sedation", sustain: false, text: "Target makes a Flow Save DC (Body) or falls Unconscious. They wake on taking damage or being shaken awake by an adjacent ally's Action." },
@@ -124,6 +147,11 @@ EN.flow = {
       // the Damage Profile's closing clause (25 October 2026); armor DR never stops Force anyway
       resolution: "save", saveAttr: "varies", damageNote: "Deals Force (Spatial Shearing) damage, which ignores Resistance to Force.",
       base: "Swap places with an adjacent willing target, or seamlessly retrieve an object from across a room.",
+      /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
+      baseOptions: [
+        { name: "Swap Places", text: "Swap places with an adjacent willing target." },
+        { name: "Retrieve an Object", text: "Seamlessly retrieve an object from across a room." }
+      ],
       empowered: [
         { name: "Spatial Displacement", sustain: false, text: "Instantly teleport a willing target up to 3 spaces to an unoccupied space you can see." },
         { name: "Folded Terrain", sustain: true, text: "Warp the geometry of up to an Area 3 cube into Difficult Terrain, costing 2 Speed per 1 space moved." },
@@ -132,6 +160,12 @@ EN.flow = {
     { key: "cognitive", name: "Cognitive", unlock: 3, focus: "Synapses and Perception", damage: "Psychic",
       resolution: "save", saveAttr: "Mystique", armorNote: "Bypasses physical armor (Stability Factor).",
       base: "Project thoughts telepathically to a visible target, induce a minor sensory hallucination, or alter a single short-term memory (an unwilling target makes a Flow Save DC, Mystique, to resist).",
+      /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
+      baseOptions: [
+        { name: "Project Thoughts", text: "Project thoughts telepathically to a visible target (an unwilling target makes a Flow Save DC, Mystique, to resist)." },
+        { name: "Sensory Hallucination", text: "Induce a minor sensory hallucination (an unwilling target makes a Flow Save DC, Mystique, to resist)." },
+        { name: "Alter Memory", text: "Alter a single short-term memory (an unwilling target makes a Flow Save DC, Mystique, to resist)." }
+      ],
       empowered: [
         { name: "Neural Override", sustain: false, text: "Target makes a Flow Save DC (Mystique) or you dictate their movement and Action on their next turn. You can't force direct lethal self-harm." },
         { name: "Sensory Collapse", sustain: true, text: "Target makes a Flow Save DC (Mystique) or suffers Frightened or Charmed (your choice) for the duration." },
@@ -144,6 +178,12 @@ EN.flow = {
       targeting: "Synthetica works through machines, never around them. A valid Target carries, wears, or is installed with powered tech, or is itself a device, drone, Proxy, or Construct. A Target with nothing electronic on or in them is beyond the sprites' reach. In Elysium, that describes almost no one. Almost.",
       special: "Favors Travel Light: when you shape an Invocation of any other Resonance, you may spend an additional 1 FP to fold a Nixie Favor or a Gremlin Jinx into it. A favor folded this way allows no save. One folded favor per Invocation.",
       base: "Choose one: Ask Around (interview the sprites in a device you can see or touch; you learn what the machine is, what it does, and what it has noticed recently, as impressions rather than records); Nixie Favor (a Nixie settles into a willing target's weapon or cybernetics; they gain a 1d4 bonus on their next attack roll or Saving Throw); Gremlin Jinx (a Gremlin crawls into an unwilling target's weapon or cybernetics; they make a Flow Save DC, Tech, or suffer a 1d4 penalty on their next attack roll or Saving Throw).",
+      /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
+      baseOptions: [
+        { name: "Ask Around", text: "Interview the sprites in a device you can see or touch; you learn what the machine is, what it does, and what it has noticed recently, as impressions rather than records." },
+        { name: "Nixie Favor", text: "A Nixie settles into a willing target's weapon or cybernetics; they gain a 1d4 bonus on their next attack roll or Saving Throw." },
+        { name: "Gremlin Jinx", text: "A Gremlin crawls into an unwilling target's weapon or cybernetics; they make a Flow Save DC, Tech, or suffer a 1d4 penalty on their next attack roll or Saving Throw." }
+      ],
       empowered: [
         { name: "Nixie Synchronization", sustain: false, text: "A Nixie tunes a willing Target's weapon or cybernetic implant to its wielder's pulse. Until the end of their next turn, the Target gains Edge on their next attack roll with that weapon or implant, and its next hit deals an extra 1d6 Force damage." },
         { name: "Gremlin Tantrum", sustain: false, text: "Point the local Gremlins at a Target's firearm, smart tech, or cyberlimb. The Target must make a Tech Save against your Flow Save DC. On a failure, the Target takes 1d6 Tech or Resonant damage as the device cooks against them and seizes up until the end of their next turn." },
@@ -153,6 +193,12 @@ EN.flow = {
       resolution: "attack", noSustain: true,
       stabilityNote: "The timeline resists alteration: Temporal Empowered Effects are strictly Instant and resolve at the end of the target's next turn. They can't be sustained.",
       base: "Age a small mundane object (rusting a lock or rotting a beam), glimpse the immediate future for Edge on your next Initiative roll, or perfectly recall an event from the past 24 hours.",
+      /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
+      baseOptions: [
+        { name: "Age an Object", text: "Age a small mundane object (rusting a lock or rotting a beam)." },
+        { name: "Glimpse the Future", text: "Glimpse the immediate future for Edge on your next Initiative roll." },
+        { name: "Perfect Recall", text: "Perfectly recall an event from the past 24 hours." }
+      ],
       empowered: [
         { name: "Chronal Acceleration", sustain: false, text: "Bend time around a willing ally. On their next turn their Speed is doubled and they gain one additional Action." },
         { name: "Stasis Field", sustain: false, text: "Target makes a Flow Save DC (Agility or Wits) or their Speed is halved and they lose their primary Action on their next turn." }
@@ -276,13 +322,14 @@ EN.flow = {
   // Stored as the component choices so the FP cost and damage recompute from the
   // character's live Caliber and Flow Modifier. extraTargets / extraSpaces are
   // additional scaling steps (+1 FP each). empoweredEffect names the chosen
-  // Empowered Effect when the force is empowered and the intent carries an effect.
+  // Empowered Effect when the force is empowered and the intent carries an effect;
+  // baseEffect names the chosen Base effect (resonances[].baseOptions) when the force is base.
   premadePatterns: [
     { name: "Kinetic Slam", resonance: "kinetic", intent: "damage", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false },
     // The book prints "Resolution: No roll." (2026-10-16 handoff): unwilling false reads
     // "Automatic" on the row and loads into the builder as Willing / Object; `note` is the
     // book's Resolution line, shown under the row.
-    { name: "Flash-Freeze Zone", resonance: "thermal", intent: "effect", deliveryBand: "wide", deliveryOption: "Sphere (3 spaces)", force: "base", duration: "instant", precision: true, unwilling: false,
+    { name: "Flash-Freeze Zone", resonance: "thermal", intent: "effect", deliveryBand: "wide", deliveryOption: "Sphere (3 spaces)", force: "base", duration: "instant", precision: true, unwilling: false, baseEffect: "Freeze",
       note: "Resolution: No roll. Liquids in an Area 3 sphere freeze automatically, sparing 4 chosen Allies." },
     { name: "Dimensional Tear", resonance: "spatial", intent: "damage", deliveryBand: "directed", deliveryOption: "Remote", force: "empowered", duration: "instant", precision: false },
     { name: "Gravity Anchor", resonance: "kinetic", intent: "effect", deliveryBand: "focused", deliveryOption: "Cube (2 spaces)", force: "empowered", duration: "instant", precision: false, empoweredEffect: "Gravity Pin" }

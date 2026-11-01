@@ -22,7 +22,7 @@ EN.flowView = (function () {
   // transient builder formulation (not persisted until Saved as a Pattern)
   var _form = { name: null, resonance: "kinetic", intent: "damage", deliveryBand: "directed",
                 deliveryOption: "Remote", force: "base", duration: "instant", precision: false,
-                extraTargets: 0, extraSpaces: 0, empoweredEffect: null, unwilling: true };
+                extraTargets: 0, extraSpaces: 0, empoweredEffect: null, baseEffect: null, unwilling: true };
   var _open = {};              // collapse state for folds (Premade Templates)
   var _od = 1;                 // overdraw amount input
   /* Immersive Flow tab: opt-in cosmetic layer (see theme.css ".flowtab.immersive").
@@ -140,6 +140,11 @@ EN.flowView = (function () {
       var open = (R.empowered || []).filter(function (e) { return !(e.unlock && e.unlock > (d.level || 1)); }).map(function (e) { return e.name; });
       if (names.indexOf(_form.empoweredEffect) === -1) _form.empoweredEffect = open[0] || names[0] || null;
     } else { _form.empoweredEffect = null; }
+    // Base Force feeding an effect picks one of the Resonance's base effects (the first until chosen)
+    var baseOpts = R.baseOptions || [];
+    if (_form.force !== "empowered" && hasEffect && baseOpts.length) {
+      if (!baseOpts.some(function (e) { return e.name === _form.baseEffect; })) _form.baseEffect = baseOpts[0].name;
+    } else { _form.baseEffect = null; }
     return R;
   }
 
@@ -355,6 +360,12 @@ EN.flowView = (function () {
     rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("FORCE", "fl-shaping/force"),
       seg(F.force.map(function (fo) { return { key: fo.key, label: fo.name + (fo.fp ? " (+" + fo.fp + ")" : ""), title: fo.desc }; }),
         function (k) { return _form.force === k; }, function (k) { setForm({ force: k }); })]));
+    // Base effect picker (when Base Force carries an effect): the Resonance's own base options
+    if (_form.force !== "empowered" && inv.hasEffect && (R.baseOptions || []).length) {
+      rows.push(el("div.row.wrap", { dataset: { flowEffect: "base" }, style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel("EFFECT", "fl-resonances/" + slug(R.name)),
+        seg(R.baseOptions.map(function (e) { return { key: e.name, label: e.name, title: e.text }; }),
+          function (k) { return _form.baseEffect === k; }, function (k) { setForm({ baseEffect: k }); })]));
+    }
     // Empowered effect picker (when Empowered + an effect is carried)
     if (_form.force === "empowered" && inv.hasEffect && (R.empowered || []).length) {
       /* A level-gated effect (Poltergeist) prints its level on its label, as the Handbook does, and is
@@ -394,6 +405,7 @@ EN.flowView = (function () {
         EN.ui.ruleChip("fl-shaping/damage-and-an-effect-together", { title: "Damage and an Effect Together" })
       ]));
     }
+    if (inv.baseEffect) summary.push(el("p.help", { dataset: { flowEffectLine: "base" }, style: { margin: "2px 0 6px", color: VIO, fontSize: "11.5px" }, text: "Effect: " + inv.baseEffect.name + " · " + inv.baseEffect.text }));
     if (inv.empoweredEffect) summary.push(noteP("Empowered: " + inv.empoweredEffect.name + " · " + inv.empoweredEffect.text, VIO));
     if (_form.duration === "sustain") summary.push(inv.sustainable
       ? noteP("Sustain: 1 FP at the start of each turn; replaces any current sustain.", "var(--text2)")
@@ -415,13 +427,14 @@ EN.flowView = (function () {
   function effectLabel(e) { return e.name + (e.unlock ? " (Level " + e.unlock + ")" : ""); }
   function defaultName(R) {
     if (_form.empoweredEffect) return _form.empoweredEffect;
+    if (_form.baseEffect) return R.name + " " + (_form.intent === "hybrid" ? "Hybrid " : "") + _form.baseEffect;
     var tail = _form.intent === "damage" ? "Strike" : _form.intent === "hybrid" ? "Hybrid" : "Shaping";
     return R.name + " " + tail;
   }
   function cloneForm() {
     return { name: _form.name, resonance: _form.resonance, intent: _form.intent, deliveryBand: _form.deliveryBand,
              deliveryOption: _form.deliveryOption, force: _form.force, duration: _form.duration, precision: _form.precision,
-             extraTargets: _form.extraTargets, extraSpaces: _form.extraSpaces, empoweredEffect: _form.empoweredEffect, unwilling: _form.unwilling };
+             extraTargets: _form.extraTargets, extraSpaces: _form.extraSpaces, empoweredEffect: _form.empoweredEffect, baseEffect: _form.baseEffect, unwilling: _form.unwilling };
   }
   function loadForm(p) { loadFormSilent(p); EN.app.render(); }
   function doChannel(ch, d, inv, fallbackName) {
@@ -432,7 +445,7 @@ EN.flowView = (function () {
       fl.current = Math.max(0, have - cost);
       if (over > 0) bumpStrain(fl, over);
       if (_form.duration === "sustain" && inv.sustainable && !fl.breakflow) {
-        fl.sustained = { name: nm, resonance: inv.resonance ? inv.resonance.name : "", effect: inv.empoweredEffect ? inv.empoweredEffect.name : nm };
+        fl.sustained = { name: nm, resonance: inv.resonance ? inv.resonance.name : "", effect: inv.empoweredEffect ? inv.empoweredEffect.name : inv.baseEffect ? inv.baseEffect.name : nm };
       }
     });
     toast(over > 0 ? nm + " · OVERDRAW " + over + " FP · lose " + over + "d" + die + " Vitality" : nm + " · −" + cost + " FP");
@@ -447,7 +460,8 @@ EN.flowView = (function () {
   function patternRow(ch, d, p, idx, premade) {
     var inv = eng.flowInvocation(p, d), cur = curFP(ch, d), over = Math.max(0, inv.fp - cur);
     var R = EN.flow.resonanceByKey[p.resonance];
-    var sub = (R ? R.name : p.resonance) + " · " + p.deliveryOption + " · " + (p.force === "empowered" ? "Empowered" : "Base") + (p.duration === "sustain" ? " · Sustain" : "");
+    var sub = (R ? R.name : p.resonance) + " · " + p.deliveryOption + " · " + (p.force === "empowered" ? "Empowered" : "Base") +
+      (inv.baseEffect ? " · " + inv.baseEffect.name : "") + (p.duration === "sustain" ? " · Sustain" : "");
     var nameEl = premade
       ? el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: p.name })
       : el("input", { type: "text", value: p.name || "", placeholder: "pattern name…", style: { fontWeight: 600, fontSize: "13px", flex: "1 1 140px", minWidth: "120px" },
@@ -481,7 +495,11 @@ EN.flowView = (function () {
   // resolution text for a saved pattern without disturbing the live builder form
   function _formResolution(p, d) { var inv = eng.flowInvocation(p, d); return p.unwilling === false ? "Automatic" : inv.resolutionText; }
   // set the form fields silently (no render) so a list RUN channels that pattern's cost
-  function loadFormSilent(p) { Object.keys(_form).forEach(function (k) { if (p[k] !== undefined) _form[k] = p[k]; }); if (p.unwilling === undefined) _form.unwilling = true; }
+  function loadFormSilent(p) {
+    Object.keys(_form).forEach(function (k) { if (p[k] !== undefined) _form[k] = p[k]; });
+    if (p.unwilling === undefined) _form.unwilling = true;
+    if (p.baseEffect === undefined) _form.baseEffect = null;   // a pattern saved before the picker: the builder offers the first
+  }
 
   // Saved Resonant Patterns as embeddable rows (no panel chrome, no premade list).
   // Shared by the Flow tab and the Freelancer dashboard so INVOKE works in both.
