@@ -2039,7 +2039,7 @@ html.skin-droid .modgrid6.compact-heads .panel-h h3{ font-size:12px; }
 html.skin-droid .grid2, html.skin-droid .grid3{ grid-template-columns:1fr; gap:10px; }
 html.skin-droid .attr-grid{ grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }   /* two cells at 327, three at 492 */
 html.skin-droid .card-grid{ grid-template-columns:1fr; gap:10px; }
-html.skin-droid .pm-grid{ grid-template-columns:1fr; }
+html.skin-droid .pm-card{ flex-basis:100%; max-width:none; }
 html.skin-droid .stat{ flex:1 1 calc(33.333% - 7px); min-width:0; padding:8px 4px; }
 html.skin-droid .stat .v{ font-size:22px; }
 html.skin-droid .stat .s, html.skin-droid .gridtab .stat .s{ font-size:10px; line-height:1.3; overflow-wrap:anywhere; }
@@ -2811,12 +2811,16 @@ html.skin-98 .aoe-box{
    fire from the keyboard like every other route into a character. The grid only ever appears on
    the gate, where the alternative was that a player with no records could not reach the seven
    examples at all: the switcher that lists them needs a loaded character to render. */
-.pm-wrap{ max-width:720px; margin:26px auto 0; text-align:left; }
+.pm-wrap{ max-width:720px; margin:26px auto 0; text-align:left; container-type:inline-size; }
 .pm-sect{ display:flex; align-items:center; gap:10px; font-family:var(--disp); font-size:9.5px;
   letter-spacing:.18em; text-transform:uppercase; color:var(--text3); margin:0 0 8px; }
 .pm-sect .line{ flex:1; height:1px; background:var(--border); }
-.pm-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(212px,1fr)); gap:8px; }
-.pm-card{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%;
+/* The pre-made cards wrap in rows of up to three (212px minimum each) and a short last row sits
+   centered: each card grows to fill its row but never past one column's width. */
+.pm-grid{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; }
+@container (min-width:432px){ .pm-card{ max-width:calc((100% - 8px) / 2); } }
+@container (min-width:652px){ .pm-card{ max-width:calc((100% - 16px) / 3); } }
+.pm-card{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; flex:1 1 212px;
   text-align:left; padding:9px 11px; font:inherit; color:inherit; cursor:pointer;
   background:rgba(255,255,255,.015); border:1px solid var(--border); border-radius:3px; }
 .pm-card:hover{ border-color:var(--accent-dim); background:rgba(0,229,255,.05); }
