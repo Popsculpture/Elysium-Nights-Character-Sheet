@@ -30,7 +30,7 @@
                wrong Admin passphrases trip a trace and a lockdown, and then
                the #GRID Guardian (the bestiary's corporate counter-hacker, the
                one with admin authority over the whole cluster) overrides it
-               through an off-brand paperclip assistant, takes a retinal scan
+               through an off-brand paperclip assistant named Gizmo, takes a retinal scan
                off your cam, declares you valid, and opens the tunnel anyway.
                Both are pure flavor and a reward for fumbling. Both walk you
                in, which means neither code is a lock, only a deterrent; that
@@ -296,7 +296,7 @@ EN.gate = (function () {
       else { span.classList.remove("typing"); done(); }
     })();
   }
-  // the off-brand paperclip: a bent wire with eyes, nothing anyone could sue over
+  // Gizmo, the off-brand paperclip: a bent wire with eyes, nothing anyone could sue over
   function clipSvg() {
     return '<svg class="gate-clipsvg" viewBox="0 0 64 84" aria-hidden="true">' +
       '<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>' +
@@ -560,13 +560,13 @@ EN.gate = (function () {
         Array.prototype.forEach.call(card.querySelectorAll(".gate-inrow, .gate-label, #gate-go, .gate-sw"), function (n) { n.classList.add("gate-hide"); });
         var clip = document.createElement("div");
         clip.className = "gate-clip";
-        clip.innerHTML = '<div class="gate-bubble"><span class="k">#GRID Guardian // assistive override</span><span class="t" id="gate-bubble"></span></div>' + clipSvg();
+        clip.innerHTML = '<div class="gate-bubble"><span class="k">Gizmo // #GRID Guardian assistive override</span><span class="t" id="gate-bubble"></span></div>' + clipSvg();
         err.parentNode.insertBefore(clip, err);
         var bubble = clip.querySelector("#gate-bubble");
         // the pauses after each bubble are reading time, not theatre; the
         // author lengthened them on 2026-09-02 after the first cut read too fast
         setTimeout(function () {
-          typeInto(bubble, "It looks like you're trying to gain Admin access. Would you like help with that?", function () {
+          typeInto(bubble, "Hi, I'm Gizmo! It looks like you're breaking into a mainframe. Would you like help with that?", function () {
             setTimeout(function () {
               typeInto(bubble, "Hold still. Borrowing your cam for a quick retinal scan.", function () {
                 var scan = [
