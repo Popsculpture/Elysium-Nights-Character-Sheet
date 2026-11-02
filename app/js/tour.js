@@ -31,7 +31,7 @@ EN.tour = (function () {
   var Z = 3950;   // above the contacts dialog (3900), under the filing animation (4000) and every other overlay
   var PAUSE_IDS = ["filed-ov", "mgr", "set-ov", "gmc-ov", "gate", "gate-coach", "recov", "codex-peek", "boot"];
   var S = null;   // { steps, i, entered, wasDone, scrolledFor, clickedAt }
-  var spot = null, card = null, caret = null, obs = null, timer = null, raf = 0;
+  var spot = null, card = null, caret = null, gz = null, obs = null, timer = null, raf = 0;
 
   function el(t, a, c) { return EN.ui.el(t, a, c); }
   function enabled() { try { return localStorage.getItem(KEY) !== "0"; } catch (e) { return true; } }
@@ -191,6 +191,40 @@ EN.tour = (function () {
     if (!g) return document.createTextNode("");
     var w = document.createElement("span"); w.className = "tour-gizmo"; w.innerHTML = g("tour-gizmosvg"); return w;
   }
+  var HELLO = "Hi, I'm Gizmo! It looks like you're building a character. Would you like help with that?";
+  // the big Gizmo and his bubble. The words type in once per tour (S.helloN counts the letters shown, so a rebuilt card
+  // carries on rather than restarting); the full line sits in the bubble unseen to hold its height, so the card never jumps
+  function greeting() {
+    var g = EN.gate && EN.gate.gizmoSvg;
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (S.helloN == null) S.helloN = reduce ? HELLO.length : 0;
+    var typed = el("span.tour-typed", { text: HELLO.slice(0, S.helloN) });
+    var bubble = el("div.tour-bubble", null, [typed, el("span.tour-ghost", { "aria-hidden": "true", text: HELLO })]);
+    if (S.helloN < HELLO.length) {
+      bubble.classList.add("typing");
+      var run = S, tick = function () {
+        if (S !== run || !typed.parentNode) return;
+        if (run.helloN < HELLO.length) { run.helloN++; typed.textContent = HELLO.slice(0, run.helloN); setTimeout(tick, 26); }
+        else bubble.classList.remove("typing");
+      };
+      setTimeout(tick, 350);
+    }
+    return bubble;
+  }
+  /* Step 1 only: Gizmo steps out of the card and stands to its right at full size (above its top corner when
+     there is no room beside it), popping out from behind it. Every later step he is the small icon in the header. */
+  function placeGizmo() {
+    if (!gz) return;
+    var show = !!S && S.i === 0 && card && card.style.display !== "none" && !!(EN.gate && EN.gate.gizmoSvg);
+    if (!show) { gz.style.display = "none"; gz.className = ""; return; }
+    var vw = window.innerWidth, c = card.getBoundingClientRect(), w = 84, h = 110, x, y;
+    if (!gz.firstChild) gz.innerHTML = EN.gate.gizmoSvg("tour-gizmosvg");
+    if (c.right + w - 10 <= vw - 4) { x = c.right - 10; y = c.bottom - h; }                 // beside the card, tucked against its edge
+    else if (c.left - w + 10 >= 4) { x = c.left - w + 10; y = c.bottom - h; }              // no room on the right: its left
+    else { x = vw - w - 8; y = c.top - h + 14; }                                          // a phone sheet: standing on its top edge
+    gz.style.left = Math.round(Math.max(4, x)) + "px"; gz.style.top = Math.round(Math.max(4, y)) + "px";
+    if (gz.style.display === "none" || gz.className !== "tour-gz-in") { gz.style.display = "block"; gz.className = ""; void gz.offsetWidth; gz.className = "tour-gz-in"; }
+  }
   function buildCard(st, anchor) {
     var n = S.steps.length, last = S.i === n - 1;
     var done = isAction(st) && doneNow(st);
@@ -208,15 +242,14 @@ EN.tour = (function () {
       extra = btn("+ REGISTER NEW #PRINT", ".primary", "Open a blank record and start the tour on it", function () { EN.builder.newRecord(); go(S.i + 1); });
     var kids = [
       el("div.tour-head", null, [
-        el("span.tour-who", null, [gizmo(), el("span.tour-name", { text: "GIZMO" }), el("span.tour-count", { text: "TOUR · " + (S.i + 1) + " / " + n + (st.optional ? " · OPTIONAL" : "") })]),
+        el("span.tour-who", null, [S.i === 0 ? document.createTextNode("") : gizmo(), el("span.tour-name", { text: "GIZMO" }), el("span.tour-count", { text: "TOUR · " + (S.i + 1) + " / " + n + (st.optional ? " · OPTIONAL" : "") })]),
         el("button.tour-x", { type: "button", title: "End the tour", "aria-label": "End the tour", onclick: stop }, "✕")
       ]),
       el("h4.tour-title", { text: st.title }),
       el("p.tour-body", { text: st.body })
     ];
-    var say = S.i === 0 ? "Hi, I'm Gizmo! It looks like you're building a character. Would you like help with that?"
-      : last ? "That's everything. Go be a Freelancer. Don't make me do this again." : null;
-    if (say) kids.splice(2, 0, el("p.tour-say", { text: say }));
+    if (S.i === 0) kids.splice(1, 0, greeting());   // step 1 only: Gizmo large, typing his hello; every other step keeps him small
+    else if (last) kids.splice(2, 0, el("p.tour-say", { text: "That's everything. Go be a Freelancer. Don't make me do this again." }));
     if (st.example) kids.push(el("p.tour-ex", null, [el("span.tour-exk", { text: "E.G. " }), document.createTextNode(st.example)]));
     if (st.warning) kids.push(el("p.tour-warn", { text: "⚠ " + st.warning }));
     notes.forEach(function (t) { kids.push(el("p.tour-note", { text: t })); });
@@ -259,7 +292,7 @@ EN.tour = (function () {
         var ar = anchor.getBoundingClientRect(), ct = card.getBoundingClientRect().top;
         if (ar.bottom > ct - 8) window.scrollBy(0, Math.min(ar.top - 90, ar.bottom - ct + 16));
       }
-      pointer(anchor);
+      pointer(anchor); placeGizmo();
       return;
     }
     var cw = card.offsetWidth || 340, chh = card.offsetHeight || 180, x, y;
@@ -278,7 +311,7 @@ EN.tour = (function () {
     }
     card.style.left = Math.round(Math.max(8, Math.min(x, vw - cw - 8))) + "px";
     card.style.top = Math.round(Math.max(8, Math.min(y, vh - chh - 8))) + "px";
-    pointer(anchor);
+    pointer(anchor); placeGizmo();
   }
   /* The card's pointer (the author, 31 Oct 2026: "make each step point at the thing it is describing"):
      an arrow on whichever edge of the card faces the spotlit element, slid along that edge to line up
@@ -315,7 +348,7 @@ EN.tour = (function () {
     raf = 0;
     if (!S) return;
     var st = step();
-    if (paused()) { spot.style.display = "none"; card.style.display = "none"; if (caret) caret.style.display = "none"; return; }
+    if (paused()) { spot.style.display = "none"; card.style.display = "none"; if (gz) { gz.style.display = "none"; gz.className = ""; } if (caret) caret.style.display = "none"; return; }
     card.style.display = "";
     if (!applies(st)) { go(S.i + (S.dir < 0 ? -1 : 1), S.dir); return; }
     var anchor = anchorFor(st);
@@ -389,6 +422,15 @@ EN.tour = (function () {
       "#tour-card .tour-gizmo{display:inline-flex;flex:0 0 auto;}",
       "#tour-card .tour-gizmosvg{width:18px;height:24px;filter:drop-shadow(0 0 5px rgba(46,230,160,.55));animation:tourGizmo 2.4s ease-in-out infinite;transform-origin:50% 90%;}",
       "@keyframes tourGizmo{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(5deg)}}",
+      "#tour-gizmo{position:fixed;z-index:" + (Z + 1) + ";width:84px;height:110px;pointer-events:none;display:none;}",
+      "#tour-gizmo .tour-gizmosvg{width:84px;height:110px;filter:drop-shadow(0 0 14px rgba(46,230,160,.65));animation:tourGizmo 2.4s ease-in-out infinite;transform-origin:50% 90%;}",
+      "#tour-gizmo.tour-gz-in{animation:tourGizmoPop .6s cubic-bezier(.2,.9,.3,1.3) both;}",
+      "@keyframes tourGizmoPop{from{opacity:0;transform:translateX(-80px) scale(.4) rotate(-18deg)}to{opacity:1;transform:none}}",
+      "#tour-card .tour-bubble{display:grid;flex:1 1 auto;min-width:0;padding:8px 10px;border:1px solid #2ee6a0;border-radius:var(--r,4px);background:rgba(46,230,160,.07);font-size:13px;line-height:1.4;font-style:italic;}",
+      "#tour-card .tour-bubble>span{grid-area:1/1;}",
+      "#tour-card .tour-ghost{visibility:hidden;}",
+      "#tour-card .tour-bubble.typing .tour-typed::after{content:'';display:inline-block;width:6px;height:1em;margin-left:2px;vertical-align:text-bottom;background:#2ee6a0;animation:tourCaret .7s steps(1) infinite;}",
+      "@keyframes tourCaret{50%{opacity:0}}",
       "#tour-card .tour-name{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:#2ee6a0;}",
       "#tour-card .tour-say{color:var(--text);font-size:12.5px;font-style:italic;border-left:2px solid #2ee6a0;padding-left:8px;}",
       "#tour-card .tour-count{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text3);}",
@@ -418,7 +460,7 @@ EN.tour = (function () {
       // the spotlight breathes, so the eye finds it
       "@keyframes tourPulse{0%,100%{outline:2px solid transparent;outline-offset:2px;}50%{outline:2px solid var(--accent);outline-offset:5px;}}",
       "#tour-spot{animation:tourPulse 1.8s ease-in-out infinite;}",
-      "@media (prefers-reduced-motion:reduce){#tour-spot{transition:none;animation:none;}#tour-card .tour-gizmosvg{animation:none;}}"
+      "@media (prefers-reduced-motion:reduce){#tour-spot{transition:none;animation:none;}#tour-card .tour-gizmosvg,#tour-gizmo.tour-gz-in,#tour-gizmo .tour-gizmosvg,#tour-card .tour-bubble.typing .tour-typed::after{animation:none;}}"
     ];
     var st = document.createElement("style"); st.id = "tour-css"; st.textContent = css.join("\n"); document.head.appendChild(st);
   }
@@ -432,7 +474,8 @@ EN.tour = (function () {
     spot = el("div#tour-spot", { "aria-hidden": "true" });
     card = el("div#tour-card", { dataset: { noSwipe: "1" } });
     caret = el("div#tour-caret", { "aria-hidden": "true" });
-    document.body.appendChild(spot); document.body.appendChild(card); document.body.appendChild(caret);
+    gz = el("div#tour-gizmo", { "aria-hidden": "true" });
+    document.body.appendChild(spot); document.body.appendChild(card); document.body.appendChild(caret); document.body.appendChild(gz);
     obs = new MutationObserver(schedule);
     obs.observe(document.body, { childList: true, subtree: true });
     window.addEventListener("resize", schedule); window.addEventListener("scroll", schedule, true);
@@ -455,7 +498,8 @@ EN.tour = (function () {
     if (spot && spot.parentNode) spot.parentNode.removeChild(spot);
     if (card && card.parentNode) card.parentNode.removeChild(card);
     if (caret && caret.parentNode) caret.parentNode.removeChild(caret);
-    spot = card = caret = null; S = null;
+    if (gz && gz.parentNode) gz.parentNode.removeChild(gz);
+    spot = card = caret = gz = null; S = null;
   }
 
   /* ---- the entry points other modules ask for (each guarded at its call site) ---- */
