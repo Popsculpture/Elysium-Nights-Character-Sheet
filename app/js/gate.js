@@ -297,8 +297,8 @@ EN.gate = (function () {
     })();
   }
   // Gizmo, the off-brand paperclip: a bent wire with eyes, nothing anyone could sue over
-  function clipSvg() {
-    return '<svg class="gate-clipsvg" viewBox="0 0 64 84" aria-hidden="true">' +
+  function clipSvg(cls) {
+    return '<svg class="' + (cls || "gate-clipsvg") + '" viewBox="0 0 64 84" aria-hidden="true">' +
       '<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>' +
       '<circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>' +
       '<circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/>' +
@@ -739,5 +739,5 @@ EN.gate = (function () {
     open({ profile: rememberedProfile(), mode: "login", onDone: onDone, cancelable: true });
   }
 
-  return { require: require, switchUser: switchUser, signOut: signOut, coach: coach };
+  return { require: require, switchUser: switchUser, signOut: signOut, coach: coach, gizmoSvg: clipSvg };
 })();

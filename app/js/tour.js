@@ -185,6 +185,12 @@ EN.tour = (function () {
     if (st.action === "type") return "Fill it in to continue.";
     return st.advanceOn === "condition" ? "Make your picks to continue." : "Click the highlighted item to continue.";
   }
+  // Gizmo, the off-brand paperclip (drawn by the gate); absent when the gate is, and the tour reads fine without
+  function gizmo() {
+    var g = EN.gate && EN.gate.gizmoSvg;
+    if (!g) return document.createTextNode("");
+    var w = document.createElement("span"); w.className = "tour-gizmo"; w.innerHTML = g("tour-gizmosvg"); return w;
+  }
   function buildCard(st, anchor) {
     var n = S.steps.length, last = S.i === n - 1;
     var done = isAction(st) && doneNow(st);
@@ -202,12 +208,15 @@ EN.tour = (function () {
       extra = btn("+ REGISTER NEW #PRINT", ".primary", "Open a blank record and start the tour on it", function () { EN.builder.newRecord(); go(S.i + 1); });
     var kids = [
       el("div.tour-head", null, [
-        el("span.tour-count", { text: "TOUR · " + (S.i + 1) + " / " + n + (st.optional ? " · OPTIONAL" : "") }),
+        el("span.tour-who", null, [gizmo(), el("span.tour-name", { text: "GIZMO" }), el("span.tour-count", { text: "TOUR · " + (S.i + 1) + " / " + n + (st.optional ? " · OPTIONAL" : "") })]),
         el("button.tour-x", { type: "button", title: "End the tour", "aria-label": "End the tour", onclick: stop }, "✕")
       ]),
       el("h4.tour-title", { text: st.title }),
       el("p.tour-body", { text: st.body })
     ];
+    var say = S.i === 0 ? "Hi, I'm Gizmo! It looks like you're building a character. Would you like help with that?"
+      : last ? "That's everything. Go be a Freelancer. Don't make me do this again." : null;
+    if (say) kids.splice(2, 0, el("p.tour-say", { text: say }));
     if (st.example) kids.push(el("p.tour-ex", null, [el("span.tour-exk", { text: "E.G. " }), document.createTextNode(st.example)]));
     if (st.warning) kids.push(el("p.tour-warn", { text: "⚠ " + st.warning }));
     notes.forEach(function (t) { kids.push(el("p.tour-note", { text: t })); });
@@ -221,7 +230,7 @@ EN.tour = (function () {
         ? el("p.tour-act", { role: "status", text: "▶ " + actionPrompt(st) })
         : btn(last ? "FINISH" : (st.optional ? "SKIP ▶" : "NEXT ▶"), ".primary", last ? "End the tour" : "Next step", function () { last ? stop() : go(S.i + 1); })
     ]));
-    return el("div#tour-card", { role: "dialog", "aria-live": "polite", "aria-label": "Character creation tour", dataset: { noSwipe: "1", step: st.id } }, kids);
+    return el("div#tour-card", { role: "dialog", "aria-live": "polite", "aria-label": "Character creation tour with Gizmo", dataset: { noSwipe: "1", step: st.id } }, kids);
   }
 
   // the player is on a different tab or #PRINT step than the step lives on
@@ -376,6 +385,12 @@ EN.tour = (function () {
       "#tour-card{position:fixed;z-index:" + (Z + 1) + ";width:min(360px,calc(100vw - 24px));box-sizing:border-box;padding:12px 14px;",
       "  background:var(--bg2);border:1px solid var(--accent);border-radius:var(--r,4px);box-shadow:0 10px 30px rgba(0,0,0,.6);color:var(--text);font-family:var(--body);}",
       "#tour-card .tour-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}",
+      "#tour-card .tour-who{display:flex;align-items:center;gap:6px;min-width:0;}",
+      "#tour-card .tour-gizmo{display:inline-flex;flex:0 0 auto;}",
+      "#tour-card .tour-gizmosvg{width:18px;height:24px;filter:drop-shadow(0 0 5px rgba(46,230,160,.55));animation:tourGizmo 2.4s ease-in-out infinite;transform-origin:50% 90%;}",
+      "@keyframes tourGizmo{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(5deg)}}",
+      "#tour-card .tour-name{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:#2ee6a0;}",
+      "#tour-card .tour-say{color:var(--text);font-size:12.5px;font-style:italic;border-left:2px solid #2ee6a0;padding-left:8px;}",
       "#tour-card .tour-count{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text3);}",
       "#tour-card .tour-x{background:transparent;border:0;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 4px;}",
       "#tour-card .tour-title{margin:0 0 6px;font-family:var(--disp);font-size:15px;letter-spacing:.04em;color:var(--accent);}",
@@ -403,7 +418,7 @@ EN.tour = (function () {
       // the spotlight breathes, so the eye finds it
       "@keyframes tourPulse{0%,100%{outline:2px solid transparent;outline-offset:2px;}50%{outline:2px solid var(--accent);outline-offset:5px;}}",
       "#tour-spot{animation:tourPulse 1.8s ease-in-out infinite;}",
-      "@media (prefers-reduced-motion:reduce){#tour-spot{transition:none;animation:none;}}"
+      "@media (prefers-reduced-motion:reduce){#tour-spot{transition:none;animation:none;}#tour-card .tour-gizmosvg{animation:none;}}"
     ];
     var st = document.createElement("style"); st.id = "tour-css"; st.textContent = css.join("\n"); document.head.appendChild(st);
   }
