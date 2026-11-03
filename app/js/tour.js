@@ -191,7 +191,7 @@ EN.tour = (function () {
     if (!g) return document.createTextNode("");
     var w = document.createElement("span"); w.className = "tour-gizmo"; w.innerHTML = g("tour-gizmosvg"); return w;
   }
-  var HELLO = "Hi,\nIt looks like you're building a character.\nWould you like help with that?";
+  var HELLO = "It looks like you're building a character.\nWould you like help with that?";
   /* Step 1 only: Gizmo stands to the right of the card at full size, popping out from behind it, with his speech
      bubble above him, outside the card (above the card's top corner when there is no room beside it). His words type
      in once per tour (S.helloN counts the letters shown). Every later step he is the small icon in the header. */
@@ -425,6 +425,8 @@ EN.tour = (function () {
       "@keyframes tourGizmo{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(5deg)}}",
       "#tour-gizmo{position:fixed;z-index:" + (Z + 1) + ";width:196px;pointer-events:none;display:none;flex-direction:column;align-items:center;gap:12px;}",
       "#tour-gizmo .tour-gizmo-fig{display:inline-flex;}",
+      // he faces the card: both pupils slide to the left side of his eyes
+      "#tour-gizmo .tour-gizmosvg circle:nth-of-type(n+3){transform:translateX(-3px);}",
       "#tour-gizmo .tour-gizmosvg{width:84px;height:110px;filter:drop-shadow(0 0 14px rgba(46,230,160,.65));animation:tourGizmo 2.4s ease-in-out infinite;transform-origin:50% 90%;}",
       "#tour-gizmo.tour-gz-in{animation:tourGizmoPop .6s cubic-bezier(.2,.9,.3,1.3) both;}",
       "@keyframes tourGizmoPop{from{opacity:0;transform:translateX(-80px) scale(.4) rotate(-18deg)}to{opacity:1;transform:none}}",
