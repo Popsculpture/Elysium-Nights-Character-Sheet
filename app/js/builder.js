@@ -4575,12 +4575,12 @@ EN.builder = (function () {
           liveEx ? el("span.chip", { style: { fontSize: "9px", color: "var(--gold)", borderColor: "var(--gold)" } }, "LIVE")
                  : el("button.btn.sm", { title: "Open this example", onclick: function () { store.setExample(x.key); _step = 0; closeManager(); } }, "OPEN"),
           el("button.btn.sm", { style: { color: "var(--accent)", borderColor: "var(--accent)" },
-            title: "Copy this example into your roster as an editable record",
+            title: "Hire this example: copy it into your roster as an editable record",
             onclick: function () {
               store.setExample(x.key);
               var made = store.adoptExample();
               if (made) { toast(made.name + " saved to your roster."); EN.app.render(); }
-            } }, "⇒ ADOPT")
+            } }, "⇒ HIRE")
         ]));
       });
     }
