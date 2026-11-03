@@ -189,7 +189,7 @@ EN.hazards = {
 
     { key: "void-lung", name: "Void Lung", kind: "FreeBorn Trait",
       source: { type: "lineageFeature", name: "Void Lung" }, lineage: "freeborn",
-      summary: "15 minutes of held breath. The largest single vacuum mitigation in the game.",
+      summary: "Hold your breath for up to 15 minutes.",
       note: "Fifteen minutes is 150 rounds, at the Handbook's flat rate of 10 rounds to the minute, and it covers both Vacuum and Drowning. The save clock starts when those run out rather than never starting, so the tracker stays live and counts down. A Vacuum's 1d6 Cold still lands every round regardless of held breath.",
       effects: { breathMinutes: 15 } },
 
