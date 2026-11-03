@@ -63,7 +63,7 @@ EN.gearCatalog.tools = {
        not anything used up, so they left Consumables for a bucket of their own. Both sit in the
        Handbook's Survival, Logistics, and Identity table, which is the group name they keep. */
     { key: "identity", title: "Identity & Documents",
-      intro: "Papers and tags that say who you are, or who you claim to be. From the Handbook's Survival, Logistics, and Identity table.",
+      intro: "Papers and tags that say who you are, or who you claim to be.",
       groups: [
         { name: "Survival, Logistics & Identity", intro: "" }
       ] },

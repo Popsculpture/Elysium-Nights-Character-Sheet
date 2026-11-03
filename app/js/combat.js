@@ -1051,7 +1051,7 @@ EN.combatView = (function () {
   function zeroVitalityToast(z) {
     if (!z) return "";
     return z.gained ? "Vitality 0: +1 Fatigue (now level " + (z.level + 1) + ") and Bloodied. Undo it with the Fatigue control under Status Changes."
-                    : "Vitality 0: Bloodied. Fatigue is already at 6, so the level the Handbook adds has nowhere to go.";
+                    : "Vitality 0: Bloodied. Fatigue is already at 6, so it cannot go higher.";
   }
   function applyDamage(ch, d, amount) {
     if (!amount || amount <= 0) return;
@@ -2200,7 +2200,7 @@ EN.combatView = (function () {
       // Names its actual source. It read VOID LUNG for everyone, so a Rebreather
       // wearer was told they had a lineage trait they did not have.
       if (b.holdFromGrant) chips.push(hazChip(String(b.breathFrom).toUpperCase() + " · " + b.breathMinutes + " MIN", "var(--success)",
-        b.breathFrom + " holds " + b.breathMinutes + " minutes of breath, which is " + b.holdRounds + " rounds at the Handbook's 10 rounds to the minute"));
+        b.breathFrom + " holds " + b.breathMinutes + " minutes of breath, which is " + b.holdRounds + " rounds at 10 rounds to the minute"));
       if (b.kind === "vacuum") chips.push(hazChip(b.sealedOut ? "SEALED · " + String(b.seal.via).toUpperCase() : "NOT VACUUM-SEALED",
         b.sealedOut ? "var(--success)" : "var(--danger)", b.seal.why));
       var right = [];
@@ -2522,7 +2522,7 @@ EN.combatView = (function () {
       if (incSrc.some(function (s) { return s.kind === "bonus" && s.label === o.name; })) {
         stepped = d.unarmed.die || (d.unarmed.flat ? String(d.unarmed.flat) : null);
       }
-      if (stepped) chips.push(hazChip("UNARMED " + stepped, "var(--success)", "This bonus gives Oomph +1 (Unarmed); the sheet already reflects it"));
+      if (stepped) chips.push(hazChip("UNARMED " + stepped, "var(--success)", "This bonus gives Oomph +1 (Unarmed)"));
       if (o.requires) chips.push(hazChip("NEEDS " + o.requires.toUpperCase(), "var(--text3)", "The tuning must match the recipient's installed hardware"));
       // A consumable takes its prose from the gear catalog rather than carrying
       // a second copy of it here.
@@ -4201,7 +4201,7 @@ EN.combatView = (function () {
               /* Conditional Resistances (Street Scrapper's Upgrade) turn on what is hitting you,
                  which the sheet cannot see, so they are a note here and never a row above: the
                  author's decision 5, 2026-10-16. */
-              (d.resistNotes || []).map(function (n) { return " " + n.label + ": " + n.text + " Apply it yourself when it fits; the sheet can't see what hits you."; }).join("")).trim() || null,
+              (d.resistNotes || []).map(function (n) { return " " + n.label + ": " + n.text + " Apply it when it fits."; }).join("")).trim() || null,
         rules: [["ref-damage/damage-order", "Damage Order"]]
           .concat((d.resistances || []).length ? [["ref-damage/resistance-vulnerability-and-immunity", "Resistance, Vulnerability & Immunity"]] : [])
           .concat([["ref-dmg", "Damage Types"]]) },

@@ -1366,7 +1366,7 @@ EN.settings = (function () {
     var L = EN.launch, rules = L.optionalRules || [];
     var kids = [
       el("div.set-sectitle", { text: "// OPTIONAL RULES", dataset: { sum: rules.filter(function (r) { return L.rule(r.key); }).length + " / " + rules.length + " ON" } }),
-      el("p.set-hint", { text: "Switch a rule off for your table. Each one is on by default, the book as written. Turning one off changes what the sheet shows and applies, not what a record holds. Saved on this device." })
+      el("p.set-hint", { text: "Switch a rule off for your table. Each one is on by default. Turning one off changes what is shown and applied, not what a record holds. Saved on this device." })
     ];
     (L.optionalRules || []).forEach(function (r) {
       var on = L.rule(r.key);

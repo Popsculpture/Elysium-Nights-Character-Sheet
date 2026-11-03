@@ -131,7 +131,7 @@ EN.inventoryView = (function () {
     if (_mode === "surplus") return "List " + fmtG(it.price) + ", Guild members' rate " + fmtG(sp) + ". Overstock, salvage, serial numbers conveniently worn off.";
     if (_mode === "fivefinger") return "It fell off a transport. Looted, recovered, donated, or pulled from a body. Free, and the fence won't touch it.";
     if (it.legality === "As weapon") return "List price " + fmtG(it.price) + (it.unit ? " " + it.unit : "") + ", standard ammo carries the legality of the weapon it feeds.";
-    return "List price " + fmtG(it.price) + (it.unit ? " " + it.unit : "") + ", straight off the book. The Undercut skips the corporate fees, not the cash.";
+    return "List price " + fmtG(it.price) + (it.unit ? " " + it.unit : "") + ". The Undercut skips the corporate fees.";
   }
   var WEAPON_GROUPS = { Simple: 1, Martial: 1, Sidearm: 1, Longarm: 1, Heavy: 1, Launcher: 1, Thrown: 1, Bowfire: 1 };
   function isWeapon(it) { return !!(it && WEAPON_GROUPS[it.group]); }
@@ -1727,7 +1727,7 @@ EN.inventoryView = (function () {
       undercut: {
         title: "THE UNDERCUT", color: "var(--ember)", glow: "rgba(255,90,40,.05)",
         sub: "GRAY-MARKET UPLINK · LIST PRICE, NO PAPERWORK · NO RECEIPTS · NO NAMES",
-        body: ["Every legitimate storefront charges for compliance, verification, and the privilege of being watched while you pay. The Undercut skips all of it and sells at the number printed in the book. Cash up front. Don't ask for a receipt; asking for a receipt is how they find you."]
+        body: ["Every legitimate storefront charges for compliance, verification, and the privilege of being watched while you pay. The Undercut skips all of it and sells at list price. Cash up front. Don't ask for a receipt; asking for a receipt is how they find you."]
       },
       register: {
         title: "THE REGISTER", color: "var(--accent)", glow: "rgba(0,229,255,.05)",
@@ -4276,7 +4276,7 @@ EN.inventoryView = (function () {
         num("PAYOUT", "total", 0, 9999999, "110px", "The contract's lump sum, before anyone takes a cut"),
         num("CREW", "crew", 1, 12, "56px", "How many Freelancers split it"),
         num("FIXER %", "fixer", 0, 100, "56px", "The fixer's cut, taken off the top before the split"),
-        num("CREW KIT %", "kit", 0, 100, "56px", "Optional shared fund; the Handbook suggests 10 to 30 percent")
+        num("CREW KIT %", "kit", 0, 100, "56px", "Optional shared fund, usually 10 to 30 percent")
       ]),
       el("div.row.wrap", { style: { gap: "16px", alignItems: "center" } }, [
         stat("FIXER", r.fixer, "var(--ember)"),

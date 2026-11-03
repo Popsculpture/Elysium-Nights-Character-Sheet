@@ -3074,7 +3074,7 @@ EN.builder = (function () {
     var on = editFreely(ch);
     return el("div", { style: { margin: "0 0 12px", padding: "8px 10px", border: "1px dashed " + (on ? "var(--warn)" : "var(--border2)"), borderRadius: "4px" } }, [
       el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
-        el("button.btn.sm" + (on ? ".primary" : ""), { title: on ? "Turn Edit freely off: the Handbook's one retrain per level applies again. Nothing you changed is undone." : "Lift the one-retrain-per-level count and the level-up timing for this character",
+        el("button.btn.sm" + (on ? ".primary" : ""), { title: on ? "Turn Edit freely off: one retrain per level applies again. Nothing you changed is undone." : "Lift the one-retrain-per-level count and the level-up timing for this character",
           onclick: function () { setEditFreely(!on); } }, on ? "EDIT FREELY: ON" : "EDIT FREELY: OFF"),
         on ? el("span.chip.edit-freely", { style: { color: "var(--warn)", borderColor: "var(--warn)" }, text: "EDIT FREELY" }) : null
       ]),

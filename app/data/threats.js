@@ -236,7 +236,7 @@ EN.threats = {
      defense OR an Opportunity Attack. */
   conventions: [
     "Vitality only. No Wounds, no Resilience Dice, no Vigor, unless an entry grants them. A threat that needs the full Freelancer treatment (a recurring rival, a campaign villain with a name and a tailor) can be built as a Freelancer instead. Budget an afternoon.",
-    "Conditions work normally. Threats Bleed, Burn, fall Prone, and get Frightened by the book. When a condition's save comes due, use the threat's listed save bonus.",
+    "Conditions work normally. Threats Bleed, Burn, fall Prone, and get Frightened. When a condition's save comes due, use the threat's listed save bonus.",
     "One defensive Impulse. Minions get none. Standards and Elites get one Impulse Action per round, usable for the defensive options their entry lists or for an Opportunity Attack. Solos have their own economy.",
     "Threats don't roll Death Saves. 0 Vitality resolves the question. The exception is anyone the crew is paid to bring in breathing, in which case the body is Dying and the clock from Vitality & Recovery is now the crew's problem.",
     "Threats use flat bonuses. No proficiency tiers, no Caliber. The stat block's number is the whole number.",
