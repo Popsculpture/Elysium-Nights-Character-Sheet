@@ -141,9 +141,14 @@ window.EN = window.EN || {};
     /* ---- 5 · Wall-to-Wall ---------------------------------------------------------- */
     { id: "mv-wall", title: "Wall-to-Wall", tag: "EXPLOSIVES INDOORS", order: 35, when: has("wallToWall"), build: function (ctx, K) {
       var w = M().wallToWall;
+      /* the room diagram (js/wallgrid.js, 4 Nov 2026): a tool for the Codex page itself, so the drawer and the
+         index read the rules alone */
+      var room = !ctx.inPeek && !ctx.indexing && EN.wallGrid && EN.wallGrid.build;
       return [
         K.proseBlock(w.intro),
         w.parts.map(function (p) { return K.ruleBlock(p.name, p.text); }),
+        room ? K.subTitle("Try It In A Room") : null,
+        room ? EN.wallGrid.build() : null,
         K.seeAlso("Cover against a blast:", [["ref-cover/cover-and-defense", "Cover and Defense"]]),
         K.seeAlso("The traits:", [["gr-traits/explosive", "Explosive"], ["gr-traits/pressure", "Pressure"]])
       ];
