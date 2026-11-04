@@ -414,7 +414,7 @@ EN.flowView = (function () {
       el("span.fv-step-n.mono", { text: String(nScale) })
     ])];
     if (!directed) {
-      scale.push(el("button.fv-switch" + (_form.precision ? ".on" : ""), { type: "button", role: "switch", "aria-checked": _form.precision ? "true" : "false", title: F.precisionShaping.desc,
+      scale.push(el("button.btn.sm.fv-switch" + (_form.precision ? ".on.primary" : ""), { type: "button", role: "switch", "aria-checked": _form.precision ? "true" : "false", title: F.precisionShaping.desc,
         onclick: function () { setForm({ precision: !_form.precision }); } }, [el("span.fv-switch-k"), el("span.fv-switch-t", { text: "PRECISION" })]));
       scale.push(EN.ui.ruleChip("fl-shaping/precision-shaping", { title: "Precision Shaping" }));
     }
@@ -542,7 +542,7 @@ EN.flowView = (function () {
   function vseg(items, isOn, onPick, cls, rowId) {
     return el("div.fv-seg" + (cls ? "." + cls : ""), { role: "group" }, items.map(function (it) {
       var on = isOn(it.key), just = on && _vJust === rowId + ":" + it.key;
-      var b = el("button.fv-opt" + (on ? ".on" : "") + (just ? ".fv-just" : ""), { type: "button", disabled: !!it.disabled, title: it.title || "", "aria-pressed": on ? "true" : "false",
+      var b = el("button.btn.sm.fv-opt" + (on ? ".on.primary" : "") + (just ? ".fv-just" : ""), { type: "button", disabled: !!it.disabled, title: it.title || "", "aria-pressed": on ? "true" : "false",
         onclick: function () { if (!it.disabled) { _vJust = rowId + ":" + it.key; onPick(it.key); } } }, [el("span.fv-opt-t", { text: it.label })]);
       if (it.color) b.style.setProperty("--rc", it.color);
       return b;
@@ -571,7 +571,7 @@ EN.flowView = (function () {
       el("span.fv-step-n.mono", { text: String(n) })
     ]);
     var sc = [step];
-    if (!directed) sc.push(el("button.fv-switch" + (_form.precision ? ".on" : ""), { type: "button", role: "switch", "aria-checked": _form.precision ? "true" : "false", title: F.precisionShaping.desc,
+    if (!directed) sc.push(el("button.btn.sm.fv-switch" + (_form.precision ? ".on.primary" : ""), { type: "button", role: "switch", "aria-checked": _form.precision ? "true" : "false", title: F.precisionShaping.desc,
       onclick: function () { setForm({ precision: !_form.precision }); } }, [el("span.fv-switch-k"), el("span.fv-switch-t", { text: "PRECISION" })]));
     row("SCALING", el("div.fv-scale", null, sc));
     row("DURATION", vseg(F.duration.map(function (du) { return { key: du.key, label: du.name, title: du.desc }; }), function (k) { return _form.duration === k; }, function (k) { setForm({ duration: k }); }, "two", "dur"));

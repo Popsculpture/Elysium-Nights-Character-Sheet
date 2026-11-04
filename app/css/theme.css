@@ -3128,7 +3128,7 @@ html.skin-droid .fv-win.fv-droid{ left:calc(var(--dr-l) + 10px); right:auto; wid
 .fv-lg-zone::before{ border-color:var(--fv-res); border-radius:0; background:repeating-linear-gradient(45deg, var(--fv-res) 0 1px, transparent 1px 3px); }
 /* the zoom buttons, right of the key in the bar */
 .fv-zoom{ display:flex; gap:3px; line-height:1; flex:0 0 auto; margin-left:auto; }
-.fv-zoom .btn.sm{ padding:2px 7px; font-size:10px; min-width:24px; }
+.fv-zoom .btn.sm{ padding:3px 8px; min-width:24px; justify-content:center; }
 /* the aim row: move and turn, the bar's second line */
 .fv-aimrow{ flex:1 1 100%; display:flex; flex-wrap:wrap; align-items:center; gap:3px; padding-top:5px; border-top:1px dashed var(--border2); }
 .fv-aimrow .btn.sm{ padding:2px 7px; font-size:11px; min-width:24px; line-height:1.1; }
@@ -3148,78 +3148,53 @@ html.skin-droid .fv-win.fv-droid{ left:calc(var(--dr-l) + 10px); right:auto; wid
    and the effect pickers' keys wrap a long name onto a second line instead of cutting it */
 .fv-desc{ margin:2px 0 0; color:var(--text2); font-size:11.5px; line-height:1.45; }
 .fv-seg.wrap{ grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); }
-.fv-seg.wrap .fv-opt{ height:auto; min-height:28px; padding-top:6px; padding-bottom:6px; }
+.fv-seg.wrap > .fv-opt{ height:auto; }
 .fv-seg.wrap .fv-opt-t{ white-space:normal; line-height:1.25; }
 .fs-deck .fv-scale .rule-chip, .fs-deck .fv-scale .codex-chip{ align-self:center; }
 /* the Visualize button's eye: the author's icon, in the button's own colour */
 .fv-eye{ display:inline-block; width:1.45em; height:1em; margin-right:4px; vertical-align:-.16em; line-height:0; }
 .fv-eye svg{ width:100%; height:100%; display:block; }
-.fv-deck{ position:relative; display:flex; flex-direction:column; padding:4px 9px; border:1px solid var(--border2); border-radius:6px;
-  background:linear-gradient(180deg, color-mix(in srgb, var(--fv-res) 6%, var(--bg2,#12101c)), var(--bg2,#12101c) 70%); }
-.fv-row{ display:grid; grid-template-columns:minmax(0,1fr); align-items:start; gap:5px; padding:8px 0 7px; border-top:1px dashed color-mix(in srgb, var(--border2) 75%, transparent); }
+/* The deck's keys ARE the app's buttons (.btn.sm, .primary when chosen; 4 Nov 2026, the author: the text, buttons
+   and borders match the rest of the app), so every skin and palette draws them as it draws any button. The deck
+   only lays them out: an even grid per row, each row under a label in the app's field-label style. */
+.fv-deck{ position:relative; display:flex; flex-direction:column; padding:2px 12px; border:1px solid var(--border); border-radius:var(--r); }
+.fs-deck{ padding:0; border:0; }
+.fv-row{ display:grid; grid-template-columns:minmax(0,1fr); align-items:start; gap:6px; padding:9px 0; border-top:1px solid var(--border); }
 .fv-row:first-child{ border-top:0; }
-/* the label sits over its keys, so every key gets the deck's full width and no name is cut short */
-.fv-lab{ position:relative; padding-left:11px; font:9px/14px var(--mono); letter-spacing:.16em; color:var(--text3); white-space:nowrap; }
+.fs-deck .fv-row:first-child{ padding-top:0; }
+/* the label sits over its keys (the builder's old field label: display face, small caps spacing, muted) */
+.fv-lab{ position:relative; font-family:var(--disp); font-size:9.5px; line-height:14px; letter-spacing:.12em; color:var(--text3); white-space:nowrap; }
 .fv-lab:empty{ display:none; }
-.fv-lab::before{ content:""; position:absolute; left:1px; top:5px; width:5px; height:5px; transform:rotate(45deg); background:var(--fv-res); opacity:.75; }
-.fv-row-b{ display:flex; flex-direction:column; gap:5px; min-width:0; }
-.fv-seg{ display:grid; grid-template-columns:repeat(auto-fit, minmax(118px, 1fr)); gap:4px; }
+/* a label that opens its rule keeps the label's colour, with the Codex's dotted underline */
+.fv-lab .codex-link{ color:inherit; text-decoration-color:var(--border2); }
+.fv-lab .codex-link:hover{ color:var(--text2); text-decoration-color:currentColor; }
+.fv-row-b{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+.fv-seg{ display:grid; grid-template-columns:repeat(auto-fit, minmax(136px, 1fr)); gap:6px; }
 .fv-seg.three{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
 .fv-seg.two{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
 .fv-seg.sub{ grid-template-columns:repeat(auto-fit, minmax(68px, 1fr)); }
-.fv-seg.sub .fv-opt{ height:24px; font-size:9.5px; }
-.fv-opt{ --rc:var(--fv-res); position:relative; height:28px; min-width:0; padding:0 8px; border:1px solid var(--border2); border-radius:0;
-  background:color-mix(in srgb, var(--bg1,#0b0a14) 85%, transparent); color:var(--text2);
-  font:600 10px/1 var(--disp, inherit); letter-spacing:.08em; text-transform:uppercase; cursor:pointer; overflow:hidden;
-  clip-path:polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-  transition:background-color .15s, color .15s, border-color .15s, box-shadow .15s; }
-.fv-opt-t{ position:relative; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.fv-opt:hover:not(:disabled){ color:var(--text); border-color:color-mix(in srgb, var(--rc) 70%, var(--border2)); background-color:color-mix(in srgb, var(--rc) 10%, var(--bg1,#0b0a14)); }
-.fv-opt.on{ color:var(--text); border-color:var(--rc);
-  background:linear-gradient(180deg, color-mix(in srgb, var(--rc) 32%, transparent), color-mix(in srgb, var(--rc) 14%, transparent));
-  box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--rc) 45%, transparent); }
-/* only the key just pressed flashes (the window is rebuilt on every change, so a rule on .on would flash them all) */
+.fv-seg > .fv-opt{ --rc:currentColor; position:relative; width:100%; min-width:0; justify-content:center; margin:0; }
+.fv-opt-t{ position:relative; display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* only the key just pressed flashes (the deck is rebuilt on every change, so a rule on the chosen key would flash them all) */
 .fv-opt.on.fv-just{ animation:fvSel .34s ease-out; }
-.fv-opt.on::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--rc); }
-.fv-opt:disabled{ opacity:.36; cursor:not-allowed; border-style:dashed; }
-.fv-step .stepper button:focus-visible{ outline:2px solid var(--fv-res); outline-offset:1px; }
-/* the keys and the switch are clipped to their chamfer, which would cut an outside ring away: draw it inside */
-.fv-opt:focus-visible, .fv-switch:focus-visible{ outline:2px solid var(--rc, var(--fv-res)); outline-offset:-4px; }
-/* a Resonance key wears its own colour: a lit dot, then the colour itself when chosen */
-.fv-seg.res .fv-opt{ padding-left:19px; text-align:left; }
-.fv-seg.res .fv-opt::after{ content:""; position:absolute; left:8px; top:50%; width:6px; height:6px; margin-top:-3px; border-radius:50%; background:var(--rc); box-shadow:0 0 5px var(--rc); }
-/* scaling: the count between its buttons, and Precision a real switch */
-.fv-scale{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-.fv-step{ display:inline-flex; align-items:center; gap:7px; height:28px; padding:0 5px 0 10px; border:1px solid var(--border2); background:var(--bg1,#0b0a14);
-  clip-path:polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
-.fv-step-l{ font:9px var(--mono); letter-spacing:.14em; color:var(--text3); }
-.fv-step .stepper{ display:inline-flex; gap:3px; margin:0; width:auto; }
-.fv-win .fv-step .stepper button, .builder .fv-step .stepper button{ width:24px; height:20px; padding:0; border:1px solid var(--border2); background:color-mix(in srgb, var(--fv-res) 8%, var(--bg2,#12101c)); color:var(--text); font-size:13px; line-height:1; cursor:pointer; }
-.fv-step .stepper button:hover:not(:disabled){ border-color:var(--fv-res); }
-.fv-step .stepper button:disabled{ opacity:.35; cursor:not-allowed; }
-.fv-step-n{ min-width:20px; text-align:center; font-size:15px; color:var(--fv-res); order:-1; }
-.fv-step-l{ order:-2; }
-/* the '98 well is grey: the count goes plain dark, where a Resonance colour would vanish */
-html.skin-98 .fv-step-n{ color:var(--text); text-shadow:none; }
+/* a Resonance key carries its own colour as a small lit dot; chosen, it is the app's chosen button like any other */
+.fv-seg.res > .fv-opt{ justify-content:flex-start; }
+.fv-seg.res > .fv-opt::after{ content:""; order:-1; flex:0 0 6px; width:6px; height:6px; border-radius:50%; background:var(--rc); box-shadow:0 0 4px var(--rc); }
+.fv-seg.res > .fv-opt:disabled::after{ box-shadow:none; opacity:.6; }
+/* scaling: the app's own stepper, the count beside it, Precision a button that holds its state (with a small switch in it) */
+.fv-scale{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.fv-step{ display:inline-flex; align-items:center; gap:8px; }
+.fv-step-l{ font-size:11px; color:var(--text3); }
+.fv-step .stepper{ margin:0; width:auto; }
+.fv-step-n{ min-width:14px; text-align:center; font-size:13px; color:var(--text2); }
+.fv-switch-k{ position:relative; flex:0 0 22px; width:22px; height:12px; border-radius:6px; border:1px solid currentColor; opacity:.7; }
+.fv-switch-k::after{ content:""; position:absolute; top:2px; left:2px; width:6px; height:6px; border-radius:50%; background:currentColor; transition:transform .2s; }
+.fv-switch.on .fv-switch-k{ opacity:1; }
+.fv-switch.on .fv-switch-k::after{ transform:translateX(10px); }
+/* the window is narrower than the builder: its keys pack their letters a little closer, so no name is cut short */
+.fv-win .fv-seg > .fv-opt{ padding-left:5px; padding-right:5px; letter-spacing:.05em; gap:6px; }
 /* a phone: the Intent and Delivery rows go to two across, so no name is cut short */
 @media (max-width: 560px){ .fv-seg.three{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
-.fv-switch{ display:inline-flex; align-items:center; gap:8px; height:28px; padding:0 11px 0 7px; border:1px solid var(--border2); background:var(--bg1,#0b0a14); color:var(--text3);
-  font:600 10px/1 var(--disp, inherit); letter-spacing:.08em; cursor:pointer;
-  clip-path:polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); transition:color .15s, border-color .15s; }
-.fv-switch-k{ position:relative; width:26px; height:14px; border-radius:7px; background:var(--border2); transition:background .2s; }
-.fv-switch-k::after{ content:""; position:absolute; top:2px; left:2px; width:10px; height:10px; border-radius:50%; background:var(--text3); transition:transform .2s, background .2s; }
-.fv-switch:hover{ color:var(--text2); }
-.fv-switch.on{ color:var(--text); border-color:var(--success,#39ff8f); }
-.fv-switch.on .fv-switch-k{ background:color-mix(in srgb, var(--success,#39ff8f) 40%, transparent); }
-.fv-switch.on .fv-switch-k::after{ transform:translateX(12px); background:var(--success,#39ff8f); box-shadow:0 0 6px var(--success,#39ff8f); }
-/* the bar's own buttons (zoom, move, turn) in the same key style */
-html body .fv-win .fv-bar .btn.sm{ height:24px; min-width:26px; padding:0 8px; border:1px solid var(--border2); border-radius:0; background:var(--bg1,#0b0a14); color:var(--text2);
-  font:600 10px/1 var(--disp, inherit); letter-spacing:.06em; box-shadow:none;
-  clip-path:polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px); }
-html body .fv-win .fv-bar .btn.sm:hover:not(:disabled){ color:var(--text); border-color:var(--fv-res); background:color-mix(in srgb, var(--fv-res) 10%, var(--bg1,#0b0a14)); }
-html body .fv-win .fv-bar .btn.sm.primary{ color:var(--text); border-color:var(--fv-res); background:color-mix(in srgb, var(--fv-res) 26%, transparent); }
-html body .fv-win .fv-bar .btn.sm:disabled{ opacity:.35; }
-html body .fv-win .fv-bar .btn.sm:focus-visible{ outline:2px solid var(--fv-res); outline-offset:-4px; }
 .fv-nav-hint{ flex:1 1 100%; font-size:9.5px; color:var(--text3); letter-spacing:.02em; }
 /* the map takes every gesture (pinch, pan, wheel), and says when it is being dragged */
 .fv-stage{ touch-action:none; }
@@ -3227,11 +3202,11 @@ html body .fv-win .fv-bar .btn.sm:focus-visible{ outline:2px solid var(--fv-res)
 @keyframes fvSel{ from{ box-shadow:inset 0 0 0 1px var(--rc), inset 0 0 18px color-mix(in srgb, var(--rc) 70%, transparent); } }
 
 /* ---- Immersive flair for the deck: a light that sweeps the deck, chosen keys that breathe in their
-   colour, a shimmer across a key under the pointer, the row diamonds blinking, and at Surge and
+   colour, a shimmer across a key under the pointer, and at Surge and
    Rend the chosen keys flicker. The Free-Shaping panel's deck (in an Immersive Flow tab) takes the same. Keys are clipped to their chamfer, so every glow is drawn inside. */
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck{ border-color:color-mix(in srgb, var(--fv-res) 38%, var(--border2));
   box-shadow:0 0 16px color-mix(in srgb, var(--fv-res) 9%, transparent), inset 0 0 26px color-mix(in srgb, var(--fv-res) 6%, transparent); }
-:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck::before{ content:""; position:absolute; inset:0; border-radius:6px; pointer-events:none;
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck::before{ content:""; position:absolute; inset:0; border-radius:var(--r); pointer-events:none;
   background:linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--fv-res) 13%, transparent) 50%, transparent 100%) no-repeat;
   background-size:35% 100%; animation:fvSweep calc(7s / var(--fv-pulse)) linear infinite; animation-delay:var(--fv-t, 0s); }
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on{ animation:fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:var(--fv-t, 0s); }
@@ -3240,8 +3215,7 @@ html body .fv-win .fv-bar .btn.sm:focus-visible{ outline:2px solid var(--fv-res)
   background-image:linear-gradient(110deg, transparent 35%, color-mix(in srgb, var(--rc) 28%, transparent) 50%, transparent 65%);
   background-size:260% 100%; animation:fvShimmer .9s linear infinite; }
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on:hover{ animation:fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:var(--fv-t, 0s); background-image:linear-gradient(180deg, color-mix(in srgb, var(--rc) 36%, transparent), color-mix(in srgb, var(--rc) 16%, transparent)); background-size:auto; }
-:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-lab::before{ animation:fvBlink 2.2s ease-in-out infinite; animation-delay:var(--fv-t, 0s); box-shadow:0 0 6px var(--fv-res); }
-:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-step-n{ text-shadow:0 0 8px var(--fv-res); }
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-step-n{ text-shadow:0 0 8px var(--flow); }
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-switch.on .fv-switch-k::after{ animation:fvBlink 1.6s ease-in-out infinite; }
 :is(.fv-win.fv-immersive[data-fx="3"], .flowtab.immersive[data-fx="3"] .builder) .fv-opt.on .fv-opt-t, :is(.fv-win.fv-immersive[data-fx="4"], .flowtab.immersive[data-fx="4"] .builder) .fv-opt.on .fv-opt-t{ animation:fvJit .45s steps(2) infinite; }
 :is(.fv-win.fv-immersive[data-fx="5"], .flowtab.immersive[data-fx="5"] .builder) .fv-deck{ filter:grayscale(.8) brightness(.85); }
