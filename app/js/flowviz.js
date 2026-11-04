@@ -82,9 +82,14 @@ EN.flowViz = (function () {
   var AIMED = { cone: 1, line: 1 };                  // a heading you turn
 
   /* one colour per Resonance (a hex, because an SVG fill in a style string needs a literal) */
-  var RES = { kinetic: "#ffb347", thermal: "#ff5a3c", electromagnetic: "#4cc9ff", visceral: "#6ee07a",
-              spatial: "#b98bff", cognitive: "#ff7ad9", synthetica: "#3fe0c5", temporal: "#e9d6a8" };
-  function resColor(key) { return RES[key] || "#b98bff"; }
+  /* The Resonance colours (the author, 4 Nov 2026): each sits in a gap the interface does not use (the #GRID cyan,
+     the success and ally greens, the button gold and the warning amber, the danger red, the Flow purple), so an
+     Invocation never reads as a piece of the UI. Kinetic steel silver (mass, a shockwave), Thermal magma orange,
+     Electromagnetic lightning yellow, Visceral acid lime, Synthetica circuit azure, Spatial rift indigo, Cognitive
+     synapse magenta, Temporal antique bronze (clock brass). Both decks and the map read them through resColor. */
+  var RES = { kinetic: "#c3cedf", thermal: "#ff7b2c", electromagnetic: "#ffee3a", visceral: "#9be83a",
+              spatial: "#6670ff", cognitive: "#ff6fd8", synthetica: "#3da5ff", temporal: "#c48a4a" };
+  function resColor(key) { return RES[key] || RES.kinetic; }
 
   /* ---- grid geometry (aoegrid.js owns it: membership by centre, straight-line distance) ------- */
   function G() { return EN.aoeGrid || null; }
