@@ -382,17 +382,17 @@ EN.flowView = (function () {
     rows.push(el("div.row.wrap", { dataset: { flowRows: "1" }, style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("INTENT AND FORCE", "fl-shaping/intent-and-force"),
       seg(F.costRows.map(function (r) {
         var locked = !!(r.minLevel > (d.level || 1) || (r.minLevel >= 5 && !d.flow.layeredForce));
-        return { key: r.key, label: r.name + (r.fp ? " (+" + r.fp + ")" : ""), disabled: locked, title: locked ? "Level " + r.minLevel + " (Layered Force)" : r.desc };
+        return { key: r.key, label: r.name, disabled: locked, title: locked ? "Level " + r.minLevel + " (Layered Force)" : r.desc };
       }), function (k) { var r = costRow(k); return !!r && _form.intent === r.intent && _form.force === r.force; },
       function (k) { var r = costRow(k); setForm({ intent: r.intent, force: r.force }); })]));
 
     // Delivery band + option
     rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("DELIVERY", "fl-shaping/delivery"),
-      seg(F.delivery.map(function (b) { return { key: b.key, label: b.band + (b.fp ? " (+" + b.fp + ")" : ""), title: b.desc }; }),
+      seg(F.delivery.map(function (b) { return { key: b.key, label: b.band, title: b.desc }; }),
         function (k) { return _form.deliveryBand === k; }, function (k) { var b = F.delivery.find(function (x) { return x.key === k; }); setForm({ deliveryBand: k, deliveryOption: b.options[0], precision: false, extraTargets: 0, extraSpaces: 0 }); })]));
     var band = F.delivery.find(function (b) { return b.key === _form.deliveryBand; });
     rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel(""),
-      seg(band.options.map(function (o) { return { key: o, label: o }; }), function (k) { return _form.deliveryOption === k; }, function (k) { setForm({ deliveryOption: k }); })]));
+      seg(band.options.map(function (o) { return { key: o, label: o.replace(/ \([^)]*\)$/, "") }; }), function (k) { return _form.deliveryOption === k; }, function (k) { setForm({ deliveryOption: k }); })]));
 
     // Scaling + Precision
     var scaleRow = [fieldLabel("SCALING", "fl-shaping/delivery")];
@@ -405,7 +405,7 @@ EN.flowView = (function () {
       scaleRow.push(stepper(function () { setForm({ extraSpaces: Math.max(0, _form.extraSpaces - 1) }); }, function () { setForm({ extraSpaces: _form.extraSpaces + 1 }); }, _form.extraSpaces <= 0));
       scaleRow.push(el("span.mono", { style: { fontSize: "13px", color: "var(--text2)" }, text: String(_form.extraSpaces) }));
       scaleRow.push(el("button.btn.sm" + (_form.precision ? ".primary" : ""), { title: F.precisionShaping.desc, style: { marginLeft: "8px" }, onclick: function () { setForm({ precision: !_form.precision }); } },
-        "PRECISION" + (_form.precision ? " (+" + d.flow.precisionFp + ")" : "")));
+        "PRECISION"));
       scaleRow.push(EN.ui.ruleChip("fl-shaping/precision-shaping", { title: "Precision Shaping" }));
     }
     rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, scaleRow));
@@ -438,7 +438,7 @@ EN.flowView = (function () {
           function (k) { setForm({ layer: k ? { resonance: k, force: "base", empoweredEffect: null, baseEffect: null } : null }); })]));
       if (Ly) {
         var LRz = F.resonanceByKey[Ly.resonance];
-        var lrows = ["base", "empowered"].map(function (fo) { var r = costRowFor(_form.intent, fo); return { key: fo, label: r.name + (r.fp ? " (+" + r.fp + ")" : ""), title: r.desc }; });
+        var lrows = ["base", "empowered"].map(function (fo) { var r = costRowFor(_form.intent, fo); return { key: fo, label: r.name, title: r.desc }; });
         rows.push(el("div.row.wrap", { dataset: { flowLayerRow: "1" }, style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel(""),
           seg(lrows, function (k) { return Ly.force === k; }, function (k) { Ly.force = k; setForm({ layer: Ly }); })]));
         if (inv.hasEffect && Ly.force !== "empowered" && (LRz.baseOptions || []).length) {
@@ -471,6 +471,16 @@ EN.flowView = (function () {
         EN.ui.damageText(el("span.mono.dmg-readout", { style: { fontSize: "18px", color: "var(--accent)" } }), inv.damageText)   // the Resonance's types as icons
       ]) : null
     ]));
+    /* Size and shape: the chosen Delivery's own row of the Delivery table (what it reaches and its shape),
+       with the extra spaces or targets bought on top of it */
+    var delName = String(_form.deliveryOption || "").replace(/ \([^)]*\)$/, "");
+    var delRow = (F.deliveryTable || []).filter(function (r) { return r.name === delName; })[0];
+    if (delRow) {
+      var grown = _form.deliveryBand === "directed"
+        ? (_form.extraTargets ? " · +" + _form.extraTargets + " extra target" + (_form.extraTargets === 1 ? "" : "s") : "")
+        : (_form.extraSpaces ? " · +" + _form.extraSpaces + " space" + (_form.extraSpaces === 1 ? "" : "s") + " to one dimension" : "");
+      summary.push(el("p.help", { dataset: { flowDelivery: delRow.key }, style: { margin: "2px 0 6px", color: "var(--text2)", fontSize: "11.5px" }, text: delRow.name + ": " + delRow.reaches + grown }));
+    }
     summary.push(noteP(_form.unwilling ? inv.resolutionText : "Automatic (willing target or object); no roll.", _form.unwilling ? "var(--text2)" : "var(--success)"));
     if (inv.baseEffect) summary.push(el("p.help", { dataset: { flowEffectLine: "base" }, style: { margin: "2px 0 6px", color: VIO, fontSize: "11.5px" }, text: "Effect: " + inv.baseEffect.name + " · " + inv.baseEffect.text }));
     if (inv.empoweredEffect) summary.push(noteP("Empowered: " + inv.empoweredEffect.name + " · " + inv.empoweredEffect.text, VIO));
