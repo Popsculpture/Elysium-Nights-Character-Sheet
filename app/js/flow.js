@@ -494,12 +494,13 @@ EN.flowView = (function () {
       : ruleNote("This effect cannot be Sustained (see Sustain Compatibility).", "var(--warn)"));
     if (d.flow.snagInvoke && _form.unwilling && inv.resolution !== "none") summary.push(noteP(inv.resolution === "save" ? "Strain (Ripple+): targets roll their saves with Edge." : "Strain (Ripple+): roll this Invocation with Snag.", "var(--warn)"));
     (inv.warnings || []).forEach(function (w) { summary.push(ruleNote("⚠ " + w, "var(--warn)")); });
+    // the order the author asked for (3 Nov 2026): VISUALIZE, CHANNEL, SAVE PATTERN
     summary.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "8px" } }, [
+      EN.flowViz ? el("button.btn.sm" + (EN.flowViz.isOpen() ? ".primary" : ""), { dataset: { flowVisualize: "1" }, title: "Open a window that draws this Invocation: its reach and the size of its area, redrawn as you shape", style: EN.flowViz.isOpen() ? null : { color: VIO, borderColor: VIO },
+        onclick: function () { EN.flowViz.toggle(); } }, "◉ VISUALIZE") : null,
       el("button.btn.sm.primary", { disabled: !!inv.overCap, title: inv.overCap ? "Over your cap (Caliber + Flow Modifier). Overdraw can't pay past it." : (over > 0 ? "Not enough FP; channeling will Overdraw " + over + " FP" : "Spend " + cost + " FP"),
         onclick: function () { doChannel(ch, d, inv, defaultName(R)); } }, over > 0 ? "CHANNEL · OVERDRAW " + over : "CHANNEL · " + cost + " FP"),
-      el("button.btn.sm", { title: "Save this formulation as a Resonant Pattern", style: { color: VIO, borderColor: VIO }, onclick: function () { savePattern(R); } }, "✚ SAVE PATTERN"),
-      EN.flowViz ? el("button.btn.sm" + (EN.flowViz.isOpen() ? ".primary" : ""), { dataset: { flowVisualize: "1" }, title: "Open a window that draws this Invocation: its reach and the size of its area, redrawn as you shape", style: EN.flowViz.isOpen() ? null : { color: VIO, borderColor: VIO },
-        onclick: function () { EN.flowViz.toggle(); } }, "◉ VISUALIZE") : null
+      el("button.btn.sm", { title: "Save this formulation as a Resonant Pattern", style: { color: VIO, borderColor: VIO }, onclick: function () { savePattern(R); } }, "✚ SAVE PATTERN")
     ]));
     rows.push(el("div.flow-result", { style: { marginTop: "12px", padding: "10px 12px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(123,44,255,.05)" } }, summary));
 
@@ -513,35 +514,55 @@ EN.flowView = (function () {
   }
 
   /* The Visualize window's controls: the SAME free-shaping form (every button writes _form through
-     setForm and the tab re-renders), so you can keep shaping inside the window and watch it change. */
+     setForm and the tab re-renders), so you can keep shaping inside the window and watch it change.
+     Laid out as a deck (3 Nov 2026, the author's brief: uniform, easy to read): each step a labelled
+     row, its choices one even grid of same-size keys, a Resonance key carrying its own colour, the
+     scaling a stepper with its count between the buttons, Precision a switch. The window's CSS
+     (theme.css, "VISUALIZE WINDOW") draws it, Immersive included. */
+  var _vJust = null;   // the key just pressed in the window ("row:key"): only it flashes, not every chosen key on each redraw
+  function vseg(items, isOn, onPick, cls, rowId) {
+    return el("div.fv-seg" + (cls ? "." + cls : ""), { role: "group" }, items.map(function (it) {
+      var on = isOn(it.key), just = on && _vJust === rowId + ":" + it.key;
+      var b = el("button.fv-opt" + (on ? ".on" : "") + (just ? ".fv-just" : ""), { type: "button", disabled: !!it.disabled, title: it.title || "", "aria-pressed": on ? "true" : "false",
+        onclick: function () { if (!it.disabled) { _vJust = rowId + ":" + it.key; onPick(it.key); } } }, [el("span.fv-opt-t", { text: it.label })]);
+      if (it.color) b.style.setProperty("--rc", it.color);
+      return b;
+    }));
+  }
   function vizControls(ch, d, R, inv) {
     var F = EN.flow, known = knownResKeys(ch, d), kids = [];
-    function row(label, node, extra) { kids.push(el("div.fv-row", null, [el("span.fv-lab", { text: label }), node].concat(extra || []))); }
-    row("RESONANCE", seg(ownResonances(ch).filter(function (r) { return known.indexOf(r.key) !== -1; }).map(function (r) { return { key: r.key, label: r.name, title: r.focus + " · " + r.damage }; }),
-      function (k) { return _form.resonance === k; }, function (k) { setForm({ resonance: k }); }));
-    row("INTENT", seg(F.costRows.map(function (r) {
+    var rc = function (k) { return EN.flowViz && EN.flowViz.resColor ? EN.flowViz.resColor(k) : null; };
+    function row(label, node, extra) { kids.push(el("div.fv-row", null, [el("span.fv-lab", { text: label }), el("div.fv-row-b", null, [node].concat(extra || []))])); }
+    var mine = ownResonances(ch).filter(function (r) { return known.indexOf(r.key) !== -1; });
+    row("RESONANCE", vseg(mine.map(function (r) { return { key: r.key, label: r.name, title: r.focus + " · " + r.damage, color: rc(r.key) }; }),
+      function (k) { return _form.resonance === k; }, function (k) { setForm({ resonance: k }); }, "res", "res"));
+    row("INTENT", vseg(F.costRows.map(function (r) {
       var locked = !!(r.minLevel > (d.level || 1) || (r.minLevel >= 5 && !d.flow.layeredForce));
       return { key: r.key, label: r.name, disabled: locked, title: locked ? "Level " + r.minLevel + " (Layered Force)" : r.desc };
-    }), function (k) { var r = costRow(k); return !!r && _form.intent === r.intent && _form.force === r.force; }, function (k) { var r = costRow(k); setForm({ intent: r.intent, force: r.force }); }));
-    row("DELIVERY", seg(F.delivery.map(function (b) { return { key: b.key, label: b.band, title: b.desc }; }),
-      function (k) { return _form.deliveryBand === k; }, function (k) { var b = F.delivery.find(function (x) { return x.key === k; }); setForm({ deliveryBand: k, deliveryOption: b.options[0], precision: false, extraTargets: 0, extraSpaces: 0 }); }));
+    }), function (k) { var r = costRow(k); return !!r && _form.intent === r.intent && _form.force === r.force; }, function (k) { var r = costRow(k); setForm({ intent: r.intent, force: r.force }); }, "three", "intent"));
     var band = F.delivery.find(function (b) { return b.key === _form.deliveryBand; });
-    row("", seg(band.options.map(function (o) { return { key: o, label: o.replace(/ \([^)]*\)$/, "") }; }), function (k) { return _form.deliveryOption === k; }, function (k) { setForm({ deliveryOption: k }); }));
-    var sc = [];
-    if (_form.deliveryBand === "directed") {
-      sc = [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Extra targets" }), stepper(function () { setForm({ extraTargets: Math.max(0, _form.extraTargets - 1) }); }, function () { setForm({ extraTargets: _form.extraTargets + 1 }); }, _form.extraTargets <= 0), el("span.mono", { text: String(_form.extraTargets) })];
-    } else {
-      sc = [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Extra spaces" }), stepper(function () { setForm({ extraSpaces: Math.max(0, _form.extraSpaces - 1) }); }, function () { setForm({ extraSpaces: _form.extraSpaces + 1 }); }, _form.extraSpaces <= 0), el("span.mono", { text: String(_form.extraSpaces) }),
-        el("button.btn.sm" + (_form.precision ? ".primary" : ""), { title: F.precisionShaping.desc, onclick: function () { setForm({ precision: !_form.precision }); } }, "PRECISION")];
-    }
-    row("SCALING", el("span", { style: { display: "inline-flex", gap: "8px", alignItems: "center" } }, sc));
-    row("DURATION", seg(F.duration.map(function (du) { return { key: du.key, label: du.name, title: du.desc }; }), function (k) { return _form.duration === k; }, function (k) { setForm({ duration: k }); }));
+    row("DELIVERY", vseg(F.delivery.map(function (b) { return { key: b.key, label: b.band, title: b.desc }; }),
+      function (k) { return _form.deliveryBand === k; }, function (k) { var b = F.delivery.find(function (x) { return x.key === k; }); setForm({ deliveryBand: k, deliveryOption: b.options[0], precision: false, extraTargets: 0, extraSpaces: 0 }); }, "three", "band"),
+      [vseg(band.options.map(function (o) { return { key: o, label: o.replace(/ \([^)]*\)$/, "") }; }), function (k) { return _form.deliveryOption === k; }, function (k) { setForm({ deliveryOption: k }); }, "sub", "opt")]);
+    var directed = _form.deliveryBand === "directed", n = directed ? _form.extraTargets : _form.extraSpaces;
+    var step = el("div.fv-step", null, [
+      el("span.fv-step-l", { text: directed ? "EXTRA TARGETS" : "EXTRA SPACES" }),
+      stepper(function () { setForm(directed ? { extraTargets: Math.max(0, _form.extraTargets - 1) } : { extraSpaces: Math.max(0, _form.extraSpaces - 1) }); },
+              function () { setForm(directed ? { extraTargets: _form.extraTargets + 1 } : { extraSpaces: _form.extraSpaces + 1 }); }, n <= 0),
+      el("span.fv-step-n.mono", { text: String(n) })
+    ]);
+    var sc = [step];
+    if (!directed) sc.push(el("button.fv-switch" + (_form.precision ? ".on" : ""), { type: "button", role: "switch", "aria-checked": _form.precision ? "true" : "false", title: F.precisionShaping.desc,
+      onclick: function () { setForm({ precision: !_form.precision }); } }, [el("span.fv-switch-k"), el("span.fv-switch-t", { text: "PRECISION" })]));
+    row("SCALING", el("div.fv-scale", null, sc));
+    row("DURATION", vseg(F.duration.map(function (du) { return { key: du.key, label: du.name, title: du.desc }; }), function (k) { return _form.duration === k; }, function (k) { setForm({ duration: k }); }, "two", "dur"));
     if (d.flow.layeredForce) {
       var Ly = _form.layer;
-      row("LAYER", seg([{ key: "", label: "None" }].concat(ownResonances(ch).filter(function (r) { return known.indexOf(r.key) !== -1; }).map(function (r) { return { key: r.key, label: r.name }; })),
-        function (k) { return (Ly ? Ly.resonance : "") === k; }, function (k) { setForm({ layer: k ? { resonance: k, force: "base", empoweredEffect: null, baseEffect: null } : null }); }));
+      row("LAYER", vseg([{ key: "", label: "None" }].concat(mine.map(function (r) { return { key: r.key, label: r.name, color: rc(r.key) }; })),
+        function (k) { return (Ly ? Ly.resonance : "") === k; }, function (k) { setForm({ layer: k ? { resonance: k, force: "base", empoweredEffect: null, baseEffect: null } : null }); }, "res", "layer"));
     }
-    return el("div", { dataset: { fvCtl: "1" } }, kids);
+    _vJust = null;   // the flash belongs to this one redraw
+    return el("div.fv-deck", { dataset: { fvCtl: "1" } }, kids);
   }
 
   // an Empowered Effect's label as the Handbook prints it: "Poltergeist (Level 3)"

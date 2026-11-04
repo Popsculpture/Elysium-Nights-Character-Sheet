@@ -28,6 +28,9 @@
    space) and the turn buttons (it orbits you). A Cone or a Line turns through eight headings on
    a square grid and six on hex: the turn buttons, or tap or drag the way it should face. The
    line of sight runs from you to the middle of what you placed, as centred as the grid allows.
+   Navigating (3 Nov 2026): the wheel, or a pinch on a touchpad or a touch screen, zooms about the
+   pointer; a long press and drag, or the middle button held, pans; a plain drag pans when the
+   Delivery has nothing to place. Any of these takes the view off FIT until FIT is pressed.
    The view: centred on you for Touch, Imbue, Sigil, Aura, Cone and Line, and on the action for
    Remote, Cube and Sphere; it zooms itself to fit you and everything the Invocation touches
    (the area, its targets, its point), never narrower than 9 spaces. The - FIT + buttons
@@ -57,7 +60,10 @@ EN.flowViz = (function () {
   var _lastHalf = 8;       // the half-width last drawn (for the zoom buttons' limits)
   var _lastView = null;    // the view last drawn {cx, cy, hw, hh}; a drag holds it still
   var _dragView = null;    // set while a drag is placing something
-  var _dragId = null;      // the pointer doing the dragging (a second finger does not take over)
+  var _viewC = null;       // a view centre set by hand (pan, pinch, wheel), in spaces; null = the focus
+  var _gest = null;        // the gesture on the map: pending (a press), place, pan or pinch
+  var _ptrs = {};          // the pointers down on the map, by id (two of them pinch)
+  var _raf = 0;            // a redraw already asked for this frame
   var _lastScene = null;   // the scene last drawn (the map's pointer handler reads its Delivery)
   /* the aim, kept while the window is open and across closing it; a grid change starts it fresh:
      point = where a Remote target, Sphere or Cube stands; mark = a Sigil's mark; turn = a Cone's or Line's heading */
@@ -330,12 +336,12 @@ EN.flowViz = (function () {
   // the view: a hand zoom or the fit, around the focus; frozen while a drag is placing something
   function viewFor(S) {
     if (_dragView) return _dragView;
-    var hw = _zoom != null ? _zoom : S.fitHalf;
-    return { cx: S.focus.x, cy: S.focus.y, hw: hw, hh: hw * ASPECT };
+    var hw = _zoom != null ? _zoom : S.fitHalf, c = _viewC || S.focus;
+    return { cx: c.x, cy: c.y, hw: hw, hh: hw * ASPECT };
   }
   function draw(form, inv, d, S) {
     var forKey = (form.deliveryBand || "") + "|" + S.key;
-    if (_zoom != null && _zoomFor !== forKey) _zoom = null;   // a new Delivery fits itself
+    if ((_zoom != null || _viewC) && _zoomFor !== forKey) { _zoom = null; _viewC = null; }   // a new Delivery fits itself
     _zoomFor = forKey;
     var V = viewFor(S), hw = V.hw;
     _lastFit = S.fitHalf; _lastHalf = hw; _lastView = V;
@@ -374,7 +380,9 @@ EN.flowViz = (function () {
     if (S.key === "imbue" && S.objects[0]) { var ob = pt(S.objects[0]); svg.push('<line class="fv-beam" x1="0" y1="0" x2="' + ob.x + '" y2="' + ob.y + '"/>'); }
     // an aimed shape's heading, out to its far end
     if (S.heading) {
-      var ha = headingDeg() * Math.PI / 180, L = (S.size + 0.5) * C;
+      var ha = headingDeg() * Math.PI / 180;
+      // a square-grid Line counts a diagonal step as one space (aoegrid.js), so its far end is that much further out
+      var stepK = (S.shape === "line" && _grid !== "hex") ? 1 / Math.max(Math.abs(Math.cos(ha)), Math.abs(Math.sin(ha))) : 1, L = (S.size + 0.5) * stepK * C;
       svg.push('<line class="fv-aim" x1="0" y1="0" x2="' + (Math.cos(ha) * L).toFixed(1) + '" y2="' + (Math.sin(ha) * L).toFixed(1) + '"/>');
     }
     if (S.anchor) { var ap = pt(S.anchor); svg.push('<g class="fv-anchor" transform="translate(' + ap.x + " " + ap.y + ')"><circle r="3.2"/><circle class="fv-anchor-ring" r="7"/></g>'); }
@@ -405,26 +413,121 @@ EN.flowViz = (function () {
     if (!key || !p || !(MOVABLE[key] || AIMED[key])) return;
     if (aimAt(key, p.x, p.y) && _last) refresh(_last);
   }
+  /* The gestures. One handler for mouse, pen and touch:
+       a quick tap        places (the point, the mark or the heading), when the Delivery has one;
+       a drag             places as it goes (the view holds still), or pans when there is nothing to place;
+       a long press, drag pans (touch screens and touchpads: hold still for LONG_MS first);
+       two fingers        pinch: zoom about their middle, and pan with it;
+       the middle button  pans while held;
+       the wheel          zooms about the pointer (a touchpad pinch arrives as a wheel with ctrlKey).
+     The document carries the move and release listeners (bound once, below), because the window is
+     redrawn while a gesture runs; redraws during a pan or a pinch are held to one every 16 ms. */
+  var LONG_MS = 450, SLOP = 6;
+  function liveRefresh() {
+    // a timer rather than requestAnimationFrame: a frame callback never comes for a page that is not painting
+    if (_raf) return;
+    _raf = setTimeout(function () { _raf = 0; if (_last) refresh(_last); }, 16);
+  }
+  function stageRect() { var svg = document.querySelector("#fv-win .fv-svg"); return svg ? svg.getBoundingClientRect() : null; }
+  // spaces per screen pixel in a view (the map letterboxes, so the larger of the two ratios)
+  function upp(V, r) { return Math.max(2 * V.hw / Math.max(1, r.width), 2 * V.hh / Math.max(1, r.height)); }
+  function worldAt(V, r, sx, sy) { var u = upp(V, r); return { x: V.cx + (sx - (r.left + r.width / 2)) * u, y: V.cy + (sy - (r.top + r.height / 2)) * u }; }
+  function clampHalf(h) { return Math.max(ZOOM_IN_MIN, Math.min(MAX_HALF, h)); }
+  function setView(cx, cy, hw) { _zoom = clampHalf(hw); _viewC = { x: cx, y: cy }; }
+  function zoomAt(sx, sy, f) {
+    var V = _lastView, r = stageRect(); if (!V || !r) return;
+    var w = worldAt(V, r, sx, sy), hw = clampHalf(V.hw * f), k = hw / V.hw;
+    setView(w.x - (w.x - V.cx) * k, w.y - (w.y - V.cy) * k, hw);
+    // a pan or a pinch already running carries on from the zoomed view, so its next move does not undo the wheel
+    var g = _gest, NV = { cx: _viewC.x, cy: _viewC.y, hw: _zoom, hh: _zoom * ASPECT };
+    if (g && g.mode === "pan" && _ptrs[g.id]) { g.V0 = NV; g.s0 = { x: _ptrs[g.id].x, y: _ptrs[g.id].y }; }
+    else if (g && g.mode === "pinch") {
+      var pa = _ptrs[g.ids[0]], pb = _ptrs[g.ids[1]];
+      if (pa && pb) { g.V0 = NV; g.d0 = Math.max(1, Math.sqrt((pa.x - pb.x) * (pa.x - pb.x) + (pa.y - pb.y) * (pa.y - pb.y))); g.m0 = worldAt(NV, g.r0, (pa.x + pb.x) / 2, (pa.y + pb.y) / 2); }
+    }
+    liveRefresh();
+  }
+  function setPanning(on) { var st = document.querySelector("#fv-win .fv-stage"); if (st) st.classList.toggle("fv-panning", !!on); }
   function bindStage(stageEl, S) {
-    if (!(MOVABLE[S.key] || AIMED[S.key])) return;
-    stageEl.addEventListener("pointerdown", function (ev) {
-      if (ev.button != null && ev.button !== 0) return;
-      if (_dragId != null) return;                 // a second finger does not take over
-      // a short window letterboxes the map: a tap in the blank band beside it is not on the board
-      var p = svgPoint(ev), V0 = _lastView;
-      if (!p || !V0 || Math.abs(p.x - V0.cx) > V0.hw + 0.5 || Math.abs(p.y - V0.cy) > V0.hh + 0.5) return;
+    var placeable = !!(MOVABLE[S.key] || AIMED[S.key]);
+    if (_gest && (_gest.mode === "pan" || _gest.mode === "pinch")) stageEl.classList.add("fv-panning");
+    stageEl.addEventListener("wheel", function (ev) {
+      var dy = ev.deltaMode === 1 ? ev.deltaY * 16 : ev.deltaMode === 2 ? ev.deltaY * 400 : ev.deltaY;
+      if (!dy) return;                           // a sideways wheel or swipe is not a zoom: leave the view (and FIT) alone
       ev.preventDefault();
-      _dragId = ev.pointerId; _dragView = _lastView;
-      placeFrom(ev);
-      function mv(e) { if (e.pointerId === _dragId) placeFrom(e); }
-      function up(e) {
-        if (e && e.pointerId !== _dragId) return;
-        document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); document.removeEventListener("pointercancel", up);
-        _dragId = null; _dragView = null; if (_last) refresh(_last);
+      zoomAt(ev.clientX, ev.clientY, Math.exp(Math.max(-60, Math.min(60, dy)) * (ev.ctrlKey ? 0.012 : 0.0016)));
+    }, { passive: false });
+    // the middle button would start the browser's autoscroll, and a long press its context menu
+    stageEl.addEventListener("mousedown", function (ev) { if (ev.button === 1) ev.preventDefault(); });
+    stageEl.addEventListener("auxclick", function (ev) { if (ev.button === 1) ev.preventDefault(); });
+    stageEl.addEventListener("contextmenu", function (ev) { if (_gest) ev.preventDefault(); });
+    stageEl.addEventListener("pointerdown", function (ev) {
+      var mid = ev.button === 1;
+      if (!mid && ev.button != null && ev.button !== 0) return;
+      var r = stageRect(), V = _lastView; if (!r || !V) return;
+      _ptrs[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+      var ids = Object.keys(_ptrs);
+      if (ids.length >= 2 && !(_gest && _gest.mid)) {          // a second finger: pinch (a drag in progress stops where it is)
+        if (_gest) clearTimeout(_gest.timer);
+        var pa = _ptrs[ids[0]], pb = _ptrs[ids[1]];
+        ev.preventDefault();
+        _dragView = null;
+        _gest = { mode: "pinch", ids: ids.slice(0, 2), d0: Math.max(1, Math.sqrt((pa.x - pb.x) * (pa.x - pb.x) + (pa.y - pb.y) * (pa.y - pb.y))),
+                  m0: worldAt(V, r, (pa.x + pb.x) / 2, (pa.y + pb.y) / 2), V0: V, r0: r };
+        setPanning(true);
+        return;
       }
-      document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+      if (_gest) return;
+      var p = worldAt(V, r, ev.clientX, ev.clientY);
+      // a short window letterboxes the map: a press in the blank band beside it places nothing (it still pans)
+      var onBoard = Math.abs(p.x - V.cx) <= V.hw + 0.5 && Math.abs(p.y - V.cy) <= V.hh + 0.5;
+      ev.preventDefault();
+      if (mid) { _gest = { mode: "pan", mid: true, id: ev.pointerId, s0: { x: ev.clientX, y: ev.clientY }, V0: V, r0: r }; setPanning(true); return; }
+      _gest = { mode: "pending", id: ev.pointerId, s0: { x: ev.clientX, y: ev.clientY }, V0: V, r0: r, placeable: placeable && onBoard };
+      var g = _gest;
+      g.timer = setTimeout(function () {
+        if (_gest !== g || g.mode !== "pending") return;
+        g.mode = "pan"; setPanning(true);
+        try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
+      }, LONG_MS);
     });
   }
+  function gestMove(ev) {
+    if (_ptrs[ev.pointerId]) _ptrs[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+    var g = _gest; if (!g) return;
+    if (g.mode === "pinch") {
+      var pa = _ptrs[g.ids[0]], pb = _ptrs[g.ids[1]]; if (!pa || !pb) return;
+      var dd = Math.max(1, Math.sqrt((pa.x - pb.x) * (pa.x - pb.x) + (pa.y - pb.y) * (pa.y - pb.y)));
+      var hw = clampHalf(g.V0.hw * g.d0 / dd), u = upp({ hw: hw, hh: hw * ASPECT }, g.r0);
+      var mx = (pa.x + pb.x) / 2, my = (pa.y + pb.y) / 2;
+      setView(g.m0.x - (mx - (g.r0.left + g.r0.width / 2)) * u, g.m0.y - (my - (g.r0.top + g.r0.height / 2)) * u, hw);
+      liveRefresh(); return;
+    }
+    if (ev.pointerId !== g.id) return;
+    var dx = ev.clientX - g.s0.x, dy = ev.clientY - g.s0.y;
+    if (g.mode === "pending" && Math.sqrt(dx * dx + dy * dy) > SLOP) {
+      clearTimeout(g.timer);
+      if (g.placeable) { g.mode = "place"; _dragView = g.V0; } else { g.mode = "pan"; setPanning(true); }
+    }
+    if (g.mode === "place") { placeFrom(ev); return; }
+    if (g.mode === "pan") { var u0 = upp(g.V0, g.r0); setView(g.V0.cx - dx * u0, g.V0.cy - dy * u0, g.V0.hw); liveRefresh(); }
+  }
+  function gestEnd(ev) {
+    delete _ptrs[ev.pointerId];
+    var g = _gest; if (!g) return;
+    if (g.mode === "pinch") {
+      if (g.ids.indexOf(String(ev.pointerId)) === -1) return;
+      _gest = null; _ptrs = {}; setPanning(false); if (_last) refresh(_last); return;
+    }
+    if (ev.pointerId !== g.id) return;
+    clearTimeout(g.timer); _gest = null;
+    if (g.mode === "pending" && g.placeable && ev.type === "pointerup") { _dragView = g.V0; placeFrom(ev); }   // a tap places
+    _dragView = null; setPanning(false);
+    if (_last) refresh(_last);
+  }
+  document.addEventListener("pointermove", gestMove);
+  document.addEventListener("pointerup", gestEnd);
+  document.addEventListener("pointercancel", gestEnd);
 
   /* ---- the window --------------------------------------------------------------------------- */
   function isOpen() { return _open; }
@@ -442,7 +545,7 @@ EN.flowViz = (function () {
     _zoom = dir === "in" ? Math.max(ZOOM_IN_MIN, cur / ZOOM_STEP) : Math.min(MAX_HALF, cur * ZOOM_STEP);
     if (_last) refresh(_last);
   }
-  function zoomFit() { _zoom = null; if (_last) refresh(_last); }
+  function zoomFit() { _zoom = null; _viewC = null; if (_last) refresh(_last); }
   function atMin() { return _lastHalf <= ZOOM_IN_MIN + 1e-6; }
   function atMax() { return _lastHalf >= MAX_HALF - 1e-6; }
   function build(ctx) {
@@ -492,7 +595,8 @@ EN.flowViz = (function () {
         el("button.btn.sm" + (_zoom == null ? ".primary" : ""), { type: "button", dataset: { fvZoom: "fit" }, title: "Fit the view to the Invocation", onclick: zoomFit }, "FIT"),
         el("button.btn.sm", { type: "button", dataset: { fvZoom: "in" }, disabled: atMin(), title: "Zoom in", "aria-label": "Zoom in", onclick: function () { zoomBy("in"); } }, "+")
       ]),
-      aimRow
+      aimRow,
+      el("div.fv-nav-hint", { text: "Wheel or pinch to zoom · hold, then drag (or the middle button) to pan · FIT to come back" })
     ]);
 
     var read = el("div.fv-read", null, [
@@ -514,6 +618,9 @@ EN.flowViz = (function () {
     var win = el("div#fv-win.fv-win" + (_imm ? ".fv-immersive" : "") + (aimRow ? ".fv-aiming" : ""), { dataset: { fx: String(Math.max(0, Math.min(5, stage))), grid: _grid, res: resKey || "" }, role: "dialog", "aria-label": "Visualize the Invocation" }, [pan]);
     win.style.setProperty("--fv-res", col); win.style.setProperty("--fv-res2", col2);
     win.style.setProperty("--fv-pulse", String(1 + Math.max(0, stage) * 0.35));
+    /* the window is rebuilt on every change; a negative delay from one clock keeps every looping animation
+       (the deck's sweep and breathing, the blinking diamonds) in step instead of restarting each time */
+    win.style.setProperty("--fv-t", "-" + (Date.now() % 600000) + "ms");
     return win;
   }
   function droid() { try { return document.documentElement.classList.contains("skin-droid"); } catch (e) { return false; } }
@@ -618,12 +725,12 @@ EN.flowViz = (function () {
   }
   function open() { _open = true; if (_last) refresh(_last); }
   function close() {
-    _open = false; _zoom = null;   // the next opening fits the Invocation again
+    _open = false; _zoom = null; _viewC = null; _gest = null; _ptrs = {}; _dragView = null;   // the next opening fits the Invocation again
     if (_win && _win.parentNode) _win.parentNode.removeChild(_win);
     _win = null;
     try { EN.app.render(); } catch (e) {}   // the builder's VISUALIZE button reads its state back
   }
-  function toggle() { if (_open) close(); else { _open = true; _zoom = null; EN.app.render(); } }
+  function toggle() { if (_open) close(); else { _open = true; _zoom = null; _viewC = null; EN.app.render(); } }
   function setGrid(g) { var ng = g === "hex" ? "hex" : "square"; if (ng !== _grid) _aim = { point: null, mark: null, turn: 0, orbit: null }; _grid = ng; try { localStorage.setItem(GRID_KEY, _grid); } catch (e) {} if (_last) refresh(_last); }
   function setImm(on) { _imm = !!on; try { localStorage.setItem(IMM_KEY, _imm ? "1" : "0"); } catch (e) {} if (_last) refresh(_last); }
 

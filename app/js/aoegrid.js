@@ -36,7 +36,8 @@
         An even row cannot sit centred on a heading, so an even-sized Cone
         comes out one space wider at its far end (Area 4: 1, 3, 3, 5).
      4. Line. The spaces whose centres lie within half a space of its path,
-        X and a half long, so it is one space wide at any heading.
+        one space wide at any heading. Its length counts spaces along the
+        heading, so a diagonal Line on a square grid still catches X spaces.
      5. Cube. X spaces on each edge, centred on its point (for an even size
         the point is one of its middle spaces). The book calls it a "square
         zone" and gives no hex version, so on hex it is X rows of X, centred,
@@ -127,16 +128,19 @@ EN.aoeGrid = (function () {
   /* The spaces an area catches, at a heading in degrees (Cone and Line only; the others are round
      or square and placed). Sphere and Aura: centre within n + 1/2. Cone: centre inside the triangle
      n long and n across at its far end (half-width t/2 at distance t), out to n + 1/2. Line: centre
-     within 1/2 of the path, out to n + 1/2. */
+     within 1/2 of the path, out to n + 1/2 steps along its heading (a diagonal step on a square grid is one). */
   function cellsAt(grid, shape, n, angleDeg) {
     if (shape === "cube") return cubeCells(grid, n);
     var a = (angleDeg || 0) * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
-    // a cone's far corners stand (n + 1/2) x 1.118 out, past the n + 1 that holds every other shape
-    return around(grid, shape === "cone" ? (n + 0.5) * 1.12 + 0.5 : n + 1).filter(function (c) {
+    /* a Line counts its length in spaces along its heading: on a square grid a diagonal step is one
+       space of the line (the author, 3 Nov 2026), so a diagonal Line of X still catches X spaces */
+    var stepLen = (shape === "line" && grid !== "hex") ? 1 / Math.max(Math.abs(ux), Math.abs(uy)) : 1;
+    // a cone's far corners stand (n + 1/2) x 1.118 out, and a diagonal line (n + 1/2) x 1.414: past the n + 1 that holds the rest
+    return around(grid, shape === "cone" ? (n + 0.5) * 1.12 + 0.5 : (n + 0.5) * stepLen + 0.5).filter(function (c) {
       var p = centreOf(grid, c);
       if (shape === "sphere" || shape === "aura") return Math.sqrt(p.x * p.x + p.y * p.y) <= n + 0.5 + EPS;
       var t = p.x * ux + p.y * uy, w = Math.abs(p.y * ux - p.x * uy);
-      if (t <= EPS || t > n + 0.5 + EPS) return false;
+      if (t <= EPS || t > (n + 0.5) * stepLen + EPS) return false;
       return shape === "line" ? w <= 0.5 + EPS : w <= t / 2 + EPS;
     });
   }
@@ -361,7 +365,7 @@ EN.aoeGrid = (function () {
       box,
       note,
       el("p.help", { style: { margin: "6px 0 0", fontStyle: "italic" },
-        text: "The shapes and their sizes are the Handbook's. How the grid counts them is this diagram's own convention: a space is in or out by its center, and distance runs straight between centers. A Sphere or Aura of X takes every space whose center is within X and a half of its point, so it is round. A Cone is a triangle from you, X long and X across at its far end, the same on both sides of its heading; an even-sized Cone is drawn one space wider at its far end, since an even row cannot sit centered on its heading. A Line takes the spaces whose centers lie within half a space of its path. Cone, Line and Aura start on you; Sphere and Cube are placed on a point you can see, the Cube centered on it. Facing turns in quarters on a square grid and in sixths on a hex one." })
+        text: "The shapes and their sizes are the Handbook's. How the grid counts them is this diagram's own convention: a space is in or out by its center, and distance runs straight between centers. A Sphere or Aura of X takes every space whose center is within X and a half of its point, so it is round. A Cone is a triangle from you, X long and X across at its far end, the same on both sides of its heading; an even-sized Cone is drawn one space wider at its far end, since an even row cannot sit centered on its heading. A Line takes the spaces whose centers lie within half a space of its path, X of them at any heading. Cone, Line and Aura start on you; Sphere and Cube are placed on a point you can see, the Cube centered on it. Facing turns in quarters on a square grid and in sixths on a hex one." })
     ]);
   }
 
