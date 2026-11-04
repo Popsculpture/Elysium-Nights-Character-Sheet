@@ -39,6 +39,24 @@ EN.flowView = (function () {
   function getIntensity() { return _intensity; }
   function setIntensity(v) { _intensity = String(v); try { localStorage.setItem(INT_KEY, _intensity); } catch (e) {} }
 
+  /* Immersive fluid (4 Nov 2026, the author): SVG turbulence filters, put in .flow-bg while Immersive is on.
+     #enFluidBar ripples the Reservoir bar like a glowing liquid; #enOd0 to #enOd4 roughen the Overdraw
+     current, a little more at each level (a wider push, a faster churn). theme.css points at them. */
+  var FLUID_DEFS = '<svg class="flow-fx-defs" aria-hidden="true" focusable="false" width="0" height="0">'
+    + '<filter id="enFluidBar" filterUnits="userSpaceOnUse" x="-12" y="-10" width="3000" height="40" color-interpolation-filters="sRGB">'
+    + '<feTurbulence type="fractalNoise" baseFrequency="0.05 0.35" numOctaves="2" seed="4" result="n">'
+    + '<animate attributeName="baseFrequency" dur="5s" values="0.05 0.35;0.065 0.42;0.045 0.3;0.05 0.35" repeatCount="indefinite"/></feTurbulence>'
+    + '<feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G"/></filter>'
+    + [[3, 7], [5, 6], [8, 4.5], [11, 3.2], [15, 2.2]].map(function (k, i) {
+        return '<filter id="enOd' + i + '" x="-5%" y="-20%" width="110%" height="140%" color-interpolation-filters="sRGB">'
+          + '<feTurbulence type="fractalNoise" baseFrequency="0.02 0.11" numOctaves="2" seed="' + (9 + i) + '" result="n">'
+          + '<animate attributeName="baseFrequency" dur="' + k[1] + 's" values="0.02 0.11;0.028 0.15;0.017 0.09;0.02 0.11" repeatCount="indefinite"/></feTurbulence>'
+          + '<feDisplacementMap in="SourceGraphic" in2="n" scale="' + k[0] + '" xChannelSelector="R" yChannelSelector="G"/></filter>';
+      }).join("")
+    + '</svg>';
+  // the Gremlin's own place and pace on each panel, so no two run in step (theme.css: --go, --gs)
+  function gremlinStyle(i) { return "--go:-" + ((i * 3.7) % 9).toFixed(1) + "s;--gs:" + [1, 1.04, 0.97, 1.02, 0.98][i % 5]; }
+
   /* ---- small shared bits ---- */
   // every Flow write folds an old saved Strain condition into ch.flow.strain first (one Strain value)
   function fset(mut, silent) { store.update(function (c) { c.flow = c.flow || {}; eng.mergeStrain(c); mut(c.flow, c); }, silent ? { silent: true } : undefined); }
@@ -46,7 +64,7 @@ EN.flowView = (function () {
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0;
     return el("div.flow-bar.meter", { style: { height: "11px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "6px", overflow: "hidden", margin: "5px 0 2px" } },
-      [el("div.flow-bar-fill.meter-fill", { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 8px " + color, transition: "width .2s" } })]);
+      [el("div.flow-bar-fill.meter-fill" + (pct <= 0 ? ".is-empty" : ""), { style: { width: pct + "%", height: "100%", background: color, boxShadow: "0 0 8px " + color, transition: "width .2s" } })]);
   }
   function stepper(onMinus, onPlus, minusOff, plusOff) {
     return el("div.stepper", { style: { marginTop: 0, width: "auto" } }, [
@@ -1059,12 +1077,15 @@ EN.flowView = (function () {
     var root = el("div.flowtab.attuned" + (imm ? ".immersive" : ""), { dataset: { fx: String(fx) } }, blocks);
     if (imm) {
       root.insertBefore(el("div.flow-glitch"), root.firstChild);
-      root.insertBefore(el("div.flow-bg"), root.firstChild);   // both sit behind (z-index in CSS)
+      var bg = el("div.flow-bg"); bg.innerHTML = FLUID_DEFS;   // the fluid filters the Reservoir bar and the Overdraw current use
+      root.insertBefore(bg, root.firstChild);                  // both sit behind (z-index in CSS)
+      // the tab is rebuilt on every change: one clock keeps the tracers where they were instead of restarting them
+      root.style.setProperty("--fv-t", "-" + (Date.now() % 600000) + "ms");
     }
     mount.appendChild(root);
-    if (imm) {                                                 // two running pin-lights per panel
-      [].slice.call(root.querySelectorAll(".panel")).forEach(function (p) {
-        p.insertAdjacentHTML("beforeend", '<i class="beam"></i><i class="beam b2"></i>');
+    if (imm) {                                                 // two running lights per panel: a Gremlin and a Nixie (theme.css)
+      [].slice.call(root.querySelectorAll(".panel")).forEach(function (p, i) {
+        p.insertAdjacentHTML("beforeend", '<i class="beam" style="' + gremlinStyle(i) + '"></i><i class="beam b2"></i>');
       });
     }
   }

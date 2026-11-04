@@ -361,7 +361,10 @@ EN.flowViz = (function () {
       if (S.range > 0 && within(c, S.range)) ranged += cellShape(c, "fv-cell fv-range"); else field += cellShape(c, "fv-cell");
     });
     svg.push(field, ranged);
-    // the area, over the field; each space carries its distance from you so the Immersive ripple can run outward
+    /* the area, over the field. Each space carries its distance from the area's source (--d) and the way back
+       toward it (--ox, --oy), so the Immersive bloom runs outward from there: a placed shape (Sphere, Cube,
+       Sigil) from its own middle, the rest (Aura, Cone, Line) from you */
+    var src = S.anchor ? centroid(S.area) : { x: 0, y: 0 };
     var zone = inv && ((inv.empoweredEffect && inv.empoweredEffect.zone) || (inv.layer && inv.layer.empoweredEffect && inv.layer.empoweredEffect.zone));
     var sustain = form.duration === "sustain" && inv && inv.sustainable !== false;
     var caught = 0;
@@ -369,7 +372,8 @@ EN.flowViz = (function () {
       if (!S.spared[ck(c)]) caught++;
       if (!inView(c)) return;
       var cls = "fv-cell fv-hit" + (S.spared[ck(c)] ? " fv-spared" : "") + (lay && (i % 2 === 0) ? " fv-braid" : "");
-      over += cellShape(c, cls, ' style="--d:' + Math.round(dist(c)) + '"');
+      var sc = sp(c), dx = sc.x - src.x, dy = sc.y - src.y, r = Math.sqrt(dx * dx + dy * dy), k = r > 0.01 ? C * 0.6 / r : 0;
+      over += cellShape(c, cls, ' style="--d:' + r.toFixed(2) + ";--ox:" + (-dx * k).toFixed(1) + ";--oy:" + (-dy * k).toFixed(1) + '"');
       if (zone && !S.spared[ck(c)]) { over += cellShape(c, "fv-zone"); S.drawn.zone++; }
     });
     S.caught = caught; S.zone = !!zone;
@@ -629,7 +633,8 @@ EN.flowViz = (function () {
     // Immersive: the Flow tab's two pin-light tracers, round the window and round its deck (theme.css)
     // (the deck node is reused when the window redraws on its own, from a zoom or an aim: clear its old pair first)
     [].slice.call(pan.querySelectorAll(".beam")).forEach(function (b) { b.parentNode.removeChild(b); });
-    if (_imm) [pan, pan.querySelector(".fv-deck")].forEach(function (h) { if (h) h.insertAdjacentHTML("beforeend", '<i class="beam"></i><i class="beam b2"></i>'); });
+    // the violet light is a Gremlin with its own place and pace on each (--go, --gs); the gold one is a Nixie
+    if (_imm) [pan, pan.querySelector(".fv-deck")].forEach(function (h, i) { if (h) h.insertAdjacentHTML("beforeend", '<i class="beam" style="--go:-' + (i * 5.3) + 's;--gs:' + (i ? 1.03 : 1) + '"></i><i class="beam b2"></i>'); });
     return win;
   }
   function droid() { try { return document.documentElement.classList.contains("skin-droid"); } catch (e) { return false; } }
