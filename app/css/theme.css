@@ -2801,6 +2801,23 @@ html.skin-98 .flowtab.immersive .flow-bar, html.skin-droid .flowtab.immersive .f
 html.pal-light .aoe-origin{ stroke:var(--text); stroke-width:2; }
 .aoe-box{ margin:2px 0 0; }
 .aoe-note{ margin:6px 0 0; }
+/* the map takes its own gestures (4 Nov 2026): pinch, drag and the wheel once clicked; a Cone or a Line aims where it is tapped */
+/* a finger's up or down swipe scrolls the page until the map is tapped (.aoe-engaged), so the Codex never traps a reader */
+.aoe-stage{ touch-action:pan-y; user-select:none; -webkit-user-select:none; cursor:grab; }
+.aoe-stage.aoe-engaged{ touch-action:none; }
+.aoe-stage.aoe-aimable{ cursor:crosshair; }
+.aoe-stage.aoe-panning, .aoe-stage.aoe-panning .aoe-svg{ cursor:grabbing; }
+.aoe-aim{ stroke:var(--flow); stroke-width:1.5; stroke-dasharray:4 3; stroke-linecap:round; fill:none; opacity:.9; }
+html.pal-light:not(.skin-98) .aoe-aim{ stroke:var(--text); }   /* --flow stays pale on a light palette (see .aoe-origin); '98 light sets its own */
+.aoe-bar{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin:6px 0 0; }
+.aoe-read{ font-size:10.5px; letter-spacing:.08em; color:var(--text2); }
+.aoe-zoom .chip{ min-width:28px; justify-content:center; }
+.aoe-zoom .chip:disabled{ opacity:.35; cursor:not-allowed; box-shadow:none; }
+.aoe-hint{ margin:4px 0 0; font-size:10px; }
+/* the compass: three by three, the heading named in its middle; hex leaves N and S blank */
+.aoe-pad{ display:grid; grid-template-columns:repeat(3, 30px); gap:3px; }
+.aoe-pad .chip{ justify-content:center; padding-left:0; padding-right:0; font-size:14px; line-height:1; min-height:24px; }
+.aoe-pad-c{ display:flex; align-items:center; justify-content:center; font-size:10px; letter-spacing:.1em; color:var(--accent); }
 /* '98 draws a window's contents on a sunken face, so the diagram sits in one too */
 html.skin-98 .aoe-box{
   padding:8px; background:var(--bg1);

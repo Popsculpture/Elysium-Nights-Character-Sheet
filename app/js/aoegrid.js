@@ -46,6 +46,19 @@
    Origin. Sphere and Cube are placed on a point you pick, centred on it;
    Cone, Line and Aura start on you. The marker shows which.
 
+   Facing and navigating (4 Nov 2026, the author: "clinical examples of what the
+   templates look like", with the Visualize map's controls but none of its
+   flourish). A Cone or a Line faces any of eight directions on a square grid,
+   the diagonals included, and six on hex: the compass, or a tap or a drag on
+   the map the way it should face. Pinch, or Ctrl and the wheel, zooms about the
+   pointer (a plain wheel zooms too once the map has been clicked, and scrolls
+   the page otherwise); a drag pans when the shape has nothing to aim, a long
+   press then a drag or the middle button pans when it does; FIT comes back. A
+   new shape, size or grid fits itself again. On a touch screen an up or down
+   swipe scrolls the page until the map is tapped, so the Codex never traps a
+   reader; a tap anywhere else lets it go again. The previous, fixed version is the
+   git tag restore/codex-aoe-template-v1.
+
    Built as an SVG STRING and handed to el(..., {html}), which is what nine of
    the ten JS-built SVGs in this app do; el() itself cannot make SVG, since it
    calls createElement and would land in the HTML namespace. Every colour is a
@@ -65,19 +78,27 @@ EN.aoeGrid = (function () {
   var _grid = "square";     // "square" or "hex"
   var _shape = "sphere";
   var _size = 3;
-  var _facing = 0;          // index into the current grid's DIRS, wrapped on read
 
-  /* WHY THE TWO GRIDS TURN BY DIFFERENT AMOUNTS. This diagram turns by exact lattice turns: a
-     quarter turn on a square grid maps (x,y) to (-y,x), and a sixth turn on a pointy-top hex maps
-     axial (q,r) to (-r,q+r). Both send whole cells onto whole cells, and the shapes are symmetric
-     about their heading, so a turned cone is the same cone. The Flow tab's Visualize window
-     (js/flowviz.js) also offers the square grid's diagonals, through cellsAt() at 45 degrees: with
-     membership by centre a diagonal cone is an honest triangle too. */
-  var SQ_DIRS = ["E", "S", "W", "N"];                          // quarter turns, clockwise
-  var HEX_DIRS = ["E", "SE", "SW", "W", "NW", "NE"];           // sixth turns, clockwise
+  var _heading = 0;         // degrees clockwise from east (y runs down); each grid snaps it to its own steps
+  var _view = null;         // a view set by hand {cx, cy, hw, hh} in spaces; null = fit the shape
+  var _viewFor = "";        // the shape, size and grid that view was set on: a new one fits itself
+  var _dragView = null;     // the view held still while a drag aims
+  var _gest = null, _ptrs = {};
+  var _engaged = false;      // a mouse or a pen has pressed on the map: a plain wheel zooms until the pointer leaves
+  var _touched = false;      // a finger has tapped the map: it takes every touch (.aoe-engaged) until a press elsewhere
+  var _stage = null, _redraw = null, _lastV = null, _lastFit = null;
+
+  /* Headings: eight on a square grid (45 degrees, the diagonals included), six on hex (60), clockwise
+     from east, the same set as the Flow tab's Visualize window (js/flowviz.js). Every heading is drawn
+     through cellsAt(), membership by centre, so a diagonal Cone is an honest triangle and a diagonal
+     Line still catches X spaces. Switching grids keeps the nearest heading. */
+  var SQ_DIRS = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"];
+  var HEX_DIRS = ["E", "SE", "SW", "W", "NW", "NE"];
   function dirs() { return _grid === "hex" ? HEX_DIRS : SQ_DIRS; }
-  function facing() { var d = dirs(); return ((_facing % d.length) + d.length) % d.length; }
+  function stepDeg() { return 360 / dirs().length; }
+  function facing() { var n = dirs().length; return ((Math.round(_heading / stepDeg()) % n) + n) % n; }
   function facingName() { return dirs()[facing()]; }
+  function headingDeg() { return facing() * stepDeg(); }
   // Cone and Line are the shapes the book gives a direction; the other three are placed, not aimed
   function aimed(shape) { return shape === "cone" || shape === "line"; }
 
@@ -146,112 +167,221 @@ EN.aoeGrid = (function () {
   }
   function sqCells(shape, n) { return cellsAt("square", shape, n, 0); }
   function hexCells(shape, n) { return cellsAt("hex", shape, n, 0); }
-
-  function rotSq(c, k) {
-    var x = c.x, y = c.y, i, t;
-    for (i = 0; i < k; i++) { t = x; x = -y; y = t; }     // quarter turn clockwise, y down
-    return { x: x, y: y };
-  }
-  function rotHex(c, k) {
-    var q = c.q, r = c.r, i, nq;
-    for (i = 0; i < k; i++) { nq = -r; r = q + r; q = nq; }   // sixth turn clockwise
-    return { q: q, r: r };
-  }
-  function bounds(pts, key1, key2, pad) {
-    var lo1 = 0, hi1 = 0, lo2 = 0, hi2 = 0;
-    pts.forEach(function (p) {
-      if (p[key1] < lo1) lo1 = p[key1]; if (p[key1] > hi1) hi1 = p[key1];
-      if (p[key2] < lo2) lo2 = p[key2]; if (p[key2] > hi2) hi2 = p[key2];
-    });
-    return { lo1: lo1 - pad, hi1: hi1 + pad, lo2: lo2 - pad, hi2: hi2 + pad };
-  }
-
   function key(a, b) { return a + ":" + b; }
 
-  /* ---- the two drawings ------------------------------------------------- */
-  function drawSquare(shape, n) {
-    var cells = sqCells(shape, n), hit = {}, s = "", k = facing();
-    if (k && aimed(shape)) cells = cells.map(function (c) { return rotSq(c, k); });
-    cells.forEach(function (c) { hit[key(c.x, c.y)] = 1; });
-    var b = bounds(cells.concat([{ x: 0, y: 0 }]), "x", "y", 1);
-    var w = (b.hi1 - b.lo1 + 1) * SQ, h = (b.hi2 - b.lo2 + 1) * SQ;
-    function px(x) { return (x - b.lo1) * SQ; }
-    function py(y) { return (y - b.lo2) * SQ; }
-    /* Two passes, because SVG has no z-index: it paints in document order, and neighbouring
-       cells share an edge. Emitted in one pass, the 1px stroke of a plain cell drawn LATER lands
-       on top of the 1.5px highlight of a caught cell drawn earlier, so a caught space came out
-       with pieces of its outline missing along whichever edges its neighbours were drawn after
-       it. The plain field goes down first, every caught space over it, the marker last. */
-    var over = "";
-    for (var x = b.lo1; x <= b.hi1; x++) {
-      for (var y = b.lo2; y <= b.hi2; y++) {
-        var on = !!hit[key(x, y)];
-        var rect = '<rect class="aoe-cell' + (on ? " aoe-hit" : "") + '" x="' + px(x) + '" y="' + py(y) + '" width="' + SQ + '" height="' + SQ + '"/>';
-        if (on) over += rect; else s += rect;
-      }
+  /* ---- the view: which part of the grid shows, in spaces (centres) ------------------------ */
+  var MIN_HALF = 2.5, MAX_HALF = 26, ZOOM_STEP = 1.35, LONG_MS = 450, SLOP = 6;
+  function unit() { return _grid === "hex" ? SQ3 * HEXR : SQ; }      // px per space: a square's side, a hex across its flats
+  function cellsNow(n) { return cellsAt(_grid, _shape, n, aimed(_shape) ? headingDeg() : 0); }
+  // the fit: the shape and its origin, with a space of grid all round
+  function fitView(cells) {
+    var lx = 0, hx = 0, ly = 0, hy = 0;
+    cells.forEach(function (c) { var p = centreOf(_grid, c); lx = Math.min(lx, p.x); hx = Math.max(hx, p.x); ly = Math.min(ly, p.y); hy = Math.max(hy, p.y); });
+    var padY = _grid === "hex" ? 1 / SQ3 + SQ3 / 2 : 1.5;
+    var hw = (hx - lx) / 2 + 1.5, hh = (hy - ly) / 2 + padY;
+    // the frame stays between square and two wide by one tall, so a long Line north never draws a map taller than the page
+    hw = Math.max(hw, hh); hh = Math.max(hh, hw / 2);
+    /* ...then each edge is pushed out to the next cell boundary, so the fit never ends in a half-cut row
+       (square: boundaries at a half; hex rows: a row's top and bottom points). Hex columns stagger row
+       by row, so their sides stay ragged, as they always were. */
+    var cx = (lx + hx) / 2, cy = (ly + hy) / 2, L = cx - hw, Rt = cx + hw, T = cy - hh, B = cy + hh;
+    if (_grid === "hex") {
+      var rh = SQ3 / 2, o = 1 / SQ3;
+      T = Math.floor((T + o) / rh + EPS) * rh - o; B = Math.ceil((B - o) / rh - EPS) * rh + o;
+    } else {
+      L = Math.floor(L + 0.5 + EPS) - 0.5; Rt = Math.ceil(Rt - 0.5 - EPS) + 0.5;
+      T = Math.floor(T + 0.5 + EPS) - 0.5; B = Math.ceil(B - 0.5 - EPS) + 0.5;
     }
-    s += over;
-    s += originMark(px(0) + SQ / 2, py(0) + SQ / 2, SQ * 0.30);
-    return wrapSvg(s, w, h, cells.length, shape, n);
+    return { cx: (L + Rt) / 2, cy: (T + B) / 2, hw: (Rt - L) / 2, hh: (B - T) / 2 };
+  }
+  function viewKey() { return _grid + "|" + _shape + "|" + clampSize(_size); }
+  function viewNow(fit) {
+    if (_dragView) return _dragView;
+    if (_view && _viewFor !== viewKey()) _view = null;                // a new shape, size or grid fits itself
+    return _view || fit;
+  }
+  // every space with any of it in the view
+  function inView(V) {
+    var out = [], a, b, ry = _grid === "hex" ? 1 / SQ3 : 0.5;
+    function vis(c) { var p = centreOf(_grid, c); return Math.abs(p.x - V.cx) < V.hw + 0.5 && Math.abs(p.y - V.cy) < V.hh + ry; }
+    if (_grid === "hex") {
+      var r0 = Math.floor((V.cy - V.hh) / (SQ3 / 2)) - 1, r1 = Math.ceil((V.cy + V.hh) / (SQ3 / 2)) + 1;
+      for (b = r0; b <= r1; b++) for (a = Math.floor(V.cx - V.hw - b / 2) - 1; a <= Math.ceil(V.cx + V.hw - b / 2) + 1; a++) { var h = { q: a, r: b }; if (vis(h)) out.push(h); }
+    } else {
+      for (a = Math.floor(V.cx - V.hw) - 1; a <= Math.ceil(V.cx + V.hw) + 1; a++) for (b = Math.floor(V.cy - V.hh) - 1; b <= Math.ceil(V.cy + V.hh) + 1; b++) { var q = { x: a, y: b }; if (vis(q)) out.push(q); }
+    }
+    return out;
   }
 
+  /* ---- the drawing --------------------------------------------------------------------------
+     Two passes, because SVG has no z-index: it paints in document order, and neighbouring cells
+     share an edge. Emitted in one pass, the 1px stroke of a plain cell drawn LATER lands on top of
+     the 1.5px highlight of a caught cell drawn earlier, so a caught space came out with pieces of its
+     outline missing. The plain field goes down first, every caught space over it, then the heading,
+     the marker last. */
   function hexPoly(cx, cy, r) {
     var pts = [], i, a;
     for (i = 0; i < 6; i++) { a = Math.PI / 180 * (60 * i - 30); pts.push((cx + r * Math.cos(a)).toFixed(2) + "," + (cy + r * Math.sin(a)).toFixed(2)); }
     return pts.join(" ");
   }
-  function drawHex(shape, n) {
-    var cells = hexCells(shape, n), hit = {}, s = "", k = facing();
-    if (k && aimed(shape)) cells = cells.map(function (c) { return rotHex(c, k); });
-    cells.forEach(function (c) { hit[key(c.q, c.r)] = 1; });
-    var all = cells.concat([{ q: 0, r: 0 }]);
-    var b = bounds(all, "q", "r", 1);
-    var W = Math.sqrt(3) * HEXR, VS = 1.5 * HEXR;
-    /* One hex of margin around the cells, measured in PIXELS, with each row then solving its
-       own q range over that same pixel window. A row's screen x is W * (q + r/2), so a q range
-       that does not move with r shifts half a hex further right on every row: the field comes
-       out a sheared parallelogram inside a rectangular viewBox, which left two empty triangles,
-       roughly half the width in slack, and the off-axis shapes (cone, line, cube) sitting off
-       centre in their own frame. Filling a pixel window instead makes the drawn field an actual
-       rectangle and stops the surplus width scaling the art down. */
-    var cx0 = [];
-    all.forEach(function (c) { cx0.push(W * (c.q + c.r / 2)); });
-    var lox = Math.min.apply(null, cx0) - W, hix = Math.max.apply(null, cx0) + W;
-    var xs = [], ys = [], grid = [];
-    for (var r = b.lo2; r <= b.hi2; r++) {
-      var q0 = Math.ceil(lox / W - r / 2), q1 = Math.floor(hix / W - r / 2);
-      for (var q = q0; q <= q1; q++) {
-        var cx = W * (q + r / 2), cy = VS * r;
-        grid.push({ q: q, r: r, cx: cx, cy: cy });
-        xs.push(cx - W / 2); xs.push(cx + W / 2); ys.push(cy - HEXR); ys.push(cy + HEXR);
-      }
-    }
-    var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
-    var minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
-    // the plain field first, then the caught spaces over it: see the note in drawSquare
-    var over = "";
-    grid.forEach(function (g) {
-      var on = !!hit[key(g.q, g.r)];
-      var poly = '<polygon class="aoe-cell' + (on ? " aoe-hit" : "") + '" points="' + hexPoly(g.cx - minX, g.cy - minY, HEXR) + '"/>';
-      if (on) over += poly; else s += poly;
+  function drawSvg(n) {
+    var cells = cellsNow(n), hit = {}, U = unit(), field = "", over = "";
+    cells.forEach(function (c) { hit[_grid === "hex" ? key(c.q, c.r) : key(c.x, c.y)] = 1; });
+    var fit = fitView(cells.concat([_grid === "hex" ? { q: 0, r: 0 } : { x: 0, y: 0 }]));
+    var V = viewNow(fit);
+    _lastFit = fit; _lastV = V;
+    inView(V).forEach(function (c) {
+      var on = !!hit[_grid === "hex" ? key(c.q, c.r) : key(c.x, c.y)], p = centreOf(_grid, c), cls = "aoe-cell" + (on ? " aoe-hit" : ""), shape;
+      if (_grid === "hex") shape = '<polygon class="' + cls + '" points="' + hexPoly(p.x * U, p.y * U, HEXR) + '"/>';
+      else shape = '<rect class="' + cls + '" x="' + ((p.x - 0.5) * U) + '" y="' + ((p.y - 0.5) * U) + '" width="' + U + '" height="' + U + '"/>';
+      if (on) over += shape; else field += shape;
     });
-    s += over;
-    s += originMark(0 - minX, 0 - minY, HEXR * 0.42);
-    return wrapSvg(s, maxX - minX, maxY - minY, cells.length, shape, n);
+    var s = field + over;
+    // an aimed shape's heading, a thin line from its origin to its far end
+    if (aimed(_shape)) {
+      var ha = headingDeg() * Math.PI / 180;
+      var stepK = (_shape === "line" && _grid !== "hex") ? 1 / Math.max(Math.abs(Math.cos(ha)), Math.abs(Math.sin(ha))) : 1, L = (n + 0.5) * stepK * U;
+      s += '<line class="aoe-aim" x1="0" y1="0" x2="' + (Math.cos(ha) * L).toFixed(1) + '" y2="' + (Math.sin(ha) * L).toFixed(1) + '"/>';
+    }
+    s += originMark(0, 0, _grid === "hex" ? HEXR * 0.42 : SQ * 0.30);
+    return wrapSvg(s, V, U, cells.length, _shape, n);
   }
 
   function originMark(cx, cy, r) {
     return '<circle class="aoe-origin" cx="' + cx.toFixed(2) + '" cy="' + cy.toFixed(2) + '" r="' + r.toFixed(2) + '"/>';
   }
 
-  function wrapSvg(inner, w, h, count, shape, n) {
-    var info = shapeInfo(shape);
-    var label = "Area " + n + (shape === "sphere" ? "" : " " + shape) + " on a " + _grid
+  function areaLabel(count, shape, n) {
+    return "Area " + n + (shape === "sphere" ? "" : " " + shape) + " on a " + _grid
       + " grid" + (aimed(shape) ? ", facing " + facingName() : "")
       + ", " + count + (count === 1 ? " space" : " spaces");
-    return '<svg class="aoe-svg" viewBox="0 0 ' + Math.ceil(w) + " " + Math.ceil(h) + '" xmlns="http://www.w3.org/2000/svg"'
-      + ' role="img" aria-label="' + label + '"><title>' + label + ", " + info.name + '</title>' + inner + "</svg>";
   }
+  function wrapSvg(inner, V, U, count, shape, n) {
+    var info = shapeInfo(shape), label = areaLabel(count, shape, n);
+    return '<svg class="aoe-svg" viewBox="' + ((V.cx - V.hw) * U).toFixed(1) + " " + ((V.cy - V.hh) * U).toFixed(1) + " " + (2 * V.hw * U).toFixed(1) + " " + (2 * V.hh * U).toFixed(1)
+      + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + label + '" data-count="' + count + '"><title>' + label + ", " + info.name + '</title>' + inner + "</svg>";
+  }
+
+  /* ---- the gestures. One handler for mouse, pen and touch, the Visualize map's:
+       a tap or a drag    aims a Cone or a Line the way the pointer is (the view holds still while it does);
+       a drag             pans, when the shape has nothing to aim;
+       a long press, drag pans (hold still for LONG_MS first), and so does the middle button;
+       two fingers        pinch: zoom about their middle, and pan with it;
+       Ctrl and the wheel zooms about the pointer (a touchpad pinch arrives as one). A plain wheel zooms
+                          once the map has been clicked, until the pointer leaves it; until then it scrolls
+                          the page, so the Codex never traps a reader's scroll.
+     The move and release listeners sit on the document (bound once, below), because the Codex can be
+     redrawn while a gesture runs. */
+  function svgRect() { var svg = _stage && _stage.querySelector(".aoe-svg"); return svg ? svg.getBoundingClientRect() : null; }
+  function upp(V, r) { return Math.max(2 * V.hw / Math.max(1, r.width), 2 * V.hh / Math.max(1, r.height)); }   // spaces per screen pixel
+  function worldAt(V, r, sx, sy) { var u = upp(V, r); return { x: V.cx + (sx - (r.left + r.width / 2)) * u, y: V.cy + (sy - (r.top + r.height / 2)) * u }; }
+  // lo: the narrowest a zoom may go from V (a fit tighter than MIN_HALF stays as it is, never pushed out)
+  function clampView(cx, cy, hw, aspect, lo) { hw = Math.max(lo == null ? MIN_HALF : lo, Math.min(MAX_HALF, hw)); return { cx: cx, cy: cy, hw: hw, hh: hw * aspect }; }
+  function floorFor(V) { return Math.min(MIN_HALF, V.hw); }
+  function setView(V) { _view = V; _viewFor = viewKey(); }
+  function redrawSoon() { if (_redraw) _redraw(); }
+  function zoomAt(sx, sy, f) {
+    var V = _lastV, r = svgRect(); if (!V || !r) return;
+    var w = worldAt(V, r, sx, sy), NV = clampView(0, 0, V.hw * f, V.hh / V.hw, floorFor(V)), k = NV.hw / V.hw;
+    NV.cx = w.x - (w.x - V.cx) * k; NV.cy = w.y - (w.y - V.cy) * k;
+    setView(NV);
+    var g = _gest;   // a pan or a pinch already running carries on from the zoomed view
+    if (g && g.mode === "pan" && _ptrs[g.id]) { g.V0 = NV; g.s0 = { x: _ptrs[g.id].x, y: _ptrs[g.id].y }; }
+    else if (g && g.mode === "pinch") {
+      var pa = _ptrs[g.ids[0]], pb = _ptrs[g.ids[1]];
+      if (pa && pb) { g.V0 = NV; g.d0 = Math.max(1, dist2(pa, pb)); g.m0 = worldAt(NV, g.r0, (pa.x + pb.x) / 2, (pa.y + pb.y) / 2); }
+    }
+    redrawSoon();
+  }
+  function dist2(a, b) { return Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)); }
+  // aim a Cone or a Line at a point on the map (in spaces): the nearest of the grid's headings
+  function aimAt(p) {
+    if (Math.sqrt(p.x * p.x + p.y * p.y) < 0.5) return false;          // on the origin itself: no heading
+    var deg = Math.atan2(p.y, p.x) * 180 / Math.PI, before = facing();
+    _heading = Math.round(deg / stepDeg()) * stepDeg();
+    return facing() !== before;
+  }
+  function aimFrom(ev) {
+    var V = _dragView || _lastV, r = svgRect(); if (!V || !r) return;
+    if (aimAt(worldAt(V, r, ev.clientX, ev.clientY))) redrawSoon();
+  }
+  function setPanning(on) { if (_stage) _stage.classList.toggle("aoe-panning", !!on); }
+  function bindStage(st) {
+    st.addEventListener("wheel", function (ev) {
+      var dy = ev.deltaMode === 1 ? ev.deltaY * 16 : ev.deltaMode === 2 ? ev.deltaY * 400 : ev.deltaY;
+      if (!dy || !(ev.ctrlKey || _engaged)) return;          // a plain wheel scrolls the page until the map is clicked
+      ev.preventDefault();
+      zoomAt(ev.clientX, ev.clientY, Math.exp(Math.max(-60, Math.min(60, dy)) * (ev.ctrlKey ? 0.012 : 0.0016)));
+    }, { passive: false });
+    st.addEventListener("pointerleave", function () { _engaged = false; });
+    st.addEventListener("mousedown", function (ev) { if (ev.button === 1) ev.preventDefault(); });
+    st.addEventListener("auxclick", function (ev) { if (ev.button === 1) ev.preventDefault(); });
+    st.addEventListener("contextmenu", function (ev) { if (_gest) ev.preventDefault(); });
+    st.addEventListener("pointerdown", function (ev) {
+      var mid = ev.button === 1;
+      if (!mid && ev.button != null && ev.button !== 0) return;
+      var r = svgRect(), V = _lastV; if (!r || !V) return;
+      if (ev.pointerType === "touch") { _touched = true; st.classList.add("aoe-engaged"); } else _engaged = true;
+      _ptrs[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+      var ids = Object.keys(_ptrs);
+      if (ids.length >= 2 && !(_gest && _gest.mid)) {               // a second finger: pinch (an aim in progress stops where it is)
+        if (_gest) clearTimeout(_gest.timer);
+        var pa = _ptrs[ids[0]], pb = _ptrs[ids[1]];
+        ev.preventDefault(); _dragView = null;
+        _gest = { mode: "pinch", ids: ids.slice(0, 2), d0: Math.max(1, dist2(pa, pb)), m0: worldAt(V, r, (pa.x + pb.x) / 2, (pa.y + pb.y) / 2), V0: V, r0: r };
+        setPanning(true); return;
+      }
+      if (_gest) return;
+      ev.preventDefault();
+      if (mid) { _gest = { mode: "pan", mid: true, id: ev.pointerId, s0: { x: ev.clientX, y: ev.clientY }, V0: V, r0: r }; setPanning(true); return; }
+      var g = _gest = { mode: "pending", id: ev.pointerId, s0: { x: ev.clientX, y: ev.clientY }, V0: V, r0: r, aim: aimed(_shape) };
+      g.timer = setTimeout(function () {
+        if (_gest !== g || g.mode !== "pending") return;
+        g.mode = "pan"; setPanning(true);
+        try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {}
+      }, LONG_MS);
+    });
+  }
+  function gestMove(ev) {
+    if (_ptrs[ev.pointerId]) _ptrs[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+    var g = _gest; if (!g) return;
+    if (g.mode === "pinch") {
+      var pa = _ptrs[g.ids[0]], pb = _ptrs[g.ids[1]]; if (!pa || !pb) return;
+      var NV = clampView(0, 0, g.V0.hw * g.d0 / Math.max(1, dist2(pa, pb)), g.V0.hh / g.V0.hw, floorFor(g.V0)), u = upp(NV, g.r0);
+      NV.cx = g.m0.x - ((pa.x + pb.x) / 2 - (g.r0.left + g.r0.width / 2)) * u;
+      NV.cy = g.m0.y - ((pa.y + pb.y) / 2 - (g.r0.top + g.r0.height / 2)) * u;
+      setView(NV); redrawSoon(); return;
+    }
+    if (ev.pointerId !== g.id) return;
+    var dx = ev.clientX - g.s0.x, dy = ev.clientY - g.s0.y;
+    if (g.mode === "pending" && Math.sqrt(dx * dx + dy * dy) > SLOP) {
+      clearTimeout(g.timer);
+      if (g.aim) { g.mode = "aim"; _dragView = g.V0; } else { g.mode = "pan"; setPanning(true); }
+    }
+    if (g.mode === "aim") { aimFrom(ev); return; }
+    if (g.mode === "pan") { var u0 = upp(g.V0, g.r0); setView({ cx: g.V0.cx - dx * u0, cy: g.V0.cy - dy * u0, hw: g.V0.hw, hh: g.V0.hh }); redrawSoon(); }
+  }
+  function gestEnd(ev) {
+    delete _ptrs[ev.pointerId];
+    var g = _gest; if (!g) return;
+    if (g.mode === "pinch") {
+      if (g.ids.indexOf(String(ev.pointerId)) === -1) return;
+      _gest = null; _ptrs = {}; setPanning(false); redrawSoon(); return;
+    }
+    if (ev.pointerId !== g.id) return;
+    clearTimeout(g.timer); _gest = null;
+    if (g.mode === "pending" && g.aim && ev.type === "pointerup") { _dragView = g.V0; aimFrom(ev); }   // a tap aims
+    _dragView = null; setPanning(false);
+    redrawSoon();
+  }
+  // a press anywhere off the map lets it go: the page scrolls under a finger and a wheel again
+  document.addEventListener("pointerdown", function (ev) {
+    if (_stage && _stage.contains(ev.target)) return;
+    _engaged = false; _touched = false; if (_stage) _stage.classList.remove("aoe-engaged");
+  }, true);
+  document.addEventListener("pointermove", gestMove);
+  document.addEventListener("pointerup", gestEnd);
+  document.addEventListener("pointercancel", gestEnd);
 
   /* ---- the widget ------------------------------------------------------- */
   // Styled here rather than borrowing .set-col-lab, which lives in the settings tray's
@@ -273,27 +403,68 @@ EN.aoeGrid = (function () {
       ctl
     ]);
   }
+  function capLab(t) { return el("span", { style: { fontFamily: "var(--mono)", fontSize: "9px", letterSpacing: ".18em", color: "var(--text3)" }, text: t }); }
+  // the compass: where each heading sits on a three by three pad (hex has no N or S)
+  var PAD = [["NW", "\u2196"], ["N", "\u2191"], ["NE", "\u2197"], ["W", "\u2190"], null, ["E", "\u2192"], ["SW", "\u2199"], ["S", "\u2193"], ["SE", "\u2198"]];
   function build() {
     if (!EN.basics || !EN.basics.space) return null;
     var list = shapeList();
     if (!list.length) return null;
 
-    var box = el("div.aoe-box");
+    var stage = el("div.aoe-box.aoe-stage");
     var note = el("p.help.aoe-note", { style: { margin: "6px 0 0" } });
+    var readout = el("span.mono.aoe-read");
+    var pad = el("div.aoe-pad", { role: "group", "aria-label": "Facing" });
+    var zoomOut, zoomFit, zoomIn;
 
+    function face(name) {
+      var i = dirs().indexOf(name); if (i === -1) return;
+      _heading = i * stepDeg(); draw();
+    }
+    var padFor = "", padMid = null;
+    function drawPad() {
+      if (padFor !== _grid) {             // the buttons change only with the grid's set of headings
+        padFor = _grid; clear(pad);
+        PAD.forEach(function (p) {
+          if (!p) { pad.appendChild(padMid = el("span.aoe-pad-c.mono")); return; }
+          /* the inline cursor keeps #GRIDroid's tap floor even across the pad (see gridChip below) */
+          pad.appendChild(dirs().indexOf(p[0]) !== -1
+            ? el("button.chip", { type: "button", style: { cursor: "pointer" }, title: "Face " + p[0], "aria-label": "Face " + p[0],
+                dataset: { aoeFace: p[0] }, onclick: function () { face(p[0]); } }, p[1])
+            : el("span.aoe-pad-x", { "aria-hidden": "true" }));
+        });
+      }
+      // every other redraw updates them in place, so a button pressed from the keyboard keeps its focus
+      padMid.textContent = facingName();
+      [].slice.call(pad.querySelectorAll("[data-aoe-face]")).forEach(function (b) {
+        var on = b.getAttribute("data-aoe-face") === facingName();
+        b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    }
     function draw() {
-      clear(box);
       var n = clampSize(_size);
       var info = shapeInfo(_shape);
-      box.appendChild(el("div", { html: _grid === "hex" ? drawHex(_shape, n) : drawSquare(_shape, n) }));
+      stage.innerHTML = drawSvg(n);
       facingRow.style.display = aimed(_shape) ? "" : "none";
-      facingOut.textContent = facingName();
+      drawPad();
+      var count = +stage.querySelector(".aoe-svg").getAttribute("data-count");
+      readout.textContent = info.name + ", Area " + n + ": " + count + (count === 1 ? " space" : " spaces") + (aimed(_shape) ? ", facing " + facingName() : "");
+      var outOff = _lastV.hw >= MAX_HALF - 1e-6, inOff = _lastV.hw <= MIN_HALF + 1e-6, act = document.activeElement;
+      if ((outOff && act === zoomOut) || (inOff && act === zoomIn)) zoomFit.focus();   // a disabled button would drop the keyboard's focus
+      zoomOut.disabled = outOff; zoomIn.disabled = inOff;
+      var fitted = !_view || _viewFor !== viewKey();
+      zoomFit.classList.toggle("on", fitted); zoomFit.setAttribute("aria-pressed", fitted ? "true" : "false");
+      stage.classList.toggle("aoe-aimable", aimed(_shape));
       var txt = info.text;
       if (_grid === "hex" && _shape === "cube") {
         txt += " The Handbook calls this a square zone and gives no hex version, so it is drawn here as "
           + n + " rows of " + n + ".";
       }
       note.textContent = txt;
+    }
+    function zoomBy(f) {
+      var V = _lastV; if (!V) return;
+      setView(clampView(V.cx, V.cy, V.hw * f, V.hh / V.hw, floorFor(V))); draw();
     }
 
     var shapeSel = el("select", { style: { width: "100%" }, onchange: function () { _shape = this.value; draw(); } },
@@ -333,27 +504,24 @@ EN.aoeGrid = (function () {
     }
     var gridRow = el("div.row", { style: { gap: "6px" } }, [gridChip("square", "SQUARE"), gridChip("hex", "HEX")]);
 
-    /* FACING, shown only for the two shapes the book aims rather than places. Two step buttons
-       rather than a compass of fixed points, because the number of directions is a property of
-       the grid: four on square, six on hex. Stepping wraps, so one control fits both without
-       going stale when the grid changes under it. */
-    var facingOut = el("span.mono", { style: { fontSize: "11px", letterSpacing: ".14em", color: "var(--accent)", minWidth: "34px", textAlign: "center" } });
-    function turn(by, label, title) {
-      return el("button.chip", { type: "button", title: title, style: { cursor: "pointer" },
-        onclick: function () { _facing = facing() + by; draw(); } }, label);
-    }
-    var facingRow = el("div.row", { style: { gap: "6px", alignItems: "center", marginBottom: "10px" } }, [
-      el("span", { style: { fontFamily: "var(--mono)", fontSize: "9px", letterSpacing: ".18em", color: "var(--text3)" }, text: "FACING" }),
-      turn(-1, "\u21ba", "Turn left"),
-      facingOut,
-      turn(1, "\u21bb", "Turn right")
-    ]);
+    /* FACING, shown only for the two shapes the book aims rather than places: a compass of the grid's
+       headings, eight on square and six on hex (N and S stay blank there), the current one named in
+       its middle. A tap or a drag on the map aims too. */
+    var facingRow = el("div.row", { style: { gap: "10px", alignItems: "center", marginBottom: "10px" } }, [capLab("FACING"), pad]);
 
     var controls = el("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" } }, [
       ctlField("SHAPE", shapeSel),
       ctlField("SIZE IN SPACES", sizeIn)
     ]);
 
+    zoomOut = el("button.chip", { type: "button", style: { cursor: "pointer" }, dataset: { aoeZoom: "out" }, title: "Zoom out", "aria-label": "Zoom out", onclick: function () { zoomBy(ZOOM_STEP); } }, "\u2212");
+    zoomFit = el("button.chip", { type: "button", style: { cursor: "pointer" }, dataset: { aoeZoom: "fit" }, title: "Fit the view to the shape", onclick: function () { _view = null; draw(); } }, "FIT");
+    zoomIn = el("button.chip", { type: "button", style: { cursor: "pointer" }, dataset: { aoeZoom: "in" }, title: "Zoom in", "aria-label": "Zoom in", onclick: function () { zoomBy(1 / ZOOM_STEP); } }, "+");
+    var bar = el("div.aoe-bar", null, [readout, el("div.row.aoe-zoom", { style: { gap: "4px" } }, [zoomOut, zoomFit, zoomIn])]);
+    var hint = el("p.help.aoe-hint", { text: "Pinch, or Ctrl and the wheel, to zoom (a plain wheel zooms once you click the map) · drag to pan, or hold first on a Cone or a Line, which a tap or a drag aims · FIT to come back" });
+
+    _stage = stage; _redraw = draw; _engaged = false; _touched = false;   // a rebuilt map starts let go
+    bindStage(stage);
     draw();
     return el("div.aoe-widget", null, [
       el("div.row.between.wrap", { style: { gap: "10px", marginBottom: "8px", alignItems: "center" } }, [
@@ -362,10 +530,12 @@ EN.aoeGrid = (function () {
       ]),
       controls,
       facingRow,
-      box,
+      stage,
+      bar,
+      hint,
       note,
       el("p.help", { style: { margin: "6px 0 0", fontStyle: "italic" },
-        text: "The shapes and their sizes are the Handbook's. How the grid counts them is this diagram's own convention: a space is in or out by its center, and distance runs straight between centers. A Sphere or Aura of X takes every space whose center is within X and a half of its point, so it is round. A Cone is a triangle from you, X long and X across at its far end, the same on both sides of its heading; an even-sized Cone is drawn one space wider at its far end, since an even row cannot sit centered on its heading. A Line takes the spaces whose centers lie within half a space of its path, X of them at any heading. Cone, Line and Aura start on you; Sphere and Cube are placed on a point you can see, the Cube centered on it. Facing turns in quarters on a square grid and in sixths on a hex one." })
+        text: "The shapes and their sizes are the Handbook's. How the grid counts them is this diagram's own convention: a space is in or out by its center, and distance runs straight between centers. A Sphere or Aura of X takes every space whose center is within X and a half of its point, so it is round. A Cone is a triangle from you, X long and X across at its far end, the same on both sides of its heading; an even-sized Cone is drawn one space wider at its far end, since an even row cannot sit centered on its heading. A Line takes the spaces whose centers lie within half a space of its path, X of them at any heading, diagonals included. Cone, Line and Aura start on you; Sphere and Cube are placed on a point you can see, the Cube centered on it. A Cone or a Line faces eight ways on a square grid, the diagonals included, and six on a hex one." })
     ]);
   }
 
