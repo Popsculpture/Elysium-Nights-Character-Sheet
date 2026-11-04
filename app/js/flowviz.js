@@ -621,6 +621,10 @@ EN.flowViz = (function () {
     /* the window is rebuilt on every change; a negative delay from one clock keeps every looping animation
        (the deck's sweep and breathing, the blinking diamonds) in step instead of restarting each time */
     win.style.setProperty("--fv-t", "-" + (Date.now() % 600000) + "ms");
+    // Immersive: the Flow tab's two pin-light tracers, round the window and round its deck (theme.css)
+    // (the deck node is reused when the window redraws on its own, from a zoom or an aim: clear its old pair first)
+    [].slice.call(pan.querySelectorAll(".beam")).forEach(function (b) { b.parentNode.removeChild(b); });
+    if (_imm) [pan, pan.querySelector(".fv-deck")].forEach(function (h) { if (h) h.insertAdjacentHTML("beforeend", '<i class="beam"></i><i class="beam b2"></i>'); });
     return win;
   }
   function droid() { try { return document.documentElement.classList.contains("skin-droid"); } catch (e) { return false; } }

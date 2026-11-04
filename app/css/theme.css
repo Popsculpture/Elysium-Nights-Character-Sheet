@@ -2449,6 +2449,10 @@ html.light .pop-btn:hover{ background:rgba(0,0,0,.05) !important; }
 @keyframes glitchBurst{ 0%,90%,100%{ opacity:0; } 91%{ opacity:.85; } 92%{ opacity:0; } 95%{ opacity:.6; } 96%{ opacity:0; } }
 @keyframes glitchBand{ 0%,90%{ top:20%; transform:translateX(0); } 91%{ top:58%; transform:translateX(-7px); } 95%{ top:33%; transform:translateX(6px); } 100%{ top:20%; } }
 
+/* The quiet levels (0, and Intensity 1) draw no horizontal flicker lines: the author's call, 4 Nov 2026,
+   so a calm screen never reads as a damaged one. The band comes in from level 2. */
+.flowtab.immersive[data-fx="0"] .flow-glitch, .flowtab.immersive[data-fx="1"] .flow-glitch{ display:none; }
+
 /* Reservoir Strain treatment, keyed to the escalation level (data-fx). Every rung
    now sits one level lower than it used to, so the peak violence lands at level 4
    (Rend); level 5 (Collapse) is the somber dead state handled further below. */
@@ -3140,6 +3144,16 @@ html.skin-droid .fv-win.fv-droid{ left:calc(var(--dr-l) + 10px); right:auto; wid
    even grid of same-size keys. --rc is a key's own colour (a Resonance key wears its Resonance;
    the rest wear the window's). Chamfered corners, the app's shape. */
 .fv-ctl{ margin-top:12px; }
+/* the Free-Shaping panel wears the same deck (4 Nov 2026): the Resonance's description under its keys,
+   and the effect pickers' keys wrap a long name onto a second line instead of cutting it */
+.fv-desc{ margin:2px 0 0; color:var(--text2); font-size:11.5px; line-height:1.45; }
+.fv-seg.wrap{ grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); }
+.fv-seg.wrap .fv-opt{ height:auto; min-height:28px; padding-top:6px; padding-bottom:6px; }
+.fv-seg.wrap .fv-opt-t{ white-space:normal; line-height:1.25; }
+.fs-deck .fv-scale .rule-chip, .fs-deck .fv-scale .codex-chip{ align-self:center; }
+/* the Visualize button's eye: the author's icon, in the button's own colour */
+.fv-eye{ display:inline-block; width:1.45em; height:1em; margin-right:4px; vertical-align:-.16em; line-height:0; }
+.fv-eye svg{ width:100%; height:100%; display:block; }
 .fv-deck{ position:relative; display:flex; flex-direction:column; padding:4px 9px; border:1px solid var(--border2); border-radius:6px;
   background:linear-gradient(180deg, color-mix(in srgb, var(--fv-res) 6%, var(--bg2,#12101c)), var(--bg2,#12101c) 70%); }
 .fv-row{ display:grid; grid-template-columns:minmax(0,1fr); align-items:start; gap:5px; padding:8px 0 7px; border-top:1px dashed color-mix(in srgb, var(--border2) 75%, transparent); }
@@ -3180,7 +3194,7 @@ html.skin-droid .fv-win.fv-droid{ left:calc(var(--dr-l) + 10px); right:auto; wid
   clip-path:polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
 .fv-step-l{ font:9px var(--mono); letter-spacing:.14em; color:var(--text3); }
 .fv-step .stepper{ display:inline-flex; gap:3px; margin:0; width:auto; }
-.fv-win .fv-step .stepper button{ width:24px; height:20px; padding:0; border:1px solid var(--border2); background:color-mix(in srgb, var(--fv-res) 8%, var(--bg2,#12101c)); color:var(--text); font-size:13px; line-height:1; cursor:pointer; }
+.fv-win .fv-step .stepper button, .builder .fv-step .stepper button{ width:24px; height:20px; padding:0; border:1px solid var(--border2); background:color-mix(in srgb, var(--fv-res) 8%, var(--bg2,#12101c)); color:var(--text); font-size:13px; line-height:1; cursor:pointer; }
 .fv-step .stepper button:hover:not(:disabled){ border-color:var(--fv-res); }
 .fv-step .stepper button:disabled{ opacity:.35; cursor:not-allowed; }
 .fv-step-n{ min-width:20px; text-align:center; font-size:15px; color:var(--fv-res); order:-1; }
@@ -3214,32 +3228,32 @@ html body .fv-win .fv-bar .btn.sm:focus-visible{ outline:2px solid var(--fv-res)
 
 /* ---- Immersive flair for the deck: a light that sweeps the deck, chosen keys that breathe in their
    colour, a shimmer across a key under the pointer, the row diamonds blinking, and at Surge and
-   Rend the chosen keys flicker. Keys are clipped to their chamfer, so every glow is drawn inside. */
-.fv-win.fv-immersive .fv-deck{ border-color:color-mix(in srgb, var(--fv-res) 38%, var(--border2));
+   Rend the chosen keys flicker. The Free-Shaping panel's deck (in an Immersive Flow tab) takes the same. Keys are clipped to their chamfer, so every glow is drawn inside. */
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck{ border-color:color-mix(in srgb, var(--fv-res) 38%, var(--border2));
   box-shadow:0 0 16px color-mix(in srgb, var(--fv-res) 9%, transparent), inset 0 0 26px color-mix(in srgb, var(--fv-res) 6%, transparent); }
-.fv-win.fv-immersive .fv-deck::before{ content:""; position:absolute; inset:0; border-radius:6px; pointer-events:none;
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck::before{ content:""; position:absolute; inset:0; border-radius:6px; pointer-events:none;
   background:linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--fv-res) 13%, transparent) 50%, transparent 100%) no-repeat;
   background-size:35% 100%; animation:fvSweep calc(7s / var(--fv-pulse)) linear infinite; animation-delay:var(--fv-t, 0s); }
-.fv-win.fv-immersive .fv-opt.on{ animation:fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:var(--fv-t, 0s); }
-.fv-win.fv-immersive .fv-opt.on.fv-just{ animation:fvSel .34s ease-out, fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:0s, var(--fv-t, 0s); }
-.fv-win.fv-immersive .fv-opt:hover:not(:disabled){
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on{ animation:fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:var(--fv-t, 0s); }
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on.fv-just{ animation:fvSel .34s ease-out, fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:0s, var(--fv-t, 0s); }
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt:hover:not(:disabled){
   background-image:linear-gradient(110deg, transparent 35%, color-mix(in srgb, var(--rc) 28%, transparent) 50%, transparent 65%);
   background-size:260% 100%; animation:fvShimmer .9s linear infinite; }
-.fv-win.fv-immersive .fv-opt.on:hover{ animation:fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:var(--fv-t, 0s); background-image:linear-gradient(180deg, color-mix(in srgb, var(--rc) 36%, transparent), color-mix(in srgb, var(--rc) 16%, transparent)); background-size:auto; }
-.fv-win.fv-immersive .fv-lab::before{ animation:fvBlink 2.2s ease-in-out infinite; animation-delay:var(--fv-t, 0s); box-shadow:0 0 6px var(--fv-res); }
-.fv-win.fv-immersive .fv-step-n{ text-shadow:0 0 8px var(--fv-res); }
-.fv-win.fv-immersive .fv-switch.on .fv-switch-k::after{ animation:fvBlink 1.6s ease-in-out infinite; }
-.fv-win.fv-immersive[data-fx="3"] .fv-opt.on .fv-opt-t, .fv-win.fv-immersive[data-fx="4"] .fv-opt.on .fv-opt-t{ animation:fvJit .45s steps(2) infinite; }
-.fv-win.fv-immersive[data-fx="5"] .fv-deck{ filter:grayscale(.8) brightness(.85); }
-.fv-win.fv-immersive[data-fx="5"] .fv-deck::before{ animation:none; opacity:0; }
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on:hover{ animation:fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:var(--fv-t, 0s); background-image:linear-gradient(180deg, color-mix(in srgb, var(--rc) 36%, transparent), color-mix(in srgb, var(--rc) 16%, transparent)); background-size:auto; }
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-lab::before{ animation:fvBlink 2.2s ease-in-out infinite; animation-delay:var(--fv-t, 0s); box-shadow:0 0 6px var(--fv-res); }
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-step-n{ text-shadow:0 0 8px var(--fv-res); }
+:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-switch.on .fv-switch-k::after{ animation:fvBlink 1.6s ease-in-out infinite; }
+:is(.fv-win.fv-immersive[data-fx="3"], .flowtab.immersive[data-fx="3"] .builder) .fv-opt.on .fv-opt-t, :is(.fv-win.fv-immersive[data-fx="4"], .flowtab.immersive[data-fx="4"] .builder) .fv-opt.on .fv-opt-t{ animation:fvJit .45s steps(2) infinite; }
+:is(.fv-win.fv-immersive[data-fx="5"], .flowtab.immersive[data-fx="5"] .builder) .fv-deck{ filter:grayscale(.8) brightness(.85); }
+:is(.fv-win.fv-immersive[data-fx="5"], .flowtab.immersive[data-fx="5"] .builder) .fv-deck::before{ animation:none; opacity:0; }
 @keyframes fvBreathe{ 0%,100%{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--rc) 40%, transparent), inset 0 0 4px color-mix(in srgb, var(--rc) 20%, transparent); }
   50%{ box-shadow:inset 0 0 0 1px var(--rc), inset 0 0 14px color-mix(in srgb, var(--rc) 45%, transparent); } }
 @keyframes fvSweep{ from{ background-position:-40% 0; } to{ background-position:140% 0; } }
 @keyframes fvShimmer{ from{ background-position:130% 0; } to{ background-position:-30% 0; } }
 @keyframes fvBlink{ 0%,100%{ opacity:.4; } 50%{ opacity:1; } }
 @media (prefers-reduced-motion: reduce){
-  .fv-opt.on, .fv-opt.on.fv-just, .fv-win.fv-immersive .fv-opt.on, .fv-win.fv-immersive .fv-opt.on.fv-just, .fv-win.fv-immersive .fv-opt:hover:not(:disabled), .fv-win.fv-immersive .fv-deck::before,
-  .fv-win.fv-immersive .fv-lab::before, .fv-win.fv-immersive .fv-switch.on .fv-switch-k::after, .fv-win.fv-immersive .fv-opt.on .fv-opt-t{ animation:none !important; }
+  .fv-opt.on, .fv-opt.on.fv-just, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on.fv-just, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt:hover:not(:disabled), :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck::before,
+  :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-lab::before, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-switch.on .fv-switch-k::after, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on .fv-opt-t{ animation:none !important; }
 }
 .fv-win .fv-tog{ padding:2px 7px; font-size:9.5px; }
 
@@ -3250,7 +3264,24 @@ html body .fv-win .fv-bar .btn.sm:focus-visible{ outline:2px solid var(--fv-res)
   animation:fvDrift calc(9s / var(--fv-pulse)) ease-in-out infinite alternate; }
 .fv-win.fv-immersive .fv-stage::after{ content:""; position:absolute; inset:0; z-index:2; pointer-events:none; opacity:.2;
   background:repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px); animation:fvScan 7s linear infinite; }
+.fv-win.fv-immersive[data-fx="0"] .fv-stage::after, .fv-win.fv-immersive[data-fx="1"] .fv-stage::after{ display:none; }   /* no scanlines at the quiet levels */
 .fv-win.fv-immersive .fv-svg{ position:relative; z-index:1; }
+/* the pin-light tracers of the Immersive Flow tab, run round the window and round its deck: the same two
+   lights, the same speeds per level, erratic from level 2, gone at Collapse. The window is rebuilt on
+   every change, so they run on its one clock (--fv-t) and never jump back to the start. */
+.fv-win.fv-immersive{ --res:#e9d6a8; --res-deep:#c9a24a; --jit:0; --beamDur:6.5s; }
+.fv-win.fv-immersive[data-fx="1"]{ --jit:.6; }
+.fv-win.fv-immersive[data-fx="2"]{ --jit:1.2; --beamDur:5.4s; }
+.fv-win.fv-immersive[data-fx="3"]{ --jit:2; --beamDur:4.2s; }
+.fv-win.fv-immersive[data-fx="4"]{ --jit:3.2; --beamDur:3s; }
+.fv-win.fv-immersive .panel > .beam, .fv-win.fv-immersive .fv-deck > .beam{ position:absolute; top:0; left:0; width:5px; height:5px; border-radius:50%; z-index:3; pointer-events:none;
+  background:var(--flow); box-shadow:0 0 8px 1px var(--flow), 0 0 3px #fff; offset-path:rect(0 100% 100% 0); offset-distance:0%;
+  animation:beamRun var(--beamDur,6.5s) linear infinite, beamJitter 1.6s steps(3) infinite; animation-delay:var(--fv-t, 0s), var(--fv-t, 0s); }
+.fv-win.fv-immersive .panel > .beam.b2, .fv-win.fv-immersive .fv-deck > .beam.b2{ background:var(--res); box-shadow:0 0 8px 1px var(--res-deep), 0 0 3px #fff;
+  animation-duration:calc(var(--beamDur,6.5s) * 1.45), 1.2s; animation-delay:calc(var(--fv-t, 0s) - 3s), calc(var(--fv-t, 0s) - .4s); }
+.fv-win.fv-immersive[data-fx="2"] .beam, .fv-win.fv-immersive[data-fx="3"] .beam, .fv-win.fv-immersive[data-fx="4"] .beam{
+  animation-name:beamRunErratic, beamJitter; animation-timing-function:ease-in-out, steps(3); }
+.fv-win.fv-immersive[data-fx="5"] .beam{ display:none; }
 .fv-win.fv-immersive .fv-cell.fv-hit{ filter:drop-shadow(0 0 1.5px color-mix(in srgb, var(--fv-res) 70%, transparent));
   animation:fvIn .3s ease-out both, fvPulse calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:calc(var(--d, 0) * 70ms), calc(var(--d, 0) * 90ms); }
 .fv-win.fv-immersive .fv-cell.fv-braid{ filter:drop-shadow(0 0 1.5px color-mix(in srgb, var(--fv-res2) 70%, transparent)); }
@@ -3270,5 +3301,6 @@ html body .fv-win .fv-bar .btn.sm:focus-visible{ outline:2px solid var(--fv-res)
 @keyframes fvPing{ 0%{ opacity:.9; transform:scale(.6); } 100%{ opacity:0; transform:scale(2.2); } }
 @media (prefers-reduced-motion: reduce){
   .fv-cell.fv-hit, .fv-area.fv-sustain .fv-hit, .fv-win.fv-immersive .fv-cell.fv-hit, .fv-win.fv-immersive .fv-beam, .fv-win.fv-immersive .fv-anchor-ring,
-  .fv-win.fv-immersive .fv-stage::before, .fv-win.fv-immersive .fv-stage::after{ animation:none !important; }
+  .fv-win.fv-immersive .fv-stage::before, .fv-win.fv-immersive .fv-stage::after, .fv-win.fv-immersive .beam{ animation:none !important; }
+  .fv-win.fv-immersive .beam{ display:none; }
 }
