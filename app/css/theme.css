@@ -3060,3 +3060,78 @@ html.light #bgct-ov .bgct-card{ box-shadow:0 18px 50px rgba(20,30,45,.22); }
 
 /* the records-need-attention notice (app.js recoveryNotice); it borrows the manager's card */
 #recov{ position:fixed; inset:0; z-index:90001; display:flex; align-items:center; justify-content:center; background:rgba(3,5,9,.78); padding:16px; }
+
+/* ========================================================================
+   FLOW TAB · VISUALIZE WINDOW (js/flowviz.js)
+   A floating window that draws the Invocation being shaped: you, the reach, the area at the size
+   bought, in the Resonance colour (--fv-res; --fv-res2 is the layered Resonance). Everything
+   else is the app's own variables, so every skin and palette reaches it. The Immersive version
+   (.fv-immersive) is its own switch, separate from the Flow tab's, and rides the same Strain
+   escalation (data-fx 1 to 5). All motion drops under prefers-reduced-motion.
+   ======================================================================== */
+.fv-win{ position:fixed; z-index:900; width:min(470px, 96vw); max-height:92vh; display:flex; flex-direction:column;
+  --fv-res:#b98bff; --fv-res2:#b98bff; --fv-pulse:1; filter:drop-shadow(0 8px 28px rgba(0,0,0,.55)); }
+.fv-win > .panel{ margin:0; display:flex; flex-direction:column; min-height:0; max-height:92vh; }
+.fv-win > .panel > .panel-b{ overflow:auto; min-height:0; }
+.fv-win.fv-sheet{ width:auto; max-height:88vh; }
+.fv-stage{ position:relative; border:1px solid var(--border2); border-radius:4px; background:var(--bg1,#0b0a14); overflow:hidden; line-height:0; }
+.fv-svg{ display:block; width:100%; height:auto; }
+.fv-cell{ fill:rgba(255,255,255,.012); stroke:var(--border,#232a3d); stroke-width:1; }
+.fv-cell.fv-range{ fill:color-mix(in srgb, var(--fv-res) 5%, transparent); }
+.fv-cell.fv-hit{ fill:color-mix(in srgb, var(--fv-res) 34%, transparent); stroke:var(--fv-res); stroke-width:1.5; animation:fvIn .22s ease-out both; }
+.fv-cell.fv-braid{ fill:color-mix(in srgb, var(--fv-res2) 40%, transparent); stroke:var(--fv-res2); }
+.fv-cell.fv-spared{ fill:transparent; stroke:var(--success,#39ff8f); stroke-dasharray:3 3; stroke-width:1.2; opacity:.9; }
+.fv-zone{ fill:url(#fv-hatch); color:var(--fv-res); opacity:.4; stroke:none; pointer-events:none; }
+.fv-ring{ fill:none; stroke:var(--fv-res); stroke-width:1; stroke-dasharray:2 3; opacity:.55; }
+.fv-beam{ stroke:var(--fv-res); stroke-width:1.4; stroke-dasharray:4 4; opacity:.7; }
+.fv-anchor circle{ fill:var(--fv-res); } .fv-anchor .fv-anchor-ring{ fill:none; stroke:var(--fv-res); stroke-width:1; }
+.fv-obj path{ fill:none; stroke:var(--fv-res); stroke-width:1.6; }
+.fv-tok circle{ fill:var(--bg2,#12101c); stroke-width:1.6; }
+.fv-tok path{ fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.fv-foe circle{ stroke:var(--danger,#ff4d5e); } .fv-foe path{ stroke:var(--danger,#ff4d5e); }
+.fv-ally circle{ stroke:var(--success,#39ff8f); } .fv-ally path{ stroke:var(--success,#39ff8f); }
+.fv-you circle{ stroke:var(--accent,#e9d6a8); } .fv-you .fv-you-dot{ fill:var(--accent,#e9d6a8); stroke:none; }
+.fv-area.fv-sustain .fv-hit{ stroke-dasharray:5 3; animation:fvIn .22s ease-out both, fvMarch 1.4s linear infinite; }
+@keyframes fvIn{ from{ opacity:0; transform:scale(.6); transform-box:fill-box; transform-origin:center; } to{ opacity:1; transform:none; } }
+@keyframes fvMarch{ to{ stroke-dashoffset:-16; } }
+.fv-legend{ position:absolute; left:6px; bottom:5px; display:flex; gap:8px; font:9px/1 var(--mono); letter-spacing:.14em; color:var(--text3); pointer-events:none; }
+.fv-lg::before{ content:""; display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:4px; vertical-align:-1px; border:1.5px solid; }
+.fv-lg-you::before{ border-color:var(--accent,#e9d6a8); } .fv-lg-foe::before{ border-color:var(--danger,#ff4d5e); }
+.fv-lg-ally::before{ border-color:var(--success,#39ff8f); } .fv-lg-range::before{ border-color:var(--fv-res); border-radius:0; border-style:dashed; }
+.fv-read{ margin-top:8px; }
+.fv-fp{ font-size:26px; color:var(--fp,#b98bff); } .fv-fp span{ font-size:12px; color:var(--text3); } .fv-fp.over{ color:var(--danger,#ff4d5e); }
+.fv-dmg{ font-size:16px; color:var(--accent,#e9d6a8); }
+.fv-res{ margin:4px 0 2px; font-size:11.5px; color:var(--text2); }
+.fv-line{ margin:2px 0; font-size:11px; color:var(--text3); } .fv-line.fv-warn{ color:var(--warn,#ffb347); }
+.fv-ctl{ margin-top:10px; padding-top:8px; border-top:1px dashed var(--border2); }
+.fv-ctl .fv-row{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:6px; }
+.fv-ctl .fv-lab{ font:9px var(--mono); letter-spacing:.14em; color:var(--text3); min-width:58px; }
+.fv-ctl .btn.sm{ padding:3px 7px; font-size:10px; }
+.fv-win .fv-tog{ padding:2px 7px; font-size:9.5px; }
+
+/* ---- the Immersive version: the window breathes with the Resonance and the Strain ---- */
+.fv-win.fv-immersive .fv-stage{ box-shadow:inset 0 0 40px color-mix(in srgb, var(--fv-res) 22%, transparent), 0 0 22px color-mix(in srgb, var(--fv-res) 30%, transparent); }
+.fv-win.fv-immersive .fv-stage::before{ content:""; position:absolute; inset:-30%; z-index:0; pointer-events:none;
+  background:radial-gradient(circle at 22% 50%, color-mix(in srgb, var(--fv-res) 22%, transparent), transparent 55%);
+  animation:fvDrift calc(9s / var(--fv-pulse)) ease-in-out infinite alternate; }
+.fv-win.fv-immersive .fv-stage::after{ content:""; position:absolute; inset:0; z-index:2; pointer-events:none; opacity:.35;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 1px, transparent 1px 3px); animation:fvScan 7s linear infinite; }
+.fv-win.fv-immersive .fv-svg{ position:relative; z-index:1; }
+.fv-win.fv-immersive .fv-cell.fv-hit{ filter:drop-shadow(0 0 3px var(--fv-res));
+  animation:fvIn .3s ease-out both, fvPulse calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:calc(var(--d, 0) * 70ms), calc(var(--d, 0) * 90ms); }
+.fv-win.fv-immersive .fv-cell.fv-braid{ filter:drop-shadow(0 0 3px var(--fv-res2)); }
+.fv-win.fv-immersive .fv-tok{ filter:drop-shadow(0 0 3px currentColor); }
+.fv-win.fv-immersive .fv-beam{ animation:fvMarch 1s linear infinite; opacity:.95; }
+.fv-win.fv-immersive .fv-anchor-ring{ animation:fvPing 1.8s ease-out infinite; transform-box:fill-box; transform-origin:center; }
+.fv-win.fv-immersive[data-fx="3"] .fv-cell.fv-hit, .fv-win.fv-immersive[data-fx="4"] .fv-cell.fv-hit{ animation-name:fvIn, fvPulse, fvJit; animation-duration:.3s, 1.6s, .5s; animation-iteration-count:1, infinite, infinite; }
+.fv-win.fv-immersive[data-fx="5"] .fv-stage{ filter:grayscale(.85) brightness(.8); }
+.fv-win.fv-immersive[data-fx="5"] .fv-cell.fv-hit{ animation:fvIn .3s ease-out both; filter:none; }
+@keyframes fvPulse{ 0%,100%{ opacity:.78; } 50%{ opacity:1; } }
+@keyframes fvJit{ 0%,100%{ transform:translate(0,0); } 25%{ transform:translate(.7px,-.5px); } 50%{ transform:translate(-.6px,.6px); } 75%{ transform:translate(.4px,.7px); } }
+@keyframes fvDrift{ from{ transform:translateX(-6%); } to{ transform:translateX(10%); } }
+@keyframes fvScan{ from{ background-position:0 0; } to{ background-position:0 36px; } }
+@keyframes fvPing{ 0%{ opacity:.9; transform:scale(.6); } 100%{ opacity:0; transform:scale(2.2); } }
+@media (prefers-reduced-motion: reduce){
+  .fv-cell.fv-hit, .fv-area.fv-sustain .fv-hit, .fv-win.fv-immersive .fv-cell.fv-hit, .fv-win.fv-immersive .fv-beam, .fv-win.fv-immersive .fv-anchor-ring,
+  .fv-win.fv-immersive .fv-stage::before, .fv-win.fv-immersive .fv-stage::after{ animation:none !important; }
+}

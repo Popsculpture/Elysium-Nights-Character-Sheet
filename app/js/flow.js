@@ -497,12 +497,51 @@ EN.flowView = (function () {
     summary.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "8px" } }, [
       el("button.btn.sm.primary", { disabled: !!inv.overCap, title: inv.overCap ? "Over your cap (Caliber + Flow Modifier). Overdraw can't pay past it." : (over > 0 ? "Not enough FP; channeling will Overdraw " + over + " FP" : "Spend " + cost + " FP"),
         onclick: function () { doChannel(ch, d, inv, defaultName(R)); } }, over > 0 ? "CHANNEL · OVERDRAW " + over : "CHANNEL · " + cost + " FP"),
-      el("button.btn.sm", { title: "Save this formulation as a Resonant Pattern", style: { color: VIO, borderColor: VIO }, onclick: function () { savePattern(R); } }, "✚ SAVE PATTERN")
+      el("button.btn.sm", { title: "Save this formulation as a Resonant Pattern", style: { color: VIO, borderColor: VIO }, onclick: function () { savePattern(R); } }, "✚ SAVE PATTERN"),
+      EN.flowViz ? el("button.btn.sm" + (EN.flowViz.isOpen() ? ".primary" : ""), { dataset: { flowVisualize: "1" }, title: "Open a window that draws this Invocation: its reach and the size of its area, redrawn as you shape", style: EN.flowViz.isOpen() ? null : { color: VIO, borderColor: VIO },
+        onclick: function () { EN.flowViz.toggle(); } }, "◉ VISUALIZE") : null
     ]));
     rows.push(el("div.flow-result", { style: { marginTop: "12px", padding: "10px 12px", border: "1px solid var(--border2)", borderRadius: "4px", background: "rgba(123,44,255,.05)" } }, summary));
 
     var bp = EN.ui.panel("Free-Shaping", "ORDER OF SHAPING", rows, withCorners(headChip("fl-shaping", "The Order of Shaping")));
-    bp.classList.add("builder"); return bp;
+    bp.classList.add("builder");
+    // the Visualize window redraws from the same form on every render (a no-op while it is closed)
+    if (EN.flowViz) EN.flowViz.refresh({ ch: ch, d: d, form: JSON.parse(JSON.stringify(_form)), inv: inv,
+      controls: EN.flowViz.isOpen() ? vizControls(ch, d, R, inv) : null,
+      fx: _intensity === "auto" ? (d.flow.strainStage || 0) : (parseInt(_intensity, 10) || 0) });
+    return bp;
+  }
+
+  /* The Visualize window's controls: the SAME free-shaping form (every button writes _form through
+     setForm and the tab re-renders), so you can keep shaping inside the window and watch it change. */
+  function vizControls(ch, d, R, inv) {
+    var F = EN.flow, known = knownResKeys(ch, d), kids = [];
+    function row(label, node, extra) { kids.push(el("div.fv-row", null, [el("span.fv-lab", { text: label }), node].concat(extra || []))); }
+    row("RESONANCE", seg(ownResonances(ch).filter(function (r) { return known.indexOf(r.key) !== -1; }).map(function (r) { return { key: r.key, label: r.name, title: r.focus + " · " + r.damage }; }),
+      function (k) { return _form.resonance === k; }, function (k) { setForm({ resonance: k }); }));
+    row("INTENT", seg(F.costRows.map(function (r) {
+      var locked = !!(r.minLevel > (d.level || 1) || (r.minLevel >= 5 && !d.flow.layeredForce));
+      return { key: r.key, label: r.name, disabled: locked, title: locked ? "Level " + r.minLevel + " (Layered Force)" : r.desc };
+    }), function (k) { var r = costRow(k); return !!r && _form.intent === r.intent && _form.force === r.force; }, function (k) { var r = costRow(k); setForm({ intent: r.intent, force: r.force }); }));
+    row("DELIVERY", seg(F.delivery.map(function (b) { return { key: b.key, label: b.band, title: b.desc }; }),
+      function (k) { return _form.deliveryBand === k; }, function (k) { var b = F.delivery.find(function (x) { return x.key === k; }); setForm({ deliveryBand: k, deliveryOption: b.options[0], precision: false, extraTargets: 0, extraSpaces: 0 }); }));
+    var band = F.delivery.find(function (b) { return b.key === _form.deliveryBand; });
+    row("", seg(band.options.map(function (o) { return { key: o, label: o.replace(/ \([^)]*\)$/, "") }; }), function (k) { return _form.deliveryOption === k; }, function (k) { setForm({ deliveryOption: k }); }));
+    var sc = [];
+    if (_form.deliveryBand === "directed") {
+      sc = [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Extra targets" }), stepper(function () { setForm({ extraTargets: Math.max(0, _form.extraTargets - 1) }); }, function () { setForm({ extraTargets: _form.extraTargets + 1 }); }, _form.extraTargets <= 0), el("span.mono", { text: String(_form.extraTargets) })];
+    } else {
+      sc = [el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Extra spaces" }), stepper(function () { setForm({ extraSpaces: Math.max(0, _form.extraSpaces - 1) }); }, function () { setForm({ extraSpaces: _form.extraSpaces + 1 }); }, _form.extraSpaces <= 0), el("span.mono", { text: String(_form.extraSpaces) }),
+        el("button.btn.sm" + (_form.precision ? ".primary" : ""), { title: F.precisionShaping.desc, onclick: function () { setForm({ precision: !_form.precision }); } }, "PRECISION")];
+    }
+    row("SCALING", el("span", { style: { display: "inline-flex", gap: "8px", alignItems: "center" } }, sc));
+    row("DURATION", seg(F.duration.map(function (du) { return { key: du.key, label: du.name, title: du.desc }; }), function (k) { return _form.duration === k; }, function (k) { setForm({ duration: k }); }));
+    if (d.flow.layeredForce) {
+      var Ly = _form.layer;
+      row("LAYER", seg([{ key: "", label: "None" }].concat(ownResonances(ch).filter(function (r) { return known.indexOf(r.key) !== -1; }).map(function (r) { return { key: r.key, label: r.name }; })),
+        function (k) { return (Ly ? Ly.resonance : "") === k; }, function (k) { setForm({ layer: k ? { resonance: k, force: "base", empoweredEffect: null, baseEffect: null } : null }); }));
+    }
+    return el("div", { dataset: { fvCtl: "1" } }, kids);
   }
 
   // an Empowered Effect's label as the Handbook prints it: "Poltergeist (Level 3)"

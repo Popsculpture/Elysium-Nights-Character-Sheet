@@ -365,5 +365,7 @@ EN.aoeGrid = (function () {
     ]);
   }
 
-  return { build: build };
+  /* The geometry, for the Flow tab's Visualize window (js/flowviz.js): the same cells the Codex diagram
+     draws, so the two can never disagree about what a Sphere or a Cone catches. Origin 0,0, facing east. */
+  return { build: build, sqCells: sqCells, hexCells: hexCells, sqDist: sqDist, hexDist: hexDist };
 })();
