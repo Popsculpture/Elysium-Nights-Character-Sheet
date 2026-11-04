@@ -5134,7 +5134,11 @@ EN.engine = (function () {
 
     /* Layered Force (Level 5): a second Resonance rides in one Invocation for +1 FP plus its own row.
        The layer's intent is the primary's (both rows come from the same family). */
-    var warnings = [];
+    /* warnings: every note the builder prints. blockers: the ones that make the Invocation illegal (4 Nov 2026,
+       the author: an illegal Invocation can't be channeled), each with a code the builder uses to disable the
+       button that would cause it. A blocker's text is also in warnings, so the note still prints. */
+    var warnings = [], blockers = [];
+    function block(code, text) { warnings.push(text); blockers.push({ code: code, text: text }); }
     var L = form.layer && form.layer.resonance ? form.layer : null;
     var LR = L && F.resonanceByKey ? (F.resonanceByKey[L.resonance] || null) : null;
     var lEmp = !!L && L.force === "empowered";
@@ -5149,11 +5153,11 @@ EN.engine = (function () {
       layerFp = 1 + lRow.fp;
       add("Layering", 1);
       add("Layer: " + LR.name + " " + lRow.name, lRow.fp);
-      if (!layeredForce) warnings.push("Layering needs Level 5 (Layered Force).");
+      if (!layeredForce) block("layer-level", "Layering needs Level 5 (Layered Force).");
       var calDice = function (r, e) { return e && (r === "damage" || r === "hybrid"); };
-      if (calDice(form.intent, empowered) && calDice(form.intent, lEmp)) warnings.push("Only one layer can take a row with Caliber dice (Empowered Damage or Empowered Pair).");
+      if (calDice(form.intent, empowered) && calDice(form.intent, lEmp)) block("caliber-twice", "Only one layer can take a row with Caliber dice (Empowered Damage or Empowered Pair).");
       var pn = (effectObj || baseObj || {}).name, ln = (lEffectObj || lBaseObj || {}).name;
-      if (pn && ln && pn === ln) warnings.push("Two layers can't apply the same effect (" + pn + ").");
+      if (pn && ln && pn === ln) block("same-effect", "Two layers can't apply the same effect (" + pn + ").");
     }
 
     /* Sustain: +1 FP shaped (the first minute); each extra minute is paid on the tracker */
@@ -5164,6 +5168,8 @@ EN.engine = (function () {
       else if (effectObj && effectObj.sustain === false) { sustainable = false; warnings.push("\"" + effectObj.name + "\" cannot be Sustained."); }
       if (sustainable) { add("Sustain (first minute)", 1); heldLayers = 1; }
       if (L && LR && !(LR.noSustain) && !(lEffectObj && lEffectObj.sustain === false)) { add("Sustain (second layer)", 1); heldLayers += 1; }
+      // Sustain with nothing that can be held: illegal (a layer that can be held keeps it legal)
+      if (!heldLayers) blockers.push({ code: "sustain", text: warnings[warnings.length - 1] || "Nothing in this Invocation can be Sustained." });
     }
     var baseFp = 0;
     breakdown.forEach(function (x) { baseFp += x.fp; });
@@ -5176,7 +5182,7 @@ EN.engine = (function () {
     if (precSurge) add("Strain: Surge (Precision +1 FP)", precSurge);
     var fp = baseFp + waveFp + precSurge;
     var overCap = fp > cap;
-    if (overCap) warnings.push("This Invocation costs " + fp + " FP. Your cap is " + cap + " (Caliber + Flow Modifier).");
+    if (overCap) block("overcap", "This Invocation costs " + fp + " FP. Your cap is " + cap + " (Caliber + Flow Modifier).");
 
     /* damage: 1d6 + Flow Modifier per layer, and the Caliber dice once */
     var damageText = null, damageDice = 0;
@@ -5221,15 +5227,16 @@ EN.engine = (function () {
     }
 
     /* warnings */
-    if (R && R.unlock > (d.level || 1)) warnings.push(R.name + " Resonance unlocks at Level " + R.unlock + ".");
-    if (L && LR && LR.unlock > (d.level || 1)) warnings.push(LR.name + " Resonance unlocks at Level " + LR.unlock + ".");
+    if (R && R.unlock > (d.level || 1)) block("res-level", R.name + " Resonance unlocks at Level " + R.unlock + ".");
+    if (L && LR && LR.unlock > (d.level || 1)) block("layer-res-level", LR.name + " Resonance unlocks at Level " + LR.unlock + ".");
     /* A level-gated Empowered Effect (Poltergeist, Sourcerer Level 3, Hardware Harmonization): the
        book labels it "Poltergeist (Level 3)". The builder disables the button below that level;
        this catches a saved pattern that names it anyway. */
-    if (effectObj && effectObj.unlock > (d.level || 1)) warnings.push(effectObj.name + " unlocks at Level " + effectObj.unlock + " (Hardware Harmonization).");
-    if (form.intent === "hybrid" && empowered && !layeredForce) warnings.push("Empowered Pair needs Level 5 (Layered Force).");
+    if (effectObj && effectObj.unlock > (d.level || 1)) block("effect-level", effectObj.name + " unlocks at Level " + effectObj.unlock + " (Hardware Harmonization).");
+    if (lEffectObj && lEffectObj.unlock > (d.level || 1)) block("layer-effect-level", lEffectObj.name + " unlocks at Level " + lEffectObj.unlock + " (Hardware Harmonization).");
+    if (form.intent === "hybrid" && empowered && !layeredForce) block("pair-level", "Empowered Pair needs Level 5 (Layered Force).");
     [effectObj, lEffectObj].forEach(function (e) {
-      if (e && e.zone && form.deliveryBand === "directed") warnings.push(e.name + " fills an area: it needs Focused or Wide Area delivery.");
+      if (e && e.zone && form.deliveryBand === "directed") block("zone-directed", e.name + " fills an area: it needs Focused or Wide Area delivery.");
     });
 
     return {
@@ -5240,7 +5247,7 @@ EN.engine = (function () {
       layer: L && LR ? { resonance: LR, row: lRow, fp: layerFp, empoweredEffect: lEffectObj, baseEffect: lBaseObj } : null,
       action: L && LR ? "Complex Action (Channel Major Flow)" : null,
       heldCount: heldLayers,
-      sustainable: sustainable, warnings: warnings
+      sustainable: sustainable, warnings: warnings, blockers: blockers, legal: blockers.length === 0
     };
   }
 

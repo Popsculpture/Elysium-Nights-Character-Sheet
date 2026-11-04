@@ -22,7 +22,8 @@ EN.flowView = (function () {
   // transient builder formulation (not persisted until Saved as a Pattern)
   var _form = { name: null, resonance: "kinetic", intent: "damage", deliveryBand: "directed",
                 deliveryOption: "Remote", force: "base", duration: "instant", precision: false,
-                extraTargets: 0, extraSpaces: 0, empoweredEffect: null, baseEffect: null, unwilling: true, layer: null };
+                extraTargets: 0, extraSpaces: 0, empoweredEffect: null, baseEffect: null, unwilling: true, layer: null,
+                effAuto: true };   // effAuto: the effect is the builder's default, not the Shaper's pick (a default re-picks to stay legal)
   var _fieldShare = 5;          // FP a Sustained Field reserves (a shared Field splits the 5)
   var _open = {};              // collapse state for folds (Premade Templates)
   var _od = 1;                 // overdraw amount input
@@ -61,7 +62,53 @@ EN.flowView = (function () {
         onclick: function () { if (!it.disabled) onPick(it.key); } }, it.label);
     }));
   }
-  function setForm(patch) { Object.keys(patch).forEach(function (k) { _form[k] = patch[k]; }); EN.app.render(); }
+  function setForm(patch) { Object.keys(patch).forEach(function (k) { _form[k] = patch[k]; }); if (!_dry) EN.app.render(); }
+  /* No illegal Invocations (4 Nov 2026, the author). Every button in the builder tries its own pick on a copy of
+     the form first (wouldBreak): if the pick would bring in a rule problem the Invocation does not already have
+     (engine.flowInvocation's blockers: two layers with Caliber dice, the same effect twice, Sustain on nothing
+     that can be held, an area effect on Directed, a cost past the cap, a level gate), the button is disabled and
+     its tooltip names the problem. A pick that only fixes things, or leaves an old problem as it was, is never
+     blocked, so a loaded pattern can always be walked back to legal. CHANNEL and INVOKE stay locked while any
+     problem remains. */
+  var _dry = false, _sim = null, _inViz = false;
+  var EFFECT_CODES = { "zone-directed": 1, "sustain": 1, "same-effect": 1, "caliber-twice": 1, "effect-level": 1, "layer-effect-level": 1 };
+  function blockerMap(inv) { var o = {}; (inv && inv.blockers || []).forEach(function (b) { o[b.code] = b.text; }); return o; }
+  function wouldBreak(pick, key) {
+    if (!_sim) return null;
+    var saved = _form, out = null;
+    _form = JSON.parse(JSON.stringify(saved)); _dry = true;
+    try {
+      pick(key);
+      normForm(_sim.ch, _sim.d);
+      var inv = eng.flowInvocation(_form, _sim.d);
+      (inv.blockers || []).some(function (b) {
+        var fresh = !_sim.codes[b.code] || (b.code === "overcap" && inv.fp > _sim.fp);
+        // the window has no EFFECT or layer rows: say where the fix is
+        if (fresh) out = b.text + (_inViz && EFFECT_CODES[b.code] ? " Change the effect or layer in the Free-Shaping panel first." : "");
+        return fresh;
+      });
+    } catch (e) { out = null; }
+    finally { _form = saved; _dry = false; }
+    return out;
+  }
+  function notLegal(why) { return "Not legal with the rest of this Invocation: " + why; }
+  // a stepper whose buttons each check their own step
+  function checkedStepper(onMinus, onPlus, minusOff) {
+    var whyM = minusOff ? null : wouldBreak(onMinus), whyP = wouldBreak(onPlus);
+    var st = stepper(onMinus, onPlus, minusOff || !!whyM, !!whyP);
+    var bs = st.querySelectorAll("button");
+    if (whyM) bs[0].title = notLegal(whyM);
+    if (whyP) bs[1].title = notLegal(whyP);
+    return st;
+  }
+  function precisionSwitch(F) {
+    var flip = function () { setForm({ precision: !_form.precision }); };
+    var why = wouldBreak(flip);
+    return el("button.btn.sm.fv-switch" + (_form.precision ? ".on.primary" : ""), { type: "button", role: "switch", "aria-checked": _form.precision ? "true" : "false",
+      disabled: !!why, title: why ? notLegal(why) : F.precisionShaping.desc, onclick: flip }, [el("span.fv-switch-k"), el("span.fv-switch-t", { text: "PRECISION" })]);
+  }
+  // a layer change that never touches the live form's layer object (a dry run must not reach it)
+  function withLayer(patch) { var l = JSON.parse(JSON.stringify(_form.layer || {})); Object.keys(patch).forEach(function (k) { l[k] = patch[k]; }); return l; }
   // a builder row's label; with an anchor the label itself peeks that rule in the Codex
   function fieldLabel(t, anchor) {
     return el("span.row-label", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--text3)", minWidth: "72px", display: "inline-block" } },
@@ -135,31 +182,47 @@ EN.flowView = (function () {
     if (_form.deliveryBand === "directed") { _form.precision = false; _form.extraSpaces = 0; }
     else { _form.extraTargets = 0; }
     var hasEffect = _form.intent === "effect" || _form.intent === "hybrid";
+    // a default pick prefers an effect that is legal as the form stands: no area effect on Directed, nothing unholdable under Sustain
+    var fits = function (e) { return !(e.zone && _form.deliveryBand === "directed") && !(_form.duration === "sustain" && e.sustain === false); };
+    /* a default also skips the other layer's effect (one effect can't be applied twice), and an effect the builder
+       chose (effAuto) re-picks when a Delivery or Duration change would leave it illegal; the Shaper's own pick
+       (an EFFECT key, a loaded pattern) is never changed */
+    var layerEff = _form.layer ? (_form.layer.force === "empowered" ? _form.layer.empoweredEffect : _form.layer.baseEffect) : null;
+    function pickDefault(list, avoid) {
+      var ok = list.filter(fits), clear = function (e) { return e.name !== avoid; };
+      return ok.filter(clear)[0] || ok[0] || list.filter(clear)[0] || list[0] || null;
+    }
     if (_form.force === "empowered" && hasEffect) {
       var names = (R.empowered || []).map(function (e) { return e.name; });
       // the default pick skips an effect the character has not unlocked (Poltergeist, Level 3); an explicit pick (a loaded pattern) is left alone
-      var open = (R.empowered || []).filter(function (e) { return !(e.unlock && e.unlock > (d.level || 1)); }).map(function (e) { return e.name; });
-      if (names.indexOf(_form.empoweredEffect) === -1) _form.empoweredEffect = open[0] || names[0] || null;
+      var open = (R.empowered || []).filter(function (e) { return !(e.unlock && e.unlock > (d.level || 1)); });
+      var curE = (R.empowered || []).filter(function (e) { return e.name === _form.empoweredEffect; })[0];
+      if (!curE || (_form.effAuto && !fits(curE))) { _form.empoweredEffect = (pickDefault(open, layerEff) || {}).name || names[0] || null; _form.effAuto = true; }
     } else { _form.empoweredEffect = null; }
-    // Base Force feeding an effect picks one of the Resonance's base effects (the first until chosen)
+    // Base Force feeding an effect picks one of the Resonance's base effects (the first legal one until chosen)
     var baseOpts = R.baseOptions || [];
     if (_form.force !== "empowered" && hasEffect && baseOpts.length) {
-      if (!baseOpts.some(function (e) { return e.name === _form.baseEffect; })) _form.baseEffect = baseOpts[0].name;
+      var curB = baseOpts.filter(function (e) { return e.name === _form.baseEffect; })[0];
+      if (!curB || (_form.effAuto && !fits(curB))) { _form.baseEffect = pickDefault(baseOpts, layerEff).name; _form.effAuto = true; }
     } else { _form.baseEffect = null; }
     // Layered Force (Level 5): a second Resonance in one Invocation. Same intent as the primary; its own Base or Empowered row.
     if (_form.layer) {
       var Ly = _form.layer, LR = F.resonanceByKey[Ly.resonance];
+      var primaryEff = hasEffect ? (_form.force === "empowered" ? _form.empoweredEffect : _form.baseEffect) : null;
       if (!d.flow.layeredForce || !LR || known.indexOf(Ly.resonance) === -1) { _form.layer = null; }
       else {
         if (Ly.force !== "empowered") Ly.force = "base";
         if (Ly.force === "empowered" && hasEffect) {
           var lnames = (LR.empowered || []).map(function (e) { return e.name; });
-          var lopen = (LR.empowered || []).filter(function (e) { return !(e.unlock && e.unlock > (d.level || 1)); }).map(function (e) { return e.name; });
-          if (lnames.indexOf(Ly.empoweredEffect) === -1) Ly.empoweredEffect = lopen[0] || lnames[0] || null;
+          var lopen = (LR.empowered || []).filter(function (e) { return !(e.unlock && e.unlock > (d.level || 1)); });
+          var curLE = (LR.empowered || []).filter(function (e) { return e.name === Ly.empoweredEffect; })[0];
+          // the default skips the primary's own effect (a Resonance layered onto itself can't apply one effect twice)
+          if (!curLE || (Ly.effAuto !== false && !fits(curLE))) { Ly.empoweredEffect = (pickDefault(lopen, primaryEff) || {}).name || lnames[0] || null; Ly.effAuto = true; }
         } else { Ly.empoweredEffect = null; }
         var lbase = LR.baseOptions || [];
         if (Ly.force !== "empowered" && hasEffect && lbase.length) {
-          if (!lbase.some(function (e) { return e.name === Ly.baseEffect; })) Ly.baseEffect = lbase[0].name;
+          var curLB = lbase.filter(function (e) { return e.name === Ly.baseEffect; })[0];
+          if (!curLB || (Ly.effAuto !== false && !fits(curLB))) { Ly.baseEffect = pickDefault(lbase, primaryEff).name; Ly.effAuto = true; }
         } else { Ly.baseEffect = null; }
       }
     }
@@ -364,6 +427,7 @@ EN.flowView = (function () {
   function builderPanel(ch, d) {
     var F = EN.flow, R = normForm(ch, d);
     var inv = eng.flowInvocation(_form, d);
+    _sim = { ch: ch, d: d, codes: blockerMap(inv), fp: inv.fp };
     var known = knownResKeys(ch, d);
     var rows = [];
 
@@ -409,13 +473,12 @@ EN.flowView = (function () {
     var directed = _form.deliveryBand === "directed", nScale = directed ? _form.extraTargets : _form.extraSpaces;
     var scale = [el("div.fv-step", null, [
       el("span.fv-step-l", { text: directed ? "EXTRA TARGETS" : "EXTRA SPACES" }),
-      stepper(function () { setForm(directed ? { extraTargets: Math.max(0, _form.extraTargets - 1) } : { extraSpaces: Math.max(0, _form.extraSpaces - 1) }); },
+      checkedStepper(function () { setForm(directed ? { extraTargets: Math.max(0, _form.extraTargets - 1) } : { extraSpaces: Math.max(0, _form.extraSpaces - 1) }); },
               function () { setForm(directed ? { extraTargets: _form.extraTargets + 1 } : { extraSpaces: _form.extraSpaces + 1 }); }, nScale <= 0),
       el("span.fv-step-n.mono", { text: String(nScale) })
     ])];
     if (!directed) {
-      scale.push(el("button.btn.sm.fv-switch" + (_form.precision ? ".on.primary" : ""), { type: "button", role: "switch", "aria-checked": _form.precision ? "true" : "false", title: F.precisionShaping.desc,
-        onclick: function () { setForm({ precision: !_form.precision }); } }, [el("span.fv-switch-k"), el("span.fv-switch-t", { text: "PRECISION" })]));
+      scale.push(precisionSwitch(F));
       scale.push(EN.ui.ruleChip("fl-shaping/precision-shaping", { title: "Precision Shaping" }));
     }
     rows.push(drow("SCALING", "fl-shaping/delivery", [el("div.fv-scale", null, scale)]));
@@ -424,7 +487,7 @@ EN.flowView = (function () {
     if (_form.force !== "empowered" && inv.hasEffect && (R.baseOptions || []).length) {
       rows.push(drow("EFFECT", "fl-resonances/" + slug(R.name), [
         vseg(R.baseOptions.map(function (e) { return { key: e.name, label: e.name, title: e.text }; }),
-          function (k) { return _form.baseEffect === k; }, function (k) { setForm({ baseEffect: k }); }, "wrap", "base")], { flowEffect: "base" }));
+          function (k) { return _form.baseEffect === k; }, function (k) { setForm({ baseEffect: k, effAuto: false }); }, "wrap", "base")], { flowEffect: "base" }));
     }
     // Empowered effect picker (when Empowered + an effect is carried)
     if (_form.force === "empowered" && inv.hasEffect && (R.empowered || []).length) {
@@ -436,7 +499,7 @@ EN.flowView = (function () {
         vseg(R.empowered.map(function (e) {
           var locked = !!(e.unlock && e.unlock > (d.level || 1));
           return { key: e.name, label: effectLabel(e), disabled: locked, title: locked ? "Eligible at Level " + e.unlock + " (Hardware Harmonization)" : e.text };
-        }), function (k) { return _form.empoweredEffect === k; }, function (k) { setForm({ empoweredEffect: k }); }, "wrap", "emp")], { flowEffect: "empowered" }));
+        }), function (k) { return _form.empoweredEffect === k; }, function (k) { setForm({ empoweredEffect: k, effAuto: false }); }, "wrap", "emp")], { flowEffect: "empowered" }));
     }
 
     // Layered Force (Level 5): layer a second Resonance onto the primary
@@ -448,17 +511,17 @@ EN.flowView = (function () {
       if (Ly) {
         var LRz = F.resonanceByKey[Ly.resonance];
         var lrows = ["base", "empowered"].map(function (fo) { var r = costRowFor(_form.intent, fo); return { key: fo, label: r.name, title: r.desc }; });
-        var lrowSeg = vseg(lrows, function (k) { return Ly.force === k; }, function (k) { Ly.force = k; setForm({ layer: Ly }); }, "two", "lforce");
+        var lrowSeg = vseg(lrows, function (k) { return Ly.force === k; }, function (k) { setForm({ layer: withLayer({ force: k }) }); }, "two", "lforce");
         lrowSeg.dataset.flowLayerRow = "1";
         lnodes.push(lrowSeg);
         if (inv.hasEffect && Ly.force !== "empowered" && (LRz.baseOptions || []).length) {
-          lnodes.push(vseg(LRz.baseOptions.map(function (e) { return { key: e.name, label: e.name, title: e.text }; }), function (k) { return Ly.baseEffect === k; }, function (k) { Ly.baseEffect = k; setForm({ layer: Ly }); }, "wrap", "lbase"));
+          lnodes.push(vseg(LRz.baseOptions.map(function (e) { return { key: e.name, label: e.name, title: e.text }; }), function (k) { return Ly.baseEffect === k; }, function (k) { setForm({ layer: withLayer({ baseEffect: k, effAuto: false }) }); }, "wrap", "lbase"));
         }
         if (inv.hasEffect && Ly.force === "empowered" && (LRz.empowered || []).length) {
           lnodes.push(vseg(LRz.empowered.map(function (e) {
             var locked = !!(e.unlock && e.unlock > (d.level || 1));
             return { key: e.name, label: effectLabel(e), disabled: locked, title: locked ? "Eligible at Level " + e.unlock + " (Hardware Harmonization)" : e.text };
-          }), function (k) { return Ly.empoweredEffect === k; }, function (k) { Ly.empoweredEffect = k; setForm({ layer: Ly }); }, "wrap", "lemp"));
+          }), function (k) { return Ly.empoweredEffect === k; }, function (k) { setForm({ layer: withLayer({ empoweredEffect: k, effAuto: false }) }); }, "wrap", "lemp"));
         }
       }
       rows.push(drow("LAYER", "fl-advanced/layered-force", lnodes, { flowLayer: "1" }));
@@ -508,7 +571,7 @@ EN.flowView = (function () {
     summary.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "8px" } }, [
       EN.flowViz ? el("button.btn.sm" + (EN.flowViz.isOpen() ? ".primary" : ""), { dataset: { flowVisualize: "1" }, title: "Open a window that draws this Invocation: its reach and the size of its area, redrawn as you shape", style: EN.flowViz.isOpen() ? null : { color: VIO, borderColor: VIO },
         onclick: function () { EN.flowViz.toggle(); } }, [el("span.fv-eye", { "aria-hidden": "true", html: VIZ_ICON }), "VISUALIZE"]) : null,
-      el("button.btn.sm.primary", { disabled: !!inv.overCap, title: inv.overCap ? "Over your cap (Caliber + Flow Modifier). Overdraw can't pay past it." : (over > 0 ? "Not enough FP; channeling will Overdraw " + over + " FP" : "Spend " + cost + " FP"),
+      el("button.btn.sm.primary", { dataset: { flowChannel: "1" }, disabled: !inv.legal, title: illegalTitle(inv) || (over > 0 ? "Not enough FP; channeling will Overdraw " + over + " FP" : "Spend " + cost + " FP"),
         onclick: function () { doChannel(ch, d, inv, defaultName(R)); } }, over > 0 ? "CHANNEL · OVERDRAW " + over : "CHANNEL · " + cost + " FP"),
       el("button.btn.sm", { title: "Save this formulation as a Resonant Pattern", style: { color: VIO, borderColor: VIO }, onclick: function () { savePattern(R); } }, "✚ SAVE PATTERN")
     ]));
@@ -542,13 +605,19 @@ EN.flowView = (function () {
   function vseg(items, isOn, onPick, cls, rowId) {
     return el("div.fv-seg" + (cls ? "." + cls : ""), { role: "group" }, items.map(function (it) {
       var on = isOn(it.key), just = on && _vJust === rowId + ":" + it.key;
-      var b = el("button.btn.sm.fv-opt" + (on ? ".on.primary" : "") + (just ? ".fv-just" : ""), { type: "button", disabled: !!it.disabled, title: it.title || "", "aria-pressed": on ? "true" : "false",
-        onclick: function () { if (!it.disabled) { _vJust = rowId + ":" + it.key; onPick(it.key); } } }, [el("span.fv-opt-t", { text: it.label })]);
+      var why = (!on && !it.disabled) ? wouldBreak(onPick, it.key) : null, off = !!it.disabled || !!why;
+      var b = el("button.btn.sm.fv-opt" + (on ? ".on.primary" : "") + (just ? ".fv-just" : ""), { type: "button", disabled: off, title: why ? notLegal(why) : (it.title || ""), "aria-pressed": on ? "true" : "false",
+        onclick: function () { if (!off) { _vJust = rowId + ":" + it.key; onPick(it.key); } } }, [el("span.fv-opt-t", { text: it.label })]);
+      if (why) b.dataset.illegal = "1";
       if (it.color) b.style.setProperty("--rc", it.color);
       return b;
     }));
   }
   function vizControls(ch, d, R, inv) {
+    _inViz = true;
+    try { return vizControlsIn(ch, d, R, inv); } finally { _inViz = false; }
+  }
+  function vizControlsIn(ch, d, R, inv) {
     var F = EN.flow, known = knownResKeys(ch, d), kids = [];
     var rc = function (k) { return EN.flowViz && EN.flowViz.resColor ? EN.flowViz.resColor(k) : null; };
     function row(label, node, extra) { kids.push(el("div.fv-row", null, [el("span.fv-lab", { text: label }), el("div.fv-row-b", null, [node].concat(extra || []))])); }
@@ -566,13 +635,12 @@ EN.flowView = (function () {
     var directed = _form.deliveryBand === "directed", n = directed ? _form.extraTargets : _form.extraSpaces;
     var step = el("div.fv-step", null, [
       el("span.fv-step-l", { text: directed ? "EXTRA TARGETS" : "EXTRA SPACES" }),
-      stepper(function () { setForm(directed ? { extraTargets: Math.max(0, _form.extraTargets - 1) } : { extraSpaces: Math.max(0, _form.extraSpaces - 1) }); },
+      checkedStepper(function () { setForm(directed ? { extraTargets: Math.max(0, _form.extraTargets - 1) } : { extraSpaces: Math.max(0, _form.extraSpaces - 1) }); },
               function () { setForm(directed ? { extraTargets: _form.extraTargets + 1 } : { extraSpaces: _form.extraSpaces + 1 }); }, n <= 0),
       el("span.fv-step-n.mono", { text: String(n) })
     ]);
     var sc = [step];
-    if (!directed) sc.push(el("button.btn.sm.fv-switch" + (_form.precision ? ".on.primary" : ""), { type: "button", role: "switch", "aria-checked": _form.precision ? "true" : "false", title: F.precisionShaping.desc,
-      onclick: function () { setForm({ precision: !_form.precision }); } }, [el("span.fv-switch-k"), el("span.fv-switch-t", { text: "PRECISION" })]));
+    if (!directed) sc.push(precisionSwitch(F));
     row("SCALING", el("div.fv-scale", null, sc));
     row("DURATION", vseg(F.duration.map(function (du) { return { key: du.key, label: du.name, title: du.desc }; }), function (k) { return _form.duration === k; }, function (k) { setForm({ duration: k }); }, "two", "dur"));
     if (d.flow.layeredForce) {
@@ -604,7 +672,14 @@ EN.flowView = (function () {
     try { return window.confirm("Both sustain slots are full. End " + (a && a.name) + " to hold the new effect? Cancel ends " + (b && b.name) + " instead.") ? "sustained" : "sustained2"; }
     catch (e) { return "sustained"; }
   }
+  // why an Invocation can't be channeled (null when it can); the cap keeps its own wording
+  function illegalTitle(inv) {
+    var b = inv && inv.blockers || [];
+    if (!b.length) return null;
+    return "Not legal: " + b.map(function (x) { return x.code === "overcap" ? "Over your cap (Caliber + Flow Modifier). Overdraw can't pay past it." : x.text; }).join(" ");
+  }
   function doChannel(ch, d, inv, fallbackName) {
+    if (inv && inv.blockers && inv.blockers.length) { toast("Can't channel: " + inv.blockers[0].text); return; }   // a backstop; the button is already locked
     var cur = curFP(ch, d), cost = inv.fp, over = Math.max(0, cost - cur), die = d.flow.overdrawDie;
     var nm = _form.name || (inv.empoweredEffect ? inv.empoweredEffect.name : fallbackName);
     var entries = [];
@@ -640,6 +715,11 @@ EN.flowView = (function () {
   function patternRow(ch, d, p, idx, premade) {
     var inv = eng.flowInvocation(p, d), cur = curFP(ch, d), over = Math.max(0, inv.fp - cur);
     var R = EN.flow.resonanceByKey[p.resonance];
+    // the builder only offers Resonances you know; a pattern (a premade, or one saved before a #PRINT change) may name another
+    var knownP = knownResKeys(ch, d);
+    [p.resonance].concat(p.layer && p.layer.resonance ? [p.layer.resonance] : []).forEach(function (k) {
+      if (knownP.indexOf(k) === -1) { inv.blockers = (inv.blockers || []).concat([{ code: "res-unknown", text: ((EN.flow.resonanceByKey[k] || {}).name || k) + " isn't one of your Resonances (learn it in #PRINT)." }]); inv.legal = false; }
+    });
     var sub = (R ? R.name : p.resonance) + " · " + p.deliveryOption + " · " + ((costRowFor(p.intent, p.force) || {}).name || (p.force === "empowered" ? "Empowered" : "Base")) +
       (inv.baseEffect ? " · " + inv.baseEffect.name : "") + (inv.layer ? " · Layered" : "") + (p.duration === "sustain" ? " · Sustain" : "");
     var nameEl = premade
@@ -659,7 +739,7 @@ EN.flowView = (function () {
       premade
         ? el("button.btn.sm", { title: "Copy to your saved patterns", style: { color: VIO, borderColor: VIO }, onclick: function () { var e = {}; Object.keys(p).forEach(function (k) { e[k] = p[k]; }); fset(function (fl) { fl.patterns = (fl.patterns || []).concat([e]); }); toast("Saved " + p.name); } }, "✚ SAVE")
         : el("button.btn.sm", { title: "Delete this pattern", style: { color: "var(--text3)" }, onclick: function () { fset(function (fl) { fl.patterns.splice(idx, 1); }); } }, "✕"),
-      el("button.btn.sm.primary", { disabled: !!inv.overCap, title: inv.overCap ? "Over your cap (Caliber + Flow Modifier). Overdraw can't pay past it." : (over > 0 ? "Invoke · Overdraw " + over + " FP" : "Invoke · spend " + inv.fp + " FP"),
+      el("button.btn.sm.primary", { dataset: { flowInvoke: "1" }, disabled: !inv.legal, title: illegalTitle(inv) || (over > 0 ? "Invoke · Overdraw " + over + " FP" : "Invoke · spend " + inv.fp + " FP"),
         onclick: function () { loadFormSilent(p); doChannel(ch, d, inv, p.name); } }, over > 0 ? "OVERDRAW" : "INVOKE")
     ]);
     return el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.4)" } }, [
@@ -679,6 +759,7 @@ EN.flowView = (function () {
     Object.keys(_form).forEach(function (k) { if (p[k] !== undefined) _form[k] = p[k]; });
     if (p.unwilling === undefined) _form.unwilling = true;
     _form.layer = p.layer ? JSON.parse(JSON.stringify(p.layer)) : null;   // a pattern with no layer is unlayered
+    _form.effAuto = false; if (_form.layer) _form.layer.effAuto = false;    // a saved pattern's effects are the Shaper's own picks
     if (p.baseEffect === undefined) _form.baseEffect = null;   // a pattern saved before the picker: the builder offers the first
   }
 
