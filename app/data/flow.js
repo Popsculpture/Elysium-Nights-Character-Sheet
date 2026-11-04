@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · The Flow data
-   Resonances, the Order of Shaping (Intent / Delivery / Force / Duration), the
+   Resonances, the Order of Shaping (Intent and Force / Delivery / Duration), the
    Sustain compatibility table, the Strain track, Overdraw and Breakflow, Ritual
    Recovery, and premade Resonant Patterns. Drives the Flow tab calculator, and the
    Codex's chapter The Flow (js/codex_flow.js) renders the rules from this same copy.
@@ -26,63 +26,103 @@ EN.flow = {
   reservoirFormula: "(Caliber x 3) + Flow Modifier",
   flowAttackFormula: "d20 + Flow Modifier + Caliber",
   saveDcFormula: "8 + Flow Modifier + Caliber",
-  checkNote: "You only roll an Invocation Check (Flow Attack) against an unwilling target. Willing targets and objects are affected automatically. Flow Invocations never use the Dice Pool Method.",
+  checkNote: "An Invocation that calls for a roll uses one of the two numbers below. Flow Invocations never use the Dice Pool Method.",
   /* How to read the "Flow Save DC (Body)" notation the Resonance entries use. Part 2, Invocation
      Checks. Shown above the Resonances list in the Codex (js/codex_flow.js) and beside the Flow
      Save DC there. */
   saveNotation: "When an entry says a target makes a Flow Save DC (Body), it makes a Body Save against your Flow Save DC.",
 
+  /* The Shaping page and its tables (Handbook, 2 Nov 2026 handoff): every cost, reach and length is printed here;
+     the Codex (fl-shaping) and the Flow tab read these. */
+  mirrorRule: "When an Invocation rolls no Flow Attack, anything that changes your Invocation roll changes the save instead, in reverse. Snag on your roll gives targets Edge on the save. Edge gives them Snag. A bonus to your roll adds to your Flow Save DC.",
+  criticals: "A natural 20 on your Flow Attack, or a target's natural 1 on its save, adds your Flow Modifier once more to that target's damage from that Invocation. Only the roll that lands the Invocation's damage can crit. Re-saves against a sustained effect and anchoring checks never do.",
+  shapingRules: "Every Invocation is three choices, made in the order below, and each one has a price in FP. Shaping takes your voice, a free hand, and an Action (Channel Flow), unless a feature says otherwise. Add up the costs: one Invocation can't cost more than your Caliber + Flow Modifier in FP, counting everything you pay to shape it, Strain surcharges included. Overdraw can pay that cost, but never past it.",
+  whenToRoll: "An Invocation takes one roll per target at most. Check these in order:\nNo roll: Willing targets and environmental objects are affected automatically.\nA save: If the effect names a save, that save is the only roll, even when damage rides along. Area damage (Focused or Wide Area delivery) and Spatial, Cognitive, and Synthetica Invocations take a save instead of a Flow Attack. Each target makes one save against your Flow Save DC: an Agility Save for area damage, unless the Resonance or the effect names another. A failure takes the damage and the effect. A success avoids the effect and takes no damage, or half the damage in an area.\nA Flow Attack: Anything else aimed at an unwilling target takes an Invocation Check (Flow Attack) against Defense. On a miss, the FP is spent and nothing happens. On a hit, the damage and the effect land.",
+  costRowsIntro: "First, select a Base Resonance from your known list (see Base Resonances, below). This determines the frequency of the effect and the type of damage dealt. Then pick one row below. It sets what the Invocation does and what it costs.",
+  // Intent and Force: the six printed rows. intent + force are the engine's pair (engine.js flowInvocation).
+  costRows: [
+    { key: "damage-only", intent: "damage", force: "base", fp: 0, name: "Damage", desc: "1d6 + Flow Modifier damage", minLevel: 1 },
+    { key: "empowered-damage", intent: "damage", force: "empowered", fp: 1, name: "Empowered Damage", desc: "1d6 + Flow Modifier, plus 1d6 per Caliber", minLevel: 1 },
+    { key: "base-effect", intent: "effect", force: "base", fp: 0, name: "Base Effect", desc: "The Resonance's Base Effect", minLevel: 1 },
+    { key: "empowered-effect", intent: "effect", force: "empowered", fp: 1, name: "Empowered Effect", desc: "One Empowered Effect from the Resonance", minLevel: 1 },
+    { key: "hybrid", intent: "hybrid", force: "base", fp: 1, name: "Hybrid", desc: "1d6 + Flow Modifier damage and a Base Effect", minLevel: 1 },
+    { key: "empowered-pair", intent: "hybrid", force: "empowered", fp: 2, name: "Empowered Pair", desc: "Empowered Damage and an Empowered Effect (see Layered Force)", minLevel: 5 }
+  ],
+  deliveryIntro: "Delivery determines an Invocation's vector, range, and shape: how you project it into the world. Pick one row below.",
+  deliveryTable: [
+    { key: "touch", name: "Touch", band: "Directed", fp: 0, reaches: "A target you physically touch", scaling: "+1 FP per extra target" },
+    { key: "remote", name: "Remote", band: "Directed", fp: 0, reaches: "A target you can clearly see within 12 spaces", scaling: "+1 FP per extra target" },
+    { key: "imbue", name: "Imbue", band: "Directed", fp: 0, reaches: "An object or weapon; waits up to 1 minute", scaling: "+1 FP per extra target" },
+    { key: "cube", name: "Cube", band: "Focused Area", fp: 1, reaches: "Area 2 cube on a point you can see within 12 spaces", scaling: "+1 FP per space" },
+    { key: "sigil", name: "Sigil", band: "Focused Area", fp: 1, reaches: "Area 2 cube on a mark within your reach; waits up to 1 minute", scaling: "+1 FP per space" },
+    { key: "aura", name: "Aura", band: "Wide Area", fp: 2, reaches: "Area 2 aura that moves with you; you choose whether it includes you", scaling: "+1 FP per space" },
+    { key: "cone", name: "Cone", band: "Wide Area", fp: 2, reaches: "Area 3 cone from you", scaling: "+1 FP per space" },
+    { key: "sphere", name: "Sphere", band: "Wide Area", fp: 2, reaches: "Area 3 sphere on a point you can see within 12 spaces", scaling: "+1 FP per space" },
+    { key: "line", name: "Line", band: "Wide Area", fp: 2, reaches: "Area 6 line, 1 space wide", scaling: "+1 FP per space" }
+  ],
+  durationIntro: "Duration determines how long an Invocation lasts after it's shaped. Pick one row below.",
+  durationTable: [
+    { key: "instant", name: "Instant", fp: 0, lasts: "Lands at once; lasts until the start of your next turn, unless the effect says otherwise", upkeep: "None" },
+    { key: "sustain", name: "Sustain", fp: 1, lasts: "Up to 1 minute (10 rounds)", upkeep: "1 FP per extra minute, in or out of combat" }
+  ],
+  otherCostsTable: [
+    { key: "precision-shaping", name: "Precision Shaping", fp: 1, notes: "Spares a number of targets (characters or objects) in a Focused or Wide Area, up to your Flow Modifier; costs 2 at Stage 3 Strain or higher" },
+    { key: "layering", name: "Layering (Level 5)", fp: 1, notes: "A second Resonance in one Invocation, as a Complex Action (see Layered Force)" },
+    { key: "resonance-amplification", name: "Resonance Amplification (Level 3)", fp: 2, notes: "Plus a DC 15 Flow Attribute Check (see Resonance Amplification)" },
+    { key: "wave", name: "Wave (Strain Stage 2 or higher)", fp: 1, notes: "On every Invocation" }
+  ],
+
   /* ---- the Order of Shaping: cost bands ---------------------------------- */
+  // Engine lookups only: the book no longer prints a separate Intent or Force section (costRows above is the table).
   intent: [
     { key: "damage", name: "Damage Only", fp: 0, desc: "1d6 + Flow Modifier base damage." },
     { key: "effect", name: "Effect Only", fp: 0, desc: "Produces the Base Resonance effect." },
     { key: "hybrid", name: "Hybrid (Damage + Effect)", fp: 1, desc: "Both damage and an effect. Layering with Empowered Force needs Level 5." }
   ],
   delivery: [
-    { key: "directed", band: "Directed", fp: 0, precision: false, scaling: "+1 FP per additional target",
+    { key: "directed", band: "Directed", fp: 0, precision: false, scaling: "+1 FP per extra target",
       options: ["Touch", "Remote", "Imbue"],
-      desc: "Affects a single target through physical or visual contact. Remote reaches a target you can see (typically 6 spaces). Imbue: The Shaper weaves the resonance into an object or weapon. The effect remains dormant until the object makes contact with a target or the Shaper triggers it as a Free Action." },
-    { key: "focused", band: "Focused Area", fp: 1, precision: true, scaling: "+1 FP per +1 space to one dimension",
+      desc: "Touch: A target you physically touch. +1 FP per extra target.\nRemote: A target you can clearly see within 12 spaces. +1 FP per extra target.\nImbue: An object or weapon; waits up to 1 minute. +1 FP per extra target.\nImbue: The effect stays dormant until the object makes contact with a target or the Shaper triggers it as a Free Action. When an Imbued weapon hits, the hit stands in for the Flow Attack; any save the effect names still applies. Triggered with no contact, it rolls normally. You can keep one dormant Imbue or Sigil at a time." },
+    { key: "focused", band: "Focused Area", fp: 1, precision: true, scaling: "+1 FP per space",
       options: ["Cube (2 spaces)", "Sigil"],
-      desc: "Anchors the Flow to a fixed point. Sigil triggers when a Character enters or interacts with it." },
-    { key: "wide", band: "Wide Area", fp: 2, precision: true, scaling: "+1 FP per +1 space to one dimension",
+      desc: "Cube: Area 2 cube on a point you can see within 12 spaces. +1 FP per space.\nSigil: Area 2 cube on a mark within your reach; waits up to 1 minute. +1 FP per space.\nSigil: Brushes the resonance onto a floor, wall, or door. When a Character enters the space or interacts with the object, the Invocation fires, centered on the mark." },
+    { key: "wide", band: "Wide Area", fp: 2, precision: true, scaling: "+1 FP per space",
       options: ["Aura (2 spaces)", "Cone (3 spaces)", "Sphere (3 spaces)", "Line (6 spaces)"],
-      desc: "Affects large sections of the battlefield. Aura is centered on you and moves with you." }
+      desc: "Aura: Area 2 aura that moves with you; you choose whether it includes you. +1 FP per space.\nCone: Area 3 cone from you. +1 FP per space.\nSphere: Area 3 sphere on a point you can see within 12 spaces. +1 FP per space.\nLine: Area 6 line, 1 space wide. +1 FP per space." }
   ],
   force: [
     { key: "base", name: "Base Force", fp: 0, desc: "1d6 + Flow Modifier damage, or a Base Resonance effect." },
     { key: "empowered", name: "Empowered Force", fp: 1, desc: "Add damage dice equal to your Caliber, OR apply the Resonance's Empowered Effect." }
   ],
   duration: [
-    { key: "instant", name: "Instant", desc: "Damage is applied and conditions are inflicted immediately. Unless an effect specifies otherwise, it lasts until the start of your next turn. Instant effects require no further input or maintenance." },
-    { key: "sustain", name: "Sustain", desc: "Spend 1 FP at the start of your turn to maintain it. Only one sustained effect at a time." }
+    { key: "instant", name: "Instant", desc: "Lands at once; lasts until the start of your next turn, unless the effect says otherwise. A Base Effect's physical results stay: the ice stays frozen, the lock stays rusted. A helpful Base Effect that keeps working on a willing target, an object, or the space around you (light, temperature, a telepathic line) lasts the scene at no cost.", conditionDuration: "When an Invocation imposes a condition, its duration and re-save replace the condition's own ending save. The condition's other ways out still work: sensory restoration ends Blinded, and harming a Charmed target breaks it." },
+    { key: "sustain", name: "Sustain", desc: "The Invocation persists as long as the Shaper actively stabilizes the resonance. Up to 1 minute (10 rounds); 1 FP per extra minute, in or out of combat. If the next minute's FP isn't spent, the effect ends." }
   ],
-  /* PHB:6372, printed under Duration. The handoff's words. Shown in the Codex (fl-shaping) and as a
-     note on the Flow tab's builder for an attack-resolved Invocation that pays for both damage and
-     an effect (js/flow.js). The Worked Example printed after it is workedExample, below (the
-     author's answer 4, 24 October 2026), in the Codex only. */
-  damageAndEffect: "Damage and an effect together: the Flow Attack decides the hit. On a miss, nothing happens. On a hit, the damage lands, then the target makes the effect's save, and a success avoids only the effect. (Resonances that call for a Flow Save instead of a Flow Attack, such as Spatial and Cognitive, follow their own text.)",
-  // PHB:6372, the Worked Example printed after the rule above, in the book's words
-  workedExample: "A Level 1 Shaper shapes Kinetic as a Hybrid (1 FP): damage plus a push. Remote Delivery at a target 4 spaces away (0 FP), Base Force (0 FP), Instant. Total: 1 FP. She makes a Flow Attack against the target's Defense and hits. The target takes 1d6 + her Flow Modifier Bludgeoning damage, then makes a Flow Save DC (Body or Agility). On a failure it's pushed 2 spaces; on a success it holds its ground but keeps the damage.",
+  // The Worked Example printed on the Shaping page: the lead line, then one line per bullet (labels kept)
+  workedExample: "A Level 1 Shaper wants the whole checkpoint on fire and her crew untouched. She has Caliber 1 and Flow Modifier +4, so her cap is 5 FP.\nIntent and Force: Thermal, Empowered Damage (1 FP)\nDelivery: Wide Area / Sphere (2 FP) + Precision Shaping (1 FP), sparing up to 4 of her crew\nDuration: Instant (0 FP)\nTotal Cost: 4 FP\nResolution: Area damage, so no Flow Attack. Every target she doesn't spare makes an Agility Save against her Flow Save DC (13). It takes 2d6 + 4 Fire damage on a failure, or half on a success.",
   /* What ends a sustained effect besides choosing to. This sentence lived only inline in the
      Flow tab's Sustain panel (js/flow.js); it moved here so the tab and the Codex's Sustained
      Effects panel read one copy. */
-  sustainCapacity: "One sustained effect at a time. It ends if you are Incapacitated, Unconscious, or enter Breakflow. Starting a new sustain replaces the current one.",
+  sustainCapacity: "You may sustain one effect at a time, unless a feature raises it. Starting a new one while you're full ends one of your choice. If you are Incapacitated, knocked Unconscious, or enter Breakflow, all sustained effects end.",
+  shakingItOff: "A target under a sustained effect that allowed a save repeats that save at the start of each of its turns, or once a minute at upkeep outside combat. A success ends the effect on that target, and that Invocation can't affect it again. A held area tests only the targets inside it when it's shaped, though devices in it stay affected. Hazard zones, which say so in their entry, test anyone who enters or starts a turn inside instead.",
+  conditionDuration: "When an Invocation imposes a condition, its duration and re-save replace the condition's own ending save. The condition's other ways out still work: sensory restoration ends Blinded, and harming a Charmed target breaks it.",
+  upkeepNote: "If the next minute's FP isn't spent, the effect ends.",
   /* Stability Factor: sustained resonance is fragile. Taking damage while sustaining
      forces a Focus Check or the effect collapses. */
   focusDisruption: {
-    // PHB (25 Oct 2026): "you must succeed on a Mystique or Body Saving Throw" (batch 82).
     save: "Focus Check (a Mystique or Body Save, your choice)",
     dc: 12,
-    dcNote: "DC 12, or half the total damage taken that turn, whichever is higher.",
-    failure: "The sustained effect ends immediately as the Flow destabilizes.",
-    text: "Focus Disruption: if you take damage while sustaining an effect, make a Focus Check. DC 12, or half the total damage taken that turn, whichever is higher. On a failure the sustained effect ends immediately."
+    dcNote: "12, or half your biggest single hit, whichever is higher. You roll with Snag if you took two or more hits. A hit is one instance of damage from any source: an attack, a blast, a hazard, a Burning tick. Losing Vitality (Bleeding, Suffocating, Overdraw, Strain) isn't damage.",
+    failure: "One sustained effect of your choice ends as the Flow destabilizes.",
+    checkPoint: "Each start of your turn is a check point, after anything else that happens then. If you took damage since the last check point (or since you began sustaining), make one Mystique or Body Saving Throw (Shaper's choice).",
+    text: "Focus Disruption: Sustained resonance is fragile. Take damage while sustaining an effect and your frequency may fracture. Each start of your turn is a check point, after anything else that happens then. If you took damage since the last check point (or since you began sustaining), make one Mystique or Body Saving Throw (Shaper's choice). DC 12, or half your biggest single hit, whichever is higher. You roll with Snag if you took two or more hits. A hit is one instance of damage from any source: an attack, a blast, a hazard, a Burning tick. Losing Vitality (Bleeding, Suffocating, Overdraw, Strain) isn't damage. On a failure, one sustained effect of your choice ends as the Flow destabilizes."
   },
   precisionShaping: {
     fp: 1, fpStrain3: 2,
-    desc: "On Focused or Wide delivery, spend +1 FP to exclude up to your Flow Modifier in targets (characters or objects) you can see or sense. At Stage 3 Strain (Surge) or higher the cost rises to 2 FP. Allies left unexcluded resolve the Invocation as hostile targets, and objects in the area take its damage like anything else it touches."
+    desc: "By default, an Area of Effect (AoE) is a raw surge of resonance. It hits everything inside it and doesn't care whose side anyone is on. To spare someone, a Shaper may use Precision Shaping to weave the current around specific targets. You must be able to see or clearly sense any target you wish to exclude at the moment of shaping. Threading the current around your allies is hard when it's already pulling at you. Allies left unexcluded resolve the Invocation as hostile targets, and objects in the area take its damage like anything else it touches."
   },
-  layeredForce: "Level 5 (Expanded Frequency): pay both Hybrid (1 FP) and Empowered Force (1 FP) on one Invocation for full Empowered damage AND the Resonance's Empowered Effect.",
+  zonesRule: "An effect fills the area its Delivery covers; effects carry no size of their own. An effect that fills a space rather than landing on a target (Kinetic Barrier, Thermal Fog, Folded Terrain, Void Pocket) needs Focused or Wide Area delivery.",
+  scalingNote: "Each space you buy grows one dimension of the area: its radius, length, or width.",
 
   /* ---- the seven Base Resonances ---------------------------------------- */
   // resolution: "attack" rolls a Flow Attack vs Defense; "save" forces a Flow
@@ -94,39 +134,39 @@ EN.flow = {
       base: "Push or pull a target up to 2 spaces (an unwilling target makes a Flow Save DC, Body or Agility, to resist), or cushion a fall to negate impact damage.",
       /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
       baseOptions: [
-        { name: "Push or Pull", text: "Push or pull a target up to 2 spaces (an unwilling target makes a Flow Save DC, Body or Agility, to resist)." },
+        { name: "Push or Pull", save: "Body or Agility", text: "Push or pull a target up to 2 spaces (an unwilling target makes a Flow Save DC, Body or Agility, to resist)." },
         { name: "Cushion a Fall", text: "Cushion a fall to negate impact damage." }
       ],
       empowered: [
-        { name: "Kinetic Barrier", sustain: true, text: "Solidify the air into an Area 2 line as a physical barrier, granting Half Cover (+2 Defense) to targets behind it." },
-        { name: "Gravity Pin", sustain: true, text: "Target makes a Flow Save DC (Body or Agility) or is Restrained. They can use an Action to make a physical check vs your Flow Save DC to break free, or repeat the save at the start of each turn." }
+        { name: "Kinetic Barrier", sustain: true, zone: true, text: "Solidify the air across the Invocation's area into a physical barrier. This grants Half Cover (+2 Defense) to Targets behind it." },
+        { name: "Gravity Pin", sustain: true, save: "Body or Agility", text: "Force a target to make a Flow Save DC (Body or Agility). On a failure, they suffer the Restrained condition. A Restrained Character can use an Action on their turn to make a physical check against your Flow Save DC to break free." }
       ] },
     { key: "thermal", name: "Thermal", unlock: 1, focus: "Molecular Speed", damage: "Fire / Cold",
       resolution: "attack",
       base: "Ignite flammable objects (if worn or carried by an unwilling target, they make a Flow Save DC, Agility, to smother it), instantly freeze a small body of liquid, or regulate the ambient temperature of an area.",
       /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
       baseOptions: [
-        { name: "Ignite", text: "Ignite flammable objects (if worn or carried by an unwilling target, they make a Flow Save DC, Agility, to smother it)." },
+        { name: "Ignite", save: "Agility", text: "Ignite flammable objects (if worn or carried by an unwilling target, they make a Flow Save DC, Agility, to smother it)." },
         { name: "Freeze", text: "Instantly freeze a small body of liquid." },
         { name: "Regulate Temperature", text: "Regulate the ambient temperature of an area." }
       ],
       empowered: [
         { name: "Structural Melt", sustain: true, text: "Soften physical cover or armor until it runs. For the duration, cover the target is using counts as one grade lower, and armor the target is wearing has its DR reduced by 1." },
-        { name: "Thermal Fog", sustain: true, text: "Flood up to an Area 3 sphere with blinding steam or frost. The area becomes Heavily Obscured, blocking line of sight." }
+        { name: "Thermal Fog", sustain: true, zone: true, text: "Flood the Invocation's area with blinding steam or thick frost. It becomes Heavily Obscured, blocking line of sight." }
       ] },
     { key: "electromagnetic", name: "Electromagnetic", unlock: 1, focus: "Charge, Magnetism, and Light", damage: "Electric / Energy",
       resolution: "attack",
       base: "Choose one: Magnetize (a target holding or wearing metal makes a Flow Save DC, Body or Agility, or the object tears free and loose metal leaps to your hand); Live Current (light a spark, deal 1 Electric damage to a target you touch or see, or push power into a dead device or rip it out of a live one; you can break or feed a machine, never command it); Flare (brighten a dark space to daylight, or lance a beam a target must make a Flow Save DC, Agility, to avoid or be dazzled, taking Snag on their next attack roll).",
       /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
       baseOptions: [
-        { name: "Magnetize", text: "A target holding or wearing metal makes a Flow Save DC, Body or Agility, or the object tears free and loose metal leaps to your hand." },
+        { name: "Magnetize", save: "Body or Agility", text: "A target holding or wearing metal makes a Flow Save DC, Body or Agility, or the object tears free and loose metal leaps to your hand." },
         { name: "Live Current", text: "Light a spark, deal 1 Electric damage to a target you touch or see, or push power into a dead device or rip it out of a live one; you can break or feed a machine, never command it." },
-        { name: "Flare", text: "Brighten a dark space to daylight, or lance a beam a target must make a Flow Save DC, Agility, to avoid or be dazzled, taking Snag on their next attack roll." }
+        { name: "Flare", save: "Agility", text: "Brighten a dark space to daylight, or lance a beam a target must make a Flow Save DC, Agility, to avoid or be dazzled, taking Snag on their next attack roll." }
       ],
       empowered: [
-        { name: "Optic Scramble", sustain: true, text: "A blaze of light and current overloads everything watching. Cameras, drone eyes, and cybernetic optics in the area go dark for the duration. Organic targets make a Flow Save DC (Body) or are Blinded." },
-        { name: "Overload", sustain: false, text: "Drive raw current through a target. They make a Flow Save DC (Body) or are Staggered until the end of their next turn. A target in metal armor or running cyberware rolls this save with Snag; the metal carries the charge." },
-        { name: "Magnetic Seize", sustain: true, text: "Twist the local field until metal turns traitor. Each target in the area makes a Flow Save DC (Body) or has any metal weapon wrenched from their grip, and can't draw, aim, or fire a metal weapon while the effect lasts." }
+        { name: "Optic Scramble", sustain: true, save: "Body", text: "A blaze of light and current overloads everything watching. Cameras, drone eyes, and cybernetic optics in the area go dark for the duration. Organic targets make a Flow Save DC (Body) or are Blinded." },
+        { name: "Overload", sustain: false, save: "Body", text: "Drive raw current through a target. They make a Flow Save DC (Body) or are Staggered until the end of their next turn. A target in metal armor or running cyberware rolls this save with Snag; the metal carries the charge." },
+        { name: "Magnetic Seize", sustain: true, save: "Body", text: "Twist the local field until metal turns traitor. Each target in the area makes a Flow Save DC (Body) or has any metal weapon wrenched from their grip, and can't draw, aim, or fire a metal weapon while the effect lasts." }
       ] },
     { key: "visceral", name: "Visceral", unlock: 1, focus: "Biology and Decay", damage: "Toxic / Entropy",
       resolution: "attack",
@@ -136,16 +176,16 @@ EN.flow = {
       baseOptions: [
         { name: "Patch", text: "A willing target regains 1d4 Vitality." },
         { name: "Purge", text: "Remove one mundane toxin, drug, or low-severity bio-effect from a willing target." },
-        { name: "Faltering Pulse", text: "An unwilling target makes a Flow Save DC, Body, or takes -1d4 on their next physical check or attack." }
+        { name: "Faltering Pulse", save: "Body", text: "An unwilling target makes a Flow Save DC, Body, or takes -1d4 on their next physical check or attack." }
       ],
       empowered: [
-        { name: "Adrenal Overclock", sustain: false, text: "Grant a willing target Edge on physical checks and a +2 bonus to Speed until the end of their next turn." },
-        { name: "Forceful Sedation", sustain: false, text: "Target makes a Flow Save DC (Body) or falls Unconscious. They wake on taking damage or being shaken awake by an adjacent ally's Action." },
-        { name: "Cellular Crash", sustain: false, text: "Target makes a Flow Save DC (Body) or is Poisoned until the end of their next turn and can't benefit from Resilience Dice or self-healing." }
+        { name: "Adrenal Overclock", sustain: true, text: "Grant a willing target Edge on physical checks and a +2 bonus to Speed until the end of their next turn. Held with Sustain, it lasts as long as you hold it, and when it ends the target gains 1 level of Fatigue." },
+        { name: "Forceful Sedation", sustain: true, save: "Body", text: "A target makes a Flow Save DC (Body). On a failure, they fall Unconscious. The target wakes immediately if they take damage or are shaken awake by an adjacent ally using their Action. Held with Sustain, its re-save still rolls: the Unconscious it causes doesn't fail that save." },
+        { name: "Cellular Crash", sustain: false, save: "Body", text: "Target makes a Flow Save DC (Body) or is Poisoned until the end of their next turn and can't benefit from Resilience Dice or self-healing." }
       ] },
     { key: "spatial", name: "Spatial", unlock: 1, focus: "Dimensions and Void", damage: "Force (Spatial)",
       // the Damage Profile's closing clause (25 October 2026); armor DR never stops Force anyway
-      resolution: "save", saveAttr: "varies", damageNote: "Deals Force (Spatial Shearing) damage, which ignores Resistance to Force.",
+      resolution: "save", saveAttr: "Body", damageNote: "Deals Force (Spatial Shearing) damage, which ignores Resistance to Force.",
       base: "Swap places with an adjacent willing target, or seamlessly retrieve an object from across a room.",
       /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
       baseOptions: [
@@ -154,27 +194,27 @@ EN.flow = {
       ],
       empowered: [
         { name: "Spatial Displacement", sustain: false, text: "Instantly teleport a willing target up to 3 spaces to an unoccupied space you can see." },
-        { name: "Folded Terrain", sustain: true, text: "Warp the geometry of up to an Area 3 cube into Difficult Terrain, costing 2 Speed per 1 space moved." },
-        { name: "Void Pocket", sustain: true, text: "Open a vacuum in an Area 2 sphere. Targets inside make a Flow Save DC (Body) or are Deafened and begin suffocating while they remain." }
+        { name: "Folded Terrain", sustain: true, zone: true, text: "Warp the geometry of the Invocation's area. It becomes Difficult Terrain, costing 2 Speed for every 1 space moved." },
+        { name: "Void Pocket", sustain: true, save: "Body", zone: true, hazard: true, text: "Open a localized vacuum across the Invocation's area. It's a hazard zone: each target inside when it opens, or that enters it or starts its turn there, makes a Flow Save DC (Body). On a failure, it suffers the Deafened condition and gains the Suffocating condition until the start of its next turn or until it leaves. On a success, it's unaffected until then." }
       ] },
     { key: "cognitive", name: "Cognitive", unlock: 3, focus: "Synapses and Perception", damage: "Psychic",
       resolution: "save", saveAttr: "Mystique", armorNote: "Bypasses physical armor (Stability Factor).",
       base: "Project thoughts telepathically to a visible target, induce a minor sensory hallucination, or alter a single short-term memory (an unwilling target makes a Flow Save DC, Mystique, to resist).",
       /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
       baseOptions: [
-        { name: "Project Thoughts", text: "Project thoughts telepathically to a visible target (an unwilling target makes a Flow Save DC, Mystique, to resist)." },
-        { name: "Sensory Hallucination", text: "Induce a minor sensory hallucination (an unwilling target makes a Flow Save DC, Mystique, to resist)." },
-        { name: "Alter Memory", text: "Alter a single short-term memory (an unwilling target makes a Flow Save DC, Mystique, to resist)." }
+        { name: "Project Thoughts", save: "Mystique", text: "Project thoughts telepathically to a visible target (an unwilling target makes a Flow Save DC, Mystique, to resist)." },
+        { name: "Sensory Hallucination", save: "Mystique", text: "Induce a minor sensory hallucination (an unwilling target makes a Flow Save DC, Mystique, to resist)." },
+        { name: "Alter Memory", save: "Mystique", text: "Alter a single short-term memory (an unwilling target makes a Flow Save DC, Mystique, to resist)." }
       ],
       empowered: [
-        { name: "Neural Override", sustain: false, text: "Target makes a Flow Save DC (Mystique) or you dictate their movement and Action on their next turn. You can't force direct lethal self-harm." },
-        { name: "Sensory Collapse", sustain: true, text: "Target makes a Flow Save DC (Mystique) or suffers Frightened or Charmed (your choice) for the duration." },
-        { name: "Blind Spot", sustain: false, text: "A target you choose slips beneath notice, gaining the Invisible condition. Ends immediately if that target makes an attack or forces a saving throw." }
+        { name: "Neural Override", sustain: false, save: "Mystique", text: "Target makes a Flow Save DC (Mystique) or you dictate their movement and Action on their next turn. You can't force direct lethal self-harm." },
+        { name: "Sensory Collapse", sustain: true, save: "Mystique", text: "Target makes a Flow Save DC (Mystique) or suffers Frightened or Charmed (your choice) for the duration." },
+        { name: "Blind Spot", sustain: true, text: "A target you choose slips beneath notice, gaining the Invisible condition. Ends immediately if that target makes an attack or forces a saving throw." }
       ] },
     { key: "synthetica", name: "Synthetica", unlock: 1, unique: "sourcerer", focus: "Favor and Malfunction", damage: "Tech / Resonant",
       // the table row and the Damage Profile, 25 October 2026 (was Electric or Fire); No Vessel, No Favor still applies
       resolution: "save", saveAttr: "Tech", noSustain: true, damageNote: "Deals Tech or Resonant damage.",
-      stabilityNote: "Short Attention Spans: Synthetica Empowered Effects can't use the Sustain duration. A sprite will hold a Link open all week for the theater of it, but a favor is a transaction: the sprite does the work, collects the amusement, and wanders off.",
+      stabilityNote: "Short Attention Spans: Synthetica Empowered Effects can't use the Sustain duration. A sprite will hold a Link open all week for the theater of it, but a favor is a transaction: the sprite does the work, collects the amusement, and wanders off. The sprites don't aim, either: Synthetica calls for a Tech Save against your Flow Save DC instead of a Flow Attack.",
       targeting: "Synthetica works through machines, never around them. A valid Target carries, wears, or is installed with powered tech, or is itself a device, drone, Proxy, or Construct. A Target with nothing electronic on or in them is beyond the sprites' reach. In Elysium, that describes almost no one. Almost.",
       special: "Favors Travel Light: when you shape an Invocation of any other Resonance, you may spend an additional 1 FP to fold a Nixie Favor or a Gremlin Jinx into it. A favor folded this way allows no save. One folded favor per Invocation.",
       base: "Choose one: Ask Around (interview the sprites in a device you can see or touch; you learn what the machine is, what it does, and what it has noticed recently, as impressions rather than records); Nixie Favor (a Nixie settles into a willing target's weapon or cybernetics; they gain a 1d4 bonus on their next attack roll or Saving Throw); Gremlin Jinx (a Gremlin crawls into an unwilling target's weapon or cybernetics; they make a Flow Save DC, Tech, or suffer a 1d4 penalty on their next attack roll or Saving Throw).",
@@ -182,12 +222,12 @@ EN.flow = {
       baseOptions: [
         { name: "Ask Around", text: "Interview the sprites in a device you can see or touch; you learn what the machine is, what it does, and what it has noticed recently, as impressions rather than records." },
         { name: "Nixie Favor", text: "A Nixie settles into a willing target's weapon or cybernetics; they gain a 1d4 bonus on their next attack roll or Saving Throw." },
-        { name: "Gremlin Jinx", text: "A Gremlin crawls into an unwilling target's weapon or cybernetics; they make a Flow Save DC, Tech, or suffer a 1d4 penalty on their next attack roll or Saving Throw." }
+        { name: "Gremlin Jinx", save: "Tech", text: "A Gremlin crawls into an unwilling target's weapon or cybernetics; they make a Flow Save DC, Tech, or suffer a 1d4 penalty on their next attack roll or Saving Throw." }
       ],
       empowered: [
         { name: "Nixie Synchronization", sustain: false, text: "A Nixie tunes a willing Target's weapon or cybernetic implant to its wielder's pulse. Until the end of their next turn, the Target gains Edge on their next attack roll with that weapon or implant, and its next hit deals an extra 1d6 Force damage." },
-        { name: "Gremlin Tantrum", sustain: false, text: "Point the local Gremlins at a Target's firearm, smart tech, or cyberlimb. The Target must make a Tech Save against your Flow Save DC. On a failure, the Target takes 1d6 Tech or Resonant damage as the device cooks against them and seizes up until the end of their next turn." },
-        { name: "Poltergeist", sustain: false, unlock: 3, text: "Ask the sprites riding a device, drone, or Construct to take the wheel. The Target must make a Tech Save against your Flow Save DC. On a failure, you dictate its movement and its Action on its next turn. The sprites won't drive a machine into its own obvious destruction, and they can't drive a mind: a Clanker, a Synthetic, or any Target that is someone rather than something is immune." }
+        { name: "Gremlin Tantrum", sustain: false, save: "Tech", text: "Point the local Gremlins at a Target's firearm, smart tech, or cyberlimb. The Target must make a Tech Save against your Flow Save DC. On a failure, the Target takes 1d6 Tech or Resonant damage as the device cooks against them and seizes up until the end of their next turn." },
+        { name: "Poltergeist", sustain: false, unlock: 3, save: "Tech", text: "Ask the sprites riding a device, drone, or Construct to take the wheel. The Target must make a Tech Save against your Flow Save DC. On a failure, you dictate its movement and its Action on its next turn. The sprites won't drive a machine into its own obvious destruction, and they can't drive a mind: a Clanker, a Synthetic, or any Target that is someone rather than something is immune." }
       ] },
     { key: "temporal", name: "Temporal", unlock: 5, focus: "Chronological Flow", damage: "Entropy",
       resolution: "attack", noSustain: true,
@@ -201,29 +241,29 @@ EN.flow = {
       ],
       empowered: [
         { name: "Chronal Acceleration", sustain: false, text: "Bend time around a willing ally. On their next turn their Speed is doubled and they gain one additional Action." },
-        { name: "Stasis Field", sustain: false, text: "Target makes a Flow Save DC (Agility or Wits) or their Speed is halved and they lose their primary Action on their next turn." }
+        { name: "Stasis Field", sustain: false, save: "Agility or Wits", text: "Target makes a Flow Save DC (Agility or Wits) or their Speed is halved and they lose their primary Action on their next turn." }
       ] }
   ],
   resonanceUnlockNote: "At Level 1 a Shaper knows three of the standard Base Resonances (Kinetic, Thermal, Electromagnetic, Visceral, Spatial). Cognitive unlocks at Level 3 (Resonance Synthesis); Temporal unlocks at Level 5 (Expanded Frequency). A Sourcerer is the exception: Synthetica, their Unique Resonance, counts as one of the three known at Level 1, so they choose only two more from the standard list. No other Shaper can learn it.",
 
   /* ---- Sustain compatibility -------------------------------------------- */
   sustainCompat: [
-    { resonance: "Kinetic", effect: "Kinetic Barrier", allowed: true, notes: "Standard sustain rules." },
-    { resonance: "Kinetic", effect: "Gravity Pin", allowed: true, notes: "Target saves at the start of each turn (Lockdown)." },
-    { resonance: "Thermal", effect: "Structural Melt", allowed: true, notes: "Cover grade and DR loss persist with sustain." },
-    { resonance: "Thermal", effect: "Thermal Fog", allowed: true, notes: "Area persists with sustain." },
-    { resonance: "Electromagnetic", effect: "Optic Scramble", allowed: true, notes: "Standard sustain rules." },
+    { resonance: "Kinetic", effect: "Kinetic Barrier", allowed: true, notes: "Fills the Invocation's area; needs Focused or Wide Area delivery." },
+    { resonance: "Kinetic", effect: "Gravity Pin", allowed: true, notes: "Target repeats the save at the start of each of its turns (Shaking It Off); the break-free Action still works." },
+    { resonance: "Thermal", effect: "Structural Melt", allowed: true, notes: "Cover grade and DR loss persist while held." },
+    { resonance: "Thermal", effect: "Thermal Fog", allowed: true, notes: "Fills the Invocation's area; needs Focused or Wide Area delivery." },
+    { resonance: "Electromagnetic", effect: "Optic Scramble", allowed: true, notes: "Devices in the area stay dark; organic targets repeat the save (Shaking It Off)." },
     { resonance: "Electromagnetic", effect: "Overload", allowed: false, notes: "Staggered resolves at the end of the target's next turn." },
-    { resonance: "Electromagnetic", effect: "Magnetic Seize", allowed: true, notes: "Area persists; target saves at the start of each turn to shake free." },
-    { resonance: "Visceral", effect: "Adrenal Overclock", allowed: false, notes: "Resolves at the end of the target's next turn." },
-    { resonance: "Visceral", effect: "Forceful Sedation", allowed: false, notes: "Resolves on damage or being woken." },
+    { resonance: "Electromagnetic", effect: "Magnetic Seize", allowed: true, notes: "Targets repeat the save at the start of each of their turns (Shaking It Off)." },
+    { resonance: "Visceral", effect: "Adrenal Overclock", allowed: true, notes: "When the held effect ends, the target gains 1 level of Fatigue." },
+    { resonance: "Visceral", effect: "Forceful Sedation", allowed: true, notes: "The re-save still rolls; the Unconscious it causes doesn't fail it." },
     { resonance: "Visceral", effect: "Cellular Crash", allowed: false, notes: "Resolves at the end of the target's next turn." },
     { resonance: "Spatial", effect: "Spatial Displacement", allowed: false, notes: "Instant teleport." },
-    { resonance: "Spatial", effect: "Folded Terrain", allowed: true, notes: "Area persists with sustain." },
-    { resonance: "Spatial", effect: "Void Pocket", allowed: true, notes: "Targets save each round in the zone." },
+    { resonance: "Spatial", effect: "Folded Terrain", allowed: true, notes: "Fills the Invocation's area; needs Focused or Wide Area delivery." },
+    { resonance: "Spatial", effect: "Void Pocket", allowed: true, notes: "Hazard zone: tests anyone inside when it opens, who enters, or starts a turn there." },
     { resonance: "Cognitive", effect: "Neural Override", allowed: false, notes: "One turn of forced action only." },
-    { resonance: "Cognitive", effect: "Sensory Collapse", allowed: true, notes: "Lockdown effect; target saves at the start of each turn." },
-    { resonance: "Cognitive", effect: "Blind Spot", allowed: false, notes: "Ends on the target's attack or save-forcing action." },
+    { resonance: "Cognitive", effect: "Sensory Collapse", allowed: true, notes: "Target repeats the save at the start of each of its turns (Shaking It Off)." },
+    { resonance: "Cognitive", effect: "Blind Spot", allowed: true, notes: "Ends early if the target attacks or forces a save." },
     { resonance: "Synthetica", effect: "Nixie Synchronization", allowed: false, notes: "Short Attention Spans: no Sustain." },
     { resonance: "Synthetica", effect: "Gremlin Tantrum", allowed: false, notes: "Short Attention Spans: no Sustain." },
     { resonance: "Synthetica", effect: "Poltergeist", allowed: false, notes: "Short Attention Spans: no Sustain." },
@@ -301,15 +341,19 @@ EN.flow = {
   advancedTechniques: [
     { key: "resonance-synthesis", name: "Resonance Synthesis", levelLabel: "Level 3", techniques: [
       { key: "flow-linking", name: "Flow Linking", cost: "2 FP per participant",
-        text: "Flow Linking is the practice of temporarily joining resonance signatures between two or more Characters. It creates a shared frequency for communication and resource management.\nActivation: Spend 2 FP per participant and make simultaneous Flow Dice Pool checks against 2 Snag Dice.\nDuration: A Positive Margin (+1 or more) creates a stable connection lasting 10 minutes.\nEffects: Participants communicate thoughts and sensory data instantly. Linked members may transfer up to 2 FP per round to another linked member as a Free Action.\nRisks: If one participant enters Breakflow or falls Unconscious, all linked members immediately gain 1 Stage of Strain." },
+        text: "Flow Linking briefly joins the resonance of two or more Characters into one shared frequency.\nActivation: Spend 2 FP per participant and make simultaneous Flow Dice Pool checks against 2 Snag Dice.\nDuration: A Positive Margin (+1 or more) creates a stable connection lasting 10 minutes.\nEffects: Participants communicate thoughts and sensory data instantly. Linked members may transfer up to 2 FP per round to another linked member as a Free Action.\nRisks: If one participant enters Breakflow or falls Unconscious, all linked members immediately gain 1 Stage of Strain." },
       { key: "resonance-amplification", name: "Resonance Amplification", cost: "2 additional FP",
-        text: "A Shaper may focus and magnify their output beyond normal limits by narrowing their frequency to a razor edge.\nActivation: Declare you are entering Amplified Resonance before making an Invocation. Spend 2 additional FP and make a Flow Attribute Check (DC 15).\nOn Success: Increase the Invocation's Force by one level (e.g., adding an extra 1d6 damage beyond the Caliber dice). Alternatively, increase the Empowered Effect by one tier of intensity at the GM's discretion.\nOn Failure: You immediately suffer 1 Stage of Strain and 1d4 Vitality loss. The Invocation resolves at its standard power level." }
+        text: "A Shaper may focus and magnify their output beyond normal limits by narrowing their frequency to a razor edge.\nActivation: Declare you are entering Amplified Resonance before making an Invocation. Spend 2 additional FP and make a Flow Attribute Check (DC 15).\nOn Success: Add an extra 1d6 damage to the Invocation, beyond the Caliber dice. Alternatively, increase the Empowered Effect by one tier of intensity at the GM's discretion.\nOn Failure: You immediately suffer 1 Stage of Strain and 1d4 Vitality loss. The Invocation resolves at its standard power level." }
     ] },
-    { key: "master-forging", name: "Master Forging", levelLabel: "Level 7+", techniques: [
+    { key: "layered-force", name: "Layered Force", levelLabel: "Level 5", techniques: [
+      { key: "layered-force", name: "Layered Force", cost: "+1 FP to layer",
+        text: "Layered Force braids two Resonances into a single Invocation, letting their powers act as one.\nEmpowered Pair: On an Empowered Invocation, spend +1 FP to get both the Caliber dice and the Empowered Effect. It still takes one Action.\nLayering: Spend +1 FP to layer a secondary Resonance onto a primary in one Invocation. This is Channel Major Flow, a Complex Action. A Resonance can be layered onto itself.\nCosts: Each layer picks its own row from Intent and Force, and both rows come from the same family: Damage or Empowered Damage, Base Effect or Empowered Effect, Hybrid or Empowered Pair. Only one layer can take a row with Caliber dice (Empowered Damage or Empowered Pair). Delivery, Scaling, and Precision Shaping are paid once. The cap covers the whole Invocation.\nDamage: Each layer rolls its own 1d6 + Flow Modifier, and the Caliber dice are added once. The total counts as both damage types: Resistance applies only if the target resists both, Vulnerability applies if it's vulnerable to either, and armor doesn't reduce it if either layer bypasses armor. A critical adds your Flow Modifier once, not per layer.\nEffects: Two layers can't apply the same effect, and a condition both layers would impose applies once.\nThe Roll: The primary Resonance decides how the Invocation is rolled: its Flow Attack, or the save its rules call for. The secondary's Stability Factor doesn't change the roll, but its other limits stand: what it can target, whether it can be held, and what it ignores. A layer that can't affect a target does nothing to it. A target the primary can't affect isn't a valid target.\nHolding: You can sustain two effects at once. Each layer you hold pays its own upkeep and takes its own slot.\nWorked Example: A Level 5 Shaper (Caliber 3, Flow Modifier +4, cap 7) layers Kinetic onto Thermal: Thermal Empowered Damage (1 FP), Kinetic Damage (0 FP), layering (1 FP), and a Wide Area Sphere (2 FP), for 4 FP as a Complex Action. Every target in the Area 3 sphere makes an Agility Save. The damage is 1d6 + 4 + 3d6 (Thermal) plus 1d6 + 4 (Kinetic): 5d6 + 8, counting as Fire and Bludgeoning. A success halves it." }
+    ] },
+    { key: "master-forging", name: "Master Forging", levelLabel: "Level 7", techniques: [
       { key: "cooperative-channeling", name: "Cooperative Channeling", cost: "1 to 3 FP per Contributor",
-        text: "Multiple Shapers may join their resonance to perform a single massive Invocation. One Shaper acts as the Conductor, while the others serve as Contributors.\nSetup: Each Contributor must share the Conductor's wavelength. This requires a Flow Attribute Check (DC 10) from each participant.\nMechanics: Each Contributor adds 1 to 3 FP toward the total cost of the Invocation. The Conductor rolls the Invocation Check, adding a +1 bonus per Contributor (max +3).\nThe Recoil: If the Invocation Check results in a Critical Failure (Margin -5 or worse), all participants apply 1 Stage of Strain." },
-      { key: "sustained-fields", name: "Sustained Fields", cost: "5 FP to anchor",
-        text: "A Sustained Field is a long-term Flow effect maintained over hours or days, such as a protective ward or environmental purification.\nCreating a Field:\n1. Spend 5 FP to anchor the field.\n2. Make a Flow Dice Pool check against a base of 3 Snag Dice.\n3. Each additional 2 spaces of radius adds +1 FP to the anchoring cost and +1 Snag Die to the pool.\nMaintenance: The Shaper must spend 1 FP per hour and maintain focus. Long-term fields (8 hours+) impose 1 Stage of Strain for every additional day of upkeep.\nShared Maintenance: Multiple Shapers can maintain the same field. Each pays a portion of the hourly FP cost and makes a Flow Dice Pool check against 1 Snag Die once every hour to stay synchronized." }
+        text: "Multiple Shapers may join their resonance to perform a single massive Invocation. One Shaper acts as the Conductor, while the others serve as Contributors.\nSetup: Each Contributor must share the Conductor's wavelength. This requires a Flow Attribute Check (DC 10) from each participant.\nMechanics: Each Contributor adds 1 to 3 FP toward the total cost of the Invocation. Each Shaper's share counts against their own cap, so the whole can run past any one of them.\nThe Conductor rolls the Invocation Check, adding a +1 bonus per Contributor (max +3).\nThe Recoil: If the Invocation Check results in a Critical Failure (Margin -5 or worse), or every target beats your Flow Save DC by 5 or more, all participants apply 1 Stage of Strain." },
+      { key: "sustained-fields", name: "Sustained Fields", cost: "5 FP, reserved",
+        text: "A Sustained Field is a long-term Flow effect maintained over hours or days, such as a protective ward or environmental purification.\nWhat It Holds: One Empowered Effect that can be sustained (see Sustain), or a helpful Base Effect. Shape it as usual (its Delivery and Scaling set the Field's area), then anchor it in place of Sustain. A Field takes no sustain slot.\nAnchoring: Spend 5 FP and make a Flow Dice Pool check against 3 Snag Dice, plus 1 Snag Die per 2 spaces of Scaling. You need the 5 FP on hand; Overdraw can't pay for it. A positive Margin anchors the Field. A Mixed Result anchors it and applies 1 Stage of Strain. A Failure spends the 5 FP, anchors nothing, and applies 1 Stage of Strain.\nReserved FP: While the Field stands, your maximum FP is 5 lower. It has no hourly cost and no daily Strain. Ending the Field restores your maximum, not the points.\nEnding It: You can end a Field at any time, no action needed. It also ends if you enter Breakflow or a Null Scar touches it. Sleep and unconsciousness don't end it.\nShared Fields: Shapers can split the 5 FP. Each spends their share and lowers their own maximum by it. The Field ends if any of them drops their share or enters Breakflow." }
     ] }
   ],
 
@@ -388,7 +432,7 @@ EN.flow.disturbances = {
   /* ### Anomaly Classifications: Type and Mechanical Impact, in the book's order */
   classifications: [
     { key: "echo", name: "Echo Field", effect: "Characters suffer **Snag** on Perception checks, and **Snag** on Invocation checks." },
-    { key: "static", name: "Static Zone", effect: "Invocations cost **+1 FP**; damage dice and effect magnitudes are **halved**; targets of Empowered Effects gain **Edge** on saves; FP can't be recovered while inside; sustained effects require a **Focus Check** every round." },
+    { key: "static", name: "Static Zone", effect: "Invocations cost **+1 FP**; damage dice and effect magnitudes are **halved**; targets of Empowered Effects gain **Edge** on saves; FP can't be recovered while inside; sustained effects require a **Focus Check** at the start of each of your turns, at DC 12 if you took no damage." },
     { key: "storm", name: "Resonant Storm", effect: "Invocations cost **+1 FP**. Failed checks deal **1d4 Vitality damage**." },
     { key: "corrupted", name: "Corrupted Signature", effect: "Every Invocation performed in the zone that costs **2 or more FP** causes **1 Stage of Strain**." },
     { key: "parasite", name: "Flow Parasite", effect: "Characters attuned to the Flow within 2 spaces lose **1 FP per round**." },

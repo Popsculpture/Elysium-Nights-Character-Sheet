@@ -115,9 +115,9 @@ EN.cyberware = {
       ] },
     { key: "disruption", short: "Disruption Lattice", name: "Disruption Lattice", zone: "Neural", enhancement: "None", mystech: true,
       desc: "Resonance-dampening circuitry through the upper spine and skull. Built to counter Shapers; it does not discriminate; it dampens the Flow for everyone near the wearer, including the wearer.",
-      effect: "Passive Area 2 disruption field: all Invocations cost +1 FP, friend or foe, always on. Pulse (Impulse, 1/Short Rest, at any point outside your turn): sustained Invocations within 3 spaces must succeed on a Focus Check (a Mystique or Body Save, DC 14) or end immediately.",
+      effect: "Passive Area 2 disruption field: all Invocations cost +1 FP, friend or foe, always on. Pulse (Impulse, 1/Short Rest, at any point outside your turn): each character within 3 spaces who is sustaining an Invocation must succeed on a Focus Check (a Mystique or Body Save, DC 14), or every effect they're sustaining ends immediately.",
       street: "Field shrinks to Area 1, no Pulse; audible static → Snag on Stealth within 2 spaces of anyone.",
-      black: "Area 3 field, Pulse up to 2/Short Rest, plus targeted suppression (Action, 3 charges/Long Rest): one Flow-user within 6 spaces casts at +2 FP with Snag until the start of your next turn.",
+      black: "Area 3 field, Pulse up to 2/Short Rest, plus targeted suppression (Action, 3 charges/Long Rest): one Flow-user within 6 spaces shapes at +2 FP with Snag until the start of your next turn.",
       tiers: [
         { tier: "Streetware", sp: 2, price: 4000,  legality: "Restricted" },
         { tier: "Brandware",  sp: 2, price: 13000, legality: "Restricted" },
@@ -125,7 +125,7 @@ EN.cyberware = {
       ] },
     { key: "resonanceCrown", short: "Resonance Crown", name: "Resonance Crown", zone: "Neural", enhancement: "+1 Mystique", mystech: true,
       desc: "A circlet of hand-tuned Mystech filaments in the skull's outer surface, visible as silver tracery along the brow. One of the few implants the Flow does not reject; it harmonizes chrome to the wearer's natural frequency.",
-      effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. Choose the pieces when the Crown is installed; changing the selection takes 1 hour of Downtime meditation with a qualified artificer. One Crown only; cannot harmonize itself or the Disruption Lattice. Identifying Marks: The silver tracery is visible along the brow when the wearer concentrates or casts an Invocation. Skilled observers (Awareness check, DC 15) can identify the Crown on sight. It can't be installed through unlicensed clinics; the technique requires a Mystech artificer with proper certification.",
+      effect: "Reduces the SP cost of up to 4 SP of your other cyberware by 1 each (min 1) for Threshold purposes. +1 FP at the end of a Short Rest. Choose the pieces when the Crown is installed; changing the selection takes 1 hour of Downtime meditation with a qualified artificer. One Crown only; cannot harmonize itself or the Disruption Lattice. Identifying Marks: The silver tracery is visible along the brow when the wearer concentrates or shapes an Invocation. Skilled observers (Awareness check, DC 15) can identify the Crown on sight. It can't be installed through unlicensed clinics; the technique requires a Mystech artificer with proper certification.",
       tiers: [
         { tier: "Prototype", sp: 1, price: 28000, legality: "Restricted" }
       ] },
@@ -169,7 +169,7 @@ EN.cyberware = {
       ] },
     { key: "convergence", short: "Convergence Engine", name: "Convergence Engine", zone: "Core", enhancement: "None", mystech: true,
       desc: "An implant that is, by all measurable standards, both circuit and Flow construct at once. Should not exist; three are documented in Elysium. A campaign-level reward, not a purchase.",
-      effect: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: use any one implant as a Ritual Implement, route Invocations through your chrome, and once/Long Rest bypass a Static Threshold (Total Static −2 SP for one combat, then gain 1 Stage of Strain). Does not stack with the Resonance Crown; a character can't have both installed. Identifying Marks: The Engine pulses with a slow, faintly blue glow visible beneath the skin of the chest. The pulse synchronizes with the wearer's heartbeat and intensifies when an Invocation is being channeled. The piece can't be hidden from Flow-based detection; any Shaper within 6 spaces of an active Convergence Engine senses it immediately as a third signature in the room, neither fully tech nor fully Flow.",
+      effect: "Unattuned: +1 Vitality max and Resistance to Resonant. Attuned: one implant counts as a Ritual Implement for Ritual Recovery and Breakflow Restoration and as your free hand for shaping, route Invocations through your chrome, and once/Long Rest bypass a Static Threshold (Total Static −2 SP for one combat, then gain 1 Stage of Strain). Does not stack with the Resonance Crown; a character can't have both installed. Identifying Marks: The Engine pulses with a slow, faintly blue glow visible beneath the skin of the chest. The pulse synchronizes with the wearer's heartbeat and intensifies when an Invocation is being channeled. The piece can't be hidden from Flow-based detection; any Shaper within 6 spaces of an active Convergence Engine senses it immediately as a third signature in the room, neither fully tech nor fully Flow.",
       /* The one split clause in the catalog. `unattuned` is read by cyberFlatBonuses and
          damageResistances in engine.js and applies only when the wearer has no Flow Attribute;
          the Attuned half above stays prose, being capabilities and a per-rest resource rather

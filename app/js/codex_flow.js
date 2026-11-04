@@ -40,42 +40,54 @@ window.EN = window.EN || {};
         K.subTitle("Rolling with the Current"),
         K.ruleBlock("Flow Attack", f.checkNote, f.flowAttackFormula),
         K.ruleBlock("Flow Save DC", f.saveNotation, f.saveDcFormula),
+        f.mirrorRule ? K.ruleBlock("The Mirror Rule", f.mirrorRule) : null,
+        f.criticals ? K.ruleBlock("Criticals", f.criticals) : null,
         // the one Flow Attribute Check text, the Basics primer's own
         B && B.check ? K.ruleBlock("Flow Attribute Check", B.check, f.flowAttackFormula) : null
       ];
     } },
 
     /* ---- 2 · the Order of Shaping ------------------------------------------- */
-    { id: "fl-shaping", title: "The Order of Shaping", tag: "INTENT · DELIVERY · FORCE · DURATION", order: 20, when: has("intent"), build: function (ctx, K) {
+    { id: "fl-shaping", title: "The Order of Shaping", tag: "INTENT AND FORCE · DELIVERY · DURATION", order: 20, when: has("costRows"), build: function (ctx, K) {
       var f = F();
       function fp(n) { return n ? "+" + n : "0"; }
+      // the two dormant Deliveries' own rules: the last line of the Directed and Focused descriptions
+      function lastLine(key) { var b = byKey(f.delivery, key); return b ? String(b.desc).split("\n").pop() : null; }
       return [
-        K.entry("intent", "Intent", [
-          K.subTitle("1 · Intent"),
-          K.refTable(["Intent", "FP", "Effect"], f.intent.map(function (i) { return [i.name, fp(i.fp), i.desc]; }), [0])
+        f.shapingRules ? K.ruleBlock("Shaping", f.shapingRules) : null,
+        f.whenToRoll ? K.ruleBlock("When to Roll", f.whenToRoll, null, { conditions: true }) : null,
+        K.entry("intent-and-force", "Intent and Force", [
+          K.subTitle("1 · Intent and Force"),
+          f.costRowsIntro ? K.proseBlock(f.costRowsIntro) : null,
+          K.refTable(["Intent and Force", "FP", "What It Does"], f.costRows.map(function (r) {
+            return [r.name + (r.minLevel > 1 ? " (Level " + r.minLevel + ")" : ""), fp(r.fp), r.desc];
+          }), [0])
         ]),
         K.entry("delivery", "Delivery", [
           K.subTitle("2 · Delivery"),
-          K.refTable(["Band", "FP", "Options", "Scaling", "Effect"], f.delivery.map(function (b) {
-            return [b.band, fp(b.fp), b.options.join(", "), b.scaling, b.desc];
+          f.deliveryIntro ? K.proseBlock(f.deliveryIntro) : null,
+          K.refTable(["Delivery", "Band", "Reaches", "Scaling"], f.deliveryTable.map(function (r) {
+            return [r.name, r.band + ", " + (r.fp ? "+" + r.fp : "0") + " FP", r.reaches, r.scaling];
           }), [0])
         ]),
-        K.entry("force", "Force", [
-          K.subTitle("3 · Force"),
-          K.refTable(["Force", "FP", "Effect"], f.force.map(function (o) { return [o.name, fp(o.fp), o.desc]; }), [0])
-        ]),
         K.entry("duration", "Duration", [
-          K.subTitle("4 · Duration"),
-          K.refTable(["Duration", "Effect"], f.duration.map(function (d) { return [d.name, d.desc]; }), [0])
+          K.subTitle("3 · Duration"),
+          f.durationIntro ? K.proseBlock(f.durationIntro) : null,
+          K.refTable(["Duration", "FP", "Lasts", "Upkeep"], f.durationTable.map(function (r) { return [r.name, String(r.fp), r.lasts, r.upkeep]; }), [0])
         ]),
-        // printed under Duration in the Handbook (PHB:6372); a named block so it is an anchor of its own
-        f.damageAndEffect ? K.ruleBlock("Damage and an Effect Together", f.damageAndEffect) : null,
-        // the Worked Example printed right after it (PHB:6372)
+        K.entry("other-costs", "Other Costs", [
+          K.subTitle("Other Costs"),
+          K.refTable(["Other Cost", "FP", "Notes"], f.otherCostsTable.map(function (r) { return [r.name, String(r.fp), r.notes]; }), [0])
+        ]),
         f.workedExample ? K.ruleBlock("Worked Example", f.workedExample) : null,
+        lastLine("directed") ? K.ruleBlock("Imbue", lastLine("directed").replace(/^Imbue: /, "")) : null,
+        lastLine("focused") ? K.ruleBlock("Sigil", lastLine("focused").replace(/^Sigil: /, "")) : null,
         f.precisionShaping ? K.ruleBlock("Precision Shaping", f.precisionShaping.desc, "+" + f.precisionShaping.fp + " FP") : null,
-        f.layeredForce ? K.ruleBlock("Layered Force", f.layeredForce, "LEVEL 5") : null,
+        f.scalingNote ? K.ruleBlock("Scaling", f.scalingNote) : null,
+        f.zonesRule ? K.ruleBlock("Zones", f.zonesRule) : null,
         K.seeAlso("Each Resonance's Empowered Effects:", [["fl-resonances", "Resonances"]]),
-        K.seeAlso("Holding an effect past this turn:", [["fl-sustain", "Sustained Effects"]])
+        K.seeAlso("Holding an effect past this turn:", [["fl-sustain", "Sustained Effects"]]),
+        K.seeAlso("A second Resonance in one Invocation:", [["fl-advanced/layered-force", "Layered Force"]])
       ];
     } },
 
@@ -110,8 +122,10 @@ window.EN = window.EN || {};
     { id: "fl-sustain", title: "Sustained Effects", tag: "UPKEEP · CAPACITY · COMPATIBILITY", order: 40, when: has("sustainCompat"), build: function (ctx, K) {
       var f = F(), sus = byKey(f.duration, "sustain"), fd = f.focusDisruption;
       return [
-        sus ? K.ruleBlock("Sustain", sus.desc, "1 FP / TURN") : null,
+        sus ? K.ruleBlock("Sustain", sus.desc, "+1 FP / MINUTE") : null,
         f.sustainCapacity ? K.ruleBlock("Sustain Capacity", f.sustainCapacity, null, { conditions: true }) : null,
+        f.shakingItOff ? K.ruleBlock("Shaking It Off", f.shakingItOff, null, { conditions: true }) : null,
+        f.conditionDuration ? K.ruleBlock("Condition Durations", f.conditionDuration, null, { conditions: true }) : null,
         fd ? K.ruleBlock("Focus Disruption", fd.text, fd.save) : null,
         K.entry("sustain-compatibility", "Sustain Compatibility", [
           K.subTitle("Sustain Compatibility"),
@@ -186,7 +200,7 @@ window.EN = window.EN || {};
        of Alignment. Two groups the Shaper unlocks, a group heading over each pair, and one entry
        per technique ("fl-advanced/flow-linking"). The Shaper's Resonance Synthesis and Master
        Forging features name them, and those names link here through the terms below. */
-    { id: "fl-advanced", title: "Advanced Techniques", tag: "RESONANCE SYNTHESIS · MASTER FORGING", order: 85, when: has("advancedTechniques"), build: function (ctx, K) {
+    { id: "fl-advanced", title: "Advanced Techniques", tag: "RESONANCE SYNTHESIS · LAYERED FORCE · MASTER FORGING", order: 85, when: has("advancedTechniques"), build: function (ctx, K) {
       var out = [];
       F().advancedTechniques.forEach(function (g) {
         out.push(K.subTitle(g.levelLabel + ": " + g.name));
@@ -208,7 +222,9 @@ window.EN = window.EN || {};
     "Order of Shaping": "fl-shaping",
     "Free-Shaping": "fl-shaping",
     "Precision Shaping": "fl-shaping/precision-shaping",
-    "Layered Force": "fl-shaping/layered-force",
+    "Layered Force": "fl-advanced/layered-force",
+    "Empowered Pair": "fl-shaping/intent-and-force",
+    "Intent and Force": "fl-shaping/intent-and-force",
     "Flow Attribute Check": "fl-core/flow-attribute-check",
     "Sustain Compatibility": "fl-sustain/sustain-compatibility",
     "Focus Disruption": "fl-sustain/focus-disruption",

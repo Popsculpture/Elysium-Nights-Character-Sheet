@@ -156,7 +156,7 @@ EN.store = (function () {
       // Flow: current FP (null = full), Strain stage (0-5), strainPoints (Overdraw
       // accumulator, 3 = +1 stage), the one sustained effect, Breakflow state, and
       // saved Resonant Patterns (formulations recomputed from live Caliber/Flow Mod).
-      flow: { current: null, strain: 0, strainPoints: 0, sustained: null, breakflow: false, patterns: [] },
+      flow: { current: null, strain: 0, strainPoints: 0, sustained: null, sustained2: null, breakflow: false, patterns: [] },
       resonances: [],                          // Shaper: known Base Resonance keys (3 at L1, +1 at L3, +1 at L5)
       resilience: { spent: 0 },                // Resilience Dice spent (max = level)
       featureUses: {},                         // {featureName: {n: spent, r: recharge}} for limited-use features

@@ -125,7 +125,7 @@ EN.talents = [
     name: "Combat Splicer",
     category: "Tactics & Hybrid Fighting",
     requirements: "The ability to use Quick Hacks, Ciphers, or Flow Invocations.",
-    text: "***Prerequisite:** The ability to use Quick Hacks, Ciphers, or Flow Invocations.* You've learned to run code and shape the Flow with a gun going off next to your ear. You gain the following benefits:\n• When you take damage while holding active Links or sustaining a Flow effect, you make the save to keep them with Edge.\n• Weapons or a physical shield in one or both hands never stop you from making the physical inputs for Quick Hacks or Invocations.\n• If an Enemy moves in a way that provokes your Opportunity Attack, you can use that Impulse Action for a Quick Hack or an Invocation aimed at it instead of a melee attack. It must be one that normally costs 1 Action and targets only that Enemy.\n\n**Upgrade (Level 6+):** You no longer need to maintain Focus or Sustain to keep your Links and Flow effects active when you take damage of 20 or less. Damage of 21+ still requires the relevant Saving Throw, with Edge."
+    text: "***Prerequisite:** The ability to use Quick Hacks, Ciphers, or Flow Invocations.* You've learned to run code and shape the Flow with a gun going off next to your ear. You gain the following benefits:\n• When you take damage while holding active Links or sustaining a Flow effect, you make the save to keep them with Edge.\n• Weapons or a physical shield in one or both hands never stop you from making the physical inputs for Quick Hacks or Invocations.\n• If an Enemy moves in a way that provokes your Opportunity Attack, you can use that Impulse Action for a Quick Hack or an Invocation aimed at it instead of a melee attack. It must be one that normally costs 1 Action and targets only that Enemy.\n\n**Upgrade (Level 6+):** You no longer need to maintain Focus or Sustain to keep your Links and Flow effects active when you take damage of 20 or less (for a Focus Check, when your biggest hit was 20 or less). Damage of 21+ still requires the relevant Saving Throw, with Edge."
   },
   {
     key: "cross-discipline-tactic",
@@ -139,7 +139,7 @@ EN.talents = [
     name: "Glitch Breaker",
     category: "Tactics & Hybrid Fighting",
     requirements: "",
-    text: "Hackers and Shapers need a second of quiet. You make sure they don't get it. You gain the following benefits:\n• Any Target in your melee reach that runs a Quick Hack, a Cipher Attack, or a Flow Invocation invites a melee weapon attack from you, made with your Impulse Action.\n• Damage you deal to a Target that's holding Focus on a Link or Sustaining a Flow effect gives it Snag on the Focus Check to keep that connection.\n• Your Saving Throws have Edge against any Invocation or Quick Hack from an Enemy inside your melee reach.\n\n**Upgrade (Level 6+):** When you successfully interrupt a Target's Quick Hack, Cipher, or Invocation through any means (failed Focus Check, damage causing a sustain failure, etc.), the Target can't use that specific ability again until the end of their next turn."
+    text: "Hackers and Shapers need a second of quiet. You make sure they don't get it. You gain the following benefits:\n• Any Target in your melee reach that runs a Quick Hack, a Cipher Attack, or a Flow Invocation invites a melee weapon attack from you, made with your Impulse Action.\n• Damage you deal to a Target that's holding Links or sustaining a Flow effect gives it Snag on the save to keep them.\n• Your Saving Throws have Edge against any Invocation or Quick Hack from an Enemy inside your melee reach.\n\n**Upgrade (Level 6+):** When you successfully interrupt a Target's Quick Hack, Cipher, or Invocation through any means (a failed Focus Check or Stability Check, etc.), the Target can't use that specific ability again until the end of their next turn."
   },
   {
     key: "lockdown-specialist",
@@ -160,7 +160,7 @@ EN.talents = [
     name: "Signal Sniper",
     category: "Tactics & Hybrid Fighting",
     requirements: "The ability to use Quick Hacks, Ciphers, or Flow Invocations.",
-    text: "You push signal and resonance farther than the spec sheet says they go. You gain the following benefits:\n• Your Quick Hacks, Cipher Attacks, and Flow Attacks that call for an attack roll work at double their effective range.\n• Half Cover and Three-Quarter Cover add nothing to a Target's Defense against your ranged tech and Flow attacks.\n• Add one Quick Hack of your choice to what you know, or one Base Resonance at a 0 FP Intent.\n\n**Upgrade (Level 6+):** Once per Short Rest, you can use a Quick Hack, Cipher, or Invocation as if you were within line of sight of a Target you have personally seen within the past hour, regardless of intervening obstacles, walls, or distance (up to 1 mile)."
+    text: "You push signal and resonance farther than the spec sheet says they go. You gain the following benefits:\n• Your Quick Hacks, Cipher Attacks, and Flow Attacks that call for an attack roll work at double their effective range.\n• Half Cover and Three-Quarter Cover add nothing to a Target's Defense against your ranged tech and Flow attacks.\n• Add one Quick Hack of your choice to what you know, or one Base Resonance at its 0 FP rows (Damage and Base Effect).\n\n**Upgrade (Level 6+):** Once per Short Rest, you can use a Quick Hack, Cipher, or Invocation as if you were within line of sight of a Target you have personally seen within the past hour, regardless of intervening obstacles, walls, or distance (up to 1 mile)."
   },
   {
     key: "tactical-operative",
@@ -248,7 +248,7 @@ EN.talents = [
     name: "Resonance Dabbler",
     category: "The Flow & Resonance",
     requirements: "",
-    text: "Something you touched, a Mystech relic or a room thick with old resonance, touched you back. You gain the following benefits:\n• Increase your Tech, Mystique, or Presence score by 1, to a maximum of 20.\n• You learn one Base Resonance (0 FP Intent) and one Empowered Effect (1 FP Force) from the Shaper class, or two basic Quick Hacks.\n• Once per Long Rest, you can activate the Empowered Effect without spending Flow Points or generating Strain. These checks use the Attribute this Talent raised.\n\n**Upgrade (Level 6+):** You learn one additional Empowered Effect (1 FP), and the free use feature now refreshes on a Short Rest."
+    text: "Something you touched, a Mystech relic or a room thick with old resonance, touched you back. You gain the following benefits:\n• Increase your Tech, Mystique, or Presence score by 1, to a maximum of 20.\n• You learn one Base Resonance (its 0 FP rows: Damage and Base Effect) and one Empowered Effect (1 FP) from the Shaper class, or two basic Quick Hacks.\n• Once per Long Rest, you can activate the Empowered Effect without spending Flow Points or generating Strain. These checks use the Attribute this Talent raised.\n\n**Upgrade (Level 6+):** You learn one additional Empowered Effect (1 FP), and the free use feature now refreshes on a Short Rest."
   },
   {
     key: "resonance-optimizer",

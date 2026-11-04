@@ -1725,7 +1725,7 @@ EN.combatView = (function () {
     "Burning": function (e) { e.notes.push("Burning: 1d6 Fire at start of turn; Body Save DC 10 at end of turn to extinguish"); },
     "Charmed": function (e) { e.notes.push("Charmed: cannot harm the charmer; they gain Edge on social checks vs you"); },
     "Confused": function (e) { e.notes.push("Confused: roll 1d8 on the Confusion Table at the start of your turn"); },
-    "Critical Condition": function (e) { e.snagChk.BOD = e.snagChk.AGI = true; e.snagSave.BOD = e.snagSave.AGI = true; e.notes.push("Critical Condition: Focus Checks to stay conscious on Wound damage / strenuous actions / end of turn"); },
+    "Critical Condition": function (e) { e.snagChk.BOD = e.snagChk.AGI = true; e.snagSave.BOD = e.snagSave.AGI = true; e.notes.push("Critical Condition: Body Saves to stay conscious on Wound damage / strenuous actions / end of turn"); },
     "Critical Wound": function (e) { e.notes.push("Critical Wound: permanent penalties by body part (see entry) until replaced"); },
     "Cursed": function (e) { e.notes.push("Cursed: GM-defined affliction (see Curse Effects table)"); },
     /* The four sensory conditions added 2026-08-24. Only the halves the accumulator can
@@ -1747,7 +1747,7 @@ EN.combatView = (function () {
     // No save. It ends when its cause ends, which is why it is harsher than the Critical Wound
     // Table's Vocal Cords result (that gives Snag on verbal Invocations; this forbids them).
     "Silenced": function (e) {
-      e.notes.push("Silenced: you cannot speak, shout or be heard, cannot use abilities a Target must hear, cannot run a Cipher listing Voice among its Components, and cannot use Flow Invocations that require verbalization. Ends with its cause or on leaving the area; no save");
+      e.notes.push("Silenced: you cannot speak, shout or be heard, cannot use abilities a Target must hear, cannot run a Cipher listing Voice among its Components, and cannot shape Invocations. Ends with its cause or on leaving the area; no save");
     },
     // 1d6 Vitality at the start of your turn, unpreventable. There is no per-turn damage channel
     // on the accumulator, so this is reported rather than applied, the same way Burning is.

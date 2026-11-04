@@ -22,7 +22,8 @@ EN.flowView = (function () {
   // transient builder formulation (not persisted until Saved as a Pattern)
   var _form = { name: null, resonance: "kinetic", intent: "damage", deliveryBand: "directed",
                 deliveryOption: "Remote", force: "base", duration: "instant", precision: false,
-                extraTargets: 0, extraSpaces: 0, empoweredEffect: null, baseEffect: null, unwilling: true };
+                extraTargets: 0, extraSpaces: 0, empoweredEffect: null, baseEffect: null, unwilling: true, layer: null };
+  var _fieldShare = 5;          // FP a Sustained Field reserves (a shared Field splits the 5)
   var _open = {};              // collapse state for folds (Premade Templates)
   var _od = 1;                 // overdraw amount input
   /* Immersive Flow tab: opt-in cosmetic layer (see theme.css ".flowtab.immersive").
@@ -95,7 +96,7 @@ EN.flowView = (function () {
     var stage = fl.strain || 0;
     while (fl.strainPoints >= 3 && stage < 5) { stage++; fl.strainPoints -= 3; }
     fl.strain = Math.min(5, stage);
-    if (fl.strain >= 5) { fl.breakflow = true; fl.sustained = null; }
+    if (fl.strain >= 5) { fl.breakflow = true; fl.sustained = null; fl.sustained2 = null; fl.fieldReserve = 0; }
   }
 
   // A Unique Resonance is never picked: it is granted by the subclass that owns
@@ -145,8 +146,27 @@ EN.flowView = (function () {
     if (_form.force !== "empowered" && hasEffect && baseOpts.length) {
       if (!baseOpts.some(function (e) { return e.name === _form.baseEffect; })) _form.baseEffect = baseOpts[0].name;
     } else { _form.baseEffect = null; }
+    // Layered Force (Level 5): a second Resonance in one Invocation. Same intent as the primary; its own Base or Empowered row.
+    if (_form.layer) {
+      var Ly = _form.layer, LR = F.resonanceByKey[Ly.resonance];
+      if (!d.flow.layeredForce || !LR || known.indexOf(Ly.resonance) === -1) { _form.layer = null; }
+      else {
+        if (Ly.force !== "empowered") Ly.force = "base";
+        if (Ly.force === "empowered" && hasEffect) {
+          var lnames = (LR.empowered || []).map(function (e) { return e.name; });
+          var lopen = (LR.empowered || []).filter(function (e) { return !(e.unlock && e.unlock > (d.level || 1)); }).map(function (e) { return e.name; });
+          if (lnames.indexOf(Ly.empoweredEffect) === -1) Ly.empoweredEffect = lopen[0] || lnames[0] || null;
+        } else { Ly.empoweredEffect = null; }
+        var lbase = LR.baseOptions || [];
+        if (Ly.force !== "empowered" && hasEffect && lbase.length) {
+          if (!lbase.some(function (e) { return e.name === Ly.baseEffect; })) Ly.baseEffect = lbase[0].name;
+        } else { Ly.baseEffect = null; }
+      }
+    }
     return R;
   }
+  function costRow(key) { return EN.flow.costRows.filter(function (r) { return r.key === key; })[0] || null; }
+  function costRowFor(intent, force) { return EN.flow.costRows.filter(function (r) { return r.intent === intent && r.force === (force === "empowered" ? "empowered" : "base"); })[0] || null; }
 
   /* ====================== RESERVOIR · STRAIN · BREAKFLOW ================== */
   function reservoirPanel(ch, d) {
@@ -223,6 +243,7 @@ EN.flowView = (function () {
     ]));
 
     kids.push(ritualRecoveryRow(ch, d, cur, stage));
+    if (f.masterForging) kids.push(fieldRow(ch, d, cur));
 
     // Breakflow banner + restoration
     if (f.inBreakflow || stage >= 5) {
@@ -242,6 +263,31 @@ EN.flowView = (function () {
     }
     var rp = EN.ui.panel("Reservoir", "DC " + f.dc + " · " + f.attributeName.toUpperCase(), kids, withCorners(headChip("fl-core", "Core Concepts & Formulas")));
     rp.classList.add("res-panel"); return rp;
+  }
+
+  /* Sustained Fields (Master Forging, Level 7): while one stands it reserves FP of your maximum
+     (5, or a share of it for a Field several Shapers hold). ANCHOR spends the FP and reserves them;
+     a FAILED anchoring spends the 5 FP and reserves nothing; END gives back the maximum, not the
+     points. Stored as ch.flow.fieldReserve; engine.derive subtracts it from the maximum. */
+  function fieldRow(ch, d, cur) {
+    var reserve = d.flow.fieldReserve | 0, share = Math.max(1, Math.min(5, _fieldShare));
+    var label = el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: VIO } }, [EN.ui.ruleLink("fl-advanced/sustained-fields", "SUSTAINED FIELD")]);
+    var kids = [label];
+    if (reserve) {
+      kids.push(el("span.mono", { dataset: { fieldReserve: String(reserve) }, style: { fontSize: "11px", color: "var(--warn)" }, text: "Field: −" + reserve + " max FP" }));
+      kids.push(el("button.btn.sm", { dataset: { fieldEnd: "1" }, title: "End the Field: restores your maximum, not the points", style: { color: "var(--text3)" },
+        onclick: function () { fset(function (fl) { fl.fieldReserve = 0; }); toast("Field ended · maximum restored"); } }, "END"));
+    } else {
+      kids.push(el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Share:" }));
+      kids.push(stepper(function () { _fieldShare = Math.max(1, share - 1); EN.app.render(); }, function () { _fieldShare = Math.min(5, share + 1); EN.app.render(); }, share <= 1, share >= 5));
+      kids.push(el("span.mono", { style: { fontSize: "12px", color: "var(--text2)" }, text: share + " FP" }));
+      kids.push(el("button.btn.sm", { dataset: { fieldAnchor: "1" }, disabled: cur < share, title: cur < share ? "You need the FP on hand; Overdraw can't pay for it" : "Anchor the Field: spend " + share + " FP and lower your maximum by " + share,
+        style: cur >= share ? { color: FP, borderColor: VIO } : null,
+        onclick: function () { fset(function (fl) { var have = (fl.current != null) ? eng.clamp(fl.current, 0, d.flow.max) : d.flow.max; fl.fieldReserve = share; fl.current = Math.max(0, have - share); }); toast("Field anchored · maximum −" + share + " FP"); } }, "ANCHOR"));
+      kids.push(el("button.btn.sm", { dataset: { fieldFailed: "1" }, disabled: cur < 5, title: "A failed anchoring spends the 5 FP, anchors nothing, and applies 1 Stage of Strain",
+        onclick: function () { fset(function (fl, c) { var have = (fl.current != null) ? eng.clamp(fl.current, 0, d.flow.max) : d.flow.max; fl.current = Math.max(0, have - 5); eng.setStrainStage(c, Math.min(5, (fl.strain | 0) + 1)); }); toast("Anchoring failed · −5 FP · +1 Strain Stage"); } }, "FAILED (spend 5)"));
+    }
+    return el("div.row.wrap", { dataset: { field: "1" }, style: { gap: "6px", alignItems: "center", marginTop: "8px", padding: "6px 10px", border: "1px solid var(--border2)", borderRadius: "4px" } }, kids);
   }
 
   /* Ritual Recovery (The Ritual of Alignment): roll the Flow Dice Pool at the table, then log the
@@ -269,7 +315,7 @@ EN.flowView = (function () {
             now = Math.max(0, Math.min(5, was + fx.strain));
             fl.strain = now;
             if (now < was) fl.strainPoints = 0;
-            if (now >= 5) { fl.breakflow = true; fl.sustained = null; }
+            if (now >= 5) { fl.breakflow = true; fl.sustained = null; fl.sustained2 = null; fl.fieldReserve = 0; }
             if (gained) { var have = (fl.current != null) ? eng.clamp(fl.current, 0, f.max) : f.max; fl.current = Math.min(f.max, have + gained); }
           });
           toast("Ritual Recovery, " + o.result + ": Strain Stage " + now + (gained ? " · +" + gained + " FP" : "") + ".");
@@ -281,32 +327,37 @@ EN.flowView = (function () {
 
   /* ============================ SUSTAIN TRACKER ========================== */
   function sustainPanel(ch, d) {
-    var s = ch.flow && ch.flow.sustained, cur = curFP(ch, d), kids = [];
-    if (s) {
-      kids.push(el("div.row.between.wrap", { style: { alignItems: "baseline" } }, [
+    var cur = curFP(ch, d), kids = [];
+    var keys = d.flow.sustainSlots >= 2 ? ["sustained", "sustained2"] : ["sustained"];
+    var heldKeys = keys.filter(function (k) { return !!(ch.flow && ch.flow[k]); });
+    heldKeys.forEach(function (k) {
+      var s = ch.flow[k];
+      kids.push(el("div.row.between.wrap", { dataset: { sustainSlot: k }, style: { alignItems: "baseline", marginTop: k === keys[0] ? "0" : "10px" } }, [
         el("div", null, [
           el("span", { style: { fontWeight: 600, fontSize: "14px", color: VIO }, text: s.effect || s.name }),
           s.resonance ? el("span.chip", { style: { marginLeft: "6px", fontSize: "9px", color: VIO, borderColor: VIO }, text: s.resonance }) : null
         ]),
-        el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "1 FP / turn" })
+        el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "1 FP / minute" })
       ]));
       kids.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "8px" } }, [
-        el("button.btn.sm", { disabled: cur <= 0, title: cur <= 0 ? "No FP; sustaining at 0 FP is an Overdraw" : "Spend 1 FP upkeep at the start of your turn",
+        el("button.btn.sm", { disabled: cur <= 0, title: cur <= 0 ? "No FP; sustaining at 0 FP is an Overdraw" : "Pay 1 FP for another minute",
           style: cur > 0 ? { color: FP, borderColor: VIO } : null,
           onclick: function () { fset(function (fl) { fl.current = Math.max(0, cur - 1); }); toast("Sustain upkeep · −1 FP"); } }, "UPKEEP −1 FP"),
-        el("button.btn.sm", { title: "End the sustained effect", style: { color: "var(--text3)" }, onclick: function () { fset(function (fl) { fl.sustained = null; }); toast("Sustained effect ended"); } }, "END")
+        el("button.btn.sm", { title: "End the sustained effect", style: { color: "var(--text3)" }, onclick: function () { fset(function (fl) { fl[k] = null; }); toast("Sustained effect ended"); } }, "END")
       ]));
+    });
+    if (heldKeys.length) {
       // the capacity rule is EN.flow's (it used to be typed here), so the Codex reads the same words
       var cap = EN.flow.sustainCapacity;
-      if (cap) kids.push(ruleNote("Capacity: " + cap.charAt(0).toLowerCase() + cap.slice(1), null, { conditions: true }));
+      if (cap) kids.push(ruleNote("Capacity: " + cap.charAt(0).toLowerCase() + cap.slice(1) + (keys.length > 1 ? " Layered Force gives you two slots." : ""), null, { conditions: true }));
       // Stability Factor: taking damage while sustaining threatens the effect.
       var fdz = (EN.flow && EN.flow.focusDisruption) || null;
-      if (fdz) kids.push(ruleNote("Focus Disruption: take damage while sustaining and you must succeed on a " + fdz.save + ". " + fdz.dcNote + " " + fdz.failure, "var(--warn)"));
+      if (fdz) kids.push(ruleNote("Focus Disruption: " + fdz.checkPoint + " " + fdz.dcNote + " " + fdz.failure, "var(--warn)"));
     } else {
-      kids.push(noteP("No sustained effect. Build a Sustain Invocation and Channel it to anchor one here. Only one runs at a time."));
+      kids.push(noteP("No sustained effect. Build a Sustain Invocation and Channel it to hold one here."));
     }
-    var sp = EN.ui.panel("Sustain", "MAINTENANCE · CAPACITY", kids, withCorners(headChip("fl-sustain", "Sustained Effects")));
-    sp.classList.add("sustain-panel"); if (s) sp.classList.add("occupied"); return sp;
+    var sp = EN.ui.panel("Sustain", "UPKEEP · CAPACITY", kids, withCorners(headChip("fl-sustain", "Sustained Effects")));
+    sp.classList.add("sustain-panel"); if (heldKeys.length) sp.classList.add("occupied"); return sp;
   }
 
   /* ========================= FREE-SHAPING BUILDER ======================== */
@@ -327,10 +378,13 @@ EN.flowView = (function () {
       }), function (k) { return _form.resonance === k; }, function (k) { setForm({ resonance: k }); })]));
     rows.push(noteP(R.focus + " · " + R.damage + (R.resolution === "save" ? " · resolves with a Flow Save DC" : " · Flow Attack vs Defense") + ". " + (R.base || ""), "var(--text2)"));
 
-    // Intent
-    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("INTENT", "fl-shaping/intent"),
-      seg(F.intent.map(function (i) { return { key: i.key, label: i.name + (i.fp ? " (+" + i.fp + ")" : ""), title: i.desc }; }),
-        function (k) { return _form.intent === k; }, function (k) { setForm({ intent: k }); })]));
+    // Intent and Force: one step, six printed rows (each sets the engine's intent + force pair)
+    rows.push(el("div.row.wrap", { dataset: { flowRows: "1" }, style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("INTENT AND FORCE", "fl-shaping/intent-and-force"),
+      seg(F.costRows.map(function (r) {
+        var locked = !!(r.minLevel > (d.level || 1) || (r.minLevel >= 5 && !d.flow.layeredForce));
+        return { key: r.key, label: r.name + (r.fp ? " (+" + r.fp + ")" : ""), disabled: locked, title: locked ? "Level " + r.minLevel + " (Layered Force)" : r.desc };
+      }), function (k) { var r = costRow(k); return !!r && _form.intent === r.intent && _form.force === r.force; },
+      function (k) { var r = costRow(k); setForm({ intent: r.intent, force: r.force }); })]));
 
     // Delivery band + option
     rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("DELIVERY", "fl-shaping/delivery"),
@@ -356,10 +410,6 @@ EN.flowView = (function () {
     }
     rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, scaleRow));
 
-    // Force
-    rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("FORCE", "fl-shaping/force"),
-      seg(F.force.map(function (fo) { return { key: fo.key, label: fo.name + (fo.fp ? " (+" + fo.fp + ")" : ""), title: fo.desc }; }),
-        function (k) { return _form.force === k; }, function (k) { setForm({ force: k }); })]));
     // Base effect picker (when Base Force carries an effect): the Resonance's own base options
     if (_form.force !== "empowered" && inv.hasEffect && (R.baseOptions || []).length) {
       rows.push(el("div.row.wrap", { dataset: { flowEffect: "base" }, style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel("EFFECT", "fl-resonances/" + slug(R.name)),
@@ -379,6 +429,32 @@ EN.flowView = (function () {
         }), function (k) { return _form.empoweredEffect === k; }, function (k) { setForm({ empoweredEffect: k }); })]));
     }
 
+    // Layered Force (Level 5): layer a second Resonance onto the primary
+    if (d.flow.layeredForce) {
+      var Ly = _form.layer;
+      rows.push(el("div.row.wrap", { dataset: { flowLayer: "1" }, style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("LAYER", "fl-advanced/layered-force"),
+        seg([{ key: "", label: "None" }].concat(ownResonances(ch).filter(function (r) { return known.indexOf(r.key) !== -1; }).map(function (r) { return { key: r.key, label: r.name, title: r.focus + " · " + r.damage }; })),
+          function (k) { return (Ly ? Ly.resonance : "") === k; },
+          function (k) { setForm({ layer: k ? { resonance: k, force: "base", empoweredEffect: null, baseEffect: null } : null }); })]));
+      if (Ly) {
+        var LRz = F.resonanceByKey[Ly.resonance];
+        var lrows = ["base", "empowered"].map(function (fo) { var r = costRowFor(_form.intent, fo); return { key: fo, label: r.name + (r.fp ? " (+" + r.fp + ")" : ""), title: r.desc }; });
+        rows.push(el("div.row.wrap", { dataset: { flowLayerRow: "1" }, style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel(""),
+          seg(lrows, function (k) { return Ly.force === k; }, function (k) { Ly.force = k; setForm({ layer: Ly }); })]));
+        if (inv.hasEffect && Ly.force !== "empowered" && (LRz.baseOptions || []).length) {
+          rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel(""),
+            seg(LRz.baseOptions.map(function (e) { return { key: e.name, label: e.name, title: e.text }; }), function (k) { return Ly.baseEffect === k; }, function (k) { Ly.baseEffect = k; setForm({ layer: Ly }); })]));
+        }
+        if (inv.hasEffect && Ly.force === "empowered" && (LRz.empowered || []).length) {
+          rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "4px" } }, [fieldLabel(""),
+            seg(LRz.empowered.map(function (e) {
+              var locked = !!(e.unlock && e.unlock > (d.level || 1));
+              return { key: e.name, label: effectLabel(e), disabled: locked, title: locked ? "Eligible at Level " + e.unlock + " (Hardware Harmonization)" : e.text };
+            }), function (k) { return Ly.empoweredEffect === k; }, function (k) { Ly.empoweredEffect = k; setForm({ layer: Ly }); })]));
+        }
+      }
+    }
+
     // Duration + target willingness
     rows.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [fieldLabel("DURATION", "fl-shaping/duration"),
       seg(F.duration.map(function (du) { return { key: du.key, label: du.name, title: du.desc }; }), function (k) { return _form.duration === k; }, function (k) { setForm({ duration: k }); }),
@@ -389,31 +465,27 @@ EN.flowView = (function () {
     var cost = inv.fp, cur = curFP(ch, d), over = Math.max(0, cost - cur);
     var summary = [];
     summary.push(el("div.row.between.wrap", { style: { alignItems: "baseline" } }, [
-      el("div.mono.flow-fp", { style: { fontSize: "30px", color: over > 0 ? "var(--danger)" : FP }, html: cost + " <span style='font-size:13px;color:var(--text3)'>FP" + (inv.baseFp !== cost ? " · base " + inv.baseFp : "") + "</span>" }),
+      el("div.mono.flow-fp", { style: { fontSize: "30px", color: (over > 0 || inv.overCap) ? "var(--danger)" : FP }, html: cost + " <span style='font-size:13px;color:var(--text3)'>FP" + (inv.baseFp !== cost ? " · base " + inv.baseFp : "") + " · cap " + inv.cap + "</span>" }),
       inv.damageText ? el("div", { style: { textAlign: "right" } }, [
         el("div", { style: { fontFamily: "var(--disp)", fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "DAMAGE" }),
         EN.ui.damageText(el("span.mono.dmg-readout", { style: { fontSize: "18px", color: "var(--accent)" } }), inv.damageText)   // the Resonance's types as icons
       ]) : null
     ]));
     summary.push(noteP(_form.unwilling ? inv.resolutionText : "Automatic (willing target or object); no roll.", _form.unwilling ? "var(--text2)" : "var(--success)"));
-    /* Damage and an effect on one Invocation: the Flow Attack decides the hit (PHB, under Duration). Only an
-       attack-resolved Resonance; the save-resolved ones (Spatial, Cognitive, Synthetica) follow their own text,
-       and a willing target takes no Flow Attack at all. */
-    if (_form.unwilling && inv.hasDamage && inv.hasEffect && inv.resolution === "attack") {
-      summary.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center" } }, [
-        noteP("On a miss, nothing happens. On a hit, the damage lands, then the target makes the effect's save, and a success avoids only the effect.", "var(--text2)"),
-        EN.ui.ruleChip("fl-shaping/damage-and-an-effect-together", { title: "Damage and an Effect Together" })
-      ]));
-    }
     if (inv.baseEffect) summary.push(el("p.help", { dataset: { flowEffectLine: "base" }, style: { margin: "2px 0 6px", color: VIO, fontSize: "11.5px" }, text: "Effect: " + inv.baseEffect.name + " · " + inv.baseEffect.text }));
     if (inv.empoweredEffect) summary.push(noteP("Empowered: " + inv.empoweredEffect.name + " · " + inv.empoweredEffect.text, VIO));
+    if (inv.layer) {
+      var lyEff = inv.layer.empoweredEffect || inv.layer.baseEffect;
+      summary.push(noteP("Layer: " + inv.layer.resonance.name + " · " + inv.layer.row.name + (lyEff ? " · " + lyEff.name + ": " + lyEff.text : "") + " (+" + inv.layer.fp + " FP with layering)", VIO));
+      summary.push(noteP(inv.action + ". Layered Force.", "var(--text2)"));
+    }
     if (_form.duration === "sustain") summary.push(inv.sustainable
-      ? noteP("Sustain: 1 FP at the start of each turn; replaces any current sustain.", "var(--text2)")
+      ? noteP("Sustain: +1 FP, holds it 1 minute (10 rounds); each extra minute costs 1 FP.", "var(--text2)")
       : ruleNote("This effect cannot be Sustained (see Sustain Compatibility).", "var(--warn)"));
-    if (d.flow.snagInvoke) summary.push(noteP("Strain (Ripple+): roll this Invocation with Snag.", "var(--warn)"));
+    if (d.flow.snagInvoke && _form.unwilling && inv.resolution !== "none") summary.push(noteP(inv.resolution === "save" ? "Strain (Ripple+): targets roll their saves with Edge." : "Strain (Ripple+): roll this Invocation with Snag.", "var(--warn)"));
     (inv.warnings || []).forEach(function (w) { summary.push(ruleNote("⚠ " + w, "var(--warn)")); });
     summary.push(el("div.row.wrap", { style: { gap: "8px", marginTop: "8px" } }, [
-      el("button.btn.sm.primary", { title: over > 0 ? "Not enough FP; channeling will Overdraw " + over + " FP" : "Spend " + cost + " FP",
+      el("button.btn.sm.primary", { disabled: !!inv.overCap, title: inv.overCap ? "Over your cap (Caliber + Flow Modifier). Overdraw can't pay past it." : (over > 0 ? "Not enough FP; channeling will Overdraw " + over + " FP" : "Spend " + cost + " FP"),
         onclick: function () { doChannel(ch, d, inv, defaultName(R)); } }, over > 0 ? "CHANNEL · OVERDRAW " + over : "CHANNEL · " + cost + " FP"),
       el("button.btn.sm", { title: "Save this formulation as a Resonant Pattern", style: { color: VIO, borderColor: VIO }, onclick: function () { savePattern(R); } }, "✚ SAVE PATTERN")
     ]));
@@ -434,19 +506,39 @@ EN.flowView = (function () {
   function cloneForm() {
     return { name: _form.name, resonance: _form.resonance, intent: _form.intent, deliveryBand: _form.deliveryBand,
              deliveryOption: _form.deliveryOption, force: _form.force, duration: _form.duration, precision: _form.precision,
-             extraTargets: _form.extraTargets, extraSpaces: _form.extraSpaces, empoweredEffect: _form.empoweredEffect, baseEffect: _form.baseEffect, unwilling: _form.unwilling };
+             extraTargets: _form.extraTargets, extraSpaces: _form.extraSpaces, empoweredEffect: _form.empoweredEffect, baseEffect: _form.baseEffect, unwilling: _form.unwilling,
+             layer: _form.layer ? JSON.parse(JSON.stringify(_form.layer)) : null };
   }
   function loadForm(p) { loadFormSilent(p); EN.app.render(); }
+  /* Sustain slots: one effect at a time, two from Layered Force (Level 5). A Layered Invocation held with
+     Sustain fills one slot per held layer. When the slots are full, one of the Shaper's choice ends. */
+  function askEnd(a, b) {
+    try { return window.confirm("Both sustain slots are full. End " + (a && a.name) + " to hold the new effect? Cancel ends " + (b && b.name) + " instead.") ? "sustained" : "sustained2"; }
+    catch (e) { return "sustained"; }
+  }
   function doChannel(ch, d, inv, fallbackName) {
     var cur = curFP(ch, d), cost = inv.fp, over = Math.max(0, cost - cur), die = d.flow.overdrawDie;
     var nm = _form.name || (inv.empoweredEffect ? inv.empoweredEffect.name : fallbackName);
+    var entries = [];
+    if (_form.duration === "sustain" && !(ch.flow && ch.flow.breakflow)) {
+      if (inv.sustainable) entries.push({ name: nm, resonance: inv.resonance ? inv.resonance.name : "", effect: inv.empoweredEffect ? inv.empoweredEffect.name : inv.baseEffect ? inv.baseEffect.name : nm });
+      if (inv.layer && inv.heldCount > (inv.sustainable ? 1 : 0)) {
+        var le = inv.layer.empoweredEffect || inv.layer.baseEffect;
+        entries.push({ name: nm + " (layer)", resonance: inv.layer.resonance.name, effect: le ? le.name : nm });
+      }
+    }
+    var keys = d.flow.sustainSlots >= 2 ? ["sustained", "sustained2"] : ["sustained"];
+    var held = {}; keys.forEach(function (k) { held[k] = !!(ch.flow && ch.flow[k]); });
+    var plan = entries.map(function (e) {
+      var k = keys.filter(function (x) { return !held[x]; })[0];
+      if (!k) { k = keys.length > 1 ? askEnd(ch.flow.sustained, ch.flow.sustained2) : keys[0]; }
+      held[k] = true; return k;
+    });
     fset(function (fl) {
       var have = (fl.current != null) ? eng.clamp(fl.current, 0, d.flow.max) : d.flow.max;
       fl.current = Math.max(0, have - cost);
       if (over > 0) bumpStrain(fl, over);
-      if (_form.duration === "sustain" && inv.sustainable && !fl.breakflow) {
-        fl.sustained = { name: nm, resonance: inv.resonance ? inv.resonance.name : "", effect: inv.empoweredEffect ? inv.empoweredEffect.name : inv.baseEffect ? inv.baseEffect.name : nm };
-      }
+      if (!fl.breakflow) entries.forEach(function (e, i) { fl[plan[i]] = e; });
     });
     toast(over > 0 ? nm + " · OVERDRAW " + over + " FP · lose " + over + "d" + die + " Vitality" : nm + " · −" + cost + " FP");
   }
@@ -460,8 +552,8 @@ EN.flowView = (function () {
   function patternRow(ch, d, p, idx, premade) {
     var inv = eng.flowInvocation(p, d), cur = curFP(ch, d), over = Math.max(0, inv.fp - cur);
     var R = EN.flow.resonanceByKey[p.resonance];
-    var sub = (R ? R.name : p.resonance) + " · " + p.deliveryOption + " · " + (p.force === "empowered" ? "Empowered" : "Base") +
-      (inv.baseEffect ? " · " + inv.baseEffect.name : "") + (p.duration === "sustain" ? " · Sustain" : "");
+    var sub = (R ? R.name : p.resonance) + " · " + p.deliveryOption + " · " + ((costRowFor(p.intent, p.force) || {}).name || (p.force === "empowered" ? "Empowered" : "Base")) +
+      (inv.baseEffect ? " · " + inv.baseEffect.name : "") + (inv.layer ? " · Layered" : "") + (p.duration === "sustain" ? " · Sustain" : "");
     var nameEl = premade
       ? el("span", { style: { fontWeight: 600, fontSize: "13px" }, text: p.name })
       : el("input", { type: "text", value: p.name || "", placeholder: "pattern name…", style: { fontWeight: 600, fontSize: "13px", flex: "1 1 140px", minWidth: "120px" },
@@ -479,7 +571,7 @@ EN.flowView = (function () {
       premade
         ? el("button.btn.sm", { title: "Copy to your saved patterns", style: { color: VIO, borderColor: VIO }, onclick: function () { var e = {}; Object.keys(p).forEach(function (k) { e[k] = p[k]; }); fset(function (fl) { fl.patterns = (fl.patterns || []).concat([e]); }); toast("Saved " + p.name); } }, "✚ SAVE")
         : el("button.btn.sm", { title: "Delete this pattern", style: { color: "var(--text3)" }, onclick: function () { fset(function (fl) { fl.patterns.splice(idx, 1); }); } }, "✕"),
-      el("button.btn.sm.primary", { title: over > 0 ? "Invoke · Overdraw " + over + " FP" : "Invoke · spend " + inv.fp + " FP",
+      el("button.btn.sm.primary", { disabled: !!inv.overCap, title: inv.overCap ? "Over your cap (Caliber + Flow Modifier). Overdraw can't pay past it." : (over > 0 ? "Invoke · Overdraw " + over + " FP" : "Invoke · spend " + inv.fp + " FP"),
         onclick: function () { loadFormSilent(p); doChannel(ch, d, inv, p.name); } }, over > 0 ? "OVERDRAW" : "INVOKE")
     ]);
     return el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.4)" } }, [
@@ -498,6 +590,7 @@ EN.flowView = (function () {
   function loadFormSilent(p) {
     Object.keys(_form).forEach(function (k) { if (p[k] !== undefined) _form[k] = p[k]; });
     if (p.unwilling === undefined) _form.unwilling = true;
+    _form.layer = p.layer ? JSON.parse(JSON.stringify(p.layer)) : null;   // a pattern with no layer is unlayered
     if (p.baseEffect === undefined) _form.baseEffect = null;   // a pattern saved before the picker: the builder offers the first
   }
 

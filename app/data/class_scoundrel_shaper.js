@@ -296,7 +296,7 @@ EN.classes.shaper = {
     attribute: "Mystique or Tech, set by subclass",
     maxFormula: "(Caliber x 3) + Flow Modifier",
     refresh: "You regain all spent FP at the end of a Long Rest, and an amount equal to your Flow Modifier at the end of a Short Rest. If your FP drops to 0, you may continue to shape by entering Overdraw, losing 1d4 Vitality per FP spent and risking Strain.",
-    fuels: "Spend FP to build an Invocation using your known Resonances combined with the Intent, Delivery, Force, and Duration rules. Also fuels subclass features and Advanced Techniques (Flow Linking, Resonance Amplification, Cooperative Channeling, Sustained Fields)."
+    fuels: "Spend FP to build an Invocation using your known Resonances combined with the Intent and Force, Delivery, and Duration rules. Also fuels subclass features and Advanced Techniques (Flow Linking, Resonance Amplification, Cooperative Channeling, Sustained Fields)."
   },
 
   startingProficiencies: {
@@ -316,7 +316,7 @@ EN.classes.shaper = {
       },
       {
         name: "Core Channeling",
-        text: "You do not memorize static spells. You shape the current on the fly. You begin play knowing **three Base Resonances** chosen from the standard list: *Kinetic, Thermal, Electromagnetic, Visceral, or Spatial.* When you channel the Flow, you spend FP to build an Invocation using your known Resonances combined with the Intent, Delivery, Force, and Duration rules."
+        text: "You do not memorize static spells. You shape the current on the fly. You begin play knowing **three Base Resonances** chosen from the standard list: *Kinetic, Thermal, Electromagnetic, Visceral, or Spatial.* When you channel the Flow, you spend FP to build an Invocation using your known Resonances combined with the Intent and Force, Delivery, and Duration rules."
       },
       {
         name: "Flow Subclass",
@@ -356,7 +356,7 @@ EN.classes.shaper = {
       },
       {
         name: "Layered Force",
-        text: "You may now pay both the Hybrid (1 FP) and Empowered Force (1 FP) costs on a single Invocation, dealing the Invocation's full Empowered damage and applying the Resonance's Empowered Effect."
+        text: "You gain Layered Force: the Empowered Pair, layering a second Resonance into one Invocation, and a second sustain slot. See Layered Force in The Flow."
       }
     ],
     "6": [
@@ -422,12 +422,12 @@ EN.classes.shaper = {
         {
           level: 1,
           name: "Center of Attention",
-          text: "**Flow Attribute:** Presence. This drives your Flow Attack rolls, Flow Save DCs, and your Reservoir's Flow Modifier component as normal.\n\n**The Parasocial Pact:** When calculating the size of your Reservoir, add half your Mystique Modifier (rounded up, minimum 0) to your maximum FP, on top of the standard formula.\n\n**Metaphysical Live Feed:** You gain Edge on in-combat Presence checks when dealing with crowds or fans. Once per Encounter, if you hit an enemy with a Flow Attack after taking a deliberate risk (such as moving out of Cover to expose yourself or taking a dangerous leap), you regain 1d4 FP."
+          text: "**Flow Attribute:** Presence. This drives your Flow Attack rolls, Flow Save DCs, and your Reservoir's Flow Modifier component as normal.\n\n**The Parasocial Pact:** When calculating the size of your Reservoir, add half your Mystique Modifier (rounded up, minimum 0) to your maximum FP, on top of the standard formula.\n\n**Metaphysical Live Feed:** You gain Edge on in-combat Presence checks when dealing with crowds or fans. Once per Encounter, if you land an Invocation on an enemy after taking a deliberate risk (such as moving out of Cover to expose yourself or taking a dangerous leap), you regain 1d4 FP. An Invocation lands when its Flow Attack hits or the enemy fails its save against it."
         },
         {
           level: 3,
           name: "Main Character Syndrome",
-          text: "**Hey, Look at Me!:** As a **Swift Action**, spend 1 FP to \"Call the Shot.\" Narrate how your next Action will be flashy or dramatic. If that Action requires a d20 roll (an attack or skill check), you gain Edge. On a success, the Invocation or attack deals an additional 1d6 Psychic damage. On a failure, you may make a Mystique Save (DC 12): on a success you take no Strain; on a failure you take 1 Stage of Strain."
+          text: "**Hey, Look at Me!:** As a **Swift Action**, spend 1 FP to \"Call the Shot.\" Narrate how your next Action will be flashy or dramatic. If that Action requires a d20 roll (an attack or skill check), you gain Edge. On a success, the Invocation or attack deals an additional 1d6 Psychic damage. If it's an Invocation that calls for a save instead, the targets roll that save with Snag, and each one that fails takes the extra 1d6 Psychic damage. The call fails only if every target succeeds. On a failure, you may make a Mystique Save (DC 12): on a success you take no Strain; on a failure you take 1 Stage of Strain."
         },
         {
           level: 7,
@@ -450,7 +450,7 @@ EN.classes.shaper = {
         {
           level: 1,
           name: "Earthcaller",
-          text: "**Flow Attribute:** Mystique.\n\n**Primal Resonance:** You are always considered to be holding a Ritual Implement for shaping Invocations, Ritual Recovery, and Breakflow Restoration, leaving your hands free. You gain Edge on in-combat Intimidation and Persuasion d20 checks, and you can communicate telepathically with any willing ally within 12 spaces while you are chanting, whispering, or breathing rhythmically."
+          text: "**Flow Attribute:** Mystique.\n\n**Primal Resonance:** You never need a free hand to shape, and you are always considered to be holding a Ritual Implement for Ritual Recovery and Breakflow Restoration. You gain Edge on in-combat Intimidation and Persuasion d20 checks, and you can communicate telepathically with any willing ally within 12 spaces while you are chanting, whispering, or breathing rhythmically."
         },
         {
           level: 3,
@@ -460,7 +460,7 @@ EN.classes.shaper = {
         {
           level: 7,
           name: "Primal Eruption",
-          text: "As an **Action**, spend 2 FP to target an Area 4 Cube within 12 spaces. Enemies in the area must make an Agility Save against your Flow Save DC. On a failure, they take 4d6 Bludgeoning damage and are Restrained by the roots. The zone lasts 1 minute. A Restrained enemy can use an Action to make an Athletics check against your Flow Save DC to tear free, or repeat the save at the start of each of its turns; the roots let go when the zone ends. The area becomes Difficult Terrain for your enemies, but your allies move through it freely and heal 1d4 Vitality the first time they enter the zone on their turn. Only one Primal Eruption can stand at a time; shaping a new one ends the old. Primal Eruption isn't an Invocation: Sustain, Sustained Fields, Resonance Amplification, and Cooperative Channeling don't apply to it."
+          text: "As an **Action**, spend 2 FP to target an Area 4 Cube within 12 spaces. Enemies in the area must make an Agility Save against your Flow Save DC. On a failure, they take 4d6 Bludgeoning damage and are Restrained by the roots. On a success, they take half damage and aren't Restrained. The zone lasts 1 minute. A Restrained enemy can use an Action to make an Athletics check against your Flow Save DC to tear free, or repeat the save at the start of each of its turns; the roots let go when the zone ends. The area becomes Difficult Terrain for your enemies, but your allies move through it freely and heal 1d4 Vitality the first time they enter the zone on their turn. Only one Primal Eruption can stand at a time; shaping a new one ends the old. Primal Eruption isn't an Invocation: Sustain, Sustained Fields, Resonance Amplification, and Cooperative Channeling don't apply to it."
         },
         {
           level: 10,
@@ -478,7 +478,7 @@ EN.classes.shaper = {
         {
           level: 1,
           name: "Resonant Edge",
-          text: "**Flow Attribute:** Body.\n\n**Edge of Oneness:** Any melee weapon you are proficient with acts as your Ritual Implement. You can use your Body Modifier instead of Agility for the attack and damage rolls of any melee weapon with the Finesse or Light trait. When you cast an Invocation with a Directed (Touch) Delivery, you can deliver the effect through your weapon's strike."
+          text: "**Flow Attribute:** Body.\n\n**Edge of Oneness:** Any melee weapon you are proficient with acts as your Ritual Implement, and you don't need a free hand to shape while you hold one. You can use your Body Modifier instead of Agility for the attack and damage rolls of any melee weapon with the Finesse or Light trait. When you shape an Invocation with a Directed (Touch) Delivery, you can deliver the effect through your weapon's strike. When the strike hits, the hit stands in for the Flow Attack, and any save the effect names still applies."
         },
         {
           level: 3,
@@ -523,7 +523,7 @@ EN.classes.shaper = {
         {
           level: 10,
           name: "Absolute Symbiosis",
-          text: "Once per Long Rest, as an **Action**, spend 2 FP to host both kinds of sprite for 1 minute. On activation, all enemies within 4 spaces must make a Tech Save against your Flow Save DC or take 4d6 Tech or Resonant damage and be pushed 2 spaces away. For the duration, you project an Area 4 Aura:\n\n**The Gremlin Storm:** Any enemy that starts its turn within the aura takes 4d4 Tech or Resonant damage. Enemies inside it suffer Snag on all attack rolls, and the swarm denies them any Defense bonus from physical Cover.\n\n**The Nixie Optimization:** At the start of your turn, you regain 2d6 Vitality (if your Vitality is full, you gain it as Vigor instead). You can shape any Synthetica Invocation as a **Swift Action** instead of an Action, and your movement doesn't provoke Opportunity Attacks.\n\nIf your Scrap Companion is active, both sprites crowd into it too: the Relay folds a Nixie Favor and a Gremlin Jinx, and the aura can center on the companion instead of you."
+          text: "Once per Long Rest, as an **Action**, spend 2 FP to host both kinds of sprite for 1 minute. On activation, all enemies within 4 spaces must make a Tech Save against your Flow Save DC or take 4d6 Tech or Resonant damage and be pushed 2 spaces away. On a success, they take half damage and aren't pushed. For the duration, you project an Area 4 Aura:\n\n**The Gremlin Storm:** Any enemy that starts its turn within the aura takes 4d4 Tech or Resonant damage. Enemies inside it suffer Snag on all attack rolls, and the swarm denies them any Defense bonus from physical Cover.\n\n**The Nixie Optimization:** At the start of your turn, you regain 2d6 Vitality (if your Vitality is full, you gain it as Vigor instead). You can shape any Synthetica Invocation as a **Swift Action** instead of an Action, and your movement doesn't provoke Opportunity Attacks.\n\nIf your Scrap Companion is active, both sprites crowd into it too: the Relay folds a Nixie Favor and a Gremlin Jinx, and the aura can center on the companion instead of you."
         }
       ]
     }
@@ -543,15 +543,15 @@ EN.classes.shaper = {
       kensei: "Body",
       sourcerer: "Tech"
     },
-    coreChanneling: "You do not memorize static spells; you shape the current on the fly. You begin play knowing three Base Resonances chosen from the standard list: Kinetic, Thermal, Electromagnetic, Visceral, or Spatial. A Sourcerer is the exception: Synthetica counts as one of those three, so they choose only two more from the standard list. When you channel the Flow, you spend FP to build an Invocation using your known Resonances combined with the Intent, Delivery, Force, and Duration rules. At Level 3 you may learn the Cognitive Base Resonance (total four); at Level 5 you may learn the Temporal Base Resonance (total five).",
+    coreChanneling: "You do not memorize static spells; you shape the current on the fly. You begin play knowing three Base Resonances chosen from the standard list: Kinetic, Thermal, Electromagnetic, Visceral, or Spatial. A Sourcerer is the exception: Synthetica counts as one of those three, so they choose only two more from the standard list. When you channel the Flow, you spend FP to build an Invocation using your known Resonances combined with the Intent and Force, Delivery, and Duration rules. At Level 3 you may learn the Cognitive Base Resonance (total four); at Level 5 you may learn the Temporal Base Resonance (total five).",
     resonances: {
       base: ["Kinetic", "Thermal", "Electromagnetic", "Visceral", "Spatial", "Cognitive (Level 3)", "Temporal (Level 5)"],
-      advancedTechniques: ["Flow Linking (Level 3, Resonance Synthesis)", "Resonance Amplification (Level 3, Resonance Synthesis)", "Cooperative Channeling (Level 7, Master Forging)", "Sustained Fields (Level 7, Master Forging)"]
+      advancedTechniques: ["Flow Linking (Level 3, Resonance Synthesis)", "Resonance Amplification (Level 3, Resonance Synthesis)", "Layered Force (Level 5)", "Cooperative Channeling (Level 7, Master Forging)", "Sustained Fields (Level 7, Master Forging)"]
     },
-    invocations: "When you channel the Flow, you spend FP to build an Invocation using your known Resonances combined with the Intent, Delivery, Force, and Duration rules. Layered Force (Level 5) lets you pay both the Hybrid (1 FP) and Empowered Force (1 FP) costs on a single Invocation, dealing full Empowered damage and applying the Resonance's Empowered Effect.",
+    invocations: "When you channel the Flow, you spend FP to build an Invocation using your known Resonances combined with the Intent and Force, Delivery, and Duration rules. Layered Force (Level 5) adds the Empowered Pair, layers a second Resonance into one Invocation, and opens a second sustain slot.",
     overdraw: "If your FP drops to 0, you may continue to shape by entering Overdraw, losing 1d4 Vitality per FP spent and risking Strain. Controlled Overdraw (Level 2): once per Short Rest, when FP is at 0 and you declare an Overdraw, you may ignore the Vitality loss and Strain accumulation for up to 2 FP worth of Overdraw; if the Invocation costs more than 2 FP, you take the Vitality damage and Strain for the remainder as normal.",
     strain: "Strain accumulates from Overdraw and certain effects. Strain stages referenced: Stage 1 Strain (Ripple), Stage 2 Strain (Wave), Stage 3 (Surge). Absolute Conduit (Level 9) completely ignores the mechanical penalties of Stage 1 (Ripple) and Stage 2 (Wave) at any Stage; penalties only begin at Stage 3 (Surge). Note: Strain transferred through the Harmonist's Burden of the Earth is treated as if caused by Overdraw and can't be ignored by Absolute Conduit's Strain Resistance.",
-    breakflow: "Referenced under the Harmonist's Primal Resonance: a Ritual Implement is required for the purposes of shaping Invocations, Ritual Recovery, and Breakflow Restoration. (Full Breakflow rules are not detailed within this source range.)",
+    breakflow: "Referenced under the Harmonist's Primal Resonance: Shaping takes your voice and a free hand. A Ritual Implement is needed only for Ritual Recovery and Breakflow Restoration. (Full Breakflow rules are not detailed within this source range.)",
     /* The Scrap Companion (Level 7), replacing the Scrap Familiar (25 October handoff, batch 78).
        The pieces the sheet's builder needs: residents, movement types, sizes and the four rigs, in the
        book's words (PHB 25 October export, Level 7: Scrap Companion). The Level 7 feature text above

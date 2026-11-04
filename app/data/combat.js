@@ -60,7 +60,7 @@ EN.combat = {
     {
       name: "Complex Action",
       summary: "Consumes both Action and Move, so you can't trade Move for a Swift or an extra Impulse. Free Actions and your one Impulse remain. Used for continuous or powerful tasks (full defense, major channeling). Some say otherwise: Charge/Rush keeps a Swift, and Full Defense allows nothing else.",
-      text: "Complex Actions require complete focus and time. They are deliberate or multi-step tasks that dominate a turn.\n\nExamples\n- Channel Major Flow: Direct or shape powerful resonance currents.\n- Fire Full-Auto: Sustain a burst or continuous fire with Heavy Weapons.\n- Complex Device Use: Execute a multi-step hack, tune sensors, or manipulate unstable tech.\n- Full Defense (Complex): Enter a total defensive stance, improving your protection at the cost of all other actions."
+      text: "Complex Actions require complete focus and time. They are deliberate or multi-step tasks that dominate a turn.\n\nExamples\n- Channel Major Flow: Layer a second Resonance into one Invocation (see Layered Force).\n- Fire Full-Auto: Sustain a burst or continuous fire with Heavy Weapons.\n- Complex Device Use: Execute a multi-step hack, tune sensors, or manipulate unstable tech.\n- Full Defense (Complex): Enter a total defensive stance, improving your protection at the cost of all other actions."
     },
     {
       name: "Special Action",

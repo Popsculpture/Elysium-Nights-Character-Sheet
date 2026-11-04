@@ -4749,6 +4749,9 @@ EN.engine = (function () {
       // minimum 0) to maximum FP, on top of the Presence-based Flow Modifier.
       var pactBonus = ch.subclass === "icon" ? Math.max(0, Math.ceil(attributes.MYS.mod / 2)) : 0;
       var strainStage = strainOf(ch);   // the one Strain value (2026-10-24 rulings, item 8)
+      var layeredForce = classFeatureUnlocked(ch, "Layered Force"), masterForging = classFeatureUnlocked(ch, "Master Forging");
+      // Sustained Fields (Master Forging) reserve FP of maximum while they stand; stored by value on ch.flow
+      var fieldReserve = Math.max(0, ((ch.flow && ch.flow.fieldReserve) | 0));
       var stInfo = (EN.flow && EN.flow.strainTrack) ? EN.flow.strainTrack[strainStage - 1] : null;
       /* Absolute Conduit ignores Ripple and Wave at every Stage (2026-10-24 rulings, item 3), so
          `conduit` is the feature itself and `strainIgnored` says the Stage held is wholly ignored
@@ -4757,7 +4760,10 @@ EN.engine = (function () {
       var strainIgnored = strainStage >= 1 && strainStage <= 2 && conduit;
       flow = {
         attribute: fAttr, attributeName: flowAttrName,
-        max: Math.max(0, cal * 3 + fMod + pactBonus - chromeTax.fpPenalty), dc: 8 + fMod + cal,
+        max: Math.max(0, cal * 3 + fMod + pactBonus - chromeTax.fpPenalty - fieldReserve), dc: 8 + fMod + cal,
+        // Invocation cap (Caliber + Flow Modifier), the Level 5 and 7 features, and the sustain slots they open
+        cap: cal + fMod, layeredForce: layeredForce, masterForging: masterForging, sustainSlots: layeredForce ? 2 : 1,
+        fieldReserve: fieldReserve,
         /* `attack` is the bare Flow Modifier (used for FP recovery on a Short Rest
            and Resurge rebound damage). `attackBonus` is Flow Modifier + Caliber,
            which is the bonus for BOTH d20 rolls a Shaper makes with the current:
@@ -5079,9 +5085,15 @@ EN.engine = (function () {
      the base formulation cost, the damage formula, the resolution line, and any
      rule warnings (level gates, sustain incompatibility). The Flow tab uses this
      for both the free-shaping builder and every saved Resonant Pattern. */
-  var FLOW_INTENT_FP = { damage: 0, effect: 0, hybrid: 1 };
+  /* The six printed Intent and Force rows (Handbook, The Flow > Invocations), as the engine's
+     intent + force pair: no saved data changes. */
+  var FLOW_ROWS = {
+    "damage|base": { name: "Damage", fp: 0 }, "damage|empowered": { name: "Empowered Damage", fp: 1 },
+    "effect|base": { name: "Base Effect", fp: 0 }, "effect|empowered": { name: "Empowered Effect", fp: 1 },
+    "hybrid|base": { name: "Hybrid", fp: 1 }, "hybrid|empowered": { name: "Empowered Pair", fp: 2 }
+  };
   var FLOW_DELIVERY_FP = { directed: 0, focused: 1, wide: 2 };
-  var FLOW_FORCE_FP = { base: 0, empowered: 1 };
+  function flowRow(intent, force) { return FLOW_ROWS[(intent || "damage") + "|" + (force === "empowered" ? "empowered" : "base")]; }
   function flowInvocation(form, d) {
     form = form || {};
     var F = EN.flow || {};
@@ -5090,55 +5102,29 @@ EN.engine = (function () {
     var cal = d.caliber || 1;
     var fMod = (flow.attribute && d.attributes[flow.attribute]) ? d.attributes[flow.attribute].mod : 0;
     var stage = flow.strainStage || 0;
+    var cap = cal + fMod;
     var hasEffect = form.intent === "effect" || form.intent === "hybrid";
     var hasDamage = form.intent === "damage" || form.intent === "hybrid";
     var empowered = form.force === "empowered";
     var areaBand = form.deliveryBand === "focused" || form.deliveryBand === "wide";
+    var layeredForce = flow.layeredForce !== undefined ? !!flow.layeredForce : (d.level || 1) >= 5;
 
     /* base (formulation) cost, ignoring current Strain */
     var breakdown = [];
     function add(label, fp) { if (fp) breakdown.push({ label: label, fp: fp }); }
-    var intentFp = FLOW_INTENT_FP[form.intent] || 0; add(form.intent === "hybrid" ? "Hybrid Intent" : "Intent", intentFp);
+    var row = flowRow(form.intent, form.force) || { name: "Damage", fp: 0 };
+    var intentFp = row.fp; add(row.name, intentFp);
     var delFp = FLOW_DELIVERY_FP[form.deliveryBand] || 0; add("Delivery", delFp);
-    var forceFp = FLOW_FORCE_FP[form.force] || 0; add("Empowered Force", forceFp);
     var et = Math.max(0, form.extraTargets | 0); add(et + " extra target" + (et === 1 ? "" : "s"), et);
     var es = Math.max(0, form.extraSpaces | 0); add(es + " extra space" + (es === 1 ? "" : "s"), es);
     var precOn = !!form.precision && areaBand;
     if (precOn) add("Precision Shaping", 1);
-    var baseFp = intentFp + delFp + forceFp + et + es + (precOn ? 1 : 0);
-
-    /* live cost: Wave (+1 FP to everything) and Surge (Precision costs 2 FP) */
-    var waveFp = (stage >= 2 && !flow.absoluteConduit) ? 1 : 0;   // Absolute Conduit ignores Wave at every Stage
-    var precSurge = (precOn && stage >= 3) ? 1 : 0;
-    if (waveFp) add("Strain: Wave (+1 FP)", waveFp);
-    if (precSurge) add("Strain: Surge (Precision +1 FP)", precSurge);
-    var fp = baseFp + waveFp + precSurge;
-
-    /* damage: 1d6 base, +Caliber d6 when Empowered Force feeds damage */
-    var damageText = null, damageDice = 0;
-    if (hasDamage) {
-      damageDice = 1 + (empowered ? cal : 0);
-      damageText = damageDice + "d6 " + fmtMod(fMod) + (R ? " " + R.damage : "");
-    }
-
-    /* resolution line (for an unwilling target) */
-    var resolution = R && R.resolution === "save" ? "save" : "attack";
-    var resolutionText;
-    if (resolution === "save") {
-      resolutionText = "Targets save vs Flow Save DC " + flow.dc +
-        (R && R.saveAttr && R.saveAttr !== "varies" ? " (" + R.saveAttr + ")" : "") +
-        (R && R.armorNote ? " · " + R.armorNote : "") +
-        (R && R.damageNote && hasDamage ? " · " + R.damageNote : "");
-    } else {
-      resolutionText = "Flow Attack " + fmtMod(flow.attackBonus) + " vs Defense";
-    }
 
     /* the Empowered Effect carried (when Empowered Force feeds an effect) */
     var effectObj = null;
     if (empowered && hasEffect && R && form.empoweredEffect) {
       effectObj = (R.empowered || []).find(function (e) { return e.name === form.empoweredEffect; }) || null;
     }
-
     /* the Base effect carried (Base Force feeding an effect): one of the Resonance's baseOptions.
        A formulation saved before the picker existed names none, so it carries none. */
     var baseObj = null;
@@ -5146,25 +5132,114 @@ EN.engine = (function () {
       baseObj = (R.baseOptions || []).find(function (e) { return e.name === form.baseEffect; }) || null;
     }
 
-    /* sustain compatibility + warnings */
+    /* Layered Force (Level 5): a second Resonance rides in one Invocation for +1 FP plus its own row.
+       The layer's intent is the primary's (both rows come from the same family). */
     var warnings = [];
-    if (R && R.unlock > (d.level || 1)) warnings.push(R.name + " Resonance unlocks at Level " + R.unlock + ".");
-    /* A level-gated Empowered Effect (Poltergeist, Sourcerer Level 3, Hardware Harmonization): the
-       book now labels it "Poltergeist (Level 3)". The builder disables the button below that level;
-       this catches a saved pattern that names it anyway. */
-    if (effectObj && effectObj.unlock > (d.level || 1)) warnings.push(effectObj.name + " unlocks at Level " + effectObj.unlock + " (Hardware Harmonization).");
-    if (form.intent === "hybrid" && empowered && (d.level || 1) < 5) warnings.push("Layered Force (Hybrid + Empowered) requires Level 5.");
+    var L = form.layer && form.layer.resonance ? form.layer : null;
+    var LR = L && F.resonanceByKey ? (F.resonanceByKey[L.resonance] || null) : null;
+    var lEmp = !!L && L.force === "empowered";
+    var lRow = L ? (flowRow(form.intent, L.force) || { name: "Damage", fp: 0 }) : null;
+    var lEffectObj = null, lBaseObj = null;
+    if (L && LR && hasEffect) {
+      if (lEmp && L.empoweredEffect) lEffectObj = (LR.empowered || []).find(function (e) { return e.name === L.empoweredEffect; }) || null;
+      if (!lEmp && L.baseEffect) lBaseObj = (LR.baseOptions || []).find(function (e) { return e.name === L.baseEffect; }) || null;
+    }
+    var layerFp = 0;
+    if (L && LR) {
+      layerFp = 1 + lRow.fp;
+      add("Layering", 1);
+      add("Layer: " + LR.name + " " + lRow.name, lRow.fp);
+      if (!layeredForce) warnings.push("Layering needs Level 5 (Layered Force).");
+      var calDice = function (r, e) { return e && (r === "damage" || r === "hybrid"); };
+      if (calDice(form.intent, empowered) && calDice(form.intent, lEmp)) warnings.push("Only one layer can take a row with Caliber dice (Empowered Damage or Empowered Pair).");
+      var pn = (effectObj || baseObj || {}).name, ln = (lEffectObj || lBaseObj || {}).name;
+      if (pn && ln && pn === ln) warnings.push("Two layers can't apply the same effect (" + pn + ").");
+    }
+
+    /* Sustain: +1 FP shaped (the first minute); each extra minute is paid on the tracker */
     var sustainable = true;
+    var heldLayers = 0;
     if (form.duration === "sustain") {
       if (R && R.noSustain) { sustainable = false; warnings.push(R.name + " effects are always Instant and cannot be Sustained."); }
       else if (effectObj && effectObj.sustain === false) { sustainable = false; warnings.push("\"" + effectObj.name + "\" cannot be Sustained."); }
+      if (sustainable) { add("Sustain (first minute)", 1); heldLayers = 1; }
+      if (L && LR && !(LR.noSustain) && !(lEffectObj && lEffectObj.sustain === false)) { add("Sustain (second layer)", 1); heldLayers += 1; }
+    }
+    var baseFp = 0;
+    breakdown.forEach(function (x) { baseFp += x.fp; });
+    // Precision Shaping's Surge surcharge and Wave are live-cost lines, added below
+
+    /* live cost: Wave (+1 FP to everything) and Surge (Precision costs 2 FP) */
+    var waveFp = (stage >= 2 && !flow.absoluteConduit) ? 1 : 0;   // Absolute Conduit ignores Wave at every Stage
+    var precSurge = (precOn && stage >= 3) ? 1 : 0;
+    if (waveFp) add("Strain: Wave (+1 FP)", waveFp);
+    if (precSurge) add("Strain: Surge (Precision +1 FP)", precSurge);
+    var fp = baseFp + waveFp + precSurge;
+    var overCap = fp > cap;
+    if (overCap) warnings.push("This Invocation costs " + fp + " FP. Your cap is " + cap + " (Caliber + Flow Modifier).");
+
+    /* damage: 1d6 + Flow Modifier per layer, and the Caliber dice once */
+    var damageText = null, damageDice = 0;
+    if (hasDamage) {
+      damageDice = 1 + (empowered ? cal : 0);
+      var flat = fMod, types = R ? R.damage : "";
+      if (L && LR) {
+        damageDice += 1 + (lEmp && !empowered ? cal : 0);
+        flat += fMod;
+        types = (R ? R.damage : "") + " + " + LR.damage;
+      }
+      damageText = damageDice + "d6 " + fmtMod(flat) + (types ? " " + types : "");
     }
 
+    /* resolution, in the book's order (one roll per target at most) */
+    var carried = effectObj || baseObj;
+    var unknownBase = hasEffect && !empowered && !carried && R && (R.baseOptions || []).some(function (o) { return !!o.save; });
+    var saveAttr = null, resolution, resolutionText;
+    var dmgEff = hasDamage && hasEffect;
+    var landed = hasDamage && hasEffect ? "the damage and the effect land" : (hasDamage ? "the damage lands" : "the effect lands");
+    if (R && R.resolution === "save") { saveAttr = R.saveAttr || "Agility"; resolution = "save"; }
+    else if (carried && carried.save) { saveAttr = carried.save; resolution = "save"; }
+    else if (areaBand && hasDamage) { saveAttr = "Agility"; resolution = "save"; }
+    else if (areaBand && hasEffect && !unknownBase) { resolution = "none"; }
+    else resolution = "attack";
+    if (unknownBase && !(R && R.resolution === "save") && !(areaBand && hasDamage)) {
+      resolution = "attack";
+      resolutionText = "Uses the effect's own save if it names one (a Kinetic push: Body or Agility). If it names none, Flow Attack vs Defense.";
+    } else if (resolution === "save") {
+      if (areaBand) {
+        resolutionText = "Each target saves vs Flow Save DC " + flow.dc + " (" + saveAttr + ")" +
+          (hasDamage ? " · half damage" + (hasEffect ? " and no effect" : "") + " on a success" : " · a success avoids the effect");
+      } else {
+        resolutionText = "Target saves vs Flow Save DC " + flow.dc + " (" + saveAttr + ") · a success " +
+          (hasDamage ? (hasEffect ? "takes no damage and no effect" : "takes no damage") : "avoids the effect");
+      }
+      if (R && R.resolution === "save") resolutionText += (R.armorNote ? " · " + R.armorNote : "") + (R.damageNote && hasDamage ? " · " + R.damageNote : "");
+    } else if (resolution === "none") {
+      resolutionText = "No roll · it fills the space";
+    } else {
+      resolutionText = "Flow Attack " + fmtMod(flow.attackBonus) + " vs Defense · on a hit, " + landed;
+    }
+
+    /* warnings */
+    if (R && R.unlock > (d.level || 1)) warnings.push(R.name + " Resonance unlocks at Level " + R.unlock + ".");
+    if (L && LR && LR.unlock > (d.level || 1)) warnings.push(LR.name + " Resonance unlocks at Level " + LR.unlock + ".");
+    /* A level-gated Empowered Effect (Poltergeist, Sourcerer Level 3, Hardware Harmonization): the
+       book labels it "Poltergeist (Level 3)". The builder disables the button below that level;
+       this catches a saved pattern that names it anyway. */
+    if (effectObj && effectObj.unlock > (d.level || 1)) warnings.push(effectObj.name + " unlocks at Level " + effectObj.unlock + " (Hardware Harmonization).");
+    if (form.intent === "hybrid" && empowered && !layeredForce) warnings.push("Empowered Pair needs Level 5 (Layered Force).");
+    [effectObj, lEffectObj].forEach(function (e) {
+      if (e && e.zone && form.deliveryBand === "directed") warnings.push(e.name + " fills an area: it needs Focused or Wide Area delivery.");
+    });
+
     return {
-      resonance: R, baseFp: baseFp, fp: fp, breakdown: breakdown,
+      resonance: R, row: row, baseFp: baseFp, fp: fp, cap: cap, overCap: overCap, breakdown: breakdown,
       damageDice: damageDice, damageText: damageText,
-      resolution: resolution, resolutionText: resolutionText,
+      resolution: resolution, resolutionText: resolutionText, saveAttr: saveAttr,
       empoweredEffect: effectObj, baseEffect: baseObj, hasEffect: hasEffect, hasDamage: hasDamage,
+      layer: L && LR ? { resonance: LR, row: lRow, fp: layerFp, empoweredEffect: lEffectObj, baseEffect: lBaseObj } : null,
+      action: L && LR ? "Complex Action (Channel Major Flow)" : null,
+      heldCount: heldLayers,
       sustainable: sustainable, warnings: warnings
     };
   }
@@ -5239,7 +5314,7 @@ EN.engine = (function () {
     if (legacy > own) {
       c.flow.strain = legacy;
       // the old condition at 5 was Collapse, which is Breakflow
-      if (legacy >= 5) { c.flow.breakflow = true; c.flow.sustained = null; }
+      if (legacy >= 5) { c.flow.breakflow = true; c.flow.sustained = null; c.flow.sustained2 = null; c.flow.fieldReserve = 0; }
     }
     return clamp((c.flow.strain | 0), 0, 5);
   }
@@ -5251,7 +5326,7 @@ EN.engine = (function () {
     n = clamp(n | 0, 0, 5);
     c.flow.strain = n;
     if (n < was) c.flow.strainPoints = 0;
-    if (n < 5) c.flow.breakflow = false; else { c.flow.breakflow = true; c.flow.sustained = null; }
+    if (n < 5) c.flow.breakflow = false; else { c.flow.breakflow = true; c.flow.sustained = null; c.flow.sustained2 = null; c.flow.fieldReserve = 0; }
     return n;
   }
 
