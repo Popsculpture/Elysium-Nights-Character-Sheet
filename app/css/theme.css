@@ -3175,8 +3175,6 @@ html.skin-droid .fv-win.fv-droid{ left:calc(var(--dr-l) + 10px); right:auto; wid
 .fv-seg.sub{ grid-template-columns:repeat(auto-fit, minmax(68px, 1fr)); }
 .fv-seg > .fv-opt{ --rc:currentColor; position:relative; width:100%; min-width:0; justify-content:center; margin:0; }
 .fv-opt-t{ position:relative; display:block; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-/* only the key just pressed flashes (the deck is rebuilt on every change, so a rule on the chosen key would flash them all) */
-.fv-opt.on.fv-just{ animation:fvSel .34s ease-out; }
 /* a Resonance key carries its own colour as a small lit dot; chosen, it is the app's chosen button like any other */
 .fv-seg.res > .fv-opt{ justify-content:flex-start; }
 .fv-seg.res > .fv-opt::after{ content:""; order:-1; flex:0 0 6px; width:6px; height:6px; border-radius:50%; background:var(--rc); box-shadow:0 0 4px var(--rc); }
@@ -3199,31 +3197,22 @@ html.skin-droid .fv-win.fv-droid{ left:calc(var(--dr-l) + 10px); right:auto; wid
 /* the map takes every gesture (pinch, pan, wheel), and says when it is being dragged */
 .fv-stage{ touch-action:none; }
 .fv-stage.fv-panning, .fv-stage.fv-panning .fv-svg{ cursor:grabbing; }
-@keyframes fvSel{ from{ box-shadow:inset 0 0 0 1px var(--rc), inset 0 0 18px color-mix(in srgb, var(--rc) 70%, transparent); } }
 
-/* ---- Immersive flair for the deck: a light that sweeps the deck, chosen keys that breathe in their
-   colour, a shimmer across a key under the pointer, and at Surge and
-   Rend the chosen keys flicker. The Free-Shaping panel's deck (in an Immersive Flow tab) takes the same. Keys are clipped to their chamfer, so every glow is drawn inside. */
+/* ---- Immersive flair for the deck: a light that sweeps the deck, and at Surge and Rend the chosen keys' names
+   flicker. The keys themselves stay the app's plain buttons (4 Nov 2026, the author: a chosen key looks exactly
+   like any chosen button, CHANNEL included, so no ring or glow is drawn on them). The Free-Shaping panel's deck
+   (in an Immersive Flow tab) takes the same. */
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck{ border-color:color-mix(in srgb, var(--fv-res) 38%, var(--border2));
   box-shadow:0 0 16px color-mix(in srgb, var(--fv-res) 9%, transparent), inset 0 0 26px color-mix(in srgb, var(--fv-res) 6%, transparent); }
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck::before{ content:""; position:absolute; inset:0; border-radius:var(--r); pointer-events:none;
   background:linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--fv-res) 13%, transparent) 50%, transparent 100%) no-repeat;
   background-size:35% 100%; animation:fvSweep calc(7s / var(--fv-pulse)) linear infinite; animation-delay:var(--fv-t, 0s); }
-:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on{ animation:fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:var(--fv-t, 0s); }
-:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on.fv-just{ animation:fvSel .34s ease-out, fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:0s, var(--fv-t, 0s); }
-:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt:hover:not(:disabled){
-  background-image:linear-gradient(110deg, transparent 35%, color-mix(in srgb, var(--rc) 28%, transparent) 50%, transparent 65%);
-  background-size:260% 100%; animation:fvShimmer .9s linear infinite; }
-:is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on:hover{ animation:fvBreathe calc(2.6s / var(--fv-pulse)) ease-in-out infinite; animation-delay:var(--fv-t, 0s); background-image:linear-gradient(180deg, color-mix(in srgb, var(--rc) 36%, transparent), color-mix(in srgb, var(--rc) 16%, transparent)); background-size:auto; }
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-step-n{ text-shadow:0 0 8px var(--flow); }
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-switch.on .fv-switch-k::after{ animation:fvBlink 1.6s ease-in-out infinite; }
 :is(.fv-win.fv-immersive[data-fx="3"], .flowtab.immersive[data-fx="3"] .builder) .fv-opt.on .fv-opt-t, :is(.fv-win.fv-immersive[data-fx="4"], .flowtab.immersive[data-fx="4"] .builder) .fv-opt.on .fv-opt-t{ animation:fvJit .45s steps(2) infinite; }
 :is(.fv-win.fv-immersive[data-fx="5"], .flowtab.immersive[data-fx="5"] .builder) .fv-deck{ filter:grayscale(.8) brightness(.85); }
 :is(.fv-win.fv-immersive[data-fx="5"], .flowtab.immersive[data-fx="5"] .builder) .fv-deck::before{ animation:none; opacity:0; }
-@keyframes fvBreathe{ 0%,100%{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--rc) 40%, transparent), inset 0 0 4px color-mix(in srgb, var(--rc) 20%, transparent); }
-  50%{ box-shadow:inset 0 0 0 1px var(--rc), inset 0 0 14px color-mix(in srgb, var(--rc) 45%, transparent); } }
 @keyframes fvSweep{ from{ background-position:-40% 0; } to{ background-position:140% 0; } }
-@keyframes fvShimmer{ from{ background-position:130% 0; } to{ background-position:-30% 0; } }
 @keyframes fvBlink{ 0%,100%{ opacity:.4; } 50%{ opacity:1; } }
 @media (prefers-reduced-motion: reduce){
   .fv-opt.on, .fv-opt.on.fv-just, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on.fv-just, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt:hover:not(:disabled), :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck::before,
