@@ -2800,6 +2800,8 @@ html.skin-98 .flowtab.immersive .flow-bar, html.skin-droid .flowtab.immersive .f
    and 9.99 on Daybreak. Every dark palette is untouched, since pal-light is off there. */
 html.pal-light .aoe-origin{ stroke:var(--text); stroke-width:2; }
 .aoe-box{ margin:2px 0 0; }
+/* the Codex drawer: a rule opened from an Area link shows its template under it, already set (codex.js paintPeek) */
+.cxp-aoe{ margin:16px 0 0; }
 .aoe-note{ margin:6px 0 0; }
 /* the map takes its own gestures (4 Nov 2026): pinch, drag and the wheel once clicked; a Cone or a Line aims where it is tapped */
 /* a finger's up or down swipe scrolls the page until the map is tapped (.aoe-engaged), so the Codex never traps a reader */

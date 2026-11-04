@@ -391,8 +391,25 @@ EN.codexView = (function () {
 
   /* ---- links and chips -------------------------------------------------- */
   function inDrawer(node) { return !!(node && node.closest && node.closest("#codex-peek")); }
+  /* The Area a link's own words name ("Explosive (Area 3 Sphere)"), or the Area its words sit inside ("an
+     [Area] 2 cone"): the drawer then shows the area template under the rule, set to that shape and size
+     (4 Nov 2026, the author). The words around the link count only when the match runs into the link. */
+  function areaOf(node) {
+    if (!EN.aoeGrid || !EN.aoeGrid.parseArea) return null;
+    var t = node.textContent || "", pre = "", post = "";
+    var p = node.previousSibling, n = node.nextSibling;
+    if (p && p.nodeType === 3) pre = p.nodeValue.slice(-24);
+    if (n && n.nodeType === 3) post = n.nodeValue.slice(0, 24);
+    var own = EN.aoeGrid.parseArea(t);
+    if (own) return own;
+    var all = pre + t + post, re = /\bArea\s+\d{1,2}(?:\s+(?:sphere|cone|line|cube|aura)s?\b)?/gi, m;
+    while ((m = re.exec(all))) {
+      if (m.index < pre.length + t.length && m.index + m[0].length > pre.length) return EN.aoeGrid.parseArea(m[0]);
+    }
+    return null;
+  }
   function wire(node, anchor) {
-    function go(e) { e.preventDefault(); e.stopPropagation(); peek(anchor, { push: inDrawer(node) }); }
+    function go(e) { e.preventDefault(); e.stopPropagation(); peek(anchor, { push: inDrawer(node), area: areaOf(node) }); }
     node.addEventListener("click", go);
     node.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") go(e); });
   }
@@ -874,7 +891,7 @@ EN.codexView = (function () {
     document.body.appendChild(root);
     document.addEventListener("keydown", peekKey, true);
     window.addEventListener("resize", onPeekResize);
-    var pk = { root: root, card: card, kick: kick, title: title, btns: btns, body: body, history: [], anchor: null, pt: pt,
+    var pk = { root: root, card: card, kick: kick, title: title, btns: btns, body: body, history: [], areas: [], area: null, anchor: null, pt: pt,
                opener: document.activeElement, mo: null, os: null, inertWas: false };
     /* a modal in fact, not only in aria: the desktop behind the backdrop takes no focus and no
        clicks while the drawer is open. The drawer and the GM's Card (#print-overlay) are on
@@ -929,9 +946,11 @@ EN.codexView = (function () {
     if (!r) return false;
     if (_peek && _peek.pt !== pt) closePeek();
     if (!_peek) _peek = makeDrawer(pt);
-    else if (opts.push && _peek.anchor) _peek.history.push(_peek.anchor);
-    else if (!opts.back) _peek.history = [];   // a fresh peek from outside the drawer starts a new trail
+    else if (opts.push && _peek.anchor) { _peek.history.push(_peek.anchor); _peek.areas.push(_peek.area); }
+    else if (!opts.back) { _peek.history = []; _peek.areas = []; }   // a fresh peek from outside the drawer starts a new trail
     _peek.anchor = r.anchor;
+    // the Area the link named (BACK brings back the one its page had)
+    _peek.area = opts.back ? (_peek.areas.pop() || null) : (opts.area || null);
     paintPeek(r, pt);
     return true;
   }
@@ -966,6 +985,12 @@ EN.codexView = (function () {
     clear(pk.body);
     content.forEach(function (n) { pk.body.appendChild(n); });
     if (!content.length) pk.body.appendChild(el("p.help", { text: "Nothing to show." }));
+    // a rule opened from a link that names an Area: its template, set to that shape and size, under the rule
+    var ar = pk.area, tpl = ar && EN.aoeGrid && EN.aoeGrid.build ? EN.aoeGrid.build({ preset: ar }) : null;
+    if (tpl) {
+      var shapeName = ar.shape.charAt(0).toUpperCase() + ar.shape.slice(1);
+      pk.body.appendChild(el("div.cxp-aoe", { dataset: { cxpAoe: ar.shape + ":" + ar.size } }, [subTitle("Area " + ar.size + " " + shapeName), tpl]));
+    }
     pk.body.scrollTop = 0;
     if (EN.ui.substituteCurrencyGlyphs) { try { EN.ui.substituteCurrencyGlyphs(pk.body); } catch (e) {} }
     fitTables(pk.body);
