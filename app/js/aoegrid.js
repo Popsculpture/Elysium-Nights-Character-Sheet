@@ -21,32 +21,29 @@
 
    WHAT THE BOOK DOES NOT SETTLE, and this file therefore CHOOSES. These are
    drawing conventions, not rules, and the widget says so on its face rather
-   than letting a picture pass for a ruling:
-     1. Diagonals. The word never appears in Part 2. Distance here is counted
-        the way "X spaces away" reads most plainly: a diagonal step costs 1,
-        so a sphere of radius X is a square of side 2X+1. If the book ever
-        adopts an alternating 1-2-1 rule, sqDist below is the one line to
-        change.
-     2. Hex distance. Not stated either. Standard axial distance is used.
-     3. Cone widening. The book fixes the widest point at X and gives no angle
-        and no rate, so this widens one space per space of length: at distance
-        d the wedge is d spaces across, reaching exactly X at distance X. That
-        is the reading that makes "Area 3 cone" a triangle three long and
-        three wide, which is what the Flow chapter's "triangular burst" shows.
-        One consequence worth knowing rather than puzzling over: a row of EVEN
-        width cannot be centred on a row of a square grid, so an even-sized
-        square cone leans half a space to one side. It alternates rather than
-        drifts, so the cone stays on its axis; the hex wedge has no such
-        problem and comes out a clean 60 degree triangle at every size.
-     4. Corner clipping. No rule for a space caught only at its corner, so
-        membership here is whole spaces by centre.
-     5. Cube on hex. The book calls a Cube a "square zone" and never gives it
-        a hex equivalent, so on hex it is drawn as X rows of X and labelled an
-        approximation.
+   than letting a picture pass for a ruling. The author's ruling of 3 November
+   2026 (Spheres and Auras are round; Cones symmetric) set the current set:
+     1. Membership by centre. A space is in an area when its CENTRE is, and
+        distance runs in a straight line between centres, counted in spaces
+        (a hex is one space across its flats). Nothing is caught by a corner.
+     2. Sphere and Aura. Every space whose centre lies within X and a half of
+        the point: X spaces out along each axis, round rather than square.
+        (Area 3 is 37 spaces on a square grid, not the old 7 by 7 of 49.)
+     3. Cone. A triangle from you: X long, X across at its far end, so it
+        widens half a space either side per space of length, symmetric about
+        its heading. Area 3 on a square grid is rows of 1, 3 and 3; Area 5
+        is 1, 3, 3, 5, 5. A space is in when its centre is inside the triangle.
+        An even row cannot sit centred on a heading, so an even-sized Cone
+        comes out one space wider at its far end (Area 4: 1, 3, 3, 5).
+     4. Line. The spaces whose centres lie within half a space of its path,
+        X and a half long, so it is one space wide at any heading.
+     5. Cube. X spaces on each edge, centred on its point (for an even size
+        the point is one of its middle spaces). The book calls it a "square
+        zone" and gives no hex version, so on hex it is X rows of X, centred,
+        and labelled an approximation.
 
-   Origin. Sphere and Cube anchor on a point you pick; Cone, Line and Aura
-   originate on you. The marker shows which, and Cube anchors its near corner
-   on the marked space, since the book places it "on a point", not centered.
+   Origin. Sphere and Cube are placed on a point you pick, centred on it;
+   Cone, Line and Aura start on you. The marker shows which.
 
    Built as an SVG STRING and handed to el(..., {html}), which is what nine of
    the ten JS-built SVGs in this app do; el() itself cannot make SVG, since it
@@ -69,19 +66,12 @@ EN.aoeGrid = (function () {
   var _size = 3;
   var _facing = 0;          // index into the current grid's DIRS, wrapped on read
 
-  /* WHY THE TWO GRIDS TURN BY DIFFERENT AMOUNTS. Rotation here is an exact lattice turn, never
-     an approximation: a quarter turn on a square grid maps (x,y) to (-y,x), and a sixth turn on
-     a pointy-top hex maps axial (q,r) to (-r,q+r). Both send whole cells onto whole cells, so a
-     rotated cone keeps every property the unrotated one has, including the one number the book
-     actually fixes: its widest point is still exactly X.
-
-     That is also why a square grid stops at four facings rather than eight. A diagonal is not a
-     lattice rotation of a square grid, and with this diagram's counting convention (a diagonal
-     step costs 1, so distance is Chebyshev) the ring at distance d turns a corner on the
-     diagonal: the cells that would make a diagonal cone come out as an L bent round that corner
-     rather than a triangle, and its widest row is no longer X. Offering it would mean either
-     drawing a shape the rule does not describe or quietly breaking the book's own number. Four
-     honest facings beat eight approximate ones on a page whose whole job is to be a reference. */
+  /* WHY THE TWO GRIDS TURN BY DIFFERENT AMOUNTS. This diagram turns by exact lattice turns: a
+     quarter turn on a square grid maps (x,y) to (-y,x), and a sixth turn on a pointy-top hex maps
+     axial (q,r) to (-r,q+r). Both send whole cells onto whole cells, and the shapes are symmetric
+     about their heading, so a turned cone is the same cone. The Flow tab's Visualize window
+     (js/flowviz.js) also offers the square grid's diagonals, through cellsAt() at 45 degrees: with
+     membership by centre a diagonal cone is an honest triangle too. */
   var SQ_DIRS = ["E", "S", "W", "N"];                          // quarter turns, clockwise
   var HEX_DIRS = ["E", "SE", "SW", "W", "NW", "NE"];           // sixth turns, clockwise
   function dirs() { return _grid === "hex" ? HEX_DIRS : SQ_DIRS; }
@@ -104,44 +94,54 @@ EN.aoeGrid = (function () {
     return list[0] || { key: "sphere", name: "Sphere", x: "radius", text: "" };
   }
 
-  /* ---- square geometry. Origin cell is 0,0 and facing is +x (to the right). */
-  function sqDist(x, y) { return Math.max(Math.abs(x), Math.abs(y)); }   // diagonals cost 1 (see header)
-  function sqCells(shape, n) {
-    var out = [], x, y, d, lo, hi;
-    if (shape === "sphere" || shape === "aura") {
-      for (x = -n; x <= n; x++) for (y = -n; y <= n; y++) if (sqDist(x, y) <= n) out.push({ x: x, y: y });
-    } else if (shape === "cube") {
-      // X spaces on each edge, near corner anchored on the marked space
-      for (x = 0; x < n; x++) for (y = 0; y < n; y++) out.push({ x: x, y: y });
-    } else if (shape === "line") {
-      for (x = 1; x <= n; x++) out.push({ x: x, y: 0 });
-    } else {   // cone: at distance d the wedge is d across, so it reaches exactly n at distance n
-      for (d = 1; d <= n; d++) {
-        lo = -Math.floor((d - 1) / 2); hi = Math.floor(d / 2);
-        for (y = lo; y <= hi; y++) out.push({ x: d, y: y });
-      }
+  /* ---- the geometry: membership by centre (see the header). Origin 0,0 is the space the area
+     starts on or is placed on; heading 0 is east and angles turn clockwise (y runs down). Square
+     cells are {x,y}; hex cells are axial {q,r}, pointy top. */
+  var SQ3 = Math.sqrt(3), EPS = 1e-6;
+  function centreOf(grid, c) { return grid === "hex" ? { x: c.q + c.r / 2, y: c.r * SQ3 / 2 } : { x: c.x, y: c.y }; }
+  function roundDist(grid, c) { var p = centreOf(grid, c); return Math.sqrt(p.x * p.x + p.y * p.y); }
+  // every space whose centre lies within R of the origin
+  function around(grid, R) {
+    var out = [], a, b, B;
+    if (grid === "hex") {
+      B = Math.ceil(R / (SQ3 / 2)) + 1;
+      for (b = -B; b <= B; b++) for (a = -Math.ceil(R) - B; a <= Math.ceil(R) + B; a++) { var h = { q: a, r: b }; if (roundDist("hex", h) <= R + EPS) out.push(h); }
+    } else {
+      B = Math.ceil(R);
+      for (a = -B; a <= B; a++) for (b = -B; b <= B; b++) { var q = { x: a, y: b }; if (roundDist("square", q) <= R + EPS) out.push(q); }
     }
     return out;
   }
-
-  /* ---- hex geometry, pointy top, axial q,r. Origin is 0,0 and facing is east. */
-  function hexDist(q, r) { return (Math.abs(q) + Math.abs(q + r) + Math.abs(r)) / 2; }
-  function hexCells(shape, n) {
-    var out = [], q, r, a, b, d;
-    if (shape === "sphere" || shape === "aura") {
-      for (q = -n; q <= n; q++) for (r = -n; r <= n; r++) if (hexDist(q, r) <= n) out.push({ q: q, r: r });
-    } else if (shape === "cube") {
-      // the book gives no hex Cube; drawn as n rows of n, labelled an approximation
-      for (r = 0; r < n; r++) for (a = 0; a < n; a++) out.push({ q: a - Math.floor(r / 2), r: r });
-    } else if (shape === "line") {
-      for (q = 1; q <= n; q++) out.push({ q: q, r: 0 });
-    } else {   // cone: the 60 degree wedge between east and north-east, d hexes at distance d
-      for (d = 1; d <= n; d++) {
-        for (a = 1; a <= d; a++) { b = d - a; out.push({ q: a + b, r: -b }); }
-      }
-    }
-    return out;
+  // a Cube: n spaces on each edge, centred on its point (on hex, n rows of n, centred, an approximation)
+  function cubeCells(grid, n) {
+    var raw = [], a, r, lo = -Math.floor((n - 1) / 2);
+    if (grid !== "hex") { for (a = lo; a < lo + n; a++) for (r = lo; r < lo + n; r++) raw.push({ x: a, y: r }); return raw; }
+    for (r = 0; r < n; r++) for (a = 0; a < n; a++) raw.push({ q: a - Math.floor(r / 2), r: r });
+    var mx = 0, my = 0;
+    raw.forEach(function (c) { var p = centreOf("hex", c); mx += p.x; my += p.y; });
+    mx /= raw.length; my /= raw.length;
+    var best = raw[0], bd = Infinity;
+    raw.forEach(function (c) { var p = centreOf("hex", c), dd = (p.x - mx) * (p.x - mx) + (p.y - my) * (p.y - my); if (dd < bd - EPS) { bd = dd; best = c; } });
+    return raw.map(function (c) { return { q: c.q - best.q, r: c.r - best.r }; });
   }
+  /* The spaces an area catches, at a heading in degrees (Cone and Line only; the others are round
+     or square and placed). Sphere and Aura: centre within n + 1/2. Cone: centre inside the triangle
+     n long and n across at its far end (half-width t/2 at distance t), out to n + 1/2. Line: centre
+     within 1/2 of the path, out to n + 1/2. */
+  function cellsAt(grid, shape, n, angleDeg) {
+    if (shape === "cube") return cubeCells(grid, n);
+    var a = (angleDeg || 0) * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
+    // a cone's far corners stand (n + 1/2) x 1.118 out, past the n + 1 that holds every other shape
+    return around(grid, shape === "cone" ? (n + 0.5) * 1.12 + 0.5 : n + 1).filter(function (c) {
+      var p = centreOf(grid, c);
+      if (shape === "sphere" || shape === "aura") return Math.sqrt(p.x * p.x + p.y * p.y) <= n + 0.5 + EPS;
+      var t = p.x * ux + p.y * uy, w = Math.abs(p.y * ux - p.x * uy);
+      if (t <= EPS || t > n + 0.5 + EPS) return false;
+      return shape === "line" ? w <= 0.5 + EPS : w <= t / 2 + EPS;
+    });
+  }
+  function sqCells(shape, n) { return cellsAt("square", shape, n, 0); }
+  function hexCells(shape, n) { return cellsAt("hex", shape, n, 0); }
 
   function rotSq(c, k) {
     var x = c.x, y = c.y, i, t;
@@ -361,11 +361,11 @@ EN.aoeGrid = (function () {
       box,
       note,
       el("p.help", { style: { margin: "6px 0 0", fontStyle: "italic" },
-        text: "The shapes and their sizes are the Handbook's. How the grid counts them is this diagram's own convention: a diagonal step costs 1 space, a cone widens one space per space and reaches its stated width at the far edge, and a space is in or out by its center. Cone, Line and Aura start on you; Sphere and Cube are placed on a point you can see. Facing turns in quarters on a square grid and in sixths on a hex one, since those are the turns that land whole spaces on whole spaces and keep a cone exactly its stated width." })
+        text: "The shapes and their sizes are the Handbook's. How the grid counts them is this diagram's own convention: a space is in or out by its center, and distance runs straight between centers. A Sphere or Aura of X takes every space whose center is within X and a half of its point, so it is round. A Cone is a triangle from you, X long and X across at its far end, the same on both sides of its heading; an even-sized Cone is drawn one space wider at its far end, since an even row cannot sit centered on its heading. A Line takes the spaces whose centers lie within half a space of its path. Cone, Line and Aura start on you; Sphere and Cube are placed on a point you can see, the Cube centered on it. Facing turns in quarters on a square grid and in sixths on a hex one." })
     ]);
   }
 
   /* The geometry, for the Flow tab's Visualize window (js/flowviz.js): the same cells the Codex diagram
      draws, so the two can never disagree about what a Sphere or a Cone catches. Origin 0,0, facing east. */
-  return { build: build, sqCells: sqCells, hexCells: hexCells, sqDist: sqDist, hexDist: hexDist };
+  return { build: build, sqCells: sqCells, hexCells: hexCells, cellsAt: cellsAt, centreOf: centreOf, roundDist: roundDist };
 })();
