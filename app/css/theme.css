@@ -3198,21 +3198,25 @@ html.skin-droid .fv-win.fv-droid{ left:calc(var(--dr-l) + 10px); right:auto; wid
 .fv-stage{ touch-action:none; }
 .fv-stage.fv-panning, .fv-stage.fv-panning .fv-svg{ cursor:grabbing; }
 
-/* ---- Immersive flair for the deck: a light that sweeps the deck, and at Surge and Rend the chosen keys' names
+/* ---- Immersive flair for the deck: a soft heartbeat glowing out from its centre, and at Surge and Rend the chosen keys' names
    flicker. The keys themselves stay the app's plain buttons (4 Nov 2026, the author: a chosen key looks exactly
    like any chosen button, CHANNEL included, so no ring or glow is drawn on them). The Free-Shaping panel's deck
    (in an Immersive Flow tab) takes the same. */
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck{ border-color:color-mix(in srgb, var(--fv-res) 38%, var(--border2));
   box-shadow:0 0 16px color-mix(in srgb, var(--fv-res) 9%, transparent), inset 0 0 26px color-mix(in srgb, var(--fv-res) 6%, transparent); }
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck::before{ content:""; position:absolute; inset:0; border-radius:var(--r); pointer-events:none;
-  background:linear-gradient(100deg, transparent 0%, color-mix(in srgb, var(--fv-res) 13%, transparent) 50%, transparent 100%) no-repeat;
-  background-size:35% 100%; animation:fvSweep calc(7s / var(--fv-pulse)) linear infinite; animation-delay:var(--fv-t, 0s); }
+  /* a soft heartbeat from the centre (4 Nov 2026, the author): an ellipse sized to the deck's own box (closest-side), so a tall
+     deck beats in an oval, fading to nothing by 70% of the way out; at its largest beat it still ends well short of every edge */
+  background:radial-gradient(ellipse closest-side at 50% 50%, color-mix(in srgb, var(--fv-res) 24%, transparent) 0%, color-mix(in srgb, var(--fv-res) 10%, transparent) 38%, transparent 70%) no-repeat;
+  transform-origin:50% 50%; opacity:.3; animation:fvBeat calc(2.4s / var(--fv-pulse)) ease-in-out infinite; animation-delay:var(--fv-t, 0s); }
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-step-n{ text-shadow:0 0 8px var(--flow); }
 :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-switch.on .fv-switch-k::after{ animation:fvBlink 1.6s ease-in-out infinite; }
 :is(.fv-win.fv-immersive[data-fx="3"], .flowtab.immersive[data-fx="3"] .builder) .fv-opt.on .fv-opt-t, :is(.fv-win.fv-immersive[data-fx="4"], .flowtab.immersive[data-fx="4"] .builder) .fv-opt.on .fv-opt-t{ animation:fvJit .45s steps(2) infinite; }
 :is(.fv-win.fv-immersive[data-fx="5"], .flowtab.immersive[data-fx="5"] .builder) .fv-deck{ filter:grayscale(.8) brightness(.85); }
 :is(.fv-win.fv-immersive[data-fx="5"], .flowtab.immersive[data-fx="5"] .builder) .fv-deck::before{ animation:none; opacity:0; }
-@keyframes fvSweep{ from{ background-position:-40% 0; } to{ background-position:140% 0; } }
+/* lub-dub, then rest: two swells close together, the second softer, then a long ease back */
+@keyframes fvBeat{ 0%{ opacity:.3; transform:scale(.88); } 12%{ opacity:1; transform:scale(1); } 22%{ opacity:.55; transform:scale(.94); }
+  32%{ opacity:.85; transform:scale(.99); } 62%,100%{ opacity:.3; transform:scale(.88); } }
 @keyframes fvBlink{ 0%,100%{ opacity:.4; } 50%{ opacity:1; } }
 @media (prefers-reduced-motion: reduce){
   .fv-opt.on, .fv-opt.on.fv-just, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt.on.fv-just, :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-opt:hover:not(:disabled), :is(.fv-win.fv-immersive, .flowtab.immersive .builder) .fv-deck::before,
