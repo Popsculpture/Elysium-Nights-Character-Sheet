@@ -787,8 +787,11 @@ EN.gearCatalog.tools = {
   var items = EN.gearCatalog.tools.items;
   function medkit(name) { return items.find(function (i) { return i.name === name; }) || {}; }
   T.tiers.forEach(function (r) {
-    var name = r.tier + " Trauma Rig [" + r.t + "]";
+    /* The Handbook names a Rig by its tier alone (the author, 5 Nov 2026). A save still holding
+       "<tier> Trauma Rig [n]" moves through itemRenames on load; only the name changes. */
+    var name = r.tier + " [" + r.t + "]";
     if (items.some(function (i) { return i.name === name; })) return;   // idempotent
+    EN.gearCatalog.itemRenames.push({ oldName: r.tier + " Trauma Rig [" + r.t + "]", name: name });
     var med = medkit(r.medkitGrade);
     items.push({
       name: name, bucket: "rigs", group: "Trauma Rigs", rigTier: r.tier, rigTierIndex: r.t,

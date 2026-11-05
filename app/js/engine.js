@@ -2949,6 +2949,9 @@ EN.engine = (function () {
     // the seven pools keep behaving exactly as they did
     var extra = extraCatalogItems();
     for (var j = 0; j < extra.length; j++) if (extra[j] && extra[j].name === name) return extra[j];
+    // a Rig's old name still resolves, for anything holding it before migrate() has run
+    var oldRig = /^(.+) Trauma Rig (\[\d\])$/.exec(String(name));
+    if (oldRig) return loadCatalogItem(oldRig[1] + " " + oldRig[2]);
     return null;
   }
   /* WORN IS A TRAIT RULE, NOT A RIG RULE. The Worn Gear Trait ends "While actually worn rather

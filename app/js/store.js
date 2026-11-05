@@ -2263,7 +2263,7 @@ EN.store = (function () {
     }
     /* THE FREE CLASS ITEM ON A RECORD MADE BEFORE IT WAS GRANTED (A3, 28 October 2026 handoff).
        Until this build Claim Starting Kit never gave a Codebreaker the Standard Smartdeck or a
-       Stitcher the Field Kit Trauma Rig [0] that the class (and the kit note) promises, so Nessa
+       Stitcher the Field Kit [0] that the class (and the kit note) promises, so Nessa
        filed with no deck. A record that is FILED, or has CLAIMED its kit, and has never had the
        item (startingDeckGranted / startingRigGranted absent) gets it now: one Carried entry, put
        in its slot (the deck jacked in, the Rig worn), and the flag set. A record still being made
@@ -2291,7 +2291,7 @@ EN.store = (function () {
       var CLASS_ITEM = {
         codebreaker: { name: "Standard Smartdeck", flag: "startingDeckGranted", slot: "deck",
           has: function () { return (_ce.ownedDecks ? _ce.ownedDecks(ch) : []).some(function (o) { return o.type === "smartdeck"; }); } },
-        stitcher: { name: "Field Kit Trauma Rig [0]", flag: "startingRigGranted", slot: "rig",
+        stitcher: { name: "Field Kit [0]", flag: "startingRigGranted", slot: "rig",
           has: function () { return (_ce.ownedRigs ? _ce.ownedRigs(ch) : []).length > 0; } }
       }[ch.class];
       var _started = !!(ch.meta && ch.meta.filedAt) || !!(ch.startingKit && ch.startingKit.claimed);

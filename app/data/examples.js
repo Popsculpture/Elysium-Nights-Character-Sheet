@@ -1331,7 +1331,7 @@ EN.examples = [
    },
    {
     "id": "eq_r3vh3oe",
-    "name": "Field Kit Trauma Rig [0]",
+    "name": "Field Kit [0]",
     "qty": 1
    }
   ],

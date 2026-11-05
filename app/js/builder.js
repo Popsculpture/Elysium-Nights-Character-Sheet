@@ -1459,7 +1459,7 @@ EN.builder = (function () {
     codebreaker: { name: "Standard Smartdeck", flag: "startingDeckGranted", slot: "deck", verb: "jacked in",
       live: function (c) { return (c.grid && c.grid.deckKey) || null; },
       ready: function (c) { var k = this.live(c); return !!k && eng.ownedDecks(c).some(function (o) { return o.key === k && o.type === "smartdeck"; }); } },
-    stitcher: { name: "Field Kit Trauma Rig [0]", flag: "startingRigGranted", slot: "rig", verb: "worn",
+    stitcher: { name: "Field Kit [0]", flag: "startingRigGranted", slot: "rig", verb: "worn",
       live: function (c) { return (c.rig && c.rig.key) || null; },
       ready: function (c) { var k = this.live(c); return !!k && eng.ownedRigs(c).some(function (o) { return o.key === k; }); } }
   };

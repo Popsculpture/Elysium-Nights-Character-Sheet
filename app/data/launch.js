@@ -177,9 +177,9 @@ EN.launch = (function () {
      `phb` is the author's phb-gear-items-2026-10-16.txt: all 322 rows of the Handbook's gear
      tables, in book spelling, under the book's own section headings. A row that names no
      catalog item (a safehouse upgrade, a Hypercare tier, a parking row, a cyberware tier name)
-     matches nothing and costs nothing. Two app spellings differ from the book's, and
-     bookName() reads them as the book's: "Field Kit Trauma Rig [0]" is the Handbook's
-     "Field Kit [0]", and "Street Bike (Lease)" is the Street Bike. */
+     matches nothing and costs nothing. Two spellings differ from the book's, and
+     bookName() reads them as the book's: a save's old "Field Kit Trauma Rig [0]" is the
+     Handbook's "Field Kit [0]", and "Street Bike (Lease)" is the Street Bike. */
   var toolkit = {
     phb: [
       // Economy and Rewards (10)
@@ -358,8 +358,8 @@ EN.launch = (function () {
     return [].concat(s.items || [], s.munitions || []).map(function (i) { return i.name; });
   }
 
-  /* The app's name for a row, read as the Handbook spells it: "Field Kit Trauma Rig [0]" is
-     "Field Kit [0]", and a leased chassis ("Street Bike (Lease)") is the chassis. */
+  /* The app's name for a row, read as the Handbook spells it: the old "Field Kit Trauma Rig [0]" is
+     "Field Kit [0]" (the new name passes through unchanged), and a leased chassis ("Street Bike (Lease)") is the chassis. */
   function bookName(n) { return String(n).replace(/ Trauma Rig (\[\d\])$/, " $1").replace(/ \(Lease\)$/, ""); }
 
   /* The shown set and the catalog name set are built on first use and kept only once every data
