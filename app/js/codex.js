@@ -1057,6 +1057,7 @@ EN.codexView = (function () {
     var hits = [];
     function add(score, h) { h.score = score; h.seq = hits.length; hits.push(h); }
     function titleScore(t, f) { return M.exact(t) ? 0 : f.word ? 1 : 2; }
+    var shown = {};   // this desktop's panels, for the registered names below
     chaptersSorted().forEach(function (ch) {
       panelsOf(ch, pt).forEach(function (p) {
         if (!ready(p)) return;
@@ -1064,6 +1065,7 @@ EN.codexView = (function () {
         if (ix.empty) return;
         // a chapter and its only panel can share a title ("Paying the Crew"): said once
         var crumb = p.title.toLowerCase() === ch.title.toLowerCase() ? ch.title : ch.title + " / " + p.title, any = false;
+        shown[p.id] = { crumb: crumb, text: ix.text };
         var pf = M.find(p.title);
         if (pf) { any = true; add(titleScore(p.title, pf) - 0.25, { anchor: p.id, title: p.title, crumb: ch.title, snip: null }); }
         ix.entries.forEach(function (e) {
@@ -1079,6 +1081,13 @@ EN.codexView = (function () {
         var pt2 = any ? null : M.find(ix.text);
         if (pt2) add(pt2.word ? 3 : 4, { anchor: p.id, title: p.title, crumb: ch.title, snip: snippet(ix.text, pt2) });
       });
+    });
+    /* A registered name that IS the query finds its panel even when the panel's text never says it: the
+       Flow tab's Free-Shaping is the Order of Shaping, whose words don't include "Free-Shaping". */
+    Object.keys(_aliases).forEach(function (k) {
+      var at = _aliases[k], sp = shown[String(at).split("/")[0]];
+      if (!sp || !M.exact(k) || hits.some(function (h) { return h.anchor === at; })) return;
+      add(0.5, { anchor: at, title: k, crumb: sp.crumb, snip: snippet(sp.text, null) });
     });
     var first = {}, home = {};
     Object.keys(_aliases).forEach(function (k) { home[k.toLowerCase()] = _aliases[k]; });

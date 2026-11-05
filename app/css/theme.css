@@ -3441,3 +3441,23 @@ html.skin-droid .fv-win.fv-droid{ left:calc(var(--dr-l) + 10px); right:auto; wid
   .fv-win.fv-immersive .fv-stage::before, .fv-win.fv-immersive .fv-stage::after, .fv-win.fv-immersive .beam, .fv-win.fv-immersive .beam::before, .fv-win.fv-immersive .beam::after{ animation:none !important; }
   .fv-win.fv-immersive .beam{ display:none; }
 }
+
+/* PHONE WIDTH ON EVERY SKIN (5 Nov 2026). #GRIDroid is built for a phone; Classic and '98 can be opened on one too,
+   and then a row that wouldn't wrap pushed the whole page sideways. These are the rules #GRIDroid already uses. */
+@media (max-width: 560px){
+  html:not(.skin-droid) .row{ flex-wrap:wrap; }
+  html:not(.skin-droid) .row.between.wrap > .row{ flex:1 1 100%; min-width:0; }
+  html:not(.skin-droid) .panel-h{ flex-wrap:wrap; row-gap:6px; }
+  html:not(.skin-droid) .panel-h .panel-hr{ flex:1 1 100%; margin-left:0 !important; justify-content:flex-start !important; }
+  html:not(.skin-droid) .panel-h .panel-hr.chip-only{ flex:0 0 auto; margin-left:auto !important; }
+  html:not(.skin-droid) .panel-h select{ flex:1 1 100%; width:100% !important; min-width:0 !important; }
+  html:not(.skin-droid) .row-label{ flex:1 1 100% !important; min-width:0 !important; }
+  html:not(.skin-droid) .row.wrap[style*="margin: 4px 0px 0px 44px"]{ margin-left:0 !important; }
+  html:not(.skin-droid) .row > select[style*="min-width: 160px"]{ flex:1 1 100%; width:100% !important; min-width:0 !important; }
+  html:not(.skin-droid) .row > div[style*="min-width: 120px"]{ flex:1 1 100% !important; }
+  html:not(.skin-droid) .mkt-action{ flex:1 1 100% !important; margin-left:0 !important; justify-content:flex-start !important; }
+  html:not(.skin-droid) select[style*="width: auto"]{ max-width:100%; }
+  html:not(.skin-droid) .chrome-frame, html:not(.skin-droid) .chrome-stats{ grid-template-columns:1fr !important; gap:12px !important; justify-items:center; }
+  html:not(.skin-droid) .chrome-frame > div, html:not(.skin-droid) .chrome-stats > div{ width:100%; }
+  html.skin-98 .inv-sub::after{ overflow:hidden; }   /* the '98 market's painted address bar: its long URL is decoration */
+}

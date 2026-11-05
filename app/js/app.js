@@ -343,6 +343,28 @@ EN.app = (function () {
 
   var _lastTab = null;
   var _swipe = null;   // the swipe gesture, when the module is present (see start)
+  /* A BUTTON THAT STAYS UNDER THE FINGER. What a press changes can add height above the button (the Body Save
+     prompt, a condition banner), and a second tap then lands on whatever moved into its place. pinPress notes
+     where the button sits; the renders that follow scroll by however far it moved, so it stays put on screen. */
+  var _pin = null;
+  function pinPress(node) {
+    if (!node || !node.dataset || !node.dataset.pin) return;
+    _pin = { key: node.dataset.pin, y: node.getBoundingClientRect().top, until: Date.now() + 800 };
+  }
+  function applyPin(view) {
+    if (!_pin) return;
+    if (Date.now() > _pin.until) { _pin = null; return; }
+    var key = _pin.key, node = Array.prototype.filter.call(view.querySelectorAll("[data-pin]"), function (b) { return b.dataset.pin === key; })[0];
+    if (!node) return;
+    var moved = node.getBoundingClientRect().top - _pin.y;
+    if (Math.abs(moved) < 1) return;
+    for (var p = node.parentElement; p && p !== document.body; p = p.parentElement) {
+      var oy = getComputedStyle(p).overflowY;
+      if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) { p.scrollTop += moved; return; }
+    }
+    window.scrollBy(0, moved);
+  }
+
   function render() {
     // a rebuild under a finger strands its touch (the events keep targeting the removed node),
     // so the gesture is told to snap back first; a no-op unless a drag is in flight
@@ -390,6 +412,7 @@ EN.app = (function () {
       });
     } else window.scrollTo(0, 0);                          // tab switch → start at top
     if (_lastTab === LAST[portal]) focusRestore(view, keep);
+    applyPin(view);
     _lastTab = LAST[portal];
     paintActiveName();
     revealActive();
@@ -670,7 +693,7 @@ EN.app = (function () {
   }
 
   return {
-    start: start, render: render, recoveryNotice: recoveryNotice,
+    start: start, render: render, pinPress: pinPress, recoveryNotice: recoveryNotice,
     paintActiveName: paintActiveName, fitRecordPick: fitRecordPick,   // #PRINT repaints the banner as the name is typed
     activeTab: function () { return LAST[portal]; },
     tabOrder: tabOrder,

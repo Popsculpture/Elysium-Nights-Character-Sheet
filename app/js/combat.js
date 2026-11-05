@@ -4756,7 +4756,8 @@ EN.combatView = (function () {
 
     /* vitality + vigor + wounds, compact console; controls live in popovers on the bar labels */
     function railBtn(label, color, title, onclick) {
-      return el("button.btn.sm", { title: title, onclick: onclick, style: { color: color, borderColor: color, width: "100%", textAlign: "center", justifyContent: "center" } }, label);
+      // a hit can raise banners and the Body Save prompt above this button, so it stays where it was pressed
+      return el("button.btn.sm", { title: title, dataset: { pin: label }, onclick: function (ev) { EN.app.pinPress(ev.currentTarget); onclick(ev); }, style: { color: color, borderColor: color, width: "100%", textAlign: "center", justifyContent: "center" } }, label);
     }
     function popAnchor(key, color, title, labelChildren, controls) {
       return el("div.pop-anchor", { style: { position: "relative" } }, [

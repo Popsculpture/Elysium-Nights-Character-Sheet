@@ -73,7 +73,8 @@ EN.gmStore = (function () {
              name: "",          // set when an encounter is run from the Encounters tab
              sourceId: null,    // the saved encounter it came from, if any
              room: [],          // live hazards in the Room tray
-             clock: null };     // the Security Response clock, or null when none is running
+             clock: null,       // the Security Response clock, or null when none is running
+             defeated: [] };    // threats taken to 0 Vitality in the fight, then cleared off with their X
   }
 
   function blank() {
@@ -313,6 +314,7 @@ EN.gmStore = (function () {
       s.encounter.sourceId = typeof e.sourceId === "string" && e.sourceId ? e.sourceId : null;
       try { s.encounter.room = cleanRoom(e.room); } catch (err) { s.encounter.room = []; }
       try { s.encounter.clock = cleanClock(e.clock); } catch (err) { s.encounter.clock = null; }
+      s.encounter.defeated = cleanEntries(e.defeated);
     }
     try { s.lastEncounter = cleanLast(raw.lastEncounter); } catch (err) { s.lastEncounter = null; }
     return s;
@@ -565,8 +567,17 @@ EN.gmStore = (function () {
           turned = true;
         }
       }
+      /* A threat at 0 Vitality, cleared off once the fight is running, was defeated, so its XP stays in
+         the award (Toolkit: "total the defeated threats' values"). The award card's tick still lets the GM
+         take one out. A row removed before round 1, or still on its feet, leaves no trace. */
+      var gone = s.encounter.entries.filter(function (r) { return r.id === id; })[0];
+      if (gone && gone.kind === "threat" && (s.encounter.round | 0) > 0 && Number(gone.vit) <= 0) {
+        s.encounter.defeated = (s.encounter.defeated || []).concat([copy(gone)]);
+      }
       s.encounter.entries = s.encounter.entries.filter(function (r) { return r.id !== id; });
-      if (!s.encounter.entries.length) { s.encounter.activeId = null; s.encounter.round = 0; turned = false; }
+      /* The last row gone is the plan scrapped: its Room, clock and name go with it, so the next plan
+         inherits nothing. A fight that had something to award is snapshotted first, as END does. */
+      if (!s.encounter.entries.length) { snapshotFight(s); s.encounter = blankEncounter(); turned = false; }
     });
     return turned;
   }
@@ -582,13 +593,20 @@ EN.gmStore = (function () {
      Room tray and clock with it. */
   function clearEncounter() {
     update(function (s) {
-      var e = s.encounter;
-      if (e.entries.some(function (r) { return r && r.kind === "threat"; })) {
-        s.lastEncounter = { at: Date.now(), name: e.name || "", sourceId: e.sourceId || null,
-                            round: e.round | 0, entries: copy(e.entries) };
-      }
+      snapshotFight(s);
       s.encounter = blankEncounter();
     });
+  }
+  /* The rows the award reads: what's on the Table plus the threats defeated and cleared off it. A run plan
+     with Objective XP is a fight too, threats or none (Toolkit: "Add objective awards on top"). */
+  function snapshotFight(s) {
+    var e = s.encounter, rows = e.entries.concat(e.defeated || []);
+    var plan = (e.round | 0) > 0 && e.sourceId && s.encounters && own(s.encounters, e.sourceId) ? s.encounters[e.sourceId] : null;
+    var objective = !!(plan && plan.objective && Number(plan.objective.awardXp) > 0);
+    if (objective || rows.some(function (r) { return r && r.kind === "threat"; })) {
+      s.lastEncounter = { at: Date.now(), name: e.name || "", sourceId: e.sourceId || null,
+                          round: e.round | 0, entries: copy(rows) };
+    }
   }
 
   // ---- the live encounter's other parts -------------------------------------

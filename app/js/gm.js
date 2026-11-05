@@ -1730,6 +1730,8 @@ EN.gmView = (function () {
   function searchText(e) {
     var bits = [e.name, e.identity, e.gear, e.salvage, e.signs];
     (e.abilities || []).forEach(function (a) { bits.push(a.name); bits.push(a.text); });
+    // a printed variant ("Variant, Corpsec Sergeant") has no card of its own, so it finds its parent's
+    if (e.variant) bits.push(String(e.variant.label).replace(/^Variant,\s*/, "").replace(/\s*\(.*$/, ""));
     return bits.filter(function (b) { return b; }).join(" \n ").replace(/\*/g, "").toLowerCase();
   }
 
