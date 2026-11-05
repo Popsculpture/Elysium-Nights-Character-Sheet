@@ -21,6 +21,17 @@
      Cover     vented, Half Cover gives +2 and Three-Quarter +5 to the Agility
                save, when it stands between the target and where the blast goes off.
 
+   WHERE THE TURNED-BACK BLAST GOES (the author, 4 Nov 2026, with a drawing): the
+   spaces of the Area that land in a wall the blast can't break aren't lost; they are
+   pushed back into the room and fill the open space there. They run out from the
+   blast's edge in straight lines through open floor, every line a space at a time,
+   nearest the blast first; a wall or a piece of cover the blast doesn't break stops a
+   line, so the flow parts round the cover and the spaces behind it stay clear. When
+   the straight lines run out, the rest flows on through the open room, round corners.
+   When the room is full, what is left is spent against the walls. A body standing in
+   those spaces is caught like any other. Vented, the blast escapes instead; a
+   lingering cloud fills the space the same way, with no extra dice.
+
    WHAT THE BOOK DOES NOT SETTLE, and this diagram therefore CHOOSES (and says so
    on its face): the Area is the Codex template's (membership by centre, js/aoegrid.js)
    placed on the blast's space; sealed, it reaches every space of the Area in the room,
@@ -107,6 +118,10 @@ EN.wallGrid = (function () {
       else behind[key] = c;
     });
     var blastFx = !S.cloud, sealed = !S.vent && blastFx;
+    // the spaces the walls turn back fill the open room (not when it vents)
+    var spillN = Object.keys(spill).length, pushed = S.vent ? {} : push(hit, spillN, B);
+    Object.keys(pushed).forEach(function (key) { hit[key] = pushed[key]; });
+    var lost = S.vent ? 0 : spillN - Object.keys(pushed).length;
     var tight = tightest(), eff = Math.max(0, tight - (S.pressure ? 1 : 0)), width = areaWidth();
     var extra = sealed ? Math.min(S.dice, Math.max(0, width - eff)) : 0;
     var dmg = (S.dice + extra) + "d" + S.die;
@@ -121,7 +136,54 @@ EN.wallGrid = (function () {
       people.push({ key: key, x: c.x, y: c.y, kind: it.kind, n: it.n, name: (it.kind === "ally" ? "ALLY " : "FOE ") + it.n, caught: caught, behind: !!behind[key], cover: cover });
     });
     people.sort(function (a, b) { return a.kind === b.kind ? a.n - b.n : (a.kind === "foe" ? -1 : 1); });
-    return { raw: raw, hit: hit, behind: behind, spill: spill, blastFx: blastFx, sealed: sealed, tight: tight, eff: eff, width: width, extra: extra, dmg: dmg, people: people };
+    return { raw: raw, hit: hit, behind: behind, spill: spill, pushed: pushed, spillN: spillN, lost: lost, blastFx: blastFx, sealed: sealed, tight: tight, eff: eff, width: width, extra: extra, dmg: dmg, people: people };
+  }
+  /* Where the turned-back spaces go (see the header): n spaces, out from the edge of the blast (area, keyed
+     spaces in the room) in straight lines through open floor, every line advancing together, nearest the blast
+     first; a wall or a cover piece stops a line. When the lines are spent, the rest spreads on through open floor
+     a step at a time, round corners. A cover piece never sends a line on (even inside the Area), and its shadow
+     (the spaces the blast reaches only through it) is never filled: the flow parts round it. Returns the spaces
+     filled, keyed. */
+  var DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  function open(x, y, taken) { if (!isFloor(x, y) || taken[k(x, y)]) return false; var it = S.items[k(x, y)]; return !(it && (it.kind === "half" || it.kind === "three")); }
+  function push(area, n, B) {
+    var out = {}, taken = {}, got = 0;
+    if (n <= 0) return out;
+    Object.keys(area).forEach(function (key) { taken[key] = 1; });
+    function d2(x, y) { return (x - B.x) * (x - B.x) + (y - B.y) * (y - B.y); }
+    function isCov(key) { var it = S.items[key]; return !!(it && (it.kind === "half" || it.kind === "three")); }
+    // a cover piece's shadow: a space the line from the blast reaches only through cover; the flow never fills it
+    var leeC = {};
+    function lee(x, y) { var kk = k(x, y); if (leeC[kk] == null) leeC[kk] = between(B, { x: x, y: y }).some(function (c) { return isCov(k(c.x, c.y)); }); return leeC[kk]; }
+    function free(x, y) { return open(x, y, taken) && !lee(x, y); }
+    function order(a, b) { return a.step - b.step || a.d - b.d || a.y - b.y || a.x - b.x; }
+    // the straight lines
+    var cand = {}, list = [];
+    Object.keys(area).forEach(function (key) {
+      if (isCov(key)) return;                               // a cover piece the blast doesn't break parts the flow; it sends none on
+      var p = key.split(":"), x0 = +p[0], y0 = +p[1];
+      DIRS4.forEach(function (d) {
+        if (area[k(x0 + d[0], y0 + d[1])]) return;          // not an edge that way
+        for (var step = 1, x = x0 + d[0], y = y0 + d[1]; free(x, y); step++, x += d[0], y += d[1]) {
+          var kk = k(x, y);
+          if (!cand[kk] || cand[kk].step > step) cand[kk] = { x: x, y: y, step: step, d: d2(x, y) };
+        }
+      });
+    });
+    Object.keys(cand).forEach(function (kk) { list.push(cand[kk]); });
+    list.sort(order);
+    for (var i = 0; i < list.length && got < n; i++) { var c = list[i]; out[k(c.x, c.y)] = { x: c.x, y: c.y }; taken[k(c.x, c.y)] = 1; got++; }
+    // then on through the open room, a step at a time, round corners
+    var front = Object.keys(taken).filter(function (key) { return !isCov(key); }).map(function (key) { var p = key.split(":"); return { x: +p[0], y: +p[1] }; });
+    while (got < n && front.length) {
+      var next = {}, layer = [];
+      front.forEach(function (c) { DIRS4.forEach(function (d) { var x = c.x + d[0], y = c.y + d[1], kk = k(x, y); if (!next[kk] && free(x, y)) { next[kk] = 1; layer.push({ x: x, y: y, step: 0, d: d2(x, y) }); } }); });
+      layer.sort(order);
+      for (var j = 0; j < layer.length && got < n; j++) { var q = layer[j]; out[k(q.x, q.y)] = { x: q.x, y: q.y }; got++; }
+      layer.forEach(function (q) { taken[k(q.x, q.y)] = 1; });
+      front = layer;
+    }
+    return out;
   }
   function coverName(c) { return c === "three" ? "Three-Quarter Cover" : "Half Cover"; }
   function coverShort(c) { return c === "three" ? "3/4 Cover" : "1/2 Cover"; }
@@ -142,7 +204,8 @@ EN.wallGrid = (function () {
   function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function drawSvg(R) {
     var lx = -1, ly = -1, hx = S.w, hy = S.h;
-    Object.keys(R.spill).forEach(function (key) { var c = R.spill[key]; lx = Math.min(lx, c.x); ly = Math.min(ly, c.y); hx = Math.max(hx, c.x); hy = Math.max(hy, c.y); });
+    // past the walls is drawn only when the room vents (sealed, the walls turn it back into the room)
+    if (S.vent) Object.keys(R.spill).forEach(function (key) { var c = R.spill[key]; lx = Math.min(lx, c.x); ly = Math.min(ly, c.y); hx = Math.max(hx, c.x); hy = Math.max(hy, c.y); });
     var floor = "", walls = "", area = "", over = "", s = "";
     for (var y = ly; y <= hy; y++) for (var x = lx; x <= hx; x++) {
       var key = k(x, y);
@@ -152,9 +215,10 @@ EN.wallGrid = (function () {
         for (var dy = -1; dy <= 1 && !nearFloor; dy++) for (var dx = -1; dx <= 1; dx++) if (isFloor(x + dx, y + dy)) { nearFloor = true; break; }
         if (nearFloor) walls += rect(x, y, "wtw-wall");
       }
-      if (R.hit[key]) area += rect(x, y, "aoe-cell aoe-hit wtw-hit");
+      if (R.pushed[key]) { area += rect(x, y, "aoe-cell aoe-hit wtw-hit wtw-pushed"); over += rect(x, y, "wtw-spill"); }
+      else if (R.hit[key]) area += rect(x, y, "aoe-cell aoe-hit wtw-hit");
       else if (R.behind[key]) area += rect(x, y, "wtw-behind");
-      else if (R.spill[key]) over += rect(x, y, R.sealed ? "wtw-spill" : "wtw-vent");
+      else if (R.spill[key] && S.vent) over += rect(x, y, "wtw-vent");
     }
     s += '<defs><pattern id="wtw-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" class="wtw-hatch-line"/></pattern></defs>';
     var edges = "";
@@ -384,6 +448,12 @@ EN.wallGrid = (function () {
           : "Rebound: the room holds it, so no extra dice: " + R.dmg + ".");
         lines.push("Sealed: everyone caught saves with Snag, and Half and Three-Quarter Cover grant no bonus.");
       }
+      if (!S.vent && R.spillN > 0) {
+        var pn = Object.keys(R.pushed).length;
+        lines.push("The walls turn back " + R.spillN + " space" + (R.spillN === 1 ? "" : "s") + " of the Area. "
+          + (pn ? (pn === R.spillN ? "They fill" : pn + " of them fill") + " the open room past the blast (hatched), running straight out from it and parting round any cover that holds; anyone there is caught too." : "")
+          + (R.lost > 0 ? (pn ? " " : "") + R.lost + " find" + (R.lost === 1 ? "s" : "") + " no open space and " + (R.lost === 1 ? "is" : "are") + " spent against the walls." : ""));
+      }
       lines.forEach(function (t, i) { read.appendChild(el("p" + (i === 0 ? ".wtw-sum" : ""), { text: t })); });
       var caught = R.people.filter(function (p) { return p.caught; });
       clear(list);
@@ -410,7 +480,7 @@ EN.wallGrid = (function () {
       list,
       el("p.help.aoe-hint", { text: "Pick a tool and tap the room: BLAST sets where it goes off, FOE, ALLY and the covers put one down (tap it again to lift it), ERASE takes one away. Drag anything to move it. On a phone, tap the room once before dragging up or down. From the keyboard, the arrow keys move a cursor round the room (and the blast, with BLAST picked), and Enter or Space uses the tool there." }),
       el("p.help", { style: { margin: "6px 0 0", fontStyle: "italic" },
-        text: "How this diagram reads the rule: the Area is the Codex template's, centered on the space where the blast goes off. Sealed, it reaches every space of the Area in the room, round an L's corner too, since the pressure fills every corner; vented, a space with a wall between it and the blast isn't caught. The hatched spaces past the walls are the part of the blast the room can't hold. The room's tightest open dimension is its narrowest width, an L's arm. Cover counts when its space lies on the straight line from the blast to the target, and only for an Agility save. Set the save and what it does from the weapon's own entry. Borderline calls are the GM's." })
+        text: "How this diagram reads the rule: the Area is the Codex template's, centered on the space where the blast goes off. Sealed, it reaches every space of the Area in the room, round an L's corner too, since the pressure fills every corner; vented, a space with a wall between it and the blast isn't caught. The spaces that land in a wall are turned back into the room (hatched): they run straight out from the blast's edge through open floor, every line a space at a time, nearest the blast first, and a wall or a cover piece that holds stops a line, so the flow parts round the cover and the spaces behind it stay clear; once the straight lines are full the rest spreads on round corners, and what finds no room is spent against the walls. The room's tightest open dimension is its narrowest width, an L's arm. Cover counts when its space lies on the straight line from the blast to the target, and only for an Agility save. Set the save and what it does from the weapon's own entry. Borderline calls are the GM's." })
     ]);
   }
 
