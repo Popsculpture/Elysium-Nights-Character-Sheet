@@ -46,7 +46,7 @@ EN.classes.scoundrel = {
     attribute: "Agility",
     maxFormula: "Caliber + Agility Modifier (minimum 1)",
     refresh: "You regain all spent Moxie at the end of a Short or Long Rest.",
-    fuels: "Spend Moxie on Gambits (learn 3 at Level 1, +2 at Level 5): Lucky Break, Jinx, Slip the Blow, Smash and Grab, Bad Feeling, Shake It Off, Ace Up the Sleeve, Kick Them While They're Down, Quick Hands, and Pure Luck. Unless a Gambit says otherwise, it costs 1 Moxie.",
+    fuels: "Moxie (Agility). Fuels evasive footwork, dirty tricks, and the lucky breaks that keep a Scoundrel breathing.",
     // Gambits: choose 3 at L1, +2 more at L5. The options live in the structured list above.
     gambitPicks: [{ level: 1, count: 3 }, { level: 5, count: 2 }],
     gambitsIntro: SCOUNDREL_MOXIE_INTRO,
@@ -296,7 +296,7 @@ EN.classes.shaper = {
     attribute: "Mystique or Tech, set by subclass",
     maxFormula: "(Caliber x 3) + Flow Modifier",
     refresh: "You regain all spent FP at the end of a Long Rest, and an amount equal to your Flow Modifier at the end of a Short Rest. If your FP drops to 0, you may continue to shape by entering Overdraw, losing 1d4 Vitality per FP spent and risking Strain.",
-    fuels: "Spend FP to build an Invocation using your known Resonances combined with the Intent and Force, Delivery, and Duration rules. Also fuels subclass features and Advanced Techniques (Flow Linking, Resonance Amplification, Cooperative Channeling, Sustained Fields)."
+    fuels: "Flow Points (FP) (Mystique or Tech depending on subclass)."
   },
 
   startingProficiencies: {
