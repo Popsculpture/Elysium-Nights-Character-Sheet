@@ -133,7 +133,7 @@ EN.abilityTags = {
   "Echo Sighted": { tag: "Detection" },
   "Encrypted Channel": { tag: "Deception" },
   "Encrypted Comms": { tag: "Utility" },
-  "Execution": { tag: "Utility" },
+  "Discipline": { tag: "Utility" },
   "Exit Strategy": { tag: "Movement" },
   "Expanded Frequency": { tag: "Utility" },
   "Expanded Leverage": { tag: "Utility" },

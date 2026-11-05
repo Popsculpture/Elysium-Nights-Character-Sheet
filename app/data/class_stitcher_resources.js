@@ -375,7 +375,7 @@ EN.resourceRules = {
   spending: "When a class feature, maneuver, protocol, or exploit lists a cost, reduce your current pool by that amount immediately. If you don't have enough points remaining, you can't activate that ability.",
 
   /* NEW 2026-08-24, and it governs every class resource rather than one class: Overdrive,
-     Leverage, Execution, Triage, Moxie and Bandwidth alike. Two readings are easy to get
+     Leverage, Discipline, Triage, Moxie and Bandwidth alike. Two readings are easy to get
      wrong. It is per ACTIVATION, not per turn (the book prints no per-turn spend cap
      anywhere, and Impulses fire on other people's turns), and it caps the SPEND, not the
      size of the pool. A Fury with 8 Overdrive and Caliber 4 can put 4 into one Overkill

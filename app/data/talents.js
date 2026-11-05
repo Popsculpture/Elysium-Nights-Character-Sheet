@@ -167,7 +167,7 @@ EN.talents = [
     name: "Tactical Operative",
     category: "Tactics & Hybrid Fighting",
     requirements: "",
-    text: "Somebody taught you the Fury's and the Operator's tricks, and you kept them. You gain the following benefits:\n• Pick two Overdrive Maneuvers or Calls from the Fury or Operator class. A maneuver that forces a Target to make a Saving Throw uses DC 8 + your Body or Agility Modifier (your choice) + your Caliber.\n• You gain 2 Overdrive (or Execution, to match your choice) to fuel your maneuvers, regained when you finish a Short Rest or Long Rest. Unless its entry says otherwise, each Maneuver or Call you learn here costs 1 point from this pool.\n\n**Upgrade (Level 6+):** You learn one additional maneuver from the same list, and your resource pool from this Talent increases by 2 points."
+    text: "Somebody taught you the Fury's and the Operator's tricks, and you kept them. You gain the following benefits:\n• Pick two Overdrive Maneuvers or Calls from the Fury or Operator class. A maneuver that forces a Target to make a Saving Throw uses DC 8 + your Body or Agility Modifier (your choice) + your Caliber.\n• You gain 2 Overdrive (or Discipline, to match your choice) to fuel your maneuvers, regained when you finish a Short Rest or Long Rest. Unless its entry says otherwise, each Maneuver or Call you learn here costs 1 point from this pool.\n\n**Upgrade (Level 6+):** You learn one additional maneuver from the same list, and your resource pool from this Talent increases by 2 points."
   },
 
   // ===== Tech & #GRID Operations =====

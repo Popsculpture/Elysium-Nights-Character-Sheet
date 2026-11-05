@@ -359,6 +359,16 @@ EN.store = (function () {
                           (Hush until the player chooses); Sensory Overload is gone with no replacement
      Never over a companion already built (a resident is set). The player's note, pin, star or hide on
      the old feature moves to the new name. Idempotent: the legacy fields are removed once read. */
+  /* The Operator's class resource was renamed from Execution to Discipline (the author, 5 Nov 2026). The
+     pool's live count is kept under the resource's name, so a record saved before the rename carries
+     resources.current.Execution: it moves to Discipline here, count intact (a Discipline already present
+     wins), and the old key goes. Idempotent. */
+  function migrateDiscipline(ch) {
+    var cur = ch && ch.resources && ch.resources.current;
+    if (!cur || typeof cur !== "object" || !Object.prototype.hasOwnProperty.call(cur, "Execution")) return;
+    if (cur.Discipline == null && typeof cur.Execution === "number") cur.Discipline = cur.Execution;
+    delete cur.Execution;
+  }
   function migrateScrapFamiliar(ch) {
     function kindOf(v) {
       if (v && typeof v === "object") v = v.type || v.kind || v.name || v.familiar || "";
@@ -1132,6 +1142,7 @@ EN.store = (function () {
     ch.talentAttrPicks = tapOut;
     migratePresence(ch);
     migrateScrapFamiliar(ch);
+    migrateDiscipline(ch);
     /* The damage-type picks, rebuilt the same way and for the same reason: the schema fill deep
        copies through JSON and hands back a plain object, so a save file carrying a key of
        "toString" would otherwise read as present and feed the engine a prototype method. Renames

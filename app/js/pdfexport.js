@@ -553,7 +553,7 @@ EN.pdfExport = (function () {
     return "Passive";
   }
   function costTag(text) {
-    var m = (text || "").match(/(\d+)\s*(Bandwidth|Flow Points?|FP|Overdrive|Moxie|Leverage|Execution|Triage|Grit)\b/i);
+    var m = (text || "").match(/(\d+)\s*(Bandwidth|Flow Points?|FP|Overdrive|Moxie|Leverage|Discipline|Triage|Grit)\b/i);
     if (!m) return null;
     var r = m[2].toLowerCase();
     var abbr = r.indexOf("bandwidth") === 0 ? "BW" : (r.indexOf("flow") === 0 || r === "fp") ? "FP" : m[2].slice(0, 3).toUpperCase();
@@ -977,7 +977,7 @@ EN.pdfExport = (function () {
     if (!feats.length) {
       ctx.text("No features yet.", { size: 9, color: hexColor("dim") });
     } else {
-      var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", Execution: "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
+      var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", Discipline: "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
             /* The book prints seven action types and this renderer used to carry five, folding
          Complex into Action and having no Special branch at all, so a Special Action
          ability landed in PASSIVE through the `|| groups.Passive` fallback and told the

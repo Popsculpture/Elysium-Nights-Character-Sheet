@@ -5048,7 +5048,7 @@ EN.engine = (function () {
     var res = cls && cls.resource;
     return (res && res.abilities) || [];
   }
-  // true for classes that know their whole list (Codebreaker Bandwidth, Operator Execution)
+  // true for classes that know their whole list (Codebreaker Bandwidth, Operator Discipline)
   function resourceKnowsAll(ch) {
     var cls = getClass(ch && ch.class);
     var res = cls && cls.resource;

@@ -163,7 +163,7 @@ EN.printSheet = (function () {
     function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
   }
   function costTag(text) {
-    var m = (text || "").match(/(\d+)\s*(Bandwidth|Flow Points?|FP|Overdrive|Moxie|Leverage|Execution|Triage|Grit)\b/i);
+    var m = (text || "").match(/(\d+)\s*(Bandwidth|Flow Points?|FP|Overdrive|Moxie|Leverage|Discipline|Triage|Grit)\b/i);
     if (!m) return null;
     var r = m[2].toLowerCase();
     var abbr = r.indexOf("bandwidth") === 0 ? "BW" : (r.indexOf("flow") === 0 || r === "fp") ? "FP" : m[2].slice(0, 3).toUpperCase();
@@ -787,7 +787,7 @@ EN.printSheet = (function () {
     var haveName = {}; feats.forEach(function (f) { haveName[f.name] = true; });
     feats = feats.concat(knownPickFeatures(ch).filter(function (f) { return !haveName[f.name]; }));
     if (!feats.length) { out.push(note("No features yet.")); return out; }
-    var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", Execution: "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
+    var ACT_OVERRIDE = { Bandwidth: "Passive", Overdrive: "Passive", Leverage: "Passive", Moxie: "Passive", Discipline: "Passive", Triage: "Passive", Reservoir: "Passive", "Core Channeling": "Passive", "Reality Fracture": "Swift" };
           /* The book prints seven action types and this renderer used to carry five, folding
          Complex into Action and having no Special branch at all, so a Special Action
          ability landed in PASSIVE through the `|| groups.Passive` fallback and told the

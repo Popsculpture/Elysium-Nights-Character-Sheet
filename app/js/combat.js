@@ -2866,7 +2866,7 @@ EN.combatView = (function () {
     Bandwidth: "var(--bw)",   // electric blue, data / signal / system capacity (shared with #GRID)
     Overdrive: "#FF7A00",   // hazard orange, heat / adrenaline / past safe limits
     Leverage:  "#D6A21E",   // gold, influence / favors / social capital
-    Execution: "#B11226",   // crimson, sharp / decisive / final
+    Discipline: "#B11226",  // crimson (the Operator's resource, Execution until 5 Nov 2026), sharp / decisive / final
     Moxie:     "#FF2DAA",   // neon magenta, stylish / defiant / reckless
     Flow:      "var(--fp)",   // arc-violet, mystical / unstable (shared with the Flow tab)
     Triage:    "#2FE6A6"    // medical mint, clinical / restorative / urgent

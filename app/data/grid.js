@@ -324,7 +324,7 @@ EN.grid.cipherTierNames = ["Standard", "Improved", "Advanced", "Premium", "Elite
 });
 /* `activation` is the action cost, and it was `exec` until 2026-09-18. Part 2 renamed the
    printed label from "Execution:" to "Activation:" because it collided with the Operator's
-   class resource, which is also called Execution and is unchanged. The app never printed the
+   class resource, which was then also called Execution (renamed Discipline on 5 Nov 2026). The app never printed the
    old label, so nothing visible was wrong, but the key now matches both the book and the gear
    side, where `it.activation` has always been the action-cost field (inventory.js renders it
    under an "Activation:" heading). One name for one idea across both halves of the catalog.

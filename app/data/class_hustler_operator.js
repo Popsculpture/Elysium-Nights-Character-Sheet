@@ -249,16 +249,16 @@ EN.classes.hustler = {
 };
 
 // Tactical Maneuvers (the Operator's "Calls") as structured sub-entries: the single source for the
-// engine, the Class-tab picker, and the print sheet. The Execution feature's prose (below) is
+// engine, the Class-tab picker, and the print sheet. The Discipline feature's prose (below) is
 // composed from this list, so the displayed text and the machine-readable data can never drift
-// apart. The Operator knows every Call; each costs 1 EX to make.
-var OPERATOR_TACTICAL_INTRO = "The chaos of a firefight is where you work: directing traffic, creating openings, keeping your crew alive. You have a pool of **Execution (EX)** equal to your **Caliber + your Wits Modifier**. You regain all spent Execution at the end of a Short or Long Rest. You know every Call below and unless otherwise noted, all Calls cost 1 EX to activate.\n\n**Suppression.** Several of your Calls leave a target *Suppressed*. A Suppressed target rolls with **Snag** on attack rolls and can't take **Impulse Actions** until the suppression ends. Hurting the enemy is the least of what this does. You strip away their ability to fight back cleanly, pin them in place, and hand your crew a target that can't punish them for moving in.";
+// apart. The Operator knows every Call; each costs 1 Discipline to make.
+var OPERATOR_TACTICAL_INTRO = "The chaos of a firefight is where you work: directing traffic, creating openings, keeping your crew alive. You have a pool of **Discipline** equal to your **Caliber + your Wits Modifier**. You regain all spent Discipline at the end of a Short or Long Rest. You know every Call below and unless otherwise noted, all Calls cost 1 Discipline to activate.\n\n**Suppression.** Several of your Calls leave a target *Suppressed*. A Suppressed target rolls with **Snag** on attack rolls and can't take **Impulse Actions** until the suppression ends. Hurting the enemy is the least of what this does. You strip away their ability to fight back cleanly, pin them in place, and hand your crew a target that can't punish them for moving in.";
 var OPERATOR_TACTICAL_MANEUVERS = [
   { name: "Suppressing Fire", action: "Action", cost: 1, text: "Choose a point within your weapon's range, then an Area 3 around that point. Each Enemy in the area must succeed on an Agility Save (DC = 8 + your Wits Modifier + your Caliber) or become *Suppressed* until the start of your next turn. This Call deals no damage." },
   { name: "Take the Angle", action: "Swift Action", cost: 1, text: "You move up to your Speed without provoking opportunity attacks. If you end this movement with Line of Sight to an Enemy you didn't have Line of Sight to at the start of your turn, your next weapon attack this turn ignores the Defense bonus of their Cover." },
   { name: "Call the Angle", action: "Swift Action", cost: 1, text: "Designate an Enemy you can see. Until the start of your next turn, attacks against that Enemy made by you or your allies ignore the Defense bonus of Half and Three-Quarter Cover." },
   { name: "Reposition", action: "Swift Action", cost: 1, text: "Target one Ally within 12 spaces who can hear you. That Ally may immediately move up to half their Speed as a Free Action without provoking opportunity attacks." },
-  { name: "Focus Fire", action: "Special", cost: 1, text: "When you hit an Enemy with a weapon attack, you may spend 1 EX to mark them. The next attack made against that Enemy by you or an Ally before the start of your next turn gains **Edge**." },
+  { name: "Focus Fire", action: "Special", cost: 1, text: "When you hit an Enemy with a weapon attack, you may spend 1 Discipline to mark them. The next attack made against that Enemy by you or an Ally before the start of your next turn gains **Edge**." },
   { name: "Pin Down", action: "Impulse Action", cost: 1, text: "Trigger: An Enemy you can see within your weapon's range uses its movement. Make a weapon attack against that Enemy. On a hit, deal normal damage and they are *Suppressed* until the start of your next turn. Alternatively, you may choose to deal no damage and instead reduce their Speed to 0 for the rest of their turn." },
   { name: "Covering Fire", action: "Impulse Action", cost: 1, text: "Trigger: An Enemy you can see makes a weapon attack against an ally within 12 spaces, and you have Line of Sight to that Enemy. The attacker rolls that attack with **Snag** and is *Suppressed* until the start of your next turn." },
   { name: "Fire on My Mark", action: "Impulse Action", cost: 1, text: "Trigger: You leave an Enemy Suppressed, or hit an Enemy with a weapon attack. One Ally within 12 spaces who can see or hear you may immediately use their Impulse Action to make a single weapon attack against that Enemy." }
@@ -278,17 +278,17 @@ EN.classes.operator = {
     text: "Resilience Die: d10\nStarting Vitality: 10 + Body Modifier\nVitality Per Level: 1d10 + Body Modifier"
   },
   attributePriorities: [
-    "Wits (Primary): Drives your Execution pool, and powers the Perception that shows you the fight before it reaches you.",
+    "Wits (Primary): Drives your Discipline pool, and powers the Perception that shows you the fight before it reaches you.",
     "Agility (Secondary): Key for landing ranged attacks with Longarms or Heavy Weapons, and keeps your Defense high during a firefight.",
     "Body (Tertiary): Increases your Vitality and maximum Wounds, so you can survive return fire while holding a tactical anchor point."
   ],
   saveFocus: "Wits and Body",
   resource: {
-    name: "Execution",
+    name: "Discipline",
     attribute: "Wits",
     maxFormula: "Caliber + Wits Modifier (minimum of 1)",
-    refresh: "You regain all spent Execution at the end of a Short or Long Rest.",
-    fuels: "Execution (EX) fuels the Operator's Calls and subclass precision attacks.",
+    refresh: "You regain all spent Discipline at the end of a Short or Long Rest.",
+    fuels: "Discipline fuels the Operator's Calls and subclass precision attacks.",
     abilityNoun: "Call",
     abilityNounPlural: "Calls",
     gambitsIntro: OPERATOR_TACTICAL_INTRO.replace(/\*/g, ""),
@@ -306,7 +306,7 @@ EN.classes.operator = {
   featuresByLevel: {
     "1": [
       {
-        name: "Execution",
+        name: "Discipline",
         text: OPERATOR_TACTICAL_TEXT
       },
       {
@@ -346,7 +346,7 @@ EN.classes.operator = {
     "6": [
       {
         name: "Breacher's Momentum",
-        text: "Whenever you drop a Target to 0 Vitality or score a critical hit, you immediately regain **1 Execution** and may move up to 3 spaces as a Free Action. This movement doesn't provoke Opportunity Attacks."
+        text: "Whenever you drop a Target to 0 Vitality or score a critical hit, you immediately regain **1 Discipline** and may move up to 3 spaces as a Free Action. This movement doesn't provoke Opportunity Attacks."
       },
       {
         name: "Universal Upgrade",
@@ -368,7 +368,7 @@ EN.classes.operator = {
     "9": [
       {
         name: "Absolute Discipline",
-        text: "You gain the following benefits:\n\n• **Veteran Instincts:** You can't be Surprised, and you gain **Edge** on all Initiative rolls.\n• **Rallying Cry:** When you roll Initiative with 0 Execution remaining, you immediately regain 2 Execution."
+        text: "You gain the following benefits:\n\n• **Veteran Instincts:** You can't be Surprised, and you gain **Edge** on all Initiative rolls.\n• **Rallying Cry:** When you roll Initiative with 0 Discipline remaining, you immediately regain 2 Discipline."
       }
     ],
     "10": [
@@ -379,7 +379,7 @@ EN.classes.operator = {
     ]
   },
   progressionTable: [
-    { level: 1, caliber: 1, features: ["Execution", "Operator Subclass"], resource: "0" },
+    { level: 1, caliber: 1, features: ["Discipline", "Operator Subclass"], resource: "0" },
     { level: 2, caliber: 1, features: ["Overwatch", "Universal Upgrade"], resource: "0" },
     { level: 3, caliber: 2, features: ["Subclass Feature"], resource: "+5 Points" },
     { level: 4, caliber: 2, features: ["Universal Upgrade"], resource: "0" },
@@ -407,13 +407,13 @@ EN.classes.operator = {
         {
           level: 3,
           name: "Intercepting Guard",
-          text: "As an **Impulse Action** when an ally within 2 spaces is targeted by a physical or ballistic attack, spend 1 Execution to intervene. Move into an unoccupied space adjacent to that ally and throw your shield into the line of fire, forcing the attacker to roll against your Defense instead of the ally's. If the attack misses, you may immediately make a single retaliatory attack against the attacker with your equipped weapon or a shield bash."
+          text: "As an **Impulse Action** when an ally within 2 spaces is targeted by a physical or ballistic attack, spend 1 Discipline to intervene. Move into an unoccupied space adjacent to that ally and throw your shield into the line of fire, forcing the attacker to roll against your Defense instead of the ally's. If the attack misses, you may immediately make a single retaliatory attack against the attacker with your equipped weapon or a shield bash."
         },
         {
           level: 7,
           name: "CQC Takedown",
           action: "Action",
-          text: "You gain two abilities:\n\n• **CQC Takedown:** As an **Action**, spend 2 Execution to drive a close-quarters combination into an adjacent enemy. The target must make a Body Save (DC = 8 + your Body Modifier + your Caliber). On a failure, they take 3d6 Bludgeoning damage, are knocked Prone, and are Stunned until the end of your next turn. On a success, they take half damage and aren't Stunned.\n• **Double Tap:** Whenever an enemy within 2 spaces is knocked Prone by any source, you may use your **Impulse Action** to make a single retaliatory attack against them. If you use a melee weapon or shield bash, you may step up to 1 space as part of this Impulse Action to reach them."
+          text: "You gain two abilities:\n\n• **CQC Takedown:** As an **Action**, spend 2 Discipline to drive a close-quarters combination into an adjacent enemy. The target must make a Body Save (DC = 8 + your Body Modifier + your Caliber). On a failure, they take 3d6 Bludgeoning damage, are knocked Prone, and are Stunned until the end of your next turn. On a success, they take half damage and aren't Stunned.\n• **Double Tap:** Whenever an enemy within 2 spaces is knocked Prone by any source, you may use your **Impulse Action** to make a single retaliatory attack against them. If you use a melee weapon or shield bash, you may step up to 1 space as part of this Impulse Action to reach them."
         },
         {
           level: 10,
@@ -436,12 +436,12 @@ EN.classes.operator = {
         {
           level: 3,
           name: "Hair Trigger",
-          text: "Spend 1 Execution to overcharge your Overwatch. When you take the Action to establish an Overwatch zone, you double its size (creating either an Area 12 Cone or Area 24 Line). If an enemy triggers this Overwatch, you gain Edge on the resulting attack roll."
+          text: "Spend 1 Discipline to overcharge your Overwatch. When you take the Action to establish an Overwatch zone, you double its size (creating either an Area 12 Cone or Area 24 Line). If an enemy triggers this Overwatch, you gain Edge on the resulting attack roll."
         },
         {
           level: 7,
           name: "Ricochet Trajectory",
-          text: "As an **Action**, spend 2 Execution to bounce a shot off the environment and hit a target you can't see. Make a ranged attack roll against a target within 6 spaces of a solid surface you can see. On a hit, they take normal weapon damage plus an additional 2d6 Ballistic damage and are Staggered until the end of their next turn."
+          text: "As an **Action**, spend 2 Discipline to bounce a shot off the environment and hit a target you can't see. Make a ranged attack roll against a target within 6 spaces of a solid surface you can see. On a hit, they take normal weapon damage plus an additional 2d6 Ballistic damage and are Staggered until the end of their next turn."
         },
         {
           level: 10,
@@ -460,31 +460,31 @@ EN.classes.operator = {
           level: 1,
           name: "Prey Drive",
           grants: { skills: ["Investigation"] },
-          text: "You gain Proficiency in the Investigation skill, and you permanently upgrade your Focus Fire maneuver. When you spend 1 EX to mark a target with Focus Fire, the tracking benefits last 1 full minute (the Edge from Focus Fire still applies only to the first attack, made by you or an Ally). For that minute, the target can't benefit from the Hidden or Invisible conditions against you, and you always know its exact location while it stays within 24 spaces."
+          text: "You gain Proficiency in the Investigation skill, and you permanently upgrade your Focus Fire maneuver. When you spend 1 Discipline to mark a target with Focus Fire, the tracking benefits last 1 full minute (the Edge from Focus Fire still applies only to the first attack, made by you or an Ally). For that minute, the target can't benefit from the Hidden or Invisible conditions against you, and you always know its exact location while it stays within 24 spaces."
         },
         {
           level: 3,
           name: "Disarming Precision",
-          text: "Whenever you hit an enemy with a weapon attack, you may spend 1 Execution. The target must make a Body or Agility Save, its choice (DC = 8 + your Wits Modifier + your Caliber). On a failure, they drop one weapon or object they are holding. If they try to pick it up before the end of their next turn, you may immediately fire a single retaliatory shot at them as an **Impulse Action**."
+          text: "Whenever you hit an enemy with a weapon attack, you may spend 1 Discipline. The target must make a Body or Agility Save, its choice (DC = 8 + your Wits Modifier + your Caliber). On a failure, they drop one weapon or object they are holding. If they try to pick it up before the end of their next turn, you may immediately fire a single retaliatory shot at them as an **Impulse Action**."
         },
         {
           level: 7,
           name: "Cornered Prey",
-          text: "As an **Action**, spend 2 Execution to unleash a sequence of shots or strikes against an enemy within your weapon's range, ignoring the Defense bonuses from Half or Three-Quarter Cover. The target must make an Agility Save (DC = 8 + your Wits Modifier + your Caliber).\n\n• **On a failure:** They take 3d6 damage of one type the weapon normally deals (your choice if it deals more than one) and are Staggered until the end of your next turn. If their cover is Average or weaker (standard doors, drywall, shipping crates), it is instantly reduced to 0 Integrity. If their cover is Heavy, Fortified, or Hardened, it stays intact, but they still take the damage and condition.\n• **On a success:** They take half damage, aren't Staggered, and their cover takes no damage."
+          text: "As an **Action**, spend 2 Discipline to unleash a sequence of shots or strikes against an enemy within your weapon's range, ignoring the Defense bonuses from Half or Three-Quarter Cover. The target must make an Agility Save (DC = 8 + your Wits Modifier + your Caliber).\n\n• **On a failure:** They take 3d6 damage of one type the weapon normally deals (your choice if it deals more than one) and are Staggered until the end of your next turn. If their cover is Average or weaker (standard doors, drywall, shipping crates), it is instantly reduced to 0 Integrity. If their cover is Heavy, Fortified, or Hardened, it stays intact, but they still take the damage and condition.\n• **On a success:** They take half damage, aren't Staggered, and their cover takes no damage."
         },
         {
           level: 10,
           name: "Dead or Alive",
-          text: "Once per Long Rest, as an **Action**, declare an execution order on a target within 12 spaces. For 1 minute, your weapon attacks against it go straight past whatever is keeping it upright.\n\n**Systemic Trauma:** Half of all damage you deal to the target (rounded up) is dealt as direct Wound damage, reducing its maximum Vitality and forcing the standard Body Save against Fatigue and crippling conditions.\n\n**Precision Targeting:** Whenever you hit the target with a weapon attack, you may spend 2 Execution to apply one effect:\n\n• **Dead (Arterial Strike):** Inflict 2 stacks of Bleeding on the target.\n• **Alive (Tendon Shot):** The target must make a Body Save (DC = 8 + your Wits Modifier + your Caliber). On a failure, it is knocked Prone and its Speed is reduced to 0; it can't stand or walk until it receives medical attention or Flow healing.\n\nIf this assault reduces the target to 50 percent or less of its total Wounds, it is knocked Unconscious and stabilized, letting you collect the bounty dead or alive."
+          text: "Once per Long Rest, as an **Action**, declare an execution order on a target within 12 spaces. For 1 minute, your weapon attacks against it go straight past whatever is keeping it upright.\n\n**Systemic Trauma:** Half of all damage you deal to the target (rounded up) is dealt as direct Wound damage, reducing its maximum Vitality and forcing the standard Body Save against Fatigue and crippling conditions.\n\n**Precision Targeting:** Whenever you hit the target with a weapon attack, you may spend 2 Discipline to apply one effect:\n\n• **Dead (Arterial Strike):** Inflict 2 stacks of Bleeding on the target.\n• **Alive (Tendon Shot):** The target must make a Body Save (DC = 8 + your Wits Modifier + your Caliber). On a failure, it is knocked Prone and its Speed is reduced to 0; it can't stand or walk until it receives medical attention or Flow healing.\n\nIf this assault reduces the target to 50 percent or less of its total Wounds, it is knocked Unconscious and stabilized, letting you collect the bounty dead or alive."
         }
       ]
     }
   ],
   extra: {
     playbook: {
-      turnToTurn: "Act as a tactical anchor. Use Longarms or Heavy Weapons to hold cover and lay punishing fire. Use Execution to pace engagements, grant Ally movement, or set up flanking.",
+      turnToTurn: "Act as a tactical anchor. Use Longarms or Heavy Weapons to hold cover and lay punishing fire. Use Discipline to pace engagements, grant Ally movement, or set up flanking.",
       winningEncounters: "Dominate through discipline and zone control. Use ranged damage, explosives, and Overwatch to flush enemies and lock lanes, directing your squad as a single unit.",
-      whatToAvoid: "Avoid tunnel vision or letting enemies close in. Your strength is amplifying the team from vantage points; isolation, poor communication, or hoarding Execution kills you fast."
+      whatToAvoid: "Avoid tunnel vision or letting enemies close in. Your strength is amplifying the team from vantage points; isolation, poor communication, or hoarding Discipline kills you fast."
     },
     tacticalManeuvers: OPERATOR_TACTICAL_MANEUVERS
   }
