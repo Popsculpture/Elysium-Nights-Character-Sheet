@@ -3065,7 +3065,7 @@ EN.combatView = (function () {
 
     var _openKey = "fl-traumarig", _isOpen = !!_open[_openKey];
 
-    kids.push(deviceHeader(_openKey, "Trauma Rig", t.scrapRig ? "SCRAP RIG" : (t.rigLabel || "NONE EQUIPPED").toUpperCase()));
+    kids.push(deviceHeader(_openKey, isStitcher ? "Triage Rig" : "Trauma Rig", t.scrapRig ? "SCRAP RIG" : (t.rigLabel || "NONE EQUIPPED").toUpperCase()));
 
     // COMPACT: only Integrity moves in play, so that is all the shut card keeps. A Rig with
     // no tier projects no node, so there is no Integrity to show.
@@ -3087,7 +3087,7 @@ EN.combatView = (function () {
       // Same rule as the deck. The Scrap Rig toggle below is NOT gated: it is a Stitcher state,
       // not a picker, and staying reachable while a real Rig is worn is the point of it.
       t.rigTier ? null : el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" },
-        title: owned.length ? "Open the Stash and wear a Trauma Rig" : "Nothing to wear yet; buy a Rig first",
+        title: owned.length ? "Open the Stash and wear a " + (isStitcher ? "Triage" : "Trauma") + " Rig" : "Nothing to wear yet; buy a Rig first",
         onclick: function () { if (EN.inventoryView.openStash) EN.inventoryView.openStash("Trauma Rigs"); EN.app.gotoTab("gear"); } },
         owned.length ? "⇒ EQUIP ONE IN STASH" : "⇒ BUY ONE IN THE MARKET"),
       isStitcher ? el("button.btn.sm" + (t.scrapRig ? ".primary" : ""), {
@@ -3146,7 +3146,7 @@ EN.combatView = (function () {
           el("button.btn.sm", { disabled: t.integritySpent <= 0, title: "Restore this much Integrity",
             onclick: function () { shift(-1); } }, "+ REPAIR"),
           t.integritySpent > 0 ? el("button.btn.sm", { style: { color: "var(--text2)" },
-            onclick: function () { var key = t.rigKey; store.update(function (c) { c.rig = c.rig || {}; if (c.rig.hp) delete c.rig.hp[key]; }); toast("Trauma Rig restored to full Integrity."); } }, "⟳ FULL") : null
+            onclick: function () { var key = t.rigKey; store.update(function (c) { c.rig = c.rig || {}; if (c.rig.hp) delete c.rig.hp[key]; }); toast((isStitcher ? "Triage" : "Trauma") + " Rig restored to full Integrity."); } }, "⟳ FULL") : null
         ])
     ));
 
@@ -5276,10 +5276,10 @@ EN.combatView = (function () {
           var t = d.rig || {};
           // a Stitcher improvising on a Scrap Rig is equipped, just badly
           if (t.scrapRig) return { state: "ok" };
-          if (!t.rigTier) return { state: "missing", what: "Trauma Rig", cat: "Trauma Rigs",
+          if (!t.rigTier) return { state: "missing", what: "Triage Rig", cat: "Trauma Rigs",
             title: "No Rig on you",
-            say: "You know exactly what to do and have nothing to do it with. Triage Protocols run through a Trauma Rig; steady hands and good intentions do not close a chest wound." };
-          if (t.bricked) return { state: "bricked", what: "Trauma Rig" };
+            say: "You know exactly what to do and have nothing to do it with. Triage Protocols run through a Triage Rig; steady hands and good intentions do not close a chest wound." };
+          if (t.bricked) return { state: "bricked", what: "Triage Rig" };
           return { state: "ok" };
         }
         if ((d.grid || {}).isCodebreaker) {

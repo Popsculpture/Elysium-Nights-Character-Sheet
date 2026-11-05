@@ -193,7 +193,7 @@ EN.builder = (function () {
         el("p.help", { style: { margin: "6px 0 10px" }, text: 'Full name displays as First "Handle" Last.' }),
         txt("handleStory", "How you got your Handle (optional)", "Who first called you that, and why it stuck…", true, false, "identity-handle-story"),
         el("p.help", { style: { margin: "-4px 0 10px" }, text: "A Handle is optional at Level 1. Leave it blank if you like, and add it once your Freelancer earns one in play." }),
-        txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen trauma rig…", true, false, "identity-concept"),
+        txt("concept", "Concept, the one-line pitch", "An ex-corporate Stitcher with a stolen triage rig…", true, false, "identity-concept"),
         // one field for origin and backstory (the author, 31 Oct 2026; the separate Backstory &
         // Motivation folds into it, store.js normalize)
         txt("whereFrom", "Where You Came From", "Where you grew up (a Burbclave, the Warrens, a void station, a corporate creche), who you were before the job, what broke, what you're after now, and what you won't do to get it…", true, true, "identity-origin")
@@ -1812,7 +1812,7 @@ EN.builder = (function () {
           // the rest of the Rig, so the printed record carries the whole item and not
           // just the one number the DC needs: slots equal the Tier, traits accumulate
           if (d.triage.rigTier) {
-            resBody += "Trauma Rig: " + d.triage.rigLabel + " · " + d.triage.modSlots + " Mod Slot" +
+            resBody += "Triage Rig: " + d.triage.rigLabel + " · " + d.triage.modSlots + " Mod Slot" +
               (d.triage.modSlots === 1 ? "" : "s") + " · " + d.triage.maxIntegrity + " Integrity · counts as " +
               (/^[AEIOU]/.test(d.triage.medkitGrade || "") ? "an " : "a ") + d.triage.medkitGrade +
               (d.triage.nodeTier ? " · projects a " + d.triage.nodeTier + " #GRID node" : "") +
@@ -2144,7 +2144,7 @@ EN.builder = (function () {
       var entry = key ? eng.findEntry(ch, key) : null;
       var state = rs.rigKey ? "live" : (or.length ? "owned" : (ch[def.flag] ? "none" : "owed"));
       if (!row && state === "owed") row = eng.rigTierRow("Field Kit");
-      if (row && state !== "none") out.rig = { kind: "Trauma Rig", name: entry ? entry.name : def.name, tier: row.t,
+      if (row && state !== "none") out.rig = { kind: "Triage Rig", name: entry ? entry.name : def.name, tier: row.t,
         maxComplexity: null, integrity: row.integrity, outputBonus: row.outputBonus || 0, state: state };
       var res = (eng.getClass(ch.class) || {}).resource || {};
       out.resourceName = res.name || "Triage";
@@ -2160,7 +2160,7 @@ EN.builder = (function () {
     bits.push("Integrity " + r.integrity);
     if (r.outputBonus) bits.push("Output +" + r.outputBonus);
     if (r.state === "owed") bits.push("free, comes with your starting kit");
-    else if (r.state === "owned") bits.push(r.kind === "Trauma Rig" ? "owned, not worn" : "owned, not jacked in");
+    else if (r.state === "owned") bits.push(r.kind === "Triage Rig" ? "owned, not worn" : "owned, not jacked in");
     return bits.join(" · ");
   }
   // the review's section: rig, then the picks (Ciphers or Triage Protocols)
@@ -2169,7 +2169,7 @@ EN.builder = (function () {
     if (!g) return null;
     var cb = g.cls === "codebreaker";
     var kids = [el("p.rf-rig", { style: { margin: "0 0 8px", fontFamily: "var(--mono)", fontSize: "12px" },
-      text: g.rig ? classGearRigLine(g.rig) : (cb ? "No Smartdeck on this record." : "No Trauma Rig on this record.") })];
+      text: g.rig ? classGearRigLine(g.rig) : (cb ? "No Smartdeck on this record." : "No Triage Rig on this record.") })];
     var rows;
     if (cb) {
       rows = g.ciphers.map(function (c) {

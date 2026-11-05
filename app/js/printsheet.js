@@ -1113,7 +1113,7 @@ EN.printSheet = (function () {
     if (!gear || gear.cls !== "stitcher" || !gear.rig) return null;
     var r = gear.rig;
     return el("div.ps-rig", null, [
-      sect("Trauma Rig", r.state === "live" ? "worn" : (r.state === "owned" ? "owned, not worn" : "comes with your starting kit")),
+      sect("Triage Rig", r.state === "live" ? "worn" : (r.state === "owned" ? "owned, not worn" : "comes with your starting kit")),
       el("div.ps-row", null, [
         field("Rig", r.name, { style: { flex: "3 1 0" } }),
         field("Tier", r.tier, { style: { flex: "0 0 54px" } }),

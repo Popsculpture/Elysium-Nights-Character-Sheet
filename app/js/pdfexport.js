@@ -1305,7 +1305,7 @@ EN.pdfExport = (function () {
 
     if (hasRig) {
       if (any || hasGrid) ctx.rule();
-      ctx.sectionTitle("Trauma Rig", gear.rig.state === "live" ? "worn" : (gear.rig.state === "owned" ? "owned, not worn" : "comes with your starting kit"));
+      ctx.sectionTitle("Triage Rig", gear.rig.state === "live" ? "worn" : (gear.rig.state === "owned" ? "owned, not worn" : "comes with your starting kit"));
       ctx.row([
         { label: "Rig", name: "rig.name", value: gear.rig.name, w: 3 },
         { label: "Tier", name: "rig.tier", value: String(gear.rig.tier), w: "54px", align: "center" },
