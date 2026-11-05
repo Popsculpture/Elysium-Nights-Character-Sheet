@@ -30,10 +30,16 @@
    full and there is still spillover does it backfill the spaces behind cover. What finds
    no space at all folds back into the blast (4 Nov 2026, with a drawing): each such space
    bounces off the wall it hit, its mirror across that wall, back onto the spaces already
-   caught, so a space by one wall is hit again once and a corner twice. The marks: one
-   red hash per rebound (a space the overflow fills counts as one), an X for two, an X
-   with a line through it for three, solid red for four or more. A body standing in
-   those spaces is caught like any other. Vented, the blast escapes instead; a
+   caught, so a space by one wall is hit again once and a corner twice. Each time is a
+   BOUNCE (the author's rulings, 4 Nov 2026: "Rebound" in the Handbook is only the extra
+   dice from an oversized Area). A space the overflow merely flows into has no Bounce.
+   The marks: one red hash per Bounce, an X for two, an X with a line through it for
+   three, solid red for four or more; the overflow spaces keep their own hatch, in the
+   template's colour and at the other angle, so red always means a Bounce.
+   A target adds one die of the blast's own damage per Bounce on its space, up to its
+   normal number of dice (a cap of their own, apart from Rebound's), part of the same
+   attack. The Bounce dice are rolled once, in a line: Bounce 2 adds the first two. A
+   body standing in any of those spaces is caught like any other. Vented, the blast escapes instead; a
    lingering cloud fills the space the same way, with no extra dice.
 
    WHAT THE BOOK DOES NOT SETTLE, and this diagram therefore CHOOSES (and says so
@@ -138,15 +144,12 @@ EN.wallGrid = (function () {
       }
     }
     var lost = S.vent ? 0 : spillN - Object.keys(pushed).length - folded;
-    // how many times the turned-back blast reaches each space: once where the overflow fills it, plus each fold
-    var rebound = {};
-    if (blastFx && !S.vent) {
-      Object.keys(pushed).forEach(function (key) { rebound[key] = 1; });
-      Object.keys(folds).forEach(function (key) { rebound[key] = (rebound[key] || 0) + folds[key]; });
-    }
+    // Bounce: how many times the blast folds back onto a space (the overflow merely flowing in is none)
+    var bounce = {};
+    if (blastFx && !S.vent) Object.keys(folds).forEach(function (key) { bounce[key] = folds[key]; });
     var tight = tightest(), eff = Math.max(0, tight - (S.pressure ? 1 : 0)), width = areaWidth();
     var extra = sealed ? Math.min(S.dice, Math.max(0, width - eff)) : 0;
-    var dmg = (S.dice + extra) + "d" + S.die;
+    var dice = S.dice + extra, dmg = dice + "d" + S.die;
     var people = [];
     Object.keys(S.items).forEach(function (key) {
       var it = S.items[key]; if (it.kind !== "ally" && it.kind !== "foe") return;
@@ -155,10 +158,10 @@ EN.wallGrid = (function () {
       if (caught && !(c.x === B.x && c.y === B.y)) {
         between(B, c).forEach(function (s) { var o = S.items[k(s.x, s.y)]; if (o && (o.kind === "three" || (o.kind === "half" && cover !== "three"))) cover = o.kind; });
       }
-      people.push({ key: key, x: c.x, y: c.y, kind: it.kind, n: it.n, name: (it.kind === "ally" ? "ALLY " : "FOE ") + it.n, caught: caught, behind: !!behind[key], cover: cover, rebound: caught ? (rebound[key] || 0) : 0 });
+      people.push({ key: key, x: c.x, y: c.y, kind: it.kind, n: it.n, name: (it.kind === "ally" ? "ALLY " : "FOE ") + it.n, caught: caught, behind: !!behind[key], cover: cover, bounce: caught ? (bounce[key] || 0) : 0 });
     });
     people.sort(function (a, b) { return a.kind === b.kind ? a.n - b.n : (a.kind === "foe" ? -1 : 1); });
-    return { raw: raw, hit: hit, behind: behind, spill: spill, pushed: pushed, spillN: spillN, lost: lost, folds: folds, folded: folded, rebound: rebound, blastFx: blastFx, sealed: sealed, tight: tight, eff: eff, width: width, extra: extra, dmg: dmg, people: people };
+    return { raw: raw, hit: hit, behind: behind, spill: spill, pushed: pushed, spillN: spillN, lost: lost, folds: folds, folded: folded, bounce: bounce, blastFx: blastFx, sealed: sealed, tight: tight, eff: eff, width: width, extra: extra, dice: dice, dmg: dmg, people: people };
   }
   /* Where the turned-back spaces go (the author, 4 Nov 2026, dictated): n spaces of the blast, as streams.
        1. A stream starts at the blast's edge and runs straight out, a space at a time, until it meets a wall.
@@ -270,11 +273,15 @@ EN.wallGrid = (function () {
     if (!R.blastFx) return { lines: [P.name, "in the cloud"], text: P.name + ": in the cloud. A lingering cloud doesn't rebound; it simply fills the space." };
     var save = S.save + " Save" + (R.sealed ? ", Snag" : ""), agi = S.save === "Agility", bonus = P.cover === "three" ? 5 : 2;
     var cov = P.cover ? (R.sealed || !agi ? coverShort(P.cover) + ": no bonus" : coverShort(P.cover) + ": +" + bonus) : null;
-    var lines = [P.name + " · " + R.dmg, save]; if (cov) lines.push(cov); if (P.rebound) lines.push("Rebound " + P.rebound);
-    var text = P.name + ": " + R.dmg + ", " + (S.onSave === "none" ? "none" : "half") + " on a save. " + save.replace(", Snag", " with Snag") + "."
+    // Bounce dice: one die of the blast's own damage per Bounce, capped at its normal dice (apart from Rebound's cap)
+    var bd = Math.min(P.bounce || 0, S.dice), total = R.dice + bd;
+    var dmgLine = R.dmg + (bd ? " + " + bd + "d" + S.die + " Bounce" : "");
+    var dmgText = bd ? total + "d" + S.die + " (" + R.dmg + " + Bounce " + P.bounce + (P.bounce > S.dice ? ", capped at " + S.dice + " dice" : "") + ")" : R.dmg;
+    var lines = [P.name + " · " + dmgLine, save]; if (cov) lines.push(cov); if (P.bounce) lines.push("Bounce " + P.bounce);
+    var text = P.name + ": " + dmgText + ", " + (S.onSave === "none" ? "none" : "half") + " on a save. " + save.replace(", Snag", " with Snag") + "."
       + (P.cover ? " " + coverName(P.cover) + (R.sealed ? " grants no bonus: the blast never passes anyone by."
         : agi ? " stands between it and the blast: +" + bonus + " to the save." : " grants nothing to a " + S.save + " Save; cover helps only the Agility save.") : "")
-      + (P.rebound ? " Rebound " + P.rebound + ": the turned-back blast reaches it " + (P.rebound === 1 ? "once" : P.rebound + " times") + "." : "");
+      + (P.bounce ? " Bounce " + P.bounce + ": the blast folds back onto it " + (P.bounce === 1 ? "once" : P.bounce + " times") + "; it adds the first " + (bd === 1 ? "Bounce die" : bd + " Bounce dice") + " of the line." : "");
     return { lines: lines, text: text };
   }
 
@@ -294,15 +301,16 @@ EN.wallGrid = (function () {
         for (var dy = -1; dy <= 1 && !nearFloor; dy++) for (var dx = -1; dx <= 1; dx++) if (isFloor(x + dx, y + dy)) { nearFloor = true; break; }
         if (nearFloor) walls += rect(x, y, "wtw-wall");
       }
-      var rb = R.rebound[key] || 0;
-      if (R.pushed[key]) area += rect(x, y, "aoe-cell aoe-hit wtw-hit wtw-pushed");
+      var rb = R.bounce[key] || 0;
+      if (R.pushed[key]) { area += rect(x, y, "aoe-cell aoe-hit wtw-hit wtw-pushed"); over += rect(x, y, "wtw-flow"); }
       else if (R.hit[key]) area += rect(x, y, "aoe-cell aoe-hit wtw-hit");
-      // one hash per rebound, an X for two, an X with a line through it for three, solid red past that
-      if (rb && R.hit[key]) over += '<rect class="wtw-spill wtw-rb wtw-rb' + Math.min(rb, 4) + '" data-rb="' + rb + '" x="' + ((x - 0.5) * U) + '" y="' + ((y - 0.5) * U) + '" width="' + U + '" height="' + U + '"/>';
+      // Bounce: one red hash, an X for two, an X with a line through it for three, solid red past that
+      if (rb && R.hit[key]) over += '<rect class="wtw-spill wtw-rb wtw-rb' + Math.min(rb, 4) + '" data-bounce="' + rb + '" x="' + ((x - 0.5) * U) + '" y="' + ((y - 0.5) * U) + '" width="' + U + '" height="' + U + '"/>';
       else if (R.behind[key]) area += rect(x, y, "wtw-behind");
       else if (R.spill[key] && S.vent) over += rect(x, y, "wtw-vent");
     }
     s += '<defs><pattern id="wtw-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" class="wtw-hatch-line"/></pattern>'
+      + '<pattern id="wtw-hatch-flow" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><line x1="0" y1="0" x2="0" y2="6" class="wtw-flow-line"/></pattern>'
       + '<pattern id="wtw-hatch2" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0,0L8,8M8,0L0,8" class="wtw-hatch-line"/></pattern>'
       + '<pattern id="wtw-hatch3" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0,0L8,8M8,0L0,8M4,0L4,8" class="wtw-hatch-line"/></pattern></defs>';
     var edges = "";
@@ -535,8 +543,8 @@ EN.wallGrid = (function () {
       if (!S.vent && R.spillN > 0) {
         var pn = Object.keys(R.pushed).length;
         lines.push("The walls turn back " + R.spillN + " space" + (R.spillN === 1 ? "" : "s") + " of the Area. "
-          + (pn ? (pn === R.spillN ? "They fill" : pn + " of them fill") + " the open room" + (R.blastFx ? " (hatched)" : "") + ": straight out until a wall, then splashing along it; cover splits the flow and shelters the spaces behind it, which fill only once the rest of the room is full. Anyone in those spaces is caught too." : "")
-          + (R.folded > 0 ? (pn ? " " : "") + R.folded + " find" + (R.folded === 1 ? "s" : "") + " no open space and fold" + (R.folded === 1 ? "s" : "") + " back into the blast, off the wall " + (R.folded === 1 ? "it" : "each") + " hit, onto the spaces already caught: a red hash for each rebound, an X for two, an X with a line through it for three, solid red for four or more." : "")
+          + (pn ? (pn === R.spillN ? "They fill" : pn + " of them fill") + " the open room (hatched in the template's own colour, not red): straight out until a wall, then splashing along it; cover splits the flow and shelters the spaces behind it, which fill only once the rest of the room is full. Anyone in those spaces is caught too." : "")
+          + (R.folded > 0 ? (pn ? " " : "") + R.folded + " find" + (R.folded === 1 ? "s" : "") + " no open space and fold" + (R.folded === 1 ? "s" : "") + " back into the blast, off the wall " + (R.folded === 1 ? "it" : "each") + " hit, onto the spaces already caught. Each time is a Bounce: a red hash for one, an X for two, an X with a line through it for three, solid red for four or more. A target adds one die of the blast's damage per Bounce on its space, up to " + S.dice + " (its own dice); roll the Bounce dice once, in a line, and a target with 2 Bounces adds the first two." : "")
           + (R.lost > 0 ? " " + R.lost + " find" + (R.lost === 1 ? "s" : "") + " nowhere at all and " + (R.lost === 1 ? "is" : "are") + " spent against the walls." : ""));
       }
       lines.forEach(function (t, i) { read.appendChild(el("p" + (i === 0 ? ".wtw-sum" : ""), { text: t })); });
@@ -565,7 +573,7 @@ EN.wallGrid = (function () {
       list,
       el("p.help.aoe-hint", { text: "Pick a tool and tap the room: BLAST sets where it goes off, FOE, ALLY and the covers put one down (tap it again to lift it), ERASE takes one away. Drag anything to move it. On a phone, tap the room once before dragging up or down. From the keyboard, the arrow keys move a cursor round the room (and the blast, with BLAST picked), and Enter or Space uses the tool there." }),
       el("p.help", { style: { margin: "6px 0 0", fontStyle: "italic" },
-        text: "How this diagram reads the rule: the Area is the Codex template's, centered on the space where the blast goes off. Sealed, it reaches every space of the Area in the room, round an L's corner too, since the pressure fills every corner; vented, a space with a wall between it and the blast isn't caught. The spaces that land in a wall are turned back into the room (hatched): they run straight out from the blast until they hit a wall, then splash left and right along it and run on to the next. Cover splits the flow and shelters the spaces behind it; those fill only when every other open space is full and the blast still has more to give. What finds no space at all folds back into the blast, mirrored off the wall it hit onto the spaces already caught: one red hash per rebound (a space the overflow fills counts as one), an X for two, an X with a line through it for three, solid red for four or more. The room's tightest open dimension is its narrowest width, an L's arm. Cover counts when its space lies on the straight line from the blast to the target, and only for an Agility save. Set the save and what it does from the weapon's own entry. Borderline calls are the GM's." })
+        text: "How this diagram reads the rule: the Area is the Codex template's, centered on the space where the blast goes off. Sealed, it reaches every space of the Area in the room, round an L's corner too, since the pressure fills every corner; vented, a space with a wall between it and the blast isn't caught. The spaces that land in a wall are turned back into the room (hatched in the template's own colour; red is only for a Bounce): they run straight out from the blast until they hit a wall, then splash left and right along it and run on to the next. Cover splits the flow and shelters the spaces behind it; those fill only when every other open space is full and the blast still has more to give. What finds no space at all folds back into the blast, mirrored off the wall it hit onto the spaces already caught; each time is a Bounce (one red hash, an X for two, an X with a line through it for three, solid red for four or more), and each Bounce adds a die of the blast's damage, up to its own dice. The room's tightest open dimension is its narrowest width, an L's arm. Cover counts when its space lies on the straight line from the blast to the target, and only for an Agility save. Set the save and what it does from the weapon's own entry. Borderline calls are the GM's." })
     ]);
   }
 
