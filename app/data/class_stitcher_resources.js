@@ -110,7 +110,8 @@ EN.classes.stitcher = {
     attribute: "Tech",
     maxFormula: "Your maximum Triage is equal to your Caliber + your Tech Modifier (minimum of 1).",
     refresh: "You regain all spent Triage at the end of a Short or Long Rest.",
-    fuels: "Triage (Tech). Fuels medical synthesis and chemical warfare in equal measure. Triage is gated through a physical Triage Rig; if the rig is lost, the resource goes with it.",
+    cardTitle: "Triage (Tech)",
+    fuels: "Fuels medical synthesis and chemical warfare in equal measure. Triage is gated through a physical Triage Rig; if the rig is lost, the resource goes with it.",
     hardware: "The Stitcher relies on a piece of equipment known as a Trauma Rig. This might be a cybernetic auto-injector gauntlet, an alchemical synthesizer harness, or a smart-medic backpack. The Rig rapidly mixes base reagents or standard medical supplies into potent, fast-acting chemical assets.\n\nYou start with a Field Kit [0] free with the class, the same way a Codebreaker starts with a Standard Smartdeck. You must have your Rig equipped to use Triage Protocols, and upgrading the Rig carries your Protocols and any modifications across.\n\nEvery Rig tier lists an Output Bonus, which is the third term of your Triage Save DC: 8 + your Tech Modifier + your Rig's Output Bonus. The Scrap Rig fallback, purchase, and Downtime crafting rules all live in the Level 1 Triage feature.",
 
     abilityNoun: "Triage Protocol",

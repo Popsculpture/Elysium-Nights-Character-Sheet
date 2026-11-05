@@ -1819,13 +1819,13 @@ EN.builder = (function () {
               "\nTraits: " + d.triage.traits.join(", ") + "\n\n";
           }
         }
-        corePb.push(ruleHead(feature(cls.resource.name + " (Resource)", resBody + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")),
+        corePb.push(ruleHead(feature(cls.resource.cardTitle, resBody + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")),
           resourceAnchor(cls.resource.name)));
         var gp = resourcePicker(ch); if (gp) corePb.push(gp);
         var scp = startingCipherPicker(ch); if (scp) corePb.push(scp);
       }
       if (ch.class === "shaper" && d.flow) {
-        corePb.push(ruleHead(feature("Flow Points (Reservoir)", "Reservoir = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc, "flow", "Flow " + d.flow.max),
+        corePb.push(ruleHead(feature(cls.resource.cardTitle, "Reservoir = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc + "\n\n" + cls.resource.fuels, "flow", "Flow " + d.flow.max),
           "fl-core"));
         var rp = resonancePicker(ch); if (rp) corePb.push(rp);
       }
