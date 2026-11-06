@@ -390,7 +390,7 @@ EN.resourceRules = {
      invites exactly the wrong fix. Nothing in the app clamps FP by Caliber today: the Flow
      files reference Caliber nowhere, and `costVariable` exists on one Fury Maneuver, read only
      by the class-resource expansion the Shaper is already excluded from. Keep it that way. */
-  variableCosts: "Some abilities let you spend more than 1 point at once. However, you can't spend more than your Caliber on a single activation. The pool is what you have. Caliber is how fast you can burn it.",
+  variableCosts: "Some abilities let you spend more than 1 point at once. However, you can't spend more than your Caliber on a single activation.",
 
   refreshing: "Unless a class feature says otherwise, class resources refresh at the end of a Short Rest or Long Rest.",
 

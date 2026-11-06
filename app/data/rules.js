@@ -70,12 +70,12 @@ EN.rules = {
      numbers, and `notes` carries the book's Packed It paragraph: a revealed item stays revealed
      for Packed It even after it is dropped, while Encumbrance reads what you carry now. */
   encumbrance: {
-    threshold: "Encumbrance Threshold = 6 + Body Modifier, adjusted by Size, minimum 3. The minimum applies after the Size adjustment, so a Small character on Body -3 lands at 3, not 2. Gear, mods, frames, cyberware and Flow effects that raise it speak in steps of +2; the Size adjustment is a raw 1 and is not a step.",
+    threshold: "Encumbrance Threshold = 6 + Body Modifier, adjusted by Size, minimum 3. Small subtracts 1 and Large adds 1, and the minimum applies after that. Gear, mods, frames, cyberware and Flow effects that raise it speak in steps of +2; the Size adjustment is not a step.",
     budget: "When a job starts, each Freelancer declares one Loadout; if nobody declares, assume Standard. The declared Loadout sets your Load Budget (your Threshold moved by the Loadout's offset), and the gear on your person spends it. The first number is the Load you're carrying now: everything revealed or picked up, minus what you've dropped. Note dropped items beside it, because Packed It still counts them. The second is your Load Budget.",
     loadouts: [
-      { key: "light",    name: "Light",    delta: -3, effect: "You read as foot traffic. Edge on checks to blend into a crowd, conceal your gear, or pass checkpoint scrutiny." },
-      { key: "standard", name: "Standard", delta: 0,  effect: "You look like a Freelancer on a job. No perk, no penalty." },
-      { key: "heavy",    name: "Heavy",    delta: 3,  effect: "You are Encumbered for the run. Nobody asks the walking armory for a lunch order." }
+      { key: "light",    name: "Light",    delta: -3, effect: "You gain Edge on checks to blend into a crowd, conceal your gear, or pass checkpoint scrutiny." },
+      { key: "standard", name: "Standard", delta: 0,  effect: "No perk, no penalty." },
+      { key: "heavy",    name: "Heavy",    delta: 3,  effect: "You are Encumbered for the run." }
     ],
     states: {
       unencumbered: { name: "Unencumbered", when: "You are at or below your Load Budget, and your Loadout isn't Heavy.", effect: "Move and act normally; no penalties from carried weight." },
@@ -88,6 +88,8 @@ EN.rules = {
       { key: "dragone", name: "Dragging: one body",      hint: "Dragging or pushing one unconscious person, body-sized object, or similar heavy load: treated as Encumbered, but Speed is halved (round down) instead of the Encumbered -2, whichever is worse, and you can't Dash. Wheels, sleds, carts, or help can step it down, at GM call." },
       { key: "drag", name: "Hauling: oversized / double", hint: "Something larger than you, or two body-sized loads at once: treated as Overloaded. Wheels, sleds, carts, or help can step it down, at GM call." }
     ],
+    // the Handbook's line under Short Lift and Carry (the Codex pass, 6 Nov 2026)
+    haulNote: "If the Target is actively resisting, use grappling, restraint, or contested action rules instead of encumbrance.",
     loadTable: [
       { load: "0",  items: "Clothes, credsticks, comms, loose ammo, small personal items" },
       { load: "1",  items: "Sidearm, light melee weapon, light armor, medkit, Smartdeck, reagent pouch, small tool" },
@@ -95,7 +97,7 @@ EN.rules = {
       { load: "3",  items: "Heavy weapon, heavy shield, breaching kit, heavy tool rig, heavy armor, dense duffel" },
       { load: "4+", items: "Unconscious adult, cargo crate, generator, server rack, turret, industrial case (stowed as cargo; carried in the arms it is a Haul instead)" }
     ],
-    notes: "Load 0 items ride free within reason. Armor counts whether worn or packed: 1 Light, 2 Medium, 3 Heavy. Reveal packed gear any time (\"I packed that\") if it fits the budget and the silhouette; once revealed, an item stays revealed: for Packed It, it counts against your budget for the rest of the run, even after you drop it, hand it off, or use it up, so it can't be quietly unpacked back out of existence. Encumbrance is different: it reads what you're carrying right now, so dropping the crate does lighten you. Loot picked up mid-run adds its Load the same way."
+    notes: "Load 0 items ride free within reason. Armor counts whether worn or packed: 1 Light, 2 Medium, 3 Heavy. Reveal packed gear any time (\"I packed that\") if it fits the budget and the silhouette; once revealed, an item stays revealed: for Packed It, it counts against your budget for the rest of the run, even after you drop it, hand it off, or use it up, so it can't be quietly unpacked back out of existence. Encumbrance is different: it reads what you're carrying right now, so dropping the crate does lighten you. Loot picked up mid-run adds its Load the same way. If an item is especially awkward, rigid, oversized, or hard to secure, the GM may increase its Load by 1. If it is tiny, collapsible, worn cleanly, or designed to distribute its weight, the GM may reduce its Load by 1, to a minimum of 0."
   },
 
   /* Modifier scale: mod = floor((score - 10) / 2).
@@ -409,9 +411,9 @@ EN.rules = {
       { key: "language",   name: "Language",       short: "Language", tp: 1, level: 1, what: "Learn one new language. See Languages under Species and Lineage." }
     ],
     grants: "Background and Class grants give a free Proficient floor, marked GRANTED on the sheet. Training Points are spent above that floor.",
-    focus: "A Skill Focus adds your Caliber to rolls inside one narrow aspect of its parent. A parent is a Skill, a Weapon category, a Vehicle category or a Tool category, never Armor, and you must be at least Proficient in it. A parent can carry more than one Focus as long as each names a clearly distinct aspect. The Caliber from a Focus rides outside the +15 static modifier cap.",
+    focus: "A Skill Focus adds your Caliber to d20 checks inside one narrow aspect of its parent, and on a Dice Pool grants Edge Dice equal to your Caliber on top of your tier's. A parent is a Skill, a Weapon category, a Vehicle category or a Tool category, never Armor, and you must be at least Proficient in it. A Weapon Focus applies to attack rolls with that weapon type. A Vehicle Focus applies to attack rolls, vehicle checks, and damage rolls with that vehicle type. A Tool Focus applies to checks using a kit in that Tool Category, when the work falls inside the aspect. A parent can carry more than one Focus as long as each names a clearly distinct aspect. Only one Skill Focus Caliber bonus can apply to a single roll; if more than one would cover the action, choose which one applies. The Caliber from a Focus rides outside the +15 static modifier cap. A Focus may be retrained after a major story event or narrative milestone.",
     // PHB:1098-1106: the critical threat range EXPANDS by 1, and by 1 further when another source already expanded it
-    specialization: "A Specialization marks one narrow aspect of a parent you have Expertise in. When your Specialization applies, your critical threat range expands by 1 on related d20 checks (for example, you score a critical success on a roll of 19 or 20). If you already have an expanded critical threat range from another source, it expands by 1 further. When using the Dice Pool Method, add +2 Edge Dice on related rolls. Each parent takes exactly one Specialization, and Armor never takes one.",
+    specialization: "A Specialization marks one narrow aspect of a parent you have Expertise in. When your Specialization applies, your critical threat range expands by 1 on related d20 checks (for example, you score a critical success on a roll of 19 or 20). If you already have an expanded critical threat range from another source, it expands by 1 further. When using the Dice Pool Method, add +2 Edge Dice on related rolls. This stacks with your proficiency tier, the Caliber bonus from a Skill Focus, Edge from other sources, and any other advantages. A Vehicle Specialization extends its critical threat range and Dice Pool bonus to vehicle attack rolls, vehicle checks, and damage rolls with that vehicle type. Each parent takes exactly one Specialization, and Armor never takes one.",
     overlap: {
       when: "Your Background and Class both train you in the same Skill or gear category.",
       rule: "The proficiency applies once (Proficient + Proficient = Proficient, never Expertise), and each overlap grants a **Free Skill Focus**: 0 Training Points, valid from level 1."

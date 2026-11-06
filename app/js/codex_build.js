@@ -137,8 +137,7 @@ window.EN = window.EN || {};
     // grouped by parent Attribute, in the book's Attribute order; the Attribute rides on the heading
     (R.attributes || []).forEach(function (a) {
       (R.skills || []).filter(function (s) { return s.attr === a.key; }).forEach(function (s) {
-        var ex = (R.focusExamples || {})[s.key];
-        kids.push(K.ruleBlock(s.name, s.desc + (ex ? "\nExample aspects: " + ex : ""), a.name));
+        kids.push(K.ruleBlock(s.name, s.desc, a.name));
       });
       // the book's note under the Mystique skills (PHB:1008-1012): a Flow check may use the Flow Attribute
       if (a.key === "MYS" && R.mystiqueNote) kids.push(K.proseBlock(R.mystiqueNote));
@@ -175,8 +174,7 @@ window.EN = window.EN || {};
     if (T.overlap) kids.push(K.ruleBlock("Overlapping Training", T.overlap.when + " " + T.overlap.rule));
     if ((R.versatileSkills || []).length) {
       kids.push(K.ruleBlock("Versatile Skills", [V.rule, V.note].filter(Boolean).join("\n")
-        + "\n" + R.versatileSkills.map(function (v) { return "- " + v.name + ": " + v.desc; }).join("\n")
-        + (V.example ? "\n\n" + V.example : "")));
+        + "\n" + R.versatileSkills.map(function (v) { return "- " + v.name + ": " + v.desc; }).join("\n")));
       // the Handbook's sidebar under the Wits Skills (PHB:573)
       if (V.insightIntuition) kids.push(K.ruleBlock("Insight and Intuition", V.insightIntuition));
     }
@@ -277,6 +275,7 @@ window.EN = window.EN || {};
       kids.push(K.entry("hauls", "Hauls", [
         el("h4", { text: "Hauls" }),
         K.refTable(["Haul", "Effect"], E.hauls.map(function (h) { return [h.name, h.hint]; }), [0]),
+        E.haulNote ? K.linkify(el("p"), E.haulNote) : null,
         // the book's full rule for moving a load, and its Speed, is in Combat Rules (mv-move)
         K.seeAlso("Moving with a load:", [["mv-move/dragging-pushing-and-pulling", "Dragging, Pushing, and Pulling"]])
       ], { tag: "div.feature" }));
