@@ -185,7 +185,7 @@ EN.conditions = [
   {
     name: "Panic",
     summary: "Instinct overrides reason",
-    text: "Instinct takes over.\n\n- Start of your turn: Presence Save DC 12. Failure: roll 1d6:\n  - 1 to 3 (Flight): use your Move and Action to get as far from the source as possible, seeking the nearest exit or total cover.\n  - 4 to 5 (Fight): use your Move and Action to close and make a melee attack against the nearest Enemy. If you can't reach one, use your Action to move closer.\n  - 6 (Freeze): Speed 0. Drop Prone; no Action this turn.\n- Ends: Presence Save DC 12 at the end of each of your turns, or effects that remove fear or calm the mind."
+    text: "Instinct takes over.\n\n- Start of your turn: Presence Save DC 12. Failure: roll 1d6:\n  - 1 to 3 (Flight): use your Move and Action to get as far from the source as possible, seeking the nearest exit or Total Cover.\n  - 4 to 5 (Fight): use your Move and Action to close and make a melee attack against the nearest Enemy. If you can't reach one, use your Action to move closer.\n  - 6 (Freeze): Speed 0. Drop Prone; no Action this turn.\n- Ends: Presence Save DC 12 at the end of each of your turns, or effects that remove fear or calm the mind."
   },
   {
     name: "Paralyzed",
