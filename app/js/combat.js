@@ -3963,7 +3963,7 @@ EN.combatView = (function () {
         var handle = (ch.identity && ch.identity.handle) || (ch.name || "Unnamed").split(" ")[0];
         var cls = (d.classInfo && d.classInfo.name) || "";
         var sub = (d.subclassInfo && d.subclassInfo.name) || "";
-        var classStr = cls ? (" · " + (EN.classIdentity.has(ch.class) ? EN.classIdentity.markHtml(ch.class) + '<span class="cls-name" data-cls="' + ch.class + '">' + cls + "</span>" : cls) + (sub ? " / " + sub : "")) : "";
+        var classStr = cls ? (" · " + cls + (sub ? " / " + sub : "")) : "";
         var calRoman = ["I","II","III","IV","V"][(d.caliber || 1) - 1] || String(d.caliber || 1);
         var levelStr = " · L" + (d.level || 1) + " · CAL " + calRoman;
         // the opt-in Edit freely switch (builder.js), flagged on the live sheet for the GM
