@@ -1856,6 +1856,10 @@ EN.gmEncounters = (function () {
     n.roundsLeft = Number(n.roundsTotal) > 0 ? Math.min(Number(n.roundsTotal), left) : left;
     n.loudRounds = Math.max(0, (n.loudRounds | 0) - loudBack);
     n.syncedRound = to;
+    // what the rounds taken back had logged didn't happen, so the history says so
+    (n.history || []).forEach(function (h) {
+      if (h && (h.round | 0) > to && !/ \(undone\)$/.test(h.text)) h.text += " (undone)";
+    });
     hist(n, to, "Round set back to " + to + (back ? ": " + plural(back, "round") + " given back." : "."));
   }
   function syncClock(enc, set) {

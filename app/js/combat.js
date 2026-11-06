@@ -3774,7 +3774,7 @@ EN.combatView = (function () {
     var msg;
     if (type !== "Standard" && ownedQty(ch, type) <= 0) {              // the chosen special round is depleted
       if (base === "Standard") { msg = "Out of " + type + "; reloaded with Standard."; type = "Standard"; }  // fall back to plentiful
-      else { toast("Out of ammo; no " + type + " in stash. Acquire it in Inventory."); return; }            // no plentiful variant: keep RELOAD
+      else { toast("Can't reload: no " + type + " in stash. Acquire it in Inventory."); return; }            // no plentiful variant: keep RELOAD
     }
     var needsStash = type !== "Standard";                               // counted munition / specialty round → spend from stash
     /* Launcher shells are sold one at a time ("50 each") and "All launcher shells are Counted" (PHB

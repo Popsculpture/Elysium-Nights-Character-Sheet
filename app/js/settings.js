@@ -62,7 +62,7 @@ EN.theme = (function () {
     { key: "merlot",     name: "Merlot",       accent: "#e2506e", dim: "#8a2238", bg: "#16040a", bg2: "#270b13", border: "#5a1f2e", border2: "#7e3042" },
     { key: "evilcurse",  name: "Flowstate",    accent: "#a96ce2", dim: "#5e3a99", bg: "#100a1a", bg2: "#1b1232", border: "#3f2a62", border2: "#573a82" },
     // light mode: flips text dark and panels light, with a soft pink/cyan hex backdrop (see theme.css html.light)
-    { key: "daybreak",   name: "Daybreak",     light: true, accent: "#d23f8c", dim: "#9c2e66", bg: "#eef1f7", bg2: "#ffffff", border: "#c7cfdc", border2: "#a6b4c6", text: "#1e2733", text2: "#4a5a6e", text3: "#74859a", text4: "#a3b2c4" }
+    { key: "daybreak",   name: "Daybreak",     light: true, link: "#c23580", accent: "#d23f8c", dim: "#9c2e66", bg: "#eef1f7", bg2: "#ffffff", border: "#c7cfdc", border2: "#a6b4c6", text: "#1e2733", text2: "#4a5a6e", text3: "#74859a", text4: "#a3b2c4" }
   ];
 
   // managed variables: cleared on "#GRID" to fall back to the original :root values
@@ -262,6 +262,8 @@ EN.theme = (function () {
     /* Is this palette light enough that the app's fixed dark-theme semantics stop reading on it?
        Measured on the PANEL ground, since that is what chips and labels actually sit on. The class
        lets CSS re-tune those colours the same way the '98 paper sub-views already do. */
+    // a palette whose accent is too pale for small link text on its own ground names a darker link shade (Daybreak: 4.5:1 on white and on #eef1f7)
+    if (t.link) s.setProperty("--codex-link", t.link); else s.removeProperty("--codex-link");
     var ground = t.bg2 || t.bg;
     root.classList.toggle("pal-light", !!ground && relLum(ground) > 0.45);
     /* A second, narrower question, asked of a different surface: is the FACE of the '98 caption

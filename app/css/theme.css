@@ -3028,7 +3028,7 @@ html.skin-98 .aoe-box{
    not scroll the page under it, and nothing in it may be wider than the
    card: tables wrap anywhere instead of pushing the sheet sideways.
    ========================================================================= */
-.codex-link{ color:var(--accent); cursor:pointer; text-decoration:underline; text-decoration-style:dotted;
+.codex-link{ color:var(--codex-link, var(--accent)); cursor:pointer; text-decoration:underline; text-decoration-style:dotted;
   text-decoration-color:var(--accent-dim); text-underline-offset:2px; text-decoration-thickness:1px; }
 .codex-link:hover{ text-decoration-style:solid; text-decoration-color:var(--accent); }
 .codex-link:focus-visible{ outline:1px solid var(--accent); outline-offset:1px; }
@@ -3132,7 +3132,7 @@ html:not(.skin-98):not(.skin-droid) .cx-chaps-sep{ font-family:var(--mono); font
    paper sub-views (which keep their blue), and #0000ee read 3.3:1 on the seed's grey and under
    2:1 on a dark palette. In a title bar (a panel header, the drawer's head) it takes the bar's
    own text colour, since those bars are painted in the accent. */
-html.skin-98 .codex-link, html.skin-98 .os-main a.codex-link{ color:var(--link, var(--accent)); text-decoration:underline; text-decoration-style:solid; text-decoration-color:currentColor; }
+html.skin-98 .codex-link, html.skin-98 .os-main a.codex-link{ color:var(--link, var(--codex-link, var(--accent))); text-decoration:underline; text-decoration-style:solid; text-decoration-color:currentColor; }
 html.skin-98 :is(.panel-h, .cxp-head) .codex-link, html.skin-98 .os-main :is(.panel-h, .cxp-head) a.codex-link{ color:inherit; }
 html.skin-98 .codex-chip{ width:18px; height:18px; border-radius:0; color:var(--text); background:var(--bg3); font-weight:700;
   border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); box-shadow:1px 1px 0 var(--bev-lo); }
