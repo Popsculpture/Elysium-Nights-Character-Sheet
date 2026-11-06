@@ -3506,6 +3506,12 @@ html.skin-98.pal-light{
 .cls-mark.on-light{ display:none; }
 html.pal-light .cls-mark.on-dark{ display:none; }
 html.pal-light .cls-mark.on-light{ display:inline-block; }
+.cls-mark.on-98{ display:none; }
+/* #GRIDOS '98 has its own pixel icons, on any palette, drawn at Windows' 16 and 32 pixel sizes */
+html.skin-98 .cls-mark.on-dark, html.skin-98 .cls-mark.on-light{ display:none !important; }
+html.skin-98 .cls-mark.on-98{ display:inline-block; width:16px !important; height:16px !important; vertical-align:-3px; }
+/* halving pixel art muddies it, so 32 wherever there's room; 16 only in title bars and chips */
+html.skin-98 .opt-card[data-cls] .cls-mark.on-98, html.skin-98 .feature.cls-dressed > h4 .cls-mark.on-98, html.skin-98 .section-title[data-cls] .cls-mark.on-98, html.skin-98 .pm-card .pm-class[data-cls] .cls-mark.on-98{ width:32px !important; height:32px !important; vertical-align:middle; }
 .cls-t{ color:var(--cls); }
 .cls-name{ color:var(--cls); border-bottom:2px solid var(--cls2); padding-bottom:1px; }
 .opt-card[data-cls] h4{ display:flex; align-items:center; }
