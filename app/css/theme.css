@@ -3465,7 +3465,7 @@ html.skin-droid .fv-win.fv-droid{ left:calc(var(--dr-l) + 10px); right:auto; wid
 /* CLASS IDENTITY (the author's pairs, 3 Nov 2026; icons, 5 Nov 2026). Text takes --cls; --cls2 is for lines and marks,
    never small text. Stitcher's and Shaper's mains read as plain text and a stock accent, so every class name and
    resource title carries its second colour as a rule beside it. A light ground (pal-light: Daybreak, #GRIDOS '98)
-   swaps in darker shades that reach 4.5:1 on white, #eef1f7 and #bdbdbd, and puts the icons on a dark tile. */
+   swaps in darker shades that reach 4.5:1 on white, #eef1f7 and #bdbdbd, and shows the outlined icons. */
 :root{
   --c-codebreaker:#39FF6A; --c2-codebreaker:#FF00C8;
   --c-fury:#FF1F3D; --c2-fury:#FFB000;
@@ -3484,6 +3484,16 @@ html.pal-light{
   --c-shaper:#00573B; --c2-shaper:#0606FF;
   --c-stitcher:#9F0013; --c2-stitcher:#9F0013;
 }
+/* '98's light palette sets panels on #999, darker than its #bdbdbd cards, so its class text goes one step darker again */
+html.skin-98.pal-light{
+  --c-codebreaker:#00390E;
+  --c-fury:#68000E;
+  --c-hustler:#3C2F00;
+  --c-operator:#00344A;
+  --c-scoundrel:#65002F;
+  --c-shaper:#003826;
+  --c-stitcher:#68000C;
+}
 [data-cls="codebreaker"]{ --cls:var(--c-codebreaker); --cls2:var(--c2-codebreaker); }
 [data-cls="fury"]{ --cls:var(--c-fury); --cls2:var(--c2-fury); }
 [data-cls="hustler"]{ --cls:var(--c-hustler); --cls2:var(--c2-hustler); }
@@ -3492,7 +3502,10 @@ html.pal-light{
 [data-cls="shaper"]{ --cls:var(--c-shaper); --cls2:var(--c2-shaper); }
 [data-cls="stitcher"]{ --cls:var(--c-stitcher); --cls2:var(--c2-stitcher); }
 .cls-mark{ display:inline-block; width:1.5em; height:1.5em; vertical-align:-.4em; margin-right:.4em; flex:none; }
-html.pal-light .cls-mark{ background:#0d0f16; border-radius:4px; padding:2px; box-sizing:border-box; }
+.cls-mark-pair{ display:contents; }
+.cls-mark.on-light{ display:none; }
+html.pal-light .cls-mark.on-dark{ display:none; }
+html.pal-light .cls-mark.on-light{ display:inline-block; }
 .cls-t{ color:var(--cls); }
 .cls-name{ color:var(--cls); border-bottom:2px solid var(--cls2); padding-bottom:1px; }
 .opt-card[data-cls] h4{ display:flex; align-items:center; }
