@@ -1240,12 +1240,7 @@ EN.codexView = (function () {
       return [
         K.proseBlock(B.intro),
         K.subTitle("Reading a Class Entry"),
-        K.proseBlock(B.together.intro),
-        el("div.muted-box", { style: { margin: "0 0 10px", padding: "10px 12px" } }, [
-          el("p", { style: { margin: 0, fontSize: "13px", fontStyle: "italic", color: "var(--text2)", lineHeight: "1.5" }, text: B.together.example })
-        ]),
         K.proseBlock(B.together.reading),
-        K.proseBlock(B.together.closing),
         // the same footnote style, now through linkify so "Core Resolution below" is a link
         K.note(B.covered, { margin: "0" })
       ];
@@ -1278,7 +1273,6 @@ EN.codexView = (function () {
       return [
         K.proseBlock(B.caliber.intro),
         K.refTable(["Class Level", "Caliber"], calRows(), [1]),
-        K.proseBlock(B.caliber.reading),
         // the Handbook's paragraph on the Caliber your #PRINT records (CC-07)
         B.caliber.appraisal ? K.proseBlock(B.caliber.appraisal) : null,
         K.subTitle("Saving Throw Focus"),
