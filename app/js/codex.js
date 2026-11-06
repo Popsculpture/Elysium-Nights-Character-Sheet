@@ -1332,8 +1332,6 @@ EN.codexView = (function () {
         bold(Rz.methodSplit.poolIntro),
         K.proseBlock(Rz.methodSplit.poolUses.map(function (s) { return "- " + s; }).join("\n")),
         K.ruleBlock("In Combat, Stay on d20", Rz.methodSplit.rule),
-        K.subTitle("Quick Lookup"),
-        K.refTable(["Situation", "Method"], Rz.methodSplit.lookup.map(function (r) { return [r.situation, r.method]; }), [1]),
         K.note(Rz.methodSplit.tiebreaker, { margin: "6px 0 0" })
       ];
     } },
@@ -1344,7 +1342,7 @@ EN.codexView = (function () {
         K.proseBlock(Rz.d20.process),
         K.ruleBlock("Static Modifier Cap (+15)", Rz.d20.modCap),
         K.subTitle("Difficulty Reference"),
-        K.refTable(["Task", "DC", "Example"], Rz.d20.dcTable.map(function (r) { return [r.task, r.dc, r.example]; }), [0, 1]),
+        K.refTable(["Task", "DC"], Rz.d20.dcTable.map(function (r) { return [r.task, r.dc]; }), [0, 1]),
         K.subTitle("Combat Rolls"),
         K.refTable(["Roll", "Formula", "Target"], Rz.d20.combatRolls.map(function (r) { return [r.type, r.formula, r.target]; }), [0]),
         K.subTitle("Critical Rolls"),
@@ -1376,8 +1374,7 @@ EN.codexView = (function () {
         K.refTable(["Total Snag", "Pool"], Rz.pool.snagPast5.map(function (r) { return [r.total, r.pool]; }), [1]),
         K.note(Rz.pool.snagCeiling),
         K.subTitle("Rolling Procedure"),
-        K.proseBlock(Rz.pool.procedure),
-        K.note("Example: " + Rz.pool.example, { margin: "0" })
+        K.proseBlock(Rz.pool.procedure)
       ];
     } },
     // 4 · Success Margin & Consequence
@@ -1463,8 +1460,6 @@ EN.codexView = (function () {
         K.ruleBlock("d20 Process", Co.group.d20Process),
         K.ruleBlock("Dice Pool Process", Co.group.poolProcess),
         K.refTable(["d20 Avg Margin", "Pool Net Margin", "Result", "Description"], Co.group.outcomes.map(function (r) { return [r.d20, r.pool, r.result, r.desc]; }), [2]),
-        // the book's Examples in Play under the Group Outcome Table (PHB:4365-4367)
-        (Co.group.examples || []).length ? K.ruleBlock("Examples in Play", Co.group.examples.map(function (t) { return "- " + t; }).join("\n")) : null,
         // the Toolkit's difficulty advice for a group check: the GM's, so Admin only (core-20)
         ctx.portal === "admin" ? K.note(Co.group.difficulty) : null,
         /* the Help Action section is one entry wrapped round its own blocks, so "(see Help
