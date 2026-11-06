@@ -438,7 +438,7 @@ EN.gmPayroll = (function () {
     var cat = e ? e.category : null;
     var xp = EN.gmEngine.xpOf(row) || (e ? EN.gmEngine.xpOf(e) : 0);
     return { id: row.id, name: row.name || b.name || "Threat", grade: Number(b.grade) || (e ? Number(e.grade) || 0 : 0),
-             xp: xp, entry: e, source: (cat && own(SOURCE_OF, cat)) ? SOURCE_OF[cat] : null };
+             xp: xp, entry: e, source: (cat && own(SOURCE_OF, cat)) ? SOURCE_OF[cat] : null, removed: !!row.removed };
   }
 
   /* ---- the crew --------------------------------------------------------- */
@@ -1146,6 +1146,9 @@ EN.gmPayroll = (function () {
         } }),
         el("span", { style: { flex: "1 1 auto", textDecoration: on ? "none" : "line-through", color: on ? "var(--text)" : "var(--text3)" },
           text: t.name }),
+        // the same word as the XP Award card: removed with the X above 0 Vitality, so check it wasn't a mistake
+        t.removed ? el("span.mono", { dataset: { payRemoved: "1" }, title: "Removed with the X while still above 0 Vitality. Untick it if that was a mistake.",
+          style: { fontSize: "10px", letterSpacing: ".08em", color: "var(--warn)", border: "1px solid var(--warn)", borderRadius: "3px", padding: "0 5px" }, text: "removed" }) : null,
         el("span.mono", { style: { fontSize: "12px" }, text: commas(t.xp) + " XP" })
       ]));
     });

@@ -74,7 +74,7 @@ EN.gmStore = (function () {
              sourceId: null,    // the saved encounter it came from, if any
              room: [],          // live hazards in the Room tray
              clock: null,       // the Security Response clock, or null when none is running
-             defeated: [] };    // threats taken to 0 Vitality in the fight, then cleared off with their X
+             defeated: [] };    // threats cleared off with their X once the fight was running
   }
 
   function blank() {
@@ -567,17 +567,24 @@ EN.gmStore = (function () {
           turned = true;
         }
       }
-      /* A threat at 0 Vitality, cleared off once the fight is running, was defeated, so its XP stays in
-         the award (Toolkit: "total the defeated threats' values"). The award card's tick still lets the GM
-         take one out. A row removed before round 1, or still on its feet, leaves no trace. */
+      /* A threat cleared off once the fight is running keeps its XP in the award, on its feet or not: the
+         Toolkit's defeated includes captured, routed, hacked, bypassed or talked down. One removed above 0
+         Vitality is marked, so the award card can say so and the GM can untick a mistake. A row removed
+         before round 1 was never in the fight and leaves no trace. */
       var gone = s.encounter.entries.filter(function (r) { return r.id === id; })[0];
-      if (gone && gone.kind === "threat" && (s.encounter.round | 0) > 0 && Number(gone.vit) <= 0) {
-        s.encounter.defeated = (s.encounter.defeated || []).concat([copy(gone)]);
+      if (gone && gone.kind === "threat" && (s.encounter.round | 0) > 0) {
+        var kept = copy(gone);
+        if (Number(gone.vit) > 0) kept.removed = true;
+        s.encounter.defeated = (s.encounter.defeated || []).concat([kept]);
       }
       s.encounter.entries = s.encounter.entries.filter(function (r) { return r.id !== id; });
-      /* The last row gone is the plan scrapped: its Room, clock and name go with it, so the next plan
-         inherits nothing. A fight that had something to award is snapshotted first, as END does. */
-      if (!s.encounter.entries.length) { snapshotFight(s); s.encounter = blankEncounter(); turned = false; }
+      /* The last row gone ends the fight, not the plan: its Room, clock and name stay until the GM scraps
+         it or runs a new one. A fight that had something to award is snapshotted first, as END does. */
+      if (!s.encounter.entries.length) {
+        snapshotFight(s);
+        s.encounter.defeated = [];
+        s.encounter.activeId = null; s.encounter.round = 0; turned = false;
+      }
     });
     return turned;
   }
@@ -595,6 +602,15 @@ EN.gmStore = (function () {
     update(function (s) {
       snapshotFight(s);
       s.encounter = blankEncounter();
+    });
+  }
+  /* SCRAP: the plan never ran, so there's nothing to award. Its threats, Room, clock and name go; the crew's
+     rows stay, as they do when a plan replaces the Table. Also how a new plan starts clean. */
+  function scrapPlan() {
+    update(function (s) {
+      var crew = s.encounter.entries.filter(function (r) { return r && r.kind === "crew"; });
+      s.encounter = blankEncounter();
+      s.encounter.entries = crew;
     });
   }
   /* The rows the award reads: what's on the Table plus the threats defeated and cleared off it. A run plan
@@ -1198,7 +1214,7 @@ EN.gmStore = (function () {
   return {
     load: load, get: get, update: update, on: on, uid: uid,
     addCrew: addCrew, addThreat: addThreat, removeEntry: removeEntry, entry: entry,
-    clearEncounter: clearEncounter, pruneCrew: pruneCrew,
+    clearEncounter: clearEncounter, scrapPlan: scrapPlan, pruneCrew: pruneCrew,
     // one name per threat row: the numbering addThreat applies, for rows from any other path
     numberThreats: numberThreats, freeName: freeName,
     saveThreat: saveThreat, savedThreats: savedThreats, removeThreat: removeThreat,

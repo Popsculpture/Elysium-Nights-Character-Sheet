@@ -829,6 +829,8 @@ EN.gmEncounters = (function () {
       gm.clearEncounter();
       keep.forEach(function (r) { gm.addCrew(r.charId, r.init, r.initMod); });
     }
+    // a new plan starts clean: nothing left on the Table from the last one comes with it
+    if (mode === "new") gm.scrapPlan();
     var live = gm.get().encounter;
     var startR = mode === "append" ? Math.max(1, live.round | 0) : 1;
     var keptClock = mode === "append" && !!live.clock && !(opts && opts.newClock);
@@ -2155,7 +2157,7 @@ EN.gmEncounters = (function () {
     var rec = last.sourceId ? gm.rec("encounters", last.sourceId) : null;
     var p = rec ? normPlan(copy(rec)) : null;
     var rows = (last.entries || []).filter(function (r) { return r && r.kind === "threat"; }).map(function (r) {
-      return { id: r.id, name: r.name || (r.block && r.block.name) || "Threat", xp: EN.gmEngine.xpOf(r.block) };
+      return { id: r.id, name: r.name || (r.block && r.block.name) || "Threat", xp: EN.gmEngine.xpOf(r.block), removed: !!r.removed };
     });
     var objDefault = p ? p.objective.awardXp : 0;
     /* Read when they are needed, never kept from the render: the Objective XP
@@ -2203,6 +2205,9 @@ EN.gmEncounters = (function () {
           EN.app.render();
         } }),
         el("span", { style: { flex: "1 1 auto", textDecoration: on ? "none" : "line-through", color: on ? "var(--text)" : "var(--text3)" }, text: r.name }),
+        // cleared off the Table above 0 Vitality: it counts, and this is what to check for a mistake
+        r.removed ? el("span.mono", { dataset: { awardRemoved: "1" }, title: "Removed with the X while still above 0 Vitality. Untick it if that was a mistake.",
+          style: { fontSize: "10px", letterSpacing: ".08em", color: "var(--warn)", border: "1px solid var(--warn)", borderRadius: "3px", padding: "0 5px" }, text: "removed" }) : null,
         el("span.mono", { style: { fontSize: "12px" }, text: fmtXp(r.xp) })
       ]));
     });

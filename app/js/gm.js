@@ -1159,6 +1159,14 @@ EN.gmView = (function () {
       }
     }
 
+    // before round 1 there's no END, so a plan on the Table needs its own way off
+    if (!(enc.round > 0) && (enc.room.length || enc.clock || enc.name || enc.sourceId)) {
+      head.push(EN.ui.armButton("gm:scrap", {
+        label: "SCRAP PLAN", armedLabel: "SCRAP IT?", title: "Clear this plan from the Table",
+        armedTitle: "Clears the plan's threats, Room, clock and name. The crew's rows stay. Nothing is awarded.",
+        onConfirm: function () { gm.scrapPlan(); toast("Plan scrapped."); EN.app.render(); }
+      }));
+    }
     kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: enc.round > 0 ? "6px" : "10px" } }, head));
     if (enc.entries.length && enc.round > 0) {
       kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "10px" } }, [
