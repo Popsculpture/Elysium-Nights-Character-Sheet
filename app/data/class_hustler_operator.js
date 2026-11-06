@@ -320,7 +320,7 @@ EN.classes.operator = {
       {
         name: "Overwatch",
         action: "Action",
-        text: "As an Action, you establish an Overwatch zone covering an Area 6 Cone or Area 12 Line. Until the start of your next turn, the first Enemy to move, attack, or shape an Invocation within that zone triggers your trap, provided you have Line of Sight to the target. You may immediately make a weapon attack against them as an Impulse Action. On a hit, their Speed is reduced to 0 for the remainder of their turn.\n\nYou must expose yourself to track the zone. You can't use this feature while benefiting from Full Cover, though Half or Three-Quarter Cover still applies."
+        text: "As an Action, you establish an Overwatch zone covering an Area 6 Cone or Area 12 Line. Until the start of your next turn, the first Enemy to move, attack, or shape an Invocation within that zone triggers your trap, provided you have Line of Sight to the target. You may immediately make a weapon attack against them as an Impulse Action. On a hit, their Speed is reduced to 0 for the remainder of their turn.\n\nYou must expose yourself to track the zone. You can't use this feature while benefiting from Total Cover, though Half or Three-Quarter Cover still applies."
       },
       {
         name: "Universal Upgrade",
@@ -449,7 +449,7 @@ EN.classes.operator = {
           level: 10,
           name: "The Killing Floor",
           action: "Action",
-          text: "Once per Long Rest, as an **Action**, declare an Area 20 you can see as your kill zone for 1 minute. Any enemy that moves, attacks, or shapes an Invocation within the area triggers an Overwatch shot from you, provided you have Line of Sight. You may take an unlimited number of **Impulse Actions** to make these shots, but you can fire at each enemy only once per round. You can't use this feature while benefiting from Full Cover, though you may still benefit from Half or Three-Quarter Cover."
+          text: "Once per Long Rest, as an **Action**, declare an Area 20 you can see as your kill zone for 1 minute. Any enemy that moves, attacks, or shapes an Invocation within the area triggers an Overwatch shot from you, provided you have Line of Sight. You may take an unlimited number of **Impulse Actions** to make these shots, but you can fire at each enemy only once per round. You can't use this feature while benefiting from Total Cover, though you may still benefit from Half or Three-Quarter Cover."
         }
       ]
     },

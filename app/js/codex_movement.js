@@ -20,7 +20,7 @@
    mv-move/speed-reductions, mv-move/dragging-pushing-and-pulling,
    mv-jump/jump-distance, mv-jump/jump-table, mv-fall/falling-and-forced-movement,
    mv-optfx/knockback (Admin only), mv-maneuvers/shove, mv-maneuvers/trip, mv-maneuvers/grapple,
-   mv-wall/rebound, mv-wall/in-a-sealed-room.
+   mv-wall/rebound, mv-wall/where-it-goes, mv-wall/bounce, mv-wall/in-a-sealed-room.
    Nothing is written here that the data does not say: every rule line is a field
    of EN.movement, and this file's own words are headings, the one app label per
    entry the data marks as the app's, and the small pointers between panels.
