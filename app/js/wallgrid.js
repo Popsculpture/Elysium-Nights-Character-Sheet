@@ -42,6 +42,14 @@
    body standing in any of those spaces is caught like any other. Vented, the blast escapes instead; a
    lingering cloud fills the space the same way, with no extra dice.
 
+   FULL COVER (the author, 6 Nov 2026: "the strongest combined properties of Cover and a Wall"; the Handbook's Total
+   Cover: "Total cover that the blast can't get around still blocks it"). A piece that is both. As a wall: the blast
+   can't enter its space, its space turns back like a wall's, streams splash off it, and a Bounce folds off it. As
+   cover: it shields what stands behind it from the blast, and more strongly than either alone. A space on the straight
+   line through it is never reached: sealed or vented, never by a stream, never by the backfill, and a Bounce can't land
+   there. Anyone in such a space is out of the blast, with no save. The diagram's choice: the room's tightest open
+   dimension stays the room's own, so a piece doesn't add Rebound.
+
    WHAT THE BOOK DOES NOT SETTLE, and this diagram therefore CHOOSES (and says so
    on its face): the Area is the Codex template's (membership by centre, js/aoegrid.js)
    placed on the blast's space; sealed, it reaches every space of the Area in the room,
@@ -91,6 +99,11 @@ EN.wallGrid = (function () {
     var a = armNow();
     return x < a || y >= S.h - a;
   }
+  function isFull(x, y) { var it = S.items[k(x, y)]; return !!(it && it.kind === "full"); }
+  // a wall or a Full Cover piece: what the blast can't enter
+  function solid(x, y) { return !isFloor(x, y) || isFull(x, y); }
+  // a Full Cover piece on the straight line from the blast to this space
+  function fullBlocks(a, c) { return between(a, c).some(function (s) { return isFull(s.x, s.y); }); }
   function tightest() { return S.shape === "l" ? Math.min(armNow(), S.w, S.h) : Math.min(S.w, S.h); }
   function floorCells() { var out = []; for (var y = 0; y < S.h; y++) for (var x = 0; x < S.w; x++) if (isFloor(x, y)) out.push({ x: x, y: y }); return out; }
   // after the room changes: anything off the floor goes, and the blast moves to the nearest floor
@@ -115,7 +128,7 @@ EN.wallGrid = (function () {
     }
     return out;
   }
-  function clearPath(a, b) { return between(a, b).every(function (c) { return isFloor(c.x, c.y); }); }
+  function clearPath(a, b) { return between(a, b).every(function (c) { return !solid(c.x, c.y); }); }
   function areaWidth() { return S.area === "cube" ? S.size : 2 * S.size + 1; }
   function scene() {
     var G = EN.aoeGrid, B = S.blast;
@@ -123,7 +136,9 @@ EN.wallGrid = (function () {
     var hit = {}, behind = {}, spill = {};
     raw.forEach(function (c) {
       var key = k(c.x, c.y);
-      if (!isFloor(c.x, c.y)) spill[key] = c;
+      if (isFull(c.x, c.y)) { if (!S.vent) spill[key] = c; }   // like a wall; vented, nothing has to be turned back
+      else if (!isFloor(c.x, c.y)) spill[key] = c;
+      else if (fullBlocks(B, c)) { behind[key] = c; if (!S.vent) spill[key] = c; }   // Full Cover turns this space back too
       else if (!S.vent || clearPath(B, c)) hit[key] = c;   // sealed: the pressure fills every corner
       else behind[key] = c;
     });
@@ -178,7 +193,7 @@ EN.wallGrid = (function () {
           spent against the walls.
      Returns the spaces filled, keyed. */
   var DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-  function open(x, y, taken) { if (!isFloor(x, y) || taken[k(x, y)]) return false; var it = S.items[k(x, y)]; return !(it && (it.kind === "half" || it.kind === "three")); }
+  function open(x, y, taken) { if (solid(x, y) || taken[k(x, y)] || fullBlocks(S.blast, { x: x, y: y })) return false; var it = S.items[k(x, y)]; return !(it && (it.kind === "half" || it.kind === "three")); }
   function push(area, n, B) {
     var out = {}, taken = {}, got = 0;
     if (n <= 0) return out;
@@ -189,7 +204,7 @@ EN.wallGrid = (function () {
        the next wall; for cover inside the Area (no stream meets it), straight on from the blast through it */
     var shelter = {};
     function shelterBeyond(cx, cy, d) {
-      for (var x = cx + d[0], y = cy + d[1]; isFloor(x, y) && !isCov(k(x, y)); x += d[0], y += d[1]) if (!area[k(x, y)]) shelter[k(x, y)] = 1;
+      for (var x = cx + d[0], y = cy + d[1]; !solid(x, y) && !isCov(k(x, y)); x += d[0], y += d[1]) if (!area[k(x, y)]) shelter[k(x, y)] = 1;
     }
     Object.keys(area).forEach(function (key) {
       if (!isCov(key)) return;
@@ -254,12 +269,12 @@ EN.wallGrid = (function () {
     var cur = { x: s.x, y: s.y }, firstF = null;
     for (var n = 0; n < 6; n++) {
       var path = between(B, cur).concat([cur]), f = { x: B.x, y: B.y }, w = null;
-      for (var i = 0; i < path.length; i++) { if (!isFloor(path[i].x, path[i].y)) { w = path[i]; break; } f = path[i]; }
+      for (var i = 0; i < path.length; i++) { if (solid(path[i].x, path[i].y)) { w = path[i]; break; } f = path[i]; }
       if (!firstF) firstF = f;
       if (!w) break;
       // mirror only across the face the line crossed: a diagonal step into the wall flips both axes only at a true corner
       var mx = w.x !== f.x, my = w.y !== f.y;
-      if (mx && my) { var ox = !isFloor(w.x, f.y), oy = !isFloor(f.x, w.y); if (ox || oy) { mx = ox; my = oy; } }
+      if (mx && my) { var ox = solid(w.x, f.y), oy = solid(f.x, w.y); if (ox || oy) { mx = ox; my = oy; } }
       cur = { x: mx ? f.x + w.x - cur.x : cur.x, y: my ? f.y + w.y - cur.y : cur.y };
     }
     function ok(c) { var kk = k(c.x, c.y), it = S.items[kk]; return isFloor(c.x, c.y) && caught[kk] && !(it && (it.kind === "half" || it.kind === "three")); }
@@ -326,7 +341,9 @@ EN.wallGrid = (function () {
     // cover pieces
     Object.keys(S.items).forEach(function (key) {
       var it = S.items[key], p = key.split(":"), x = +p[0] * U, y = +p[1] * U;
-      if (it.kind === "half" || it.kind === "three") {
+      if (it.kind === "full") {
+        s += '<g class="wtw-cover wtw-full"><rect x="' + (x - U * 0.5) + '" y="' + (y - U * 0.5) + '" width="' + U + '" height="' + U + '"/><text x="' + x + '" y="' + (y + 3) + '">FULL</text></g>';
+      } else if (it.kind === "half" || it.kind === "three") {
         s += '<g class="wtw-cover wtw-' + it.kind + '"><rect x="' + (x - U * 0.36) + '" y="' + (y - U * 0.36) + '" width="' + (U * 0.72) + '" height="' + (U * 0.72) + '" rx="2"/>'
           + '<text x="' + x + '" y="' + (y + 3) + '">' + (it.kind === "three" ? "3/4" : "1/2") + '</text></g>';
       }
@@ -342,7 +359,7 @@ EN.wallGrid = (function () {
     var bodies = R.people.map(function (P) { var r = U * 0.36; return { x: P.x * U - r, y: P.y * U - r, w: 2 * r, h: 2 * r, wt: 1 }; });
     bodies.push({ x: S.blast.x * U - U * 0.42, y: S.blast.y * U - U * 0.42, w: U * 0.84, h: U * 0.84, wt: 3 });
     Object.keys(S.items).forEach(function (key) {
-      var it = S.items[key]; if (it.kind !== "half" && it.kind !== "three") return;
+      var it = S.items[key]; if (it.kind !== "half" && it.kind !== "three" && it.kind !== "full") return;
       var p = key.split(":"); bodies.push({ x: +p[0] * U - U * 0.36, y: +p[1] * U - U * 0.36, w: U * 0.72, h: U * 0.72, wt: 2 });
     });
     function overlap(a, b) { var ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y); return ox > 0 && oy > 0 ? ox * oy : 0; }
@@ -411,7 +428,9 @@ EN.wallGrid = (function () {
   function apply(c) {
     if (!isFloor(c.x, c.y)) return false;
     var key = k(c.x, c.y), it = S.items[key];
-    if (S.tool === "blast") { S.blast = { x: c.x, y: c.y }; return true; }
+    // the blast and a Full Cover piece can't share a space: it's as solid as a wall
+    if (S.tool === "blast") { if (it && it.kind === "full") return false; S.blast = { x: c.x, y: c.y }; return true; }
+    if (S.tool === "full" && S.blast.x === c.x && S.blast.y === c.y) return false;
     if (S.tool === "erase") { if (!it) return false; delete S.items[key]; return true; }
     if (it && it.kind === S.tool) { delete S.items[key]; return true; }   // the same tool again lifts it
     put(c.x, c.y, S.tool); return true;
@@ -425,8 +444,9 @@ EN.wallGrid = (function () {
   }
   function moveTo(g, c) {
     if (!isFloor(c.x, c.y)) return false;
-    if (g.blast) { if (S.blast.x === c.x && S.blast.y === c.y) return false; S.blast = { x: c.x, y: c.y }; return true; }
+    if (g.blast) { if ((S.blast.x === c.x && S.blast.y === c.y) || isFull(c.x, c.y)) return false; S.blast = { x: c.x, y: c.y }; return true; }
     var to = k(c.x, c.y); if (to === g.key || S.items[to]) return false;
+    if (S.items[g.key].kind === "full" && S.blast.x === c.x && S.blast.y === c.y) return false;
     S.items[to] = S.items[g.key]; delete S.items[g.key]; g.key = to; return true;
   }
   function bind(st) {
@@ -506,7 +526,7 @@ EN.wallGrid = (function () {
     syncs = syncs.concat(tg);
 
     // the tools
-    var TOOLS = [["blast", "BLAST"], ["foe", "FOE"], ["ally", "ALLY"], ["half", "HALF COVER"], ["three", "3/4 COVER"], ["erase", "ERASE"]];
+    var TOOLS = [["blast", "BLAST"], ["foe", "FOE"], ["ally", "ALLY"], ["half", "HALF COVER"], ["three", "3/4 COVER"], ["full", "FULL COVER"], ["erase", "ERASE"]];
     var toolBtns = TOOLS.map(function (t) {
       var b = el("button.chip", { type: "button", style: { cursor: "pointer" }, dataset: { wtwTool: t[0] }, title: t[0] === "blast" ? "Tap where it goes off" : t[0] === "erase" ? "Tap a thing to take it away" : "Tap a space to put one down; tap it again to lift it",
         onclick: function () { S.tool = t[0]; redraw(); } }, t[1]);
@@ -540,6 +560,9 @@ EN.wallGrid = (function () {
           : "Rebound: the room holds it, so no extra dice: " + R.dmg + ".");
         lines.push("Sealed: everyone caught saves with Snag, and Half and Three-Quarter Cover grant no bonus.");
       }
+      if (Object.keys(S.items).some(function (key) { return S.items[key].kind === "full"; })) {
+        lines.push("Full Cover stands like a wall: the blast can't enter it or pass it, turns back off it, and never fills the spaces it shields. Anyone behind it is out of the blast, with no save.");
+      }
       if (!S.vent && R.spillN > 0) {
         var pn = Object.keys(R.pushed).length;
         lines.push("The walls turn back " + R.spillN + " space" + (R.spillN === 1 ? "" : "s") + " of the Area. "
@@ -554,7 +577,7 @@ EN.wallGrid = (function () {
       else if (!caught.length) list.appendChild(el("li", { text: "No one is caught." }));
       caught.forEach(function (P) { list.appendChild(el("li", { dataset: { wtwWho: P.key }, text: verdict(P, R).text })); });
       var walled = R.people.filter(function (p) { return !p.caught && p.behind; }), clearOnes = R.people.filter(function (p) { return !p.caught && !p.behind; });
-      if (walled.length) list.appendChild(el("li.wtw-clear", { text: "Behind a wall, out of the blast's reach: " + walled.map(function (p) { return p.name; }).join(", ") + "." }));
+      if (walled.length) list.appendChild(el("li.wtw-clear", { text: (Object.keys(S.items).some(function (key) { return S.items[key].kind === "full"; }) ? "Behind a wall or Full Cover" : "Behind a wall") + ", out of the blast's reach: " + walled.map(function (p) { return p.name; }).join(", ") + "." }));
       if (clearOnes.length && (caught.length || walled.length)) list.appendChild(el("li.wtw-clear", { text: "Clear of the Area: " + clearOnes.map(function (p) { return p.name; }).join(", ") + "." }));
     }
 
@@ -573,7 +596,7 @@ EN.wallGrid = (function () {
       list,
       el("p.help.aoe-hint", { text: "Pick a tool and tap the room: BLAST sets where it goes off, FOE, ALLY and the covers put one down (tap it again to lift it), ERASE takes one away. Drag anything to move it. On a phone, tap the room once before dragging up or down. From the keyboard, the arrow keys move a cursor round the room (and the blast, with BLAST picked), and Enter or Space uses the tool there." }),
       el("p.help", { style: { margin: "6px 0 0", fontStyle: "italic" },
-        text: "How this diagram reads the rule: the Area is the Codex template's, centered on the space where the blast goes off. Sealed, it reaches every space of the Area in the room, round an L's corner too, since the pressure fills every corner; vented, a space with a wall between it and the blast isn't caught. The spaces that land in a wall are turned back into the room (hatched in the template's own colour; red is only for a Bounce): they run straight out from the blast until they hit a wall, then splash left and right along it and run on to the next. Cover splits the flow and shelters the spaces behind it; those fill only when every other open space is full and the blast still has more to give. What finds no space at all folds back into the blast, mirrored off the wall it hit onto the spaces already caught; each time is a Bounce (one red hash, an X for two, an X with a line through it for three, solid red for four or more), and each Bounce adds a die of the blast's damage, up to its own dice. The room's tightest open dimension is its narrowest width, an L's arm. Cover counts when its space lies on the straight line from the blast to the target, and only for an Agility save. Set the save and what it does from the weapon's own entry. Borderline calls are the GM's." })
+        text: "How this diagram reads the rule: the Area is the Codex template's, centered on the space where the blast goes off. Sealed, it reaches every space of the Area in the room, round an L's corner too, since the pressure fills every corner; vented, a space with a wall between it and the blast isn't caught. The spaces that land in a wall are turned back into the room (hatched in the template's own colour; red is only for a Bounce): they run straight out from the blast until they hit a wall, then splash left and right along it and run on to the next. Cover splits the flow and shelters the spaces behind it; those fill only when every other open space is full and the blast still has more to give. Full Cover does both a wall's work and cover's: the flow splashes off it, and the spaces on a straight line through it from the blast are never filled. What finds no space at all folds back into the blast, mirrored off the wall it hit onto the spaces already caught; each time is a Bounce (one red hash, an X for two, an X with a line through it for three, solid red for four or more), and each Bounce adds a die of the blast's damage, up to its own dice. The room's tightest open dimension is its narrowest width, an L's arm. Cover counts when its space lies on the straight line from the blast to the target, and only for an Agility save. Set the save and what it does from the weapon's own entry. Borderline calls are the GM's." })
     ]);
   }
 
