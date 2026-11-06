@@ -49,7 +49,7 @@ EN.movement = {
     { name: "Difficult Terrain", text: "Costs 2 Speed per space." },
     { name: "Through a Body", text: "An ally's space, or the space of an enemy at least one Size smaller than you, costs 2 Speed to cross. Anyone else is a wall. You can't end your movement there." },
     { name: "Jump / Leap",    text: "1 Speed per space crossed." },
-    { name: "Vault / Climb",  text: "2-3 Speed depending on difficulty." },
+    { name: "Vault / Climb",  text: "2-3 Speed per space depending on difficulty." },
     { name: "Dash",           text: "Spend your Action to gain a new movement pool equal to your Speed." }
   ],
 
@@ -59,7 +59,7 @@ EN.movement = {
   /* ---- Part 2 > Move Actions (1 per Turn), Cinematic Momentum (l.1810; the Toolkit's own heading, plain paragraphs, no GM label) ------ */
   cinematicMomentum: {
     name: "Cinematic Momentum",
-    text: "As GM, you can grant a small burst of movement for certain triggers such as critical hits, heroic effort, or story-based bursts that restore **1 to 2 points of Speed** mid-turn when a Freelancer is close to reaching a goal or enemy. Use it to reward intent and maintain pacing. This can be a rush of adrenaline, tactical movement, or a moment of Flow clarity. Avoid granting it to enemies except in story-driven moments."
+    text: "As GM, you can grant a small burst of movement for certain triggers such as critical hits, heroic effort, or story-based bursts that restore **1 to 2 points of Speed** mid-turn when a Freelancer is close to reaching a goal or enemy. Use it to reward intent and maintain pacing. Avoid granting it to enemies except in story-driven moments."
   },
 
   /* ---- Part 3 > Lifting, Carrying, and Short Hauls > Dragging, Pushing, and Pulling (l.6540) */
@@ -84,9 +84,9 @@ EN.movement = {
 
   /* ---- Part 2 > Movement & Distance > Jumping (l.1717-1739) ----------------- */
   jumping: {
-    intro: "Elysium is built in layers, and the gaps between them are not always bridged. A gantry stops three spaces short of the next roof, a stairwell ends at a landing somebody welded shut, and sooner or later you stop looking for the door.",
-    distance: "Your **jump distance** is **2 spaces plus your Body or Agility Modifier, whichever is higher** (minimum 1, maximum 5). That is a **long jump**: horizontal, at a run. Your **high jump** is half your jump distance (rounded down, minimum 1). That is vertical: a railing, a car hood, a fire escape ladder someone pulled up behind them.",
-    runUp: "A running jump needs **2 spaces of movement** before you leave the ground. From a standing start, halve both distances (rounded down, minimum 1). The run-up buys you length, not lift, which is why a standing high jump and a running high jump come out the same at the low end. There is only so much a body does against gravity in one push.",
+    intro: "A jump crosses a gap or clears an obstacle, at a run or from a standing start.",
+    distance: "Your **jump distance** is **2 spaces plus your Body or Agility Modifier, whichever is higher** (minimum 1, maximum 5). That is a **long jump**: horizontal, at a run. Your **high jump** is half your jump distance (rounded down, minimum 1). That is vertical.",
+    runUp: "A running jump needs **2 spaces of movement** before you leave the ground. From a standing start, halve both distances (rounded down, minimum 1).",
     table: [
       { mod: "-1 or lower", long: 1, high: 1, standing: "1 long, 1 high" },
       { mod: "+0",          long: 2, high: 1, standing: "1 long, 1 high" },
@@ -94,16 +94,16 @@ EN.movement = {
       { mod: "+2",          long: 4, high: 2, standing: "2 long, 1 high" },
       { mod: "+3 or higher", long: 5, high: 2, standing: "2 long, 1 high" }
     ],
-    cost: "A jump costs **1 Speed per space crossed**, the same as covering that ground on foot. The run-up costs Speed too, because it is movement. Climbing and vaulting still cost 2-3 per space; those are the awkward ones.",
+    cost: "A jump costs **1 Speed per space crossed**. The run-up costs Speed too, because it is movement. Climbing and vaulting still cost 2-3 per space.",
     // the next three are the book's bold run-in heads ("Going farther.", "Landing.", "Doubling.")
-    farther: { name: "Going farther", text: "Your jump distance is what you clear without thinking about it. To beat it, make an **Athletics (Body)** check as part of the jump: **DC 15** buys 1 more space, **DC 20** buys 2. Nothing buys a third. On a failure you come down at the edge of your normal distance. If there is something under you, you have lost nothing but the moment. If there isn't, see **Falling & Forced Movement**." },
-    landing: { name: "Landing", text: "Distance is Athletics. The landing is **Acrobatics (Agility)**, and only when the place you are coming down has an opinion: a ledge the width of your boot, wet rebar, a moving train car, a space someone is already standing in. Failure puts you **Prone** where you land. What is waiting there when you get up is a separate problem." },
-    doubling: { name: "Doubling", text: "Several features double your jump distance. The maximum of 5 applies to your base distance, so a doubling doubles the number after the cap, not before it. Doublings don't stack: if more than one applies, use the largest and let the rest go. Your legs only leave the ground once." }
+    farther: { name: "Going farther", text: "To beat your jump distance, make an **Athletics (Body)** check as part of the jump: **DC 15** buys 1 more space, **DC 20** buys 2. Nothing buys a third. On a failure you come down at the edge of your normal distance. If there is nothing under you, see **Falling & Forced Movement**." },
+    landing: { name: "Landing", text: "Make an **Acrobatics (Agility)** check to land only when the place you are coming down is unsafe: a ledge the width of your boot, wet rebar, a moving train car, a space someone is already standing in. Failure puts you **Prone** where you land." },
+    doubling: { name: "Doubling", text: "Several features double your jump distance. The maximum of 5 applies to your base distance, so a doubling doubles the number after the cap, not before it. Doublings don't stack: if more than one applies, use the largest and let the rest go." }
   },
 
   /* ---- Part 2 > Movement & Distance > Falling & Forced Movement (l.1743) ----
      The whole section, one paragraph. */
-  fallingForced: "When a character is forcibly moved and stopped by an obstacle, they take 1d6 Bludgeoning damage for each space the movement was cut short. If they slam into anyone, they both split the damage of the impact evenly. Falling deals 1d6 Bludgeoning damage for every 2 spaces fallen. The pavement does not negotiate.",
+  fallingForced: "When a character is forcibly moved and stopped by an obstacle, they take 1d6 Bludgeoning damage for each space the movement was cut short. If they slam into anyone, they both split the damage of the impact evenly. Falling deals 1d6 Bludgeoning damage for every 2 spaces fallen.",
 
   /* ---- Part 2 > The Flow > Kinetic Resonance, the box titled "Forced Movement" (l.4054) */
   kineticBox: {
@@ -121,14 +121,14 @@ EN.movement = {
 
   /* ---- Part 2 > Attacks and Maneuvers > Shove, Trip, Grapple (l.1943-1977) --- */
   maneuvers: {
-    intro: "The next three win a fight without a body count. Each is an Action against a Target within your reach, and each is resolved as a contest, spelled out in the entry. You can attempt them on a Target up to one Size larger than you. Anything two Sizes larger or more shrugs you off without a feature or a very good angle.",
+    intro: "Shove, Trip, and Grapple are each an Action against a Target within your reach, resolved as a contest. You can attempt them on a Target up to one Size larger than you. Anything two Sizes larger or more is out of reach without a feature or a very good angle.",
     list: [
-      { name: "Shove", lead: "You drive a Target back with a shoulder, a boot, or both hands.", points: [
+      { name: "Shove", lead: "You drive a Target back.", points: [
         "**Contest:** your **Athletics (Body)** against the Target's **Athletics (Body)** or **Acrobatics (Agility)**. You win on a higher total, and ties go to the Target.",
         "On a win, push the Target **1 space** directly away from you, or **2 spaces** if you win by 5 or more.",
-        "You choose the direction, so a shove can send a Target into a hazard, off a ledge, or out of a doorway. What waits for them there is their problem."
+        "You choose the direction, so a shove can send a Target into a hazard, off a ledge, or out of a doorway."
       ] },
-      { name: "Trip", lead: "You sweep a leg, hook an ankle, or put your weight where theirs is going.", points: [
+      { name: "Trip", lead: "You knock a Target down.", points: [
         "**Contest:** your **Athletics (Body)** against the Target's **Athletics (Body)** or **Acrobatics (Agility)**. You win on a higher total, and ties go to the Target.",
         "On a win, the Target is knocked **Prone**.",
         "A Prone Target is easier to hit in melee and has to spend a Half Move or a Swift Action to stand (see Prone)."
@@ -141,7 +141,7 @@ EN.movement = {
       ] }
     ],
     // the paragraph after Grapple; the name is the app's
-    heldTarget: { name: "A Held Target", text: "A held Target is also a tool. You can put them between you and incoming fire, swing them at someone else, or throw them outright (see People as Improvised Weapons in Equipment). All three ask a great deal of your Body score." }
+    heldTarget: { name: "A Held Target", text: "You can put a held Target between you and incoming fire, swing them at someone else, or throw them outright (see People as Improvised Weapons in Equipment). All three depend on your Body score." }
   },
 
   /* ---- Part 3 > Ammo > Specialty Launcher Shells > Wall-to-Wall (l.1710-1722)
@@ -149,15 +149,14 @@ EN.movement = {
      (Part 2), the Explosive and Pressure traits and the Thermobaric Shell. Each
      part keeps the book's bold run-in head as its name. */
   wallToWall: {
-    intro: "An explosion needs room to spend itself. Out in the open the force pushes outward, thins, and is mostly gone a few steps from where it started. Indoors it has nowhere to be. The blast hits the walls, turns around, and crashes back through the room, so everything inside catches it coming and going. Crews call that going wall-to-wall, the way a contractor talks about carpet: corner to corner, nothing left bare. The difference is what gets spread.",
+    intro: "Wall-to-Wall is what happens when a blast goes off in an enclosed space: it hits the walls and comes back through the room.",
     parts: [
       { name: "Trigger", text: "Any damaging Area effect, Sphere or Cube, that goes off in an enclosed space. A space is enclosed if the blast can't vent: a closed room, a corridor, a stairwell, a parked car, a sealed container. A blown-out wall, an open roof, or a doorway wide enough to bleed off the pressure means it isn't enclosed, and none of this applies. A lingering cloud such as smoke or gas doesn't rebound; it simply fills the space. Borderline calls are the GM's." },
       { name: "Rebound", text: "Place the Area on the grid and compare it to the room's tightest open dimension, counting in spaces. For each space the Area is wider than the room can hold, the blast gains one extra die of its own damage, up to a number of extra dice equal to its normal damage dice. This extra damage is part of the same attack, so a save that halves the damage halves the extra dice with it." },
       { name: "Where it goes", text: "The spaces of the Area that land in a wall the blast can't break come back into the room. They run straight out from the blast until they hit a wall, then splash left and right along it. Cover the blast doesn't break splits the flow, and the spaces straight behind it stay clear: they fill only when every other open space is full and the blast still has more to give. Anyone in a space the blast fills is caught." },
       { name: "Bounce", text: "When every open space is full and there's still blast left, it folds back off the wall it hit onto spaces it has already caught, never onto cover. A space against one wall takes it once, a corner twice. Each time is a Bounce, and a target adds one die of the blast's damage per Bounce on its space, up to a number of extra dice equal to the blast's normal damage dice. Roll the Bounce dice once, in a line: a target with 2 Bounces adds the first two. Like Rebound, they're part of the same attack." },
       { name: "In a sealed room", text: "The pressure fills every corner. Everyone the blast catches rolls their save with **Snag**, and **Half Cover** and **Three-Quarter Cover** grant no bonus, because the blast never passes anyone by." },
-      { name: "Pressure", text: "Some ordnance is built to turn a room into a kill box. When an effect with the **Pressure** trait triggers Wall-to-Wall, treat the room as one space narrower than it is when counting Rebound. A fuel-air charge doesn't wait for a small room. It makes the room small." },
-      { name: "Example", text: "A grenade that deals 2d6 goes off in a corridor 3 spaces wide. Its Area is 5 spaces wide, so the blast is 2 spaces wider than the corridor can hold, and it gains 2 extra dice. The grenade deals 4d6, and everyone caught in it saves with Snag and gets no help from partial cover. The same grenade out on the street deals 2d6 and nothing more. The walls are what make a bomb worse." }
+      { name: "Pressure", text: "Some ordnance is built to turn a room into a kill box. When an effect with the **Pressure** trait triggers Wall-to-Wall, treat the room as one space narrower than it is when counting Rebound." }
     ]
   }
 };

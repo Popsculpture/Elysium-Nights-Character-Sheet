@@ -246,7 +246,7 @@ EN.rules = {
     { size: "Large",  underFt: 16,       imperial: "8 to 16 ft.",  metric: "2.4 to 4.8 m" },
     { size: "Huge",   underFt: Infinity, imperial: "over 16 ft.",  metric: "over 4.8 m" }
   ],
-  sizeBandNote: "Two overrides stay with the GM and are not automated. Bulk overrides height: something low and wide, or long and coiled, may sit one category above what its height implies. Non-upright bodies (animals, drones, vehicles) are measured on their longest dimension, not height.",
+  sizeBandNote: "Two overrides stay with the GM and are not automated. Bulk overrides height: something low and wide, or long and coiled, sits a category above what its height alone suggests. Non-upright bodies (animals, drones, vehicles) are measured on their longest dimension, not height.",
   // Height range per lineage, the source of truth for that lineage's Sizes.
   // Harbingers have no variance: every Harbinger is exactly 6 ft.
   lineageHeight: {
@@ -320,10 +320,10 @@ EN.rules = {
      nothing to list. The Body Gate lives under sizeComparison because it is a
      Size table; meatShield is defined here once and rendered in both places. */
   improvised: {
-    intro: "Improvised weapons are everything you pick up that was never built to be swung, which in Elysium is most things, and on a bad enough day, most people.",
+    intro: "Improvised weapons are anything you pick up that was never built to be swung.",
     using: [
       "Action Economy: attacking costs an Action. Grabbing an obvious item within reach costs a Swift Action.",
-      "No Proficiency: nobody trains on a fire extinguisher. You don't add a Weapon Proficiency Bonus to an improvised attack roll unless a feature says otherwise.",
+      "No Proficiency: You don't add a Weapon Proficiency Bonus to an improvised attack roll unless a feature says otherwise.",
       "Melee: roll a d20 + your Body Modifier + any relevant Skill Proficiency Bonus.",
       "Thrown: roll a d20 + your Body or Agility Modifier + any relevant Skill Proficiency Bonus."
     ],
@@ -338,15 +338,15 @@ EN.rules = {
     thrown: [
       { kind: "Light",    range: "4 / 12", examples: "Cans, bottles, tools, loose parts" },
       { kind: "Standard", range: "3 / 9",  examples: "Bricks, one-handed tools, small crates" },
-      { kind: "Heavy",    range: "2 / 6",  examples: "Barstools, cinder blocks. Attack rolls suffer Snag." }
+      { kind: "Heavy",    range: "2 / 6",  examples: "Barstools, cinder blocks", note: "Attack rolls suffer Snag." }
     ],
     desperation: [
       "Throwing a Melee Weapon: when you hurl a melee weapon that lacks the Thrown trait, it gains a range of 2 / 6. Use your Athletics skill for the Weapon Attack. The attack gains no Weapon Proficiency Bonus and ignores all of the weapon's normal melee traits, including Reach and Finesse.",
-      "Using a Ranged Weapon as a Club: swinging something delicate, like a rifle, as a crude bludgeon deals 1d4 or 1d6 Bludgeoning by size. The weapon's own damage die and traits don't apply, and you should expect to need a gunsmith afterward."
+      "Using a Ranged Weapon as a Club: swinging something delicate, like a rifle, as a crude bludgeon deals 1d4 or 1d6 Bludgeoning by size. The weapon's own damage die and traits don't apply."
     ],
     specialEffects: "On a Critical hit or a high Margin of success, the GM may rule that an improvised weapon inflicts a fitting condition: Bleeding from a shattered bottle, Staggered from a slab of concrete. When this happens, the Target makes a relevant Body or Wits Save to resist it.",
     // PHB:9178-9184, in the book's words (the author's answer 4, 24 October 2026)
-    peopleIntro: "\"Can I hit a motherfucker with another motherfucker?\" Yes, but first you have to Grapple them.\n\nAn Unconscious, Restrained, or willing Target can be Grappled automatically as a Swift Action. A conscious, unwilling Target must be Grappled by force and can be wielded until they break free.",
+    peopleIntro: "To swing a person, you first have to Grapple them.\n\nAn Unconscious, Restrained, or willing Target can be Grappled automatically as a Swift Action. A conscious, unwilling Target must be Grappled by force and can be wielded until they break free.",
     wieldedBody: "A body is a Heavy, Unwieldy improvised weapon dealing 1d10 Bludgeoning. Every attack carries Snag, and any features or abilities that augment improvised weapons apply.\n\nBoth the Target and the body you swing take the rolled damage.",
     meatShield: [
       "A shield smaller than you grants Half Cover (+2 Defense). One your Size or larger grants Three-Quarter Cover (+5 Defense), against attacks that have to pass through them.",

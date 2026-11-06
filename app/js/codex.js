@@ -1555,8 +1555,7 @@ EN.codexView = (function () {
      ruleBlock's own. Icon and name share one span, so the heading's flex row keeps them
      together on the left. */
   function dmgTypeBlock(K, t) {
-    // the type's text, then the Handbook's "Sources" line for it (core-17)
-    var node = K.ruleBlock(t.name, t.text + (t.sources ? "\n\nSources: " + t.sources : ""));
+    var node = K.ruleBlock(t.name, t.text);
     try {
       var h = node.querySelector("h4"), first = h && h.firstChild;
       var icon = EN.ui && typeof EN.ui.damageIcon === "function" ? EN.ui.damageIcon(t.name, { link: false }) : null;
@@ -1656,8 +1655,8 @@ EN.codexView = (function () {
         .concat((C.coverMaterials || []).length
           /* each category's reading ("No physical protection. Obscures vision only.") is a second
              two-column table under the first, so the four-column table stays phone-width */
-          ? [K.entry("cover-material-table", "Cover Material Table", [K.refTable(["Category", "Structure", "Integrity", "Examples"],
-              C.coverMaterials.map(function (m) { return [m.category, String(m.structure), String(m.integrity), m.examples]; }), [0]),
+          ? [K.entry("cover-material-table", "Cover Material Table", [K.refTable(["Category", "Structure", "Integrity"],
+              C.coverMaterials.map(function (m) { return [m.category, String(m.structure), String(m.integrity)]; }), [0]),
               C.coverMaterials.some(function (m) { return m.meaning; })
                 ? K.refTable(["Category", "What it means"], C.coverMaterials.filter(function (m) { return m.meaning; }).map(function (m) { return [m.category, m.meaning]; }), [0])
                 : null])]
@@ -1690,12 +1689,9 @@ EN.codexView = (function () {
       build: function (ctx, K) {
         var C = EN.combat;
         // a pointer, not a copy: the type rules themselves live in Damage & Mitigation
-        var hasSources = (C.damageTypes || []).some(function (t) { return !!t.sources; });
         return (C.damageTypeRules ? [K.note("What Resistance, Vulnerability and Immunity do to each type is under Damage & Mitigation.")] : [])
           // which types armor DR stops (Damage Order step 3, 25 October 2026)
           .concat(C.armorDRNote ? [K.note(C.armorDRNote + " Standard Physical Damage is Nonlethal, Ballistic, Piercing, Bludgeoning, and Slashing.")] : [])
-          // the Handbook's Damage Type Sources lead-in; each type prints its own "Sources:" line (core-17)
-          .concat(hasSources && C.damageSourcesIntro ? [K.note(C.damageSourcesIntro)] : [])
           .concat((C.damageTypes || []).map(function (t) { return dmgTypeBlock(K, t); }))
           // the Handbook's own sentence on optional damage Effects, whole (core-08, routed from the social group)
           .concat(C.optionalEffectsNote ? [K.note(C.optionalEffectsNote, { margin: "4px 0 0" })] : []);
@@ -1770,10 +1766,10 @@ EN.codexView = (function () {
           + "\n\n"
           + (IW.damage || []).map(function (d) {
               var up = stepUp(d.die);
-              return d.size + " | " + d.die + (up ? " → " + up : "") + " | " + d.examples;
+              return d.size + " | " + d.die + (up ? " → " + up : "");
             }).join("\n")));
         kids.push(ruleBlock("Improvised Thrown Weapons", IW.thrownNote + "\n\n"
-          + (IW.thrown || []).map(function (d) { return d.kind + " | " + d.range + " | " + d.examples; }).join("\n")));
+          + (IW.thrown || []).map(function (d) { return d.kind + " | " + d.range + (d.note ? " | " + d.note : ""); }).join("\n")));
         kids.push(ruleBlock("Desperation Attacks", bullets(IW.desperation)));
         kids.push(ruleBlock("Special Effects and Conditions", IW.specialEffects));
         kids.push(ruleBlock("People as Improvised Weapons", IW.peopleIntro + "\n\n" + IW.wieldedBody
