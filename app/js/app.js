@@ -449,7 +449,7 @@ EN.app = (function () {
       var sub = (d.subclassInfo && d.subclassInfo.name) || "";
       meta = cls ? (cls + (sub ? " / " + sub : "")) : "";
     } catch (e) {}
-    if (meta) node.appendChild(el("span.an-meta", { text: meta }));
+    if (meta) node.appendChild(el("span.an-meta", EN.classIdentity.has(ch.class) ? { dataset: { cls: ch.class } } : null, [EN.classIdentity.mark(ch.class), document.createTextNode(meta)].filter(Boolean)));
     // the opt-in Edit freely switch (builder.js), flagged where a GM reviewing the record sees it
     if (ch.editFreely === true) node.appendChild(el("span.an-flag.edit-freely", { title: "Edit freely is on: this character's Talents and Lineage Evolutions can change at any time, outside the one retrain per level", text: "EDIT FREELY" }));
     /* #PRINT's own roster switcher, so the record can be swapped from whatever tab is open. Only

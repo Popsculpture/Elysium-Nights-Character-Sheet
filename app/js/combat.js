@@ -2863,13 +2863,14 @@ EN.combatView = (function () {
                       Passive: "ref-actions/passive-special" };
   /* class-resource identity colors; the resource bar + count tint to match its fuel */
   var RESOURCE_COLOR = {
-    Bandwidth: "var(--bw)",   // electric blue, data / signal / system capacity (shared with #GRID)
-    Overdrive: "#FF7A00",   // hazard orange, heat / adrenaline / past safe limits
-    Leverage:  "#D6A21E",   // gold, influence / favors / social capital
-    Discipline: "#B11226",  // crimson (the Operator's resource, Execution until 5 Nov 2026), sharp / decisive / final
-    Moxie:     "#FF2DAA",   // neon magenta, stylish / defiant / reckless
-    Flow:      "var(--fp)",   // arc-violet, mystical / unstable (shared with the Flow tab)
-    Triage:    "#2FE6A6"    // medical mint, clinical / restorative / urgent
+    // each class's main colour (the author's pairs, 3 Nov 2026; theme.css, which also darkens them on a light skin)
+    Bandwidth: "var(--c-codebreaker)",
+    Overdrive: "var(--c-fury)",
+    Leverage:  "var(--c-hustler)",
+    Discipline: "var(--c-operator)",
+    Moxie:     "var(--c-scoundrel)",
+    Flow:      "var(--c-shaper)",
+    Triage:    "var(--c-stitcher)"
   };
   function resourceColor(name) { return RESOURCE_COLOR[name] || "var(--accent)"; }
   /* MAXIMUM OVERDRIVE (Fury Level 9, the October re-theme): "you immediately gain 1 Overdrive.
@@ -3056,7 +3057,8 @@ EN.combatView = (function () {
 
   function traumaRigKids(d, resKids) {
     var t = d.rig, T = EN.traumaRigs || {}, tiers = T.tiers || [];
-    var mint = resourceColor("Triage");
+    // a Stitcher's own rig wears the class; anyone else's is just a piece of gear
+    var mint = d.triage ? resourceColor("Triage") : "#2FE6A6";
     var owned = t.ownedRigs || [];
     // The Scrap Rig is a Stitcher's Long Rest fallback for running Protocols, so only a
     // Stitcher is offered it; everyone else picks from the Rigs they own or none.
@@ -3961,7 +3963,7 @@ EN.combatView = (function () {
         var handle = (ch.identity && ch.identity.handle) || (ch.name || "Unnamed").split(" ")[0];
         var cls = (d.classInfo && d.classInfo.name) || "";
         var sub = (d.subclassInfo && d.subclassInfo.name) || "";
-        var classStr = cls ? (" · " + cls + (sub ? " / " + sub : "")) : "";
+        var classStr = cls ? (" · " + (EN.classIdentity.has(ch.class) ? EN.classIdentity.markHtml(ch.class) + '<span class="cls-name" data-cls="' + ch.class + '">' + cls + "</span>" : cls) + (sub ? " / " + sub : "")) : "";
         var calRoman = ["I","II","III","IV","V"][(d.caliber || 1) - 1] || String(d.caliber || 1);
         var levelStr = " · L" + (d.level || 1) + " · CAL " + calRoman;
         // the opt-in Edit freely switch (builder.js), flagged on the live sheet for the GM
@@ -5216,7 +5218,7 @@ EN.combatView = (function () {
       if (d.flow) {
         var fCur = (ch.flow.current != null) ? eng.clamp(ch.flow.current, 0, d.flow.max) : d.flow.max;
         var fStrain = eng.strainOf(ch);   // the one Strain value (2026-10-24 rulings, item 8)
-        kids.push(el("div.section-title", null, [document.createTextNode("Flow Reservoir"), el("span.line"),
+        kids.push(el("div.section-title", { dataset: { cls: "shaper" } }, [EN.classIdentity.mark("shaper"), document.createTextNode("Flow Reservoir"), el("span.line"),
           el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: "DC " + d.flow.dc + " · " + d.flow.attributeName }) ]));
         kids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
           el("div.mono", { style: { fontSize: "22px", color: resourceColor("Flow") }, html: fCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.flow.max + " FP · Attack " + eng.fmtMod(d.flow.attackBonus) + "</span>" }),
@@ -5355,7 +5357,7 @@ EN.combatView = (function () {
            and its Bandwidth are one object and two stacks of spacing made them read as two.
            Everyone else gets them on their own, exactly as before. */
         var resKids = [];
-        resKids.push(el("div.section-title", null, [document.createTextNode(d.resource.name), el("span.line")]));
+        resKids.push(el("div.section-title", { dataset: { cls: ch.class } }, [EN.classIdentity.mark(ch.class), document.createTextNode(d.resource.name), el("span.line")]));
         resKids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
           el("div.mono.res-count", { style: { fontSize: "20px", color: resourceColor(d.resource.name) },
             html: (_over ? "<span class='od-over' style='color:var(--gold);text-shadow:0 0 10px var(--gold)' title='Past your maximum: lost when the encounter ends'>" + rCur + "</span>" : rCur) +

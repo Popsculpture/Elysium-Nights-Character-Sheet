@@ -1768,14 +1768,14 @@ EN.builder = (function () {
       var c = eng.getClass(k); if (!c) return null;
       var pk = (PICK.classes || {})[k] || {};
       var sel = ch.class === k;
-      return el("div.opt-card" + (sel ? ".sel" : ""), {
+      return el("div.opt-card" + (sel ? ".sel" : ""), { dataset: { cls: k },
         onclick: function () {
           store.update(function (cc) { if (cc.class !== k) { cc.class = k; cc.subclass = null; cc.subclassSkillPicks = Object.create(null); cc.classSkillChoices = []; cc.classGearChoices = { weapons: [], armor: [], tools: [], vehicles: [] }; cc.gambits = []; cc.startingCiphers = []; if (cc.startingKit && !cc.startingKit.claimed) { cc.startingKit.picks = {}; cc.startingKit.alt = false; } pruneGrantedFocuses(cc); } });
           if (pendingOverlaps(store.active()).length) toast("⚠ Overlapping training with your Background; claim your Free Skill Focus below.");
         }
       }, [
         el("span.check", { text: "◉" }),
-        el("h4", { text: c.name.replace(/^The\s+/, "") }),
+        el("h4", null, [EN.classIdentity.mark(k), el("span.cls-name", { text: c.name.replace(/^The\s+/, "") })]),
         el("div.sub", { text: (c.resource ? c.resource.name + " · " : "") + "d" + (R.classVitality[k] ? R.classVitality[k].die : "?") + " VIT" }),
         el("p", { style: { color: "var(--text2)" },
           text: pk.blurb || ((c.tagline || "").slice(0, 150) + ((c.tagline || "").length > 150 ? "…" : "")) })
@@ -1819,14 +1819,14 @@ EN.builder = (function () {
               "\nTraits: " + d.triage.traits.join(", ") + "\n\n";
           }
         }
-        corePb.push(ruleHead(feature(cls.resource.cardTitle, resBody + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")),
-          resourceAnchor(cls.resource.name)));
+        corePb.push(EN.classIdentity.dress(ruleHead(feature(cls.resource.cardTitle, resBody + (cls.resource.fuels || ""), "class", "Pool " + (d.resource ? d.resource.max : "")),
+          resourceAnchor(cls.resource.name)), ch.class));
         var gp = resourcePicker(ch); if (gp) corePb.push(gp);
         var scp = startingCipherPicker(ch); if (scp) corePb.push(scp);
       }
       if (ch.class === "shaper" && d.flow) {
-        corePb.push(ruleHead(feature(cls.resource.cardTitle, "Reservoir = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc + "\n\n" + cls.resource.fuels, "flow", "Flow " + d.flow.max),
-          "fl-core"));
+        corePb.push(EN.classIdentity.dress(ruleHead(feature(cls.resource.cardTitle, "Reservoir = (Caliber × 3) + " + d.flow.attributeName + " Modifier = " + d.flow.max + "\nFlow Save DC = 8 + " + d.flow.attributeName + " Mod + Caliber = " + d.flow.dc + "\n\n" + cls.resource.fuels, "flow", "Flow " + d.flow.max),
+          "fl-core"), ch.class));
         var rp = resonancePicker(ch); if (rp) corePb.push(rp);
       }
       // starting proficiencies, color-coded chip rows
@@ -1840,7 +1840,7 @@ EN.builder = (function () {
         profChipRow("Tools", sp.tools, "var(--flow)", { ch: ch, bucket: "tools" }),
         profChipRow("Saves", sp.saves, "var(--gold)")
       ]));
-      blocks.push(EN.ui.panel(cls.name + " · Core Traits", "CLASS.SYS", corePb, { corners: true }));
+      blocks.push(EN.classIdentity.dress(EN.ui.panel(cls.name + " · Core Traits", "CLASS.SYS", corePb, { corners: true }), ch.class));
       blocks.push(overlapBox(ch));
 
       // subclass
@@ -3846,7 +3846,7 @@ EN.builder = (function () {
       el("div.row.wrap", { style: { gap: "8px", marginBottom: "10px" } }, [
         d.speciesInfo ? el("span.chip.on", { text: d.speciesInfo.name + (d.lineageInfo ? " / " + d.lineageInfo.name : "") }) : null,
         d.lineageInfo ? heldTag("lineage", d.lineageInfo.key) : null,
-        d.classInfo ? el("span.chip.on", { text: d.classInfo.name.replace(/^The\s+/, "") + (d.subclassInfo ? " · " + d.subclassInfo.name : "") }) : null,
+        d.classInfo ? el("span.chip.on.cls-chip", { dataset: { cls: ch.class } }, [EN.classIdentity.mark(ch.class), document.createTextNode(d.classInfo.name.replace(/^The\s+/, "") + (d.subclassInfo ? " · " + d.subclassInfo.name : ""))]) : null,
         d.subclassInfo ? heldTag("subclass", d.subclassInfo.key) : null,
         d.backgroundInfo ? el("span.chip", { text: d.backgroundInfo.name }) : null,
         d.backgroundInfo ? heldTag("background", d.backgroundInfo.key) : null,
@@ -4458,7 +4458,7 @@ EN.builder = (function () {
         return el("button.pm-card", { title: "Open " + x.name, onclick: function () {
           if (store.setExample(x.key)) { _intake = false; _step = 0; EN.app.render(); }
         } }, [
-          el("span.pm-class", null, [document.createTextNode(String(x.label || "").toUpperCase())].concat(marks)),
+          el("span.pm-class", EN.classIdentity.has(x.key) ? { dataset: { cls: x.key } } : null, [EN.classIdentity.mark(x.key), document.createTextNode(String(x.label || "").toUpperCase())].filter(Boolean).concat(marks)),
           el("span.pm-name", { text: x.name }),
           el("span.pm-blurb", { text: x.blurb || "" })
         ]);
@@ -4552,7 +4552,7 @@ EN.builder = (function () {
         el("input.mgr-name", { value: typeof r.name === "string" ? r.name : "",
           title: "Rename. The first word becomes the first name, the rest the last name.",
           onchange: function (e) { mgrRename(id, e.target.value); EN.app.render(); } }),
-        el("span.mgr-meta", { text: metaOf(r) }),
+        el("span.mgr-meta", EN.classIdentity.has(r.class) ? { dataset: { cls: r.class } } : null, [EN.classIdentity.mark(r.class), document.createTextNode(metaOf(r))].filter(Boolean)),
         live ? el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }, "LIVE")
              : el("button.btn.sm", { title: "Make this the live record", onclick: function () { store.setActive(id); _step = 0; closeManager(); } }, "OPEN"),
         el("button.btn.sm", { title: "Export this record as .json", onclick: function () { exportChar(roster[id]); } }, "⤓"),

@@ -3461,3 +3461,55 @@ html.skin-droid .fv-win.fv-droid{ left:calc(var(--dr-l) + 10px); right:auto; wid
   html:not(.skin-droid) .chrome-frame > div, html:not(.skin-droid) .chrome-stats > div{ width:100%; }
   html.skin-98 .inv-sub::after{ overflow:hidden; }   /* the '98 market's painted address bar: its long URL is decoration */
 }
+
+/* CLASS IDENTITY (the author's pairs, 3 Nov 2026; icons, 5 Nov 2026). Text takes --cls; --cls2 is for lines and marks,
+   never small text. Stitcher's and Shaper's mains read as plain text and a stock accent, so every class name and
+   resource title carries its second colour as a rule beside it. A light ground (pal-light: Daybreak, #GRIDOS '98)
+   swaps in darker shades that reach 4.5:1 on white, #eef1f7 and #bdbdbd, and puts the icons on a dark tile. */
+:root{
+  --c-codebreaker:#39FF6A; --c2-codebreaker:#FF00C8;
+  --c-fury:#FF1F3D; --c2-fury:#FFB000;
+  --c-hustler:#FFC400; --c2-hustler:#8000FF;
+  --c-operator:#7FDBFF; --c2-operator:#FF3D00;
+  --c-scoundrel:#FF2088; --c2-scoundrel:#00FFFF;
+  --c-shaper:#7CFFD4; --c2-shaper:#5B5BFF;
+  --c-stitcher:#F5F5FF; --c2-stitcher:#E0001B;
+}
+html.pal-light{
+  --c-codebreaker:#005A16; --c2-codebreaker:#910072;
+  --c-fury:#9D0015; --c2-fury:#674700;
+  --c-hustler:#604A00; --c2-hustler:#6700CD;
+  --c-operator:#005273; --c2-operator:#932300;
+  --c-scoundrel:#9A0048; --c2-scoundrel:#005555;
+  --c-shaper:#00573B; --c2-shaper:#0606FF;
+  --c-stitcher:#9F0013; --c2-stitcher:#9F0013;
+}
+[data-cls="codebreaker"]{ --cls:var(--c-codebreaker); --cls2:var(--c2-codebreaker); }
+[data-cls="fury"]{ --cls:var(--c-fury); --cls2:var(--c2-fury); }
+[data-cls="hustler"]{ --cls:var(--c-hustler); --cls2:var(--c2-hustler); }
+[data-cls="operator"]{ --cls:var(--c-operator); --cls2:var(--c2-operator); }
+[data-cls="scoundrel"]{ --cls:var(--c-scoundrel); --cls2:var(--c2-scoundrel); }
+[data-cls="shaper"]{ --cls:var(--c-shaper); --cls2:var(--c2-shaper); }
+[data-cls="stitcher"]{ --cls:var(--c-stitcher); --cls2:var(--c2-stitcher); }
+.cls-mark{ display:inline-block; width:1.5em; height:1.5em; vertical-align:-.4em; margin-right:.4em; flex:none; }
+html.pal-light .cls-mark{ background:#0d0f16; border-radius:4px; padding:2px; box-sizing:border-box; }
+.cls-t{ color:var(--cls); }
+.cls-name{ color:var(--cls); border-bottom:2px solid var(--cls2); padding-bottom:1px; }
+.opt-card[data-cls] h4{ display:flex; align-items:center; }
+.opt-card[data-cls] .cls-mark{ width:30px; height:30px; margin-right:8px; }
+.opt-card[data-cls]::before{ background:var(--cls2); }
+.opt-card.sel[data-cls]{ border-color:var(--cls); box-shadow:0 0 12px -3px var(--cls); background:var(--bg2); }
+.opt-card.sel[data-cls]::before{ background:var(--cls); }
+.opt-card.sel[data-cls] .check{ color:var(--cls); }
+.panel.cls-dressed{ border-left:3px solid var(--cls2); }
+.feature.cls-dressed{ border-left:3px solid var(--cls2); }
+.feature.cls-dressed > h4{ color:var(--cls); }
+.section-title[data-cls]{ color:var(--cls); }
+.section-title[data-cls] .line{ height:2px; background:linear-gradient(90deg,var(--cls2),transparent); }
+.pm-card .pm-class[data-cls]{ color:var(--cls); display:inline-flex; align-items:center; flex-wrap:wrap; }
+.pm-card .pm-class[data-cls] .cls-mark{ width:18px; height:18px; margin-right:6px; }
+.mgr-meta[data-cls] .cls-mark{ width:15px; height:15px; margin-right:4px; vertical-align:-3px; }
+.chip.cls-chip{ color:var(--cls); border-color:var(--cls2); }
+.chip.cls-chip .cls-mark{ width:14px; height:14px; margin-right:4px; vertical-align:-3px; }
+#active-name .an-meta[data-cls]{ color:var(--cls); }
+#active-name .an-meta[data-cls] .cls-mark{ width:14px; height:14px; margin-right:4px; vertical-align:-3px; }
