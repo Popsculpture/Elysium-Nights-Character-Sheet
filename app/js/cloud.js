@@ -332,9 +332,9 @@ EN.cloud = (function () {
      The top bar's LINK readout (and the '98 tray's ⇋, which stands in for it there) is the
      cloud indicator (the author, 7 Nov 2026): LINK STABLE when the account is reachable and
      saved, LINK SYNC… while an upload runs, LINK DOWN when the account cannot be reached, and
-     NO LINK while nobody is jacked in. SYNC OK beside it stays the save on this device.
+     LOCAL while nobody is jacked in. SYNC OK beside it stays the save on this device.
      Jack in and Jack out live in Settings (js/settings.js, // CLOUD LINK). */
-  var LINK_TEXT = { off: "NO LINK", ok: "LINK STABLE", syncing: "LINK SYNC…", error: "LINK DOWN" };
+  var LINK_TEXT = { off: "LOCAL", ok: "LINK STABLE", syncing: "LINK SYNC…", error: "LINK DOWN" };
   var LINK_COLOR = { off: "var(--text3)", ok: "var(--success)", syncing: "var(--warn)", error: "var(--danger)" };
   function linkState() { return user ? (LINK_TEXT[status] ? status : "ok") : "off"; }
   function linkTip() {

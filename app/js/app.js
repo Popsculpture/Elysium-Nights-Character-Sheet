@@ -272,7 +272,7 @@ EN.app = (function () {
        (not on a row) folds it back rather than being swallowed. Inert on the other skins. */
     nav.onclick = function (e) { if (e.target === nav) foldRail(); };
     nav.appendChild(el("div.os-tray", null, [
-      el("span.os-tray-ico", { id: "os-tray-link", text: "⇋", title: "NO LINK" }),
+      el("span.os-tray-ico", { id: "os-tray-link", text: "⇋", title: "LOCAL" }),
       el("span.os-tray-ico", { id: "os-tray-sync", text: "⬤", title: "SYNC OK" }),
       el("span.os-tray-clock", { id: "os-tray-clock", text: clockText() })
     ]));

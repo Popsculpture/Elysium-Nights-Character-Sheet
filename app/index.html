@@ -6,14 +6,14 @@
 <title>#GRID // Elysium Nights Smartdeck OS</title>
 <!-- Installable: with these, a phone offers "Add to Home screen", and launched from that icon
      the app runs without the browser's address bar. Harmless from file:// and in a plain tab. -->
-<link rel="manifest" href="manifest.webmanifest?v=20261107.8">
+<link rel="manifest" href="manifest.webmanifest?v=20261107.9">
 <meta name="theme-color" content="#100e1a">
-<link rel="apple-touch-icon" href="img/icon-192.png?v=20261107.8">
-<link rel="icon" type="image/svg+xml" href="img/GRID%20Icon.svg?v=20261107.8">
+<link rel="apple-touch-icon" href="img/icon-192.png?v=20261107.9">
+<link rel="icon" type="image/svg+xml" href="img/GRID%20Icon.svg?v=20261107.9">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/theme.css?v=20261107.8">
-<link rel="stylesheet" href="css/print.css?v=20261107.8">
+<link rel="stylesheet" href="css/theme.css?v=20261107.9">
+<link rel="stylesheet" href="css/print.css?v=20261107.9">
 </head>
 <body>
 
@@ -28,8 +28,8 @@
   <header class="os-topbar">
     <div class="os-logo"><span class="os-badge"><svg viewBox="0 0 512 512" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M 117.5 117.5 H 360.5 L 394.5 151.5 V 394.5 H 150.5 L 117.5 361.5 Z M 128.5 128.5 V 355.5 L 156.5 383.5 H 383.5 V 156.5 L 355.5 128.5 Z"/><polygon points="220.5,178.5 243.5,178.5 219,333.5 195.5,333.5"/><polygon points="292.5,178.5 315.5,178.5 291,333.5 267.5,333.5"/><rect x="178.5" y="216.5" width="155" height="24"/><rect x="178.5" y="271.5" width="155" height="24"/></svg></span>#GRID<b>OS</b> <span class="v">v1.0</span></div>
     <div class="os-status">
-      <!-- the cloud link (js/cloud.js paints it): NO LINK, LINK STABLE, LINK SYNC… or LINK DOWN -->
-      <span id="link-state"><span class="led led-off"></span>NO LINK</span>
+      <!-- the cloud link (js/cloud.js paints it): LOCAL, LINK STABLE, LINK SYNC… or LINK DOWN -->
+      <span id="link-state"><span class="led led-off"></span>LOCAL</span>
       <span id="save-state">SYNC OK</span>
     </div>
     <div class="os-spacer"></div>
@@ -85,125 +85,125 @@
 <div class="toast" id="toast"></div>
 
 <!-- ===== data layer ===== -->
-<script src="data/rules.js?v=20261107.8"></script>
+<script src="data/rules.js?v=20261107.9"></script>
 <!-- the launch holds (lineup, Availability, Toolkit gear): read by the pickers, lists and Codex only, never by the data files -->
-<script src="data/launch.js?v=20261107.8"></script>
-<script src="data/species.js?v=20261107.8"></script>
-<script src="data/backgrounds.js?v=20261107.8"></script>
-<script src="data/class_codebreaker_fury.js?v=20261107.8"></script>
-<script src="data/class_hustler_operator.js?v=20261107.8"></script>
-<script src="data/class_scoundrel_shaper.js?v=20261107.8"></script>
-<script src="data/class_stitcher_resources.js?v=20261107.8"></script>
-<script src="data/class_identity.js?v=20261107.8"></script>
-<script src="data/class_picker.js?v=20261107.8"></script>
-<script src="data/talents.js?v=20261107.8"></script>
-<script src="data/ability_tags.js?v=20261107.8"></script>
-<script src="data/combat.js?v=20261107.8"></script>
+<script src="data/launch.js?v=20261107.9"></script>
+<script src="data/species.js?v=20261107.9"></script>
+<script src="data/backgrounds.js?v=20261107.9"></script>
+<script src="data/class_codebreaker_fury.js?v=20261107.9"></script>
+<script src="data/class_hustler_operator.js?v=20261107.9"></script>
+<script src="data/class_scoundrel_shaper.js?v=20261107.9"></script>
+<script src="data/class_stitcher_resources.js?v=20261107.9"></script>
+<script src="data/class_identity.js?v=20261107.9"></script>
+<script src="data/class_picker.js?v=20261107.9"></script>
+<script src="data/talents.js?v=20261107.9"></script>
+<script src="data/ability_tags.js?v=20261107.9"></script>
+<script src="data/combat.js?v=20261107.9"></script>
 <!-- the author's damage type icons, verbatim SVG keyed by EN.combat.damageTypes; read by EN.ui.damageIcon -->
-<script src="data/damage_icons.js?v=20261107.8"></script>
-<script src="data/resolution.js?v=20261107.8"></script>
-<script src="data/basics.js?v=20261107.8"></script>
-<script src="data/flow.js?v=20261107.8"></script>
-<script src="data/conditions.js?v=20261107.8"></script>
-<script src="data/hazards.js?v=20261107.8"></script>
+<script src="data/damage_icons.js?v=20261107.9"></script>
+<script src="data/resolution.js?v=20261107.9"></script>
+<script src="data/basics.js?v=20261107.9"></script>
+<script src="data/flow.js?v=20261107.9"></script>
+<script src="data/conditions.js?v=20261107.9"></script>
+<script src="data/hazards.js?v=20261107.9"></script>
 <!-- status_changes.js builds its menus by walking hazards.js and the Stitcher's
      Aftermarket Hot-Wires, so it must load after both. -->
-<script src="data/status_changes.js?v=20261107.8"></script>
-<script src="data/gear_traits.js?v=20261107.8"></script>
-<script src="data/gear_melee.js?v=20261107.8"></script>
-<script src="data/gear_ranged.js?v=20261107.8"></script>
-<script src="data/gear_signature.js?v=20261107.8"></script>
-<script src="data/weapon_parts.js?v=20261107.8"></script>
-<script src="data/gear_armor.js?v=20261107.8"></script>
-<script src="data/armor_mods.js?v=20261107.8"></script>
-<script src="data/gear_tools.js?v=20261107.8"></script>
-<script src="data/kits.js?v=20261107.8"></script>
-<script src="data/crafting.js?v=20261107.8"></script>
-<script src="data/cyberware.js?v=20261107.8"></script>
-<script src="data/grid.js?v=20261107.8"></script>
-<script src="data/vehicles.js?v=20261107.8"></script>
-<script src="data/economy.js?v=20261107.8"></script>
-<script src="data/recovery.js?v=20261107.8"></script>
-<script src="data/social.js?v=20261107.8"></script>
-<script src="data/chases.js?v=20261107.8"></script>
-<script src="data/movement.js?v=20261107.8"></script>
-<script src="data/briefs.js?v=20261107.8"></script>
-<script src="data/examples.js?v=20261107.8"></script>
+<script src="data/status_changes.js?v=20261107.9"></script>
+<script src="data/gear_traits.js?v=20261107.9"></script>
+<script src="data/gear_melee.js?v=20261107.9"></script>
+<script src="data/gear_ranged.js?v=20261107.9"></script>
+<script src="data/gear_signature.js?v=20261107.9"></script>
+<script src="data/weapon_parts.js?v=20261107.9"></script>
+<script src="data/gear_armor.js?v=20261107.9"></script>
+<script src="data/armor_mods.js?v=20261107.9"></script>
+<script src="data/gear_tools.js?v=20261107.9"></script>
+<script src="data/kits.js?v=20261107.9"></script>
+<script src="data/crafting.js?v=20261107.9"></script>
+<script src="data/cyberware.js?v=20261107.9"></script>
+<script src="data/grid.js?v=20261107.9"></script>
+<script src="data/vehicles.js?v=20261107.9"></script>
+<script src="data/economy.js?v=20261107.9"></script>
+<script src="data/recovery.js?v=20261107.9"></script>
+<script src="data/social.js?v=20261107.9"></script>
+<script src="data/chases.js?v=20261107.9"></script>
+<script src="data/movement.js?v=20261107.9"></script>
+<script src="data/briefs.js?v=20261107.9"></script>
+<script src="data/examples.js?v=20261107.9"></script>
 <!-- guided character-creation tour content; delete this line and js/tour.js's to remove the tour -->
-<script src="data/tour_creation.js?v=20261107.8"></script>
-<script src="data/versatile.js?v=20261107.8"></script>
-<script src="data/wallpapers.js?v=20261107.8"></script>
+<script src="data/tour_creation.js?v=20261107.9"></script>
+<script src="data/versatile.js?v=20261107.9"></script>
+<script src="data/wallpapers.js?v=20261107.9"></script>
   <!-- GM Toolkit. threats.js is book values only; the resolver is js/gmengine.js -->
-  <script src="data/threats.js?v=20261107.8"></script>
-  <script src="data/bestiary.js?v=20261107.8"></script>
+  <script src="data/threats.js?v=20261107.9"></script>
+  <script src="data/bestiary.js?v=20261107.9"></script>
   <!-- the Admin modules' book data, each under EN.gmBook -->
-  <script src="data/gm_encounters.js?v=20261107.8"></script>
-  <script src="data/gm_hazards.js?v=20261107.8"></script>
-  <script src="data/gm_jobs.js?v=20261107.8"></script>
-  <script src="data/gm_payroll.js?v=20261107.8"></script>
-  <script src="data/gm_heat.js?v=20261107.8"></script>
-  <script src="data/gm_people.js?v=20261107.8"></script>
-  <script src="data/gm_scenes.js?v=20261107.8"></script>
-  <script src="data/gm_card.js?v=20261107.8"></script>
+  <script src="data/gm_encounters.js?v=20261107.9"></script>
+  <script src="data/gm_hazards.js?v=20261107.9"></script>
+  <script src="data/gm_jobs.js?v=20261107.9"></script>
+  <script src="data/gm_payroll.js?v=20261107.9"></script>
+  <script src="data/gm_heat.js?v=20261107.9"></script>
+  <script src="data/gm_people.js?v=20261107.9"></script>
+  <script src="data/gm_scenes.js?v=20261107.9"></script>
+  <script src="data/gm_card.js?v=20261107.9"></script>
 
 <!-- ===== vendor (no build step; local UMD bundles only) ===== -->
-<script src="vendor/pdf-lib.min.js?v=20261107.8"></script>
-<script src="vendor/supabase.min.js?v=20261107.8"></script>
+<script src="vendor/pdf-lib.min.js?v=20261107.9"></script>
+<script src="vendor/supabase.min.js?v=20261107.9"></script>
 
 <!-- ===== engine + state ===== -->
-<script src="js/engine.js?v=20261107.8"></script>
-  <script src="js/gmengine.js?v=20261107.8"></script>
-<script src="js/store.js?v=20261107.8"></script>
-  <script src="js/gmstore.js?v=20261107.8"></script>
-<script src="js/cloud.js?v=20261107.8"></script>
-<script src="js/ui.js?v=20261107.8"></script>
-<script src="js/swipe.js?v=20261107.8"></script>
+<script src="js/engine.js?v=20261107.9"></script>
+  <script src="js/gmengine.js?v=20261107.9"></script>
+<script src="js/store.js?v=20261107.9"></script>
+  <script src="js/gmstore.js?v=20261107.9"></script>
+<script src="js/cloud.js?v=20261107.9"></script>
+<script src="js/ui.js?v=20261107.9"></script>
+<script src="js/swipe.js?v=20261107.9"></script>
 
 <!-- ===== views ===== -->
-<script src="js/companion.js?v=20261107.8"></script>
-<script src="js/builder.js?v=20261107.8"></script>
-<script src="js/combat.js?v=20261107.8"></script>
-<script src="js/face.js?v=20261107.8"></script>
-<script src="js/grid.js?v=20261107.8"></script>
-<script src="js/flow.js?v=20261107.8"></script>
-<script src="js/flowviz.js?v=20261107.8"></script>
-<script src="js/inventory.js?v=20261107.8"></script>
-<script src="js/aoegrid.js?v=20261107.8"></script>
-<script src="js/wallgrid.js?v=20261107.8"></script>
-<script src="js/codex.js?v=20261107.8"></script>
+<script src="js/companion.js?v=20261107.9"></script>
+<script src="js/builder.js?v=20261107.9"></script>
+<script src="js/combat.js?v=20261107.9"></script>
+<script src="js/face.js?v=20261107.9"></script>
+<script src="js/grid.js?v=20261107.9"></script>
+<script src="js/flow.js?v=20261107.9"></script>
+<script src="js/flowviz.js?v=20261107.9"></script>
+<script src="js/inventory.js?v=20261107.9"></script>
+<script src="js/aoegrid.js?v=20261107.9"></script>
+<script src="js/wallgrid.js?v=20261107.9"></script>
+<script src="js/codex.js?v=20261107.9"></script>
 <!-- the Codex chapters; each registers with js/codex.js above -->
-<script src="js/codex_build.js?v=20261107.8"></script>
-<script src="js/codex_flow.js?v=20261107.8"></script>
-<script src="js/codex_grid.js?v=20261107.8"></script>
-<script src="js/codex_gear.js?v=20261107.8"></script>
-<script src="js/codex_gm_threats.js?v=20261107.8"></script>
-<script src="js/codex_gm_build.js?v=20261107.8"></script>
-<script src="js/codex_recovery.js?v=20261107.8"></script>
-<script src="js/codex_social.js?v=20261107.8"></script>
-<script src="js/codex_chases.js?v=20261107.8"></script>
-<script src="js/codex_movement.js?v=20261107.8"></script>
-<script src="js/codex_gm_play.js?v=20261107.8"></script>
-  <script src="js/gm.js?v=20261107.8"></script>
+<script src="js/codex_build.js?v=20261107.9"></script>
+<script src="js/codex_flow.js?v=20261107.9"></script>
+<script src="js/codex_grid.js?v=20261107.9"></script>
+<script src="js/codex_gear.js?v=20261107.9"></script>
+<script src="js/codex_gm_threats.js?v=20261107.9"></script>
+<script src="js/codex_gm_build.js?v=20261107.9"></script>
+<script src="js/codex_recovery.js?v=20261107.9"></script>
+<script src="js/codex_social.js?v=20261107.9"></script>
+<script src="js/codex_chases.js?v=20261107.9"></script>
+<script src="js/codex_movement.js?v=20261107.9"></script>
+<script src="js/codex_gm_play.js?v=20261107.9"></script>
+  <script src="js/gm.js?v=20261107.9"></script>
   <!-- the Admin module tabs; each needs gm.js above for its Table hooks -->
-  <script src="js/gm_encounters.js?v=20261107.8"></script>
-  <script src="js/gm_hazards.js?v=20261107.8"></script>
-  <script src="js/gm_jobs.js?v=20261107.8"></script>
-  <script src="js/gm_payroll.js?v=20261107.8"></script>
-  <script src="js/gm_heat.js?v=20261107.8"></script>
-  <script src="js/gm_people.js?v=20261107.8"></script>
-  <script src="js/gm_scenes.js?v=20261107.8"></script>
-<script src="js/printsheet.js?v=20261107.8"></script>
-<script src="js/pdfexport.js?v=20261107.8"></script>
+  <script src="js/gm_encounters.js?v=20261107.9"></script>
+  <script src="js/gm_hazards.js?v=20261107.9"></script>
+  <script src="js/gm_jobs.js?v=20261107.9"></script>
+  <script src="js/gm_payroll.js?v=20261107.9"></script>
+  <script src="js/gm_heat.js?v=20261107.9"></script>
+  <script src="js/gm_people.js?v=20261107.9"></script>
+  <script src="js/gm_scenes.js?v=20261107.9"></script>
+<script src="js/printsheet.js?v=20261107.9"></script>
+<script src="js/pdfexport.js?v=20261107.9"></script>
 
 <!-- ===== settings tray (gear at the right of the tab rail; appearance + themes) ===== -->
-<script src="js/settings.js?v=20261107.8"></script>
+<script src="js/settings.js?v=20261107.9"></script>
 <!-- ===== guided character-creation tour (switch it off in Settings; delete this line and data/tour_creation.js's to remove) ===== -->
-<script src="js/tour.js?v=20261107.8"></script>
+<script src="js/tour.js?v=20261107.9"></script>
 
 <!-- ===== access gate (two-profile login: Freelancer or Admin; delete this line to remove) ===== -->
-<script src="js/gate.js?v=20261107.8"></script>
+<script src="js/gate.js?v=20261107.9"></script>
 
 <!-- ===== bootstrap ===== -->
-<script src="js/app.js?v=20261107.8"></script>
+<script src="js/app.js?v=20261107.9"></script>
 </body>
 </html>

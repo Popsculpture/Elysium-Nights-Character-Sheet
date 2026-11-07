@@ -3536,7 +3536,7 @@ html.skin-98 .opt-card[data-cls] .cls-mark.on-98, html.skin-98 .feature.cls-dres
 #active-name .an-meta[data-cls] .cls-mark{ width:14px; height:14px; margin-right:4px; vertical-align:-3px; }
 
 /* ===== cloud saves (js/cloud.js) =====
-   The LINK readout is the cloud indicator: its light goes grey with NO LINK, green and pulsing with
+   The LINK readout is the cloud indicator: its light goes grey with LOCAL, green and pulsing with
    LINK STABLE, amber with LINK SYNC…, red with LINK DOWN. Jack in and Jack out sit in Settings. */
 .os-status .led.led-off{ background:var(--text3); box-shadow:none; animation:none; opacity:.6; }
 .os-status .led.led-syncing{ background:var(--warn); box-shadow:0 0 8px var(--warn); }
