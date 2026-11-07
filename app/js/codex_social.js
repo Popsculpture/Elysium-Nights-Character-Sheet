@@ -27,9 +27,7 @@
    stays whole in EN.social: the GM Sit-Down tracker reads it directly.
    The Handbook's short Cred and Heat section (so-credheat-short, 2026-10-17 rulings, section 4)
    is the one Cred and Heat text the Freelancer desktop reads; it is empty on Admin.
-   19 October 2026 audit (round 7, group social): so-examples is an audience "gm" panel too (the
-   Toolkit prints two examples, the Handbook none); the Freelancer's Friction text keeps the
-   Handbook's deposition sentence whole (no playerFit); the Core Concepts table and the eight
+   19 October 2026 audit (round 7, group social): the Core Concepts table and the eight
    steps no book prints stay on both desktops, labelled APP SUMMARY.
    The API is documented in the header of app/js/codex.js.
    =========================================================================== */
@@ -61,11 +59,6 @@ window.EN = window.EN || {};
   function admin(ctx) { return !!(ctx && ctx.portal === "admin"); }
   // the R10 label (19 October 2026 audit, ruling 10): a table or list the app keeps that no book prints
   var APP_SUMMARY = "App summary: the Handbook doesn't print this.";
-  // the Examples in Play this desktop draws: an example with audience "gm" is the Admin desktop's
-  function exampleList(ctx) {
-    var s = S();
-    return ((s && s.examples) || []).filter(function (x) { return !x.audience || x.audience === "both" || (x.audience === "gm" && admin(ctx)); });
-  }
   // the Admin desktop's GM chapters, linked only where they resolve
   function gmSee(ctx, K, label, pairs) {
     if (ctx.portal !== "admin") return null;
@@ -102,7 +95,6 @@ window.EN = window.EN || {};
         ]),
         depths(),
         K.ruleBlock(e.name, K.bullets(e.items) + "\n\n" + e.after, null, lo()),
-        // both desktops read the whole sentence set: the Handbook keeps the deposition sentence on the player side (PHB:6178)
         K.proseBlock(e.fit, lo())
       ];
     } },
@@ -130,10 +122,10 @@ window.EN = window.EN || {};
           K.subTitle("Approach"),
           K.proseBlock(a.text, lo()),
           K.refTable(a.columns, a.rows.map(function (r) { return [r.name, r.skill, r.attributes, r.text]; }), [0], lo()),
-          K.proseBlock(a.powerhouses + "\n" + a.examples + "\n" + a.versatile, lo())
+          K.proseBlock(a.powerhouses + "\n" + a.versatile, lo())
         ]),
         K.ruleBlock(a.insight.name, a.insight.text, null, lo()),
-        K.ruleBlock("Stakes", s.stakes.text + "\n\n" + s.stakes.common + "\n\n" + s.stakes.example, null, lo()),
+        K.ruleBlock("Stakes", s.stakes.text + "\n\n" + s.stakes.common, null, lo()),
         K.ruleBlock("Sway", s.sway.text + "\n\n" + s.sway.sources + "\n\n" + s.sway.rule, null, lo()),
         K.seeAlso("The skills behind each Approach:", [["sk-skills/persuasion", "Persuasion"], ["sk-skills/intimidation", "Intimidation"],
           ["sk-skills/performance", "Performance"], ["sk-skills/deception", "Deception"], ["sk-skills/insight", "Insight"], ["sk-skills/versatile-skills", "Versatile Skills"]]),
@@ -241,7 +233,7 @@ window.EN = window.EN || {};
           K.proseBlock(p.intro, lo()),
           K.refTable(p.columns, p.results.map(function (x) { return [x.result + " (" + x.margin + ")", x.text]; }), [0], lo())
         ]),
-        K.ruleBlock(v.name, v.text + "\n" + K.bullets(v.examples) + "\n\n" + v.signal, null, lo()),
+        K.ruleBlock(v.name, v.text + "\n\n" + v.signal, null, lo()),
         K.ruleBlock("When Resolve Breaks", d.breaks.join("\n\n"), null, lo()),
         K.seeAlso("Running the table:", [["so-plays", "Rounds & Plays"], ["so-postures", "Postures"], ["so-floor", "The Floor"], ["so-conditions", "Sit-Down Conditions"]]),
         gmSee(ctx, K, "For the GM:", [["gms-sitdown", "Sit-Down Rules"], ["gmp-resolve", "Resolve by Role"]])
@@ -254,7 +246,7 @@ window.EN = window.EN || {};
       return [
         K.ruleBlock("Rounds", d.rounds + "\n\n" + d.playsLead, null, lo()),
         K.el("div", null, d.plays.map(function (pl) {
-          return K.ruleBlock(pl.name, pl.text + (pl.key === "hold" && d.holdNote ? "\n\n" + d.holdNote : ""), null, lo());
+          return K.ruleBlock(pl.name, pl.text, null, lo());
         })),
         K.seeAlso("What the Opposition answers with:", [["so-postures", "Postures"]])
       ];
@@ -333,28 +325,6 @@ window.EN = window.EN || {};
       if (admin(ctx) || !c) return [];
       return [
         K.ruleBlock(c.name, [c.lead, c.credRises, c.toolkit].join(" ") + "\n\n" + c.heat, null, lo())
-      ];
-    } },
-
-    /* ---- 14 · Examples in Play and the Deposition --------------------------------------------------- */
-    /* The Toolkit prints two examples and the Sit-Down Example; the Handbook's Social chapter prints
-       none (19 October 2026 audit, social W3). So the panel is the Admin desktop's, and each example
-       is drawn only for the audience its `audience` field names ("gm" here), the same rule the panel
-       itself follows. The Freelancer desktop has no Social Scenes in Play panel. */
-    { id: "so-examples", title: "Social Scenes in Play", audience: "gm", order: 130, when: has("examples"),
-      tag: function (ctx) {
-        var n = exampleList(ctx).length, w = ["NO", "ONE", "TWO", "THREE", "FOUR", "FIVE"][n] || String(n);
-        return w + (n === 1 ? " EXAMPLE" : " EXAMPLES") + (admin(ctx) ? " · THE DEPOSITION" : "");
-      },
-      build: function (ctx, K) {
-      var s = S(), dp = s.deposition, xs = exampleList(ctx);
-      return [
-        xs.length ? K.entry("examples-in-play", "Examples in Play", [
-          K.subTitle("Examples in Play"),
-          K.proseBlock(xs.map(function (x) { return "- " + x.text; }).join("\n"), lo())
-        ]) : null,
-        // a Sit-Down example, so it went to the Toolkit with the Sit-Down
-        dp && admin(ctx) ? K.ruleBlock("The Deposition", dp.setup + "\n" + named(dp.rounds), "SIT-DOWN EXAMPLE", lo()) : null
       ];
     } },
 

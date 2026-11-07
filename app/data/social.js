@@ -58,7 +58,7 @@ EN.social = {
   schemaVersion: 1,
   name: "Social Pressure and Faction Standing",
 
-  intro: "Some jobs in Elysium end in gunfire. More of them end in a room. Two chairs, two cups of something cooling, two people working different angles on the same problem until one of them gives ground. The room has rules. The rules are not written down anywhere, and breaking them costs more than blood.",
+  intro: "These are the rules for negotiation, reputation, obligation, and how factions treat you.",
 
   /* ---- Core Concepts -------------------------------------------------------- */
   coreConcepts: [
@@ -83,7 +83,7 @@ EN.social = {
   toolkitLead: "Two optional systems build on it, and your GM runs both: the Sit-Down, which runs a big negotiation, interrogation, or trial like a combat encounter, and the full Cred and Heat tracks for reputation and hostile attention across a campaign.",
   depthsLead: "This chapter handles social conflict at three depths.",
   depths: [
-    { key: "friction", name: "Friction", text: "is always on: a roll, a margin, a consequence the table can track on the back of a napkin. Use it for every social scene that matters." },
+    { key: "friction", name: "Friction", text: "is always on: a roll, a margin, a consequence. Use it for every social scene that matters." },
     { key: "sitDown", name: "The Sit-Down", text: "treats a big negotiation, interrogation, or trial like a combat encounter, with rounds, plays, vulnerabilities, and a target who can be worn down until they break." },
     { key: "credHeat", name: "Cred and Heat", text: "tracks the long arcs of reputation and hostile attention across a campaign." }
   ],
@@ -96,16 +96,16 @@ EN.social = {
       "the person across the table has power, memory, or institutional backing",
       "the conversation may shift reputation, debt, or faction posture"
     ],
-    after: "Most conversations in Elysium don't clear that bar. A two-line haggle for cheap noodles isn't a system event. Use this when the outcome will matter to someone tomorrow.",
+    after: "Use this when the outcome will matter to someone tomorrow.",
     // both desktops read this whole: the Handbook (PHB, Social chapter) keeps the deposition sentence on the player side
-    fit: "Use what fits the scene. A bartender shaking down a Freelancer for an overdue tab needs nothing more than Friction. A crew trying to crack a corporate witness across a six-hour deposition deserves the Sit-Down. The player who wants to know whether their Fury is famous in the underground fight circuit yet wants Cred."
+    fit: "Use what fits the scene."
   },
 
   /* ---- Friction --------------------------------------------------------------- */
   friction: {
-    text: "Every meaningful social roll the table makes, from a five-minute haggle with a fixer to a tense moment at a corporate gala. Build a pool, find the margin, name the consequence. Move on.",
+    text: "Every meaningful social roll the table makes. Build a pool, find the margin, name the consequence.",
     pool: "Most meaningful social scenes run on the **Dice Pool Method**. Build the pool from the relevant Attribute and Skill, your Proficiency tier, any tools or preparation in play, sway gathered through legwork, and whatever Edge or Snag the room hands you. Resolve normally.",
-    d20: "In combat or under hard time pressure, social rolls drop to the **d20 Method**. Same approach, faster math."
+    d20: "In combat or under hard time pressure, social rolls drop to the **d20 Method**."
   },
 
   /* ---- Approach --------------------------------------------------------------- */
@@ -113,23 +113,21 @@ EN.social = {
     text: "Every social roll has an **Approach**. The Approach is what the Character is actually doing to move the other side. It selects the Skill and the Attribute, and it tells the GM how the scene is being played.",
     columns: ["Approach", "Skill", "Common Attributes", "What It Does"],
     rows: [
-      { key: "persuasion", name: "Persuasion", skill: "Persuasion", attributes: "Presence, Wits", text: "Warmth, reason, rapport, appeals to mutual interest. The long game." },
-      { key: "intimidation", name: "Intimidation", skill: "Intimidation (Versatile)", attributes: "Body, Wits, Tech, Mystique, Presence", text: "Threat, weight, presence. Make them flinch first." },
+      { key: "persuasion", name: "Persuasion", skill: "Persuasion", attributes: "Presence, Wits", text: "Warmth, reason, rapport, appeals to mutual interest." },
+      { key: "intimidation", name: "Intimidation", skill: "Intimidation (Versatile)", attributes: "Body, Wits, Tech, Mystique, Presence", text: "Threat, weight, presence." },
       { key: "performance", name: "Performance", skill: "Performance (Versatile)", attributes: "Presence, Agility, Body, Mystique", text: "Theater, distraction, rallying an audience, controlling tone." },
       { key: "deception", name: "Deception", skill: "Deception", attributes: "Presence, Wits", text: "Misdirection, false flags, slipping past their guard." },
       { key: "insight", name: "Insight", skill: "Insight (Versatile)", attributes: "Any", text: "Reading the room, finding the lever, setting up the next push." }
     ],
-    powerhouses: "Presence and Mystique are the powerhouses here. They are built for this. But the system gives every Attribute a way in.",
-    examples: "A Fury can use Body and Intimidation to make a fixer reconsider. A Codebreaker can use Tech and Intimidation to make a compliance officer realize how much of their life is already in the wrong hands. A Hustler can use Presence and Persuasion to do what Hustlers do. A Shaper can use Mystique and Performance to lean their resonance into the air until the room forgets how to breathe normally.",
-    versatile: "The Skills chapter spells out how Versatile Skills bend to fit the method. The Approach is the bend.",
+    powerhouses: "Presence and Mystique are the powerhouses here, but every Attribute has a way in.",
+    versatile: "The Skills chapter spells out how Versatile Skills bend to fit the method.",
     insight: { name: "Insight as the Social Help Action", text: "Insight doesn't directly secure a concession. It sets up the next push. On a successful Insight roll, you grant Edge to one ally's next social roll in the same scene." }
   },
 
   /* ---- Stakes and Sway ---------------------------------------------------------- */
   stakes: {
-    text: "Before the roll, name what the Character wants and what the other side is protecting. A roll without stakes is a roll without consequence.",
-    common: "Common stakes: access, permission, silence, information, a contract, a changed mind, a favor, an alibi, a delay, altered terms, a discount, a public outcome.",
-    example: "A good social roll answers a real question. \"I persuade them\" is not a question. \"I'm convincing the warehouse manager to let us in tonight without flagging us in the morning report\" is."
+    text: "Before the roll, name what the Character wants and what the other side is protecting.",
+    common: "Common stakes: access, permission, silence, information, a contract, a changed mind, a favor, an alibi, a delay, altered terms, a discount, a public outcome."
   },
   sway: {
     text: "Sway gives the other side a reason to take your demands seriously.",
@@ -152,20 +150,18 @@ EN.social = {
   /* ---- Profiles ---------------------------------------------------------------------- */
   profiles: {
     paragraphs: [
-      "Nobody in Elysium keeps the same version of you. Every fixer, gang, precinct, and shrine that has reason to care builds their own out of what they have seen, heard, or been told. Some of these versions live in screens. Some live in the way a bartender's posture changes when you walk in. The ones that matter are the ones that change how the next conversation starts.",
-      "A **Profile** is a short narrative label that captures how a specific person, office, district, or faction currently sees you. Each Profile does three things: it tells the table what the relationship feels like, gives the GM a concrete hook to pull on, and may grant Edge or Snag in future scenes with that source.",
-      "Profiles are held by their source. The Profile a gang carries of you is not the same as the one the precinct has been quietly forming, and neither matches the version a fixer from two years ago still tells people about. Profiles are plural. You collect them. They contradict each other.",
-      "The word carries weight in four directions, and Elysium uses all of them. A fixer's Profile of you is what she reads off your face across the table: how you walk in, what you laugh at, what you flinch from. A corporation's Profile is what its people say about you in the meeting after your name comes up: prior contracts, flagged behaviors, asset valuation, threat tier. A shrine's Profile is the resonance you carry into the room, the residue of every Current you have touched. The #GRID's Profile is what the recommender thinks you want, which becomes, over time, what the recommender thinks you are. Same word, four rooms."
+            "A **Profile** is a short narrative label that captures how a specific person, office, district, or faction currently sees you. Each Profile does three things: it tells the table what the relationship feels like, gives the GM a concrete hook to pull on, and may grant Edge or Snag in future scenes with that source.",
+      "Profiles are held by their source, so you collect several, and they can contradict each other."
     ],
     examples: ["Reliable", "Desperate", "Pushy", "Bought", "Useful", "Dangerous", "Unprofessional", "Connected", "Difficult", "Soft", "Owes Us", "Under Watch", "Good for It", "Off the Books", "Corporate Friendly", "Shrine Touched"],
-    lasts: "A Profile lasts until the fiction changes it. A meaningful action can remove one. A later success can replace one. A long enough silence can fade one out. Profiles are not permanent. They should bite until they are addressed."
+    lasts: "A Profile lasts until the fiction changes it. A meaningful action can remove one. A later success can replace one. A long enough silence can fade one out."
   },
 
   /* ---- Debt ----------------------------------------------------------------------------- */
   debt: {
     paragraphs: [
-      "A **Debt** is an obligation created through negotiation, rescue, payment delay, or personal intervention. Debt is one of Elysium's primary currencies. The Economy chapter covers what debt looks like across a campaign and how it bites; this chapter covers how social scenes generate it.",
-      "If a Character accepts a Debt as the cost of a social success, the success stands. The Debt becomes a future hook. Specify it. \"You owe me one\" is flavor. \"You owe me one, and I collect before the end of the month\" is the start of a scene."
+      "A **Debt** is an obligation created through negotiation, rescue, payment delay, or personal intervention. The Economy chapter covers what debt looks like across a campaign and how it bites; this chapter covers how social scenes generate it.",
+      "If a Character accepts a Debt as the cost of a social success, the success stands. The Debt becomes a future hook. Specify it."
     ]
   },
 
@@ -185,7 +181,7 @@ EN.social = {
 
   /* ---- Faction Standing -------------------------------------------------------------------- */
   factionStanding: {
-    intro: "Factions remember. Use the following posture track for the crew's relationship with any faction that matters across multiple scenes.",
+    intro: "Use the following posture track for the crew's relationship with any faction that matters across multiple scenes.",
     columns: ["Standing", "Meaning"],
     ladder: [
       { key: "allied", name: "Allied", text: "The faction actively helps, protects, or prioritizes you." },
@@ -234,8 +230,7 @@ EN.social = {
     name: "The Sit-Down",
     optional: true,
     intro: [
-      "Some social scenes deserve the full treatment. A high-stakes negotiation with corporate counsel. An interrogation that decides whether the crew makes it out of the precinct. A confrontation with a faction patron who is two seconds from cutting all ties. A trial. A standoff at the gates of a shrine.",
-      "In Elysium they call this a Sit-Down. The room, the chairs, the people across the table, the thing that will be decided before anyone gets up. Build it like a combat encounter. The opposition has Resolve. The crew has rounds to break it. The room itself can shift the math."
+            "A Sit-Down runs a high-stakes negotiation, interrogation, or trial. Build it like a combat encounter. The opposition has Resolve. The crew has rounds to break it. The room itself can shift the math."
     ],
     frameLead: "A Sit-Down has:",
     frame: [
@@ -257,7 +252,7 @@ EN.social = {
         { key: "iron", name: "Iron", resolve: 12, text: "12", orMore: false, examples: "A corporate executive in their element, a faction patron, a high-end lawyer with a script" },
         { key: "apex", name: "Apex", resolve: 16, text: "16+", orMore: true, examples: "A faction head, a household-name public figure, an Apex executive with no reason to bend" }
       ],
-      reset: "Resolve resets at the start of each separate social encounter. A target who broke yesterday will rebuild Resolve overnight unless the fiction explicitly says otherwise. People recover. That is part of what makes them dangerous."
+      reset: "Resolve resets at the start of each separate social encounter. A target who broke yesterday will rebuild Resolve overnight unless the fiction explicitly says otherwise."
     },
 
     /* Pressure. `pressure` is the number the Pressure Dealt cell leads with,
@@ -277,18 +272,12 @@ EN.social = {
     vulnerabilities: {
       name: "Vulnerabilities and Resistances",
       text: "Some targets are more vulnerable or resistant to particular Approaches. The GM may rule that a target's Resolve takes double Pressure from one Approach or no Pressure from another, based on who they are.",
-      examples: [
-        "A corporate executive may shrug off Body-driven Intimidation in a setting they control, then break fast under Wits-driven Persuasion that dismantles their position.",
-        "A street boss might laugh off Tech-driven Intimidation but cave the moment a Fury steps forward without saying a word.",
-        "A shrine elder might be untouched by money or threats but moved by Mystique-driven Performance that meets them on their own ground.",
-        "A cynical journalist might resist Presence but yield to a Wits-driven Deception that hands them the story they were already trying to write."
-      ],
       signal: "The GM should signal these vulnerabilities and resistances in play through fiction: body language, tells, the way they handle the first few exchanges. **Insight rolls are how Characters discover them.**"
     },
 
     breaks: [
       "When Resolve hits 0, the target **breaks**. They concede the stakes of the scene. They give up what was being negotiated for. The scene ends, or shifts to a different question.",
-      "A broken target does not become loyal. They become defeated. Their later actions depend on the fiction. Some will rebuild Resolve and come back harder. Some will quietly carry the grudge. Some will respect the work and treat the crew differently going forward."
+      "A broken target does not become loyal. Their later actions depend on the fiction."
     ],
 
     /* Rounds and Plays. `name` is each Play's bold run-in. */
@@ -298,10 +287,9 @@ EN.social = {
       { key: "press", name: "Press", text: "Make a social attack roll. Choose an Approach. Roll the Pool. Margin becomes Pressure." },
       { key: "support", name: "Support", text: "Spend the Round backing a teammate. Grant +1 Edge Die to one ally's next Press roll this scene. Multiple supporters stack, capped at the normal +3 Edge Die ceiling." },
       { key: "read", name: "Read", text: "Make an Insight roll. On a Costly or Flawless Success, the GM reveals one of the target's vulnerabilities, resistances, or current emotional weight. On a Mixed Result, the GM reveals one detail of your choice (Profile, Debt, faction tie)." },
-      { key: "disrupt", name: "Disrupt", text: "Spend the Round acting on the environment to shift the math: knocking over a drink to break the flow, triggering an alarm to add pressure, slipping a note to a witness, leaking a piece of footage. Requires a relevant non-social Skill check. On a success, impose +1 Snag Die on the target's next Posture, or remove +1 Snag Die from one ally's next Press roll." },
-      { key: "hold", name: "Hold", text: "A Character who has no business being in this room (the muscle dummy at the negotiation, the antisocial Codebreaker at the gala) can Hold. They stay silent, control their breathing, and avoid making the scene worse. Their presence still counts toward the Floor: their gear, their posture, their reputation are part of the room. A Character who Holds well grants +1 Edge Die to one ally's Press roll this Round, representing the unspoken weight they bring." }
+      { key: "disrupt", name: "Disrupt", text: "Spend the Round acting on the environment to shift the math. Requires a relevant non-social Skill check. On a success, impose +1 Snag Die on the target's next Posture, or remove +1 Snag Die from one ally's next Press roll." },
+      { key: "hold", name: "Hold", text: "A Character who has no business being in this room can Hold. They stay silent and avoid making the scene worse. Their presence still counts toward the Floor. A Character who Holds well grants +1 Edge Die to one ally's Press roll this Round." }
     ],
-    holdNote: "Hold exists so that no Character is dead weight in a Sit-Down. A Fury with Body 18 and a known reputation does not need to talk. She needs to stand there, holstered, breathing.",
 
     /* Postures. `reduce` is the Pressure a Posture takes off as a number
        (Veil's is a 1d4 roll, carried as its dice); Counter reduces nothing. */
@@ -323,14 +311,14 @@ EN.social = {
     floor: {
       intro: "The Floor matters. The room and the timing can grant Edge or Snag to either side.",
       pressures: [
-        { key: "theirTurf", name: "Their Turf", text: "Snag for the crew. Their guards, their lawyers, their dress code." },
-        { key: "yourTurf", name: "Your Turf", text: "Edge for the crew. Familiar ground, your contacts in the bar, the back exit you scouted." },
+        { key: "theirTurf", name: "Their Turf", text: "Snag for the crew." },
+        { key: "yourTurf", name: "Your Turf", text: "Edge for the crew." },
         { key: "timePressure", name: "Time Pressure", text: "Snag for whoever loses the most by stalling." },
-        { key: "publicAudience", name: "Public Audience", text: "Edge or Snag depending on what the audience wants to see. A public confrontation with a corporate stooge in a working-class district favors the crew. The same confrontation in a corporate hall is suicide." },
-        { key: "witnesses", name: "Witnesses Who Owe You", text: "Edge for Persuasion or Intimidation. The bartender remembers what you did for them." },
-        { key: "surveillance", name: "Surveillance", text: "Snag on any Approach that benefits from plausible deniability. The cameras are recording." }
+        { key: "publicAudience", name: "Public Audience", text: "Edge or Snag depending on what the audience wants to see." },
+        { key: "witnesses", name: "Witnesses Who Owe You", text: "Edge for Persuasion or Intimidation." },
+        { key: "surveillance", name: "Surveillance", text: "Snag on any Approach that benefits from plausible deniability." }
       ],
-      legwork: "The GM should call out these pressures at the start of the scene and let the players plan around them. Doing legwork to change the Floor before the scene starts is one of the things crews do to win social setpieces. A Background like Cipher Punk can wipe a camera. A Badge can file a form that delays the supervisor. A Glow Idol can plant a rumor that changes who the audience is rooting for. These are the moves that turn a Hardened target into a Standard one before the first word is spoken."
+      legwork: "The GM should call out these pressures at the start of the scene and let the players plan around them. Doing legwork to change the Floor before the scene starts is one of the things crews do to win social setpieces."
     },
 
     /* Sit-Down Conditions. Scene conditions, not the Conditions Library's. */
@@ -355,8 +343,7 @@ EN.social = {
     intro: "Faction Standing tracks the disposition of specific organizations. Profiles track how individual NPCs see you. Neither captures the slow accumulation of street-level reputation across a campaign. That is what Cred and Heat are for.",
     cred: {
       paragraphs: [
-        "**Cred** is your standing within a specific community or scene. It is not a single number for the whole world. It is contextual.",
-        "A Freelancer might have Cred 6 in the underground music scene, Cred 4 with the local fixer network, Cred 2 in the corporate sphere, and Cred 0 with the pre-Cascade relic brokers because they have never set foot in that world. Cred is what people in that scene think when your name comes up."
+        "**Cred** is your standing within a specific community or scene. It is not a single number for the whole world. It is contextual."
       ],
       range: "Each tracked scene gets its own Cred score, 0 to 10.",
       min: 0, max: 10,
@@ -372,8 +359,7 @@ EN.social = {
     },
     heat: {
       paragraphs: [
-        "**Heat** is hostile attention. It tracks who is actively looking for you, watching you, or willing to act against you. Like Cred, Heat is contextual.",
-        "A Freelancer might have Heat 3 from a specific corporation after a burned contract, Heat 5 from the local precinct after a shootout that went public, Heat 1 from a shrine they accidentally disrespected, and Heat 0 from everywhere else."
+        "**Heat** is hostile attention. It tracks who is actively looking for you, watching you, or willing to act against you. Like Cred, Heat is contextual."
       ],
       min: 0, max: 10,
       columns: ["Heat", "What It Means"],
@@ -393,20 +379,20 @@ EN.social = {
       { key: "credUp", name: "Cred increases", text: "when a major contract is completed publicly within the scene, a Freelancer does a notable favor for someone scene-relevant, a Flawless Success lands in a scene-relevant social encounter, or a story spreads that flatters them (even if exaggerated, even if true)." },
       { key: "credDown", name: "Cred decreases", text: "when a major contract fails publicly within the scene, a Freelancer betrays or burns a scene-relevant contact, a Critical Failure lands in a scene-relevant encounter, or a rival actively works to discredit them." },
       { key: "heatUp", name: "Heat increases", text: "when a job goes loud, a Freelancer is publicly identified at a crime scene, a Critical Failure lands in a scene involving institutional targets, or a Profile like *Flagged* or *Under Watch* is earned." },
-      { key: "heatDown", name: "Heat decreases", text: "when significant Downtime passes without further incidents (1 Heat per month at GM discretion), a successful data scrub, bribe, or legal scrub action lands, a faction or contact actively intervenes to clear the record, or a bigger fish draws attention away. Heat fades. Slowly." }
+      { key: "heatDown", name: "Heat decreases", text: "when significant Downtime passes without further incidents (1 Heat per month at GM discretion), a successful data scrub, bribe, or legal scrub action lands, a faction or contact actively intervenes to clear the record, or a bigger fish draws attention away." }
     ],
     heatPerMonth: 1,
-    effectsIntro: "Cred and Heat are not bookkeeping. They bite.",
+    effectsIntro: "Cred and Heat change what you can do.",
     effects: [
       { key: "highCred", name: "High Cred in a scene", text: "grants Edge on social rolls within that scene, access to contacts and venues and information that ordinary people can't reach, and small material favors like comp tabs and discounts at GM discretion." },
-      { key: "lowCred", name: "Low or no Cred", text: "imposes Snag on social rolls within scenes where the Character is unknown. Locked doors, refused meetings, the polite hostility of strangers." },
+      { key: "lowCred", name: "Low or no Cred", text: "imposes Snag on social rolls within scenes where the Character is unknown." },
       { key: "highHeat", name: "High Heat from a specific source", text: "imposes Snag on Stealth and Deception rolls in territory the source controls, triggers random encounters when the Character enters that source's space, and brings active opposition: assets, agents, hired help showing up at inconvenient times." },
-      { key: "lowHeat", name: "Low Heat", text: "means normal travel through the relevant territory. The freedom of being beneath notice." }
+      { key: "lowHeat", name: "Low Heat", text: "means normal travel through the relevant territory." }
     ],
     together: [
       "A Freelancer with high Cred and high Heat from the same source is a celebrity criminal. They can't move quietly, but they can move with weight. People know who they are, and that includes the people who want them dead.",
-      "A Freelancer with high Cred in one scene and high Heat from another can use their reputation as a shield. A famous busker who is wanted by Corp X can usually find someone in the music scene to hide them, at least for a few nights.",
-      "A Freelancer with low Cred everywhere and high Heat from somewhere is a target without allies. This is a dangerous place to be. It is also where many memorable campaigns start."
+      "A Freelancer with high Cred in one scene and high Heat from another can use their reputation as a shield.",
+      "A Freelancer with low Cred everywhere and high Heat from somewhere is a target without allies."
     ]
   },
 
@@ -424,40 +410,17 @@ EN.social = {
     lead: "Reputation in Elysium is local. Cred is your standing within a specific scene or community. Heat is hostile attention from a specific source: a corporation, a precinct, a gang, a shrine. Each is tracked per source on a 0 to 10 scale, and the GM keeps the ledger.",
     credRises: "Cred rises when you finish a major contract where the scene can see it, do a notable favor for someone who matters there, land a Flawless Success in a social encounter that counts, or get a flattering story going around (true or not).",
     toolkit: "Your GM keeps the full rules.",
-    heat: "Heat rises when a job goes loud, you are publicly identified at a crime scene, a Critical Failure lands in a scene involving institutional targets, or you earn a Profile like Flagged or Under Watch. It falls by about 1 per month of quiet Downtime (GM discretion), or when a data scrub, bribe, or legal scrub lands, a contact clears the record, or a bigger fish draws the eye. High Heat from a source imposes Snag on Stealth and Deception rolls in territory it controls and brings active opposition. Heat fades. Slowly."
+    heat: "Heat rises when a job goes loud, you are publicly identified at a crime scene, a Critical Failure lands in a scene involving institutional targets, or you earn a Profile like Flagged or Under Watch. It falls by about 1 per month of quiet Downtime (GM discretion), or when a data scrub, bribe, or legal scrub lands, a contact clears the record, or a bigger fish draws the eye. High Heat from a source imposes Snag on Stealth and Deception rolls in territory it controls and brings active opposition."
   },
 
-  /* ---- Examples in Play ----------------------------------------------------------------------------- */
-  /* The Game Master's Toolkit prints two examples (GMT "Examples in Play"); the Player's Handbook's
-     Social chapter prints none. The three the app used to carry (a fixer's rate, a broker's Flawless
-     Success, a shrine negotiator's Debt) are in neither book and are gone (19 October 2026 audit,
-     social W3). `audience: "gm"`: js/codex_social.js draws an example only on the Admin desktop,
-     so the Freelancer desktop shows none. */
-  examples: [
-    { key: "restrictedDistrict", audience: "gm", text: "A crew spokesperson rolls a Mixed Result while securing access to a restricted district. The team gets through, but picks up the Profile *Flagged at South Gate*. Heat with the district precinct ticks up by 1." },
-    { key: "complianceOfficer", audience: "gm", text: "A Character tries to bluff a corporate compliance officer and rolls a Critical Failure. The lie collapses, the office goes Hostile, and the crew gains immediate Scrutiny. Heat with that corporation increases by 1." }
-  ],
-  deposition: {
-    title: "Sit-Down Example: The Deposition",
-    setup: "The crew's lawyer is taking a deposition from a mid-level corporate witness who knows where the bodies are buried. Stakes: get the witness to name names. Floor: a corporate conference room (their turf, Snag on the crew), a recording system (Snag on Deception), and a witness who is more afraid of their employer than the crew (Hardened, Resolve 8).",
-    rounds: [
-      { name: "Round One", text: "The Fury, sitting in the corner cleaning a sidearm she won't use, Holds. Her presence grants +1 Edge Die to the lawyer's Press this Round. The lawyer Presses with Persuasion (Presence), rolls a Costly Success, deals 2 Pressure. Resolve: 6." },
-      { name: "Round Two", text: "The Codebreaker, jacked in remotely, Disrupts: pulls one of the witness's internal emails onto the conference room screen \"by accident.\" That strips one Snag Die from the lawyer's next Press. The lawyer Presses with Wits-driven Persuasion (dismantling the witness's argument with the new evidence), and the turf's Snag is gone. Flawless Success: 3 Pressure. Resolve: 3." },
-      { name: "Round Three", text: "The witness tries to Stonewall: \"I would like to consult my legal counsel.\" Reduces incoming Pressure by 2, takes the *Cornered* condition for the scene. The lawyer presses again with Intimidation (Presence, plus information about the witness's daughter's tuition used to pressure them), and lands a Costly Success. 2 Pressure minus 2 Stonewall equals 0 net Pressure. No movement on Resolve, but the witness has used their Posture for the Round." },
-      { name: "Round Four", text: "The Fury speaks for the first time. Body and Intimidation: \"Your employer does not protect people. They use them. I have seen the people they leave behind.\" Roll. Mixed Result: 1 Pressure, and the witness applies Social Fallout. They choose Tipped Hand: the Fury reveals her own past as a corp security washout, which the witness's lawyer files away. Resolve: 2. The Fury picks up the Profile *Disgruntled Ex-Corp* for the rest of the scene." },
-      { name: "Round Five", text: "The lawyer Presses one more time. Persuasion (Presence). Costly Success: 2 Pressure. Resolve: 0. The witness breaks. They name two names. The crew gets what they came for. Heat with the corporation increases by 2." }
-    ]
-  },
-
-  /* ---- GM advice (the chapter's own; the Toolkit's Running a Sit-Down, plain run-in paragraphs, no GM label) -- */
   gmGuidance: [
     { key: "friction", name: "Default to Friction.", text: "Most social rolls are one-and-done. A pool, a margin, a consequence. Don't call a Sit-Down for a haggle with a street vendor." },
-    { key: "earnIt", name: "Call a Sit-Down when the scene earns it.", text: "A big interrogation, a faction confrontation, a contract negotiation that will define the next arc. These deserve the structure. They feel like fights because they are." },
+    { key: "earnIt", name: "Call a Sit-Down when the scene earns it.", text: "A big interrogation, a faction confrontation, a contract negotiation that will define the next arc." },
     { key: "everyone", name: "Let every Character contribute.", text: "The Hold play exists so muscle and chrome can show up without dragging the scene down. The Disrupt play lets the technical-minded Characters do something even when the talking is happening elsewhere. The Support play lets the silent ones lend weight. Nobody at the table should sit out a Sit-Down." },
     { key: "matchFallout", name: "Match fallout to fiction.", text: "A social scene that produces physical Fatigue is usually the wrong call. Use Debt, Scrutiny, Profiles, Faction Shifts, Cred and Heat changes. The fallout should fit the room." },
     { key: "slow", name: "Cred and Heat are slow-moving currencies.", text: "Don't change them every session. Update them at the end of a job, after an arc, or when something notable happens that the table will remember." },
-    { key: "anyCrew", name: "Any crew can win one.", text: "A Presence-and-Mystique-heavy crew wins by direct push. A muscle-and-chrome crew wins by Holding well, trading on its reputation, and choosing the right Disrupts. Know what your crew actually is, and play the room it can win." },
-    { key: "backgrounds", name: "Background ties matter here.", text: "Every Background grants Contacts and a Background Feature. A Boardroom Exile already belongs in the corporate conference room. A Badge already knows which form will buy the crew an hour. A Glow Idol already has the bartender's loyalty. Reward these. The crew that brings the right Background to the setpiece should already have changed the Floor before the first roll." }
+    { key: "anyCrew", name: "Any crew can win one.", text: "A Presence-and-Mystique-heavy crew wins by direct push. A muscle-and-chrome crew wins by Holding well, trading on its reputation, and choosing the right Disrupts." },
+    { key: "backgrounds", name: "Background ties matter here.", text: "Every Background grants Contacts and a Background Feature. Reward these. The crew that brings the right Background to the setpiece should already have changed the Floor before the first roll." }
   ],
 
   /* ---- Gameplay Summary: Social Pressure and Faction Standing ------------------------------------------ */
