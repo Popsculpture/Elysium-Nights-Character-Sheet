@@ -12,7 +12,7 @@
    Critical Condition, Critical Wound, Fatigue, Unconscious), and the full rules
    of Ritual Recovery and Breakflow Restoration (the Flow chapter). Every rule
    line is a field of EN.recovery; this file's own words are entry labels, the
-   "Example in Play" kicker, the small pointers between panels, and the tail of
+   small pointers between panels, and the tail of
    the Calculating Vitality app note (EN.recovery.vitality.appNote, the app's
    fixed average per level, marked as not book text), whose per die figures
    come from EN.rules.dieAverage.
@@ -48,15 +48,6 @@ window.EN = window.EN || {};
       if (!skipping) out.push("- " + (asNamed ? named(x) : x));
     });
     return out.join("\n");
-  }
-  /* The book's "Example in Play" boxes: an illustration, not a rule, so a box rather than
-     an entry (a panel with two would otherwise hold example-in-play and example-in-play-2). */
-  function example(K, text) {
-    if (!text) return null;
-    return K.el("div.muted-box", { style: { margin: "0 0 10px", padding: "10px 12px", textAlign: "left" } }, [
-      K.el("div", { style: { fontFamily: "var(--mono)", fontSize: "10px", letterSpacing: ".12em", color: "var(--text3)", margin: "0 0 4px" }, text: "EXAMPLE IN PLAY" }),
-      K.linkify(K.el("p", { style: { margin: 0, fontSize: "13px", fontStyle: "italic", color: "var(--text2)", lineHeight: "1.5" } }), text, { conditions: true })
-    ]);
   }
 
   /* The tail of the Calculating Vitality app note: each die's fixed per level figure, from
@@ -105,15 +96,13 @@ window.EN = window.EN || {};
           K.refTable(["Class", "Resilience Die", "Vitality at 1st Level", "Vitality Gain Per Level"],
             v.byClass.map(function (c) { return [c.cls, c.die, c.start, c.perLevel]; }), [0]),
           v.appNote ? K.note(v.appNote + averages(v.byClass)) : null
-        ]),
-        example(K, v.example)
+        ])
       ];
       if (w) kids.push(
         K.ruleBlock("Wounds", w.intro),
         K.ruleBlock("Calculating Wounds", "**" + w.max.trait + ":** " + w.max.value),
         K.ruleBlock("Wound Effects", list(w.effects), null, { conditions: true, terms: { "Critical Wound Table": "ref-conds/critical-wound" } }),
-        K.ruleBlock("Healing Wounds", list(w.healing), null, { terms: { "Recovery section": "rc-rests", "Medical treatment": "rc-medical" } }),
-        example(K, w.example)
+        K.ruleBlock("Healing Wounds", list(w.healing), null, { terms: { "Recovery section": "rc-rests", "Medical treatment": "rc-medical" } })
       );
       kids.push(K.seeAlso("The conditions:", [["ref-conds/bloodied", "Bloodied"], ["ref-conds/critical-condition", "Critical Condition"],
                                               ["ref-conds/critical-wound", "Critical Wound"], ["ref-conds/fatigue", "Fatigue"]]));
@@ -145,7 +134,6 @@ window.EN = window.EN || {};
         K.ruleBlock("Resilience Dice", r.intro + "\n\n" + list(r.rules)),
         K.ruleBlock("Spending Resilience Dice", list(r.spending)),
         K.ruleBlock("Regaining Resilience Dice", list(r.regaining)),
-        example(K, r.example),
         K.seeAlso("Each class's die:", [["rc-vitality/calculating-vitality", "Calculating Vitality"]])
       ];
     } },
@@ -157,7 +145,6 @@ window.EN = window.EN || {};
         K.ruleBlock("Vigor", v.intro),
         K.ruleBlock("Vigor Does Not Stack", v.noStack),
         K.ruleBlock("Expiration", v.expiration),
-        example(K, v.example),
         K.seeAlso("Where it sits in the damage order:", [["ref-damage/damage-order", "Damage Order"]])
       ];
     } },
@@ -178,9 +165,7 @@ window.EN = window.EN || {};
         var pointer = rest.pointer && (rest.inFlowChapter || []).indexOf(0) === -1 ? "\n\n" + rest.pointer : "";
         var text = "*Duration: " + rest.duration + "*\n" + list(rest.lines, false, rest.inFlowChapter) + pointer;
         kids.push(K.ruleBlock(rest.name, text, null, { conditions: true, terms: f.terms }));
-        // the pointer sits under the block it completes; the book's italic closing line follows
         if (f.see) kids.push(K.seeAlso("The full rules, in The Flow:", f.see));
-        if (rest.flavor) kids.push(K.note(rest.flavor));
       });
       kids.push(K.seeAlso("Care beyond rest:", [["rc-medical", "Medical Treatment"], ["rc-other", "Other Recovery Sources"]]));
       return kids;

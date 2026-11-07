@@ -37,7 +37,7 @@ window.EN = window.EN || {};
 EN.recovery = {
   source: { part: 2, chapter: "Vitality & Recovery", modifiedTime: "2026-10-04T07:31:16.171Z" },
 
-  intro: "Flow is the current in the spine. Vitality is how much you can take before something gives: the glancing hits, the shallow bleed, the grind of a bad night, the stubbornness that keeps your feet under you. Wounds are what's left after something gives, the deep damage that stays until it's properly healed.",
+  intro: "Vitality is how much you can take before something gives. Wounds are the deep damage that stays until it's properly healed.",
 
   /* Core Concepts (a two column table in the book) */
   concepts: [
@@ -50,9 +50,8 @@ EN.recovery = {
   ],
 
   vitality: {
-    intro: "Vitality is how much you can take before something gives. Bruises, cuts, fatigue, the slow grinding pressure of a bad night. It's short-term resilience, not the deep wound count underneath.",
+    intro: "Vitality is short-term resilience, not the deep wound count underneath.",
     rules: [
-      "Loss of Vitality represents cuts, bruises, strain, or mental wear.",
       "When Vitality reaches **0**, you immediately gain **1 level of Fatigue** and the **Bloodied condition**.",
       "Any further damage beyond this point applies to **Wounds**.",
       "Fatigue gained this way remains until a **Long Rest** (see Fatigue), or medical or Flow-assisted recovery."
@@ -72,8 +71,7 @@ EN.recovery = {
        EN.rules.dieAverage(die) + Body Modifier, at least 1 a level. The Codex adds
        each die's average from EN.rules.dieAverage after this line, so the figures
        follow the engine rather than being typed here. */
-    appNote: "App note, not book text: the Handbook rolls 1dX + Body Modifier for each level after 1st. This app takes the fixed average instead (half the die, plus 1, plus Body Modifier, at least 1 a level), so a character's Vitality comes out the same every time the sheet works it out.",
-    example: "A Codebreaker with **12 Vitality** takes **14 damage**. The first 12 reduces their Vitality to **0**, triggering **1 Fatigue** and **Bloodied**. The remaining **2 damage** becomes **Wound damage**, reducing both current and maximum Vitality by 2."
+    appNote: "App note, not book text: the Handbook rolls 1dX + Body Modifier for each level after 1st. This app takes the fixed average instead (half the die, plus 1, plus Body Modifier, at least 1 a level), so a character's Vitality comes out the same every time the sheet works it out."
   },
 
   wounds: {
@@ -90,8 +88,7 @@ EN.recovery = {
     healing: [
       "At the end of a **Long Rest**, recover **Wounds** equal to **your Body Modifier** (minimum 1).",
       "**Medical treatment** or **Flow-based restoration** can also heal Wounds, as described in the Recovery section."
-    ],
-    example: "A Fury with **Body 16** has **16 Wounds**. They take 8 Wound damage from a critical hit and fail their Body Save (DC 10). They gain **1 Fatigue** and a **Critical Wound** (roll on the Critical Wound Table), while their Vitality maximum drops by 8. With only 8 Wounds left, they now suffer **Critical Condition**."
+    ]
   },
 
   dying: {
@@ -101,7 +98,7 @@ EN.recovery = {
       "**50 percent or less of total Wounds:** Gain **Critical Condition**.",
       "**0 Wounds:** Fall **Unconscious** and become **Dying**."
     ],
-    dying: "When your Wounds reach 0, you fall **Unconscious** (drop held items, Prone, can't act or perceive) and are **Dying**. This is the \"dead or dying\" state referenced by medical features and revival abilities. You are not gone yet. You are on the timer.",
+    dying: "When your Wounds reach 0, you fall **Unconscious** (drop held items, Prone, can't act or perceive) and are **Dying**. This is the \"dead or dying\" state referenced by medical features and revival abilities.",
     deathSaves: [
       "At the **start of each of your turns** while Dying, make a **Death Save**: a **Body Save, DC 10**.",
       ["**Three successes:** you become **Stable**.",
@@ -131,14 +128,13 @@ EN.recovery = {
       ]
     },
     outright: [
-      "In Elysium, nobody dies of natural causes. Some effects grant no Death Saves.",
-      "If an effect states that you **die** or **die instantly** (a breath clock that runs out, certain Flow rot, an execution at point-blank range), you get no saves.",
-      "When the Wound pool runs out, the body stops keeping score. Staying upright long enough for a Stitcher to reach you is most of the job."
+      "Some effects grant no Death Saves.",
+      "If an effect states that you **die** or **die instantly** (a breath clock that runs out, certain Flow rot, an execution at point-blank range), you get no saves."
     ]
   },
 
   resilience: {
-    intro: "Resilience Dice measure a character's ability to recover through grit, breathing techniques, or Flow alignment during rest.",
+    intro: "Resilience Dice measure a character's ability to recover during rest.",
     rules: [
       "You have a number of **Resilience Dice equal to your level**.",
       "The **die size** is determined by your class.",
@@ -151,19 +147,17 @@ EN.recovery = {
     regaining: [
       "After a **Long Rest**, regain **all** Resilience Dice.",
       "If you begin a Short Rest with **0 dice**, regain **1 Resilience Die**, which may be spent during that rest."
-    ],
-    example: "A Stitcher at level 2 (Resilience Dice = 2d8, Body +2) spends both dice during a Short Rest. They roll a 6 and a 4, adding their Body Modifier to each: (6 + 2) + (4 + 2) regains **14 Vitality**. Later, with no dice left, they rest again and automatically regain **1 Resilience Die**, which can be rolled for **1d8 + Body Modifier** Vitality."
+    ]
   },
 
   vigor: {
     intro: "Vigor is a temporary buffer of adrenaline, shielding, or Flow resonance that absorbs damage before it reaches a Character's physical body.",
     noStack: "If a Character receives Vigor from a feature or ability while they already have Vigor, it doesn't add together. They simply keep the higher of the two numbers.",
-    expiration: "Unless a feature states otherwise, all unspent Vigor dissipates at the end of a combat encounter.",
-    example: "A Hustler activates a kinetic barrier that provides **10 Vigor**. When struck by an explosion for **13 damage**, the barrier absorbs 10, leaving only 3 to affect Vitality."
+    expiration: "Unless a feature states otherwise, all unspent Vigor dissipates at the end of a combat encounter."
   },
 
   /* Recovery: the rests, in the book's order */
-  recoveryIntro: "Recovery is the process of regaining strength, focus, and resonance through rest, medical care, or Flow realignment. The type of recovery determines what resources return and at what pace.",
+  recoveryIntro: "Recovery comes through rest, medical care, or Flow realignment. The type of recovery determines what resources return and at what pace.",
   rests: [
     { key: "short", name: "Short Rest", duration: "about 1 hour of downtime",
       lines: [
@@ -173,8 +167,7 @@ EN.recovery = {
         "Regain **Flow Points (FP)** equal to your **Flow Attribute Modifier** (minimum 1).",
         "No natural recovery of **Wounds**, but first aid can stabilize injuries or slow worsening conditions.",
         "Doesn't reduce **Strain**."
-      ],
-      flavor: "An hour with your back to a wall. Long enough to catch your breath and feel a little of the current come back." },
+      ] },
     { key: "long", name: "Long Rest", duration: "about 8 hours of uninterrupted rest",
       lines: [
         "Fully restore **Vitality**.",
@@ -187,8 +180,7 @@ EN.recovery = {
         "Reduce **Fatigue** by 1 level if you have safe shelter, food, and water (or equivalent maintenance and charge for Clankers).",
         ["**Severe Fatigue** (4 to 6) requires medical, mystical, or technological treatment to reduce."],
         "Reset the sleep clock. This is where the sleeping happens, or the maintenance cycle, for Clankers. (See Deprivation under Environmental Hazards.)"
-      ],
-      flavor: "A real night's sleep, somewhere safe enough to take your boots off. You wake up closer to whole." },
+      ] },
     { key: "ritual", name: "Ritual Recovery", duration: "10 minutes to 2 hours, scaling with current Strain Stage",
       lines: [
         "A Shaper realigns their resonance through guided meditation and a **Flow Dice Pool check**, reducing Strain and recovering Flow Points.",
@@ -196,8 +188,7 @@ EN.recovery = {
         "**Resonant Saturation:** A Character may only benefit from Ritual Recovery once per 24-hour period. Any additional attempts automatically fail and inflict 1 Stage of Strain."
       ],
       // the Flow chapter's Ritual Recovery panel states Resonant Saturation (EN.flow.ritualRecovery.note)
-      inFlowChapter: [2],
-      flavor: "Quiet work with the current: slowing down until your rhythm and the Flow's line up again." },
+      inFlowChapter: [2] },
     { key: "downtime", name: "Downtime", duration: "about 1 week of low activity or calm environment",
       lines: [
         "Fully restore **Vitality** and **FP**.",
@@ -205,23 +196,20 @@ EN.recovery = {
         "Remove **all Strain, unless you're in Breakflow**.",
         "Clear lingering **Fatigue** and **temporary conditions**.",
         "Recover from emotional or Flow-based instability."
-      ],
-      flavor: "A quiet week, somewhere nothing is trying to kill you. Long enough for the body and the current to settle." },
+      ] },
     { key: "breakflow", name: "Breakflow Restoration", duration: "8-hour Long Rest in a Flow-rich area (Anomaly Severity 0)",
       lines: [
         "Make a Flow Dice Pool check against 5 Snag Dice.",
         ["On a positive Margin, your Reservoir returns to half capacity and Strain drops to Stage 2.",
          "On a failure, you remain in Breakflow and take 2d6 Vitality loss."],
-        "Requires meditation, ritual guidance, or assistance from another Flow adept.",
-        "The process reopens the adept's frequency, allowing Flow to move freely again."
+        "Requires meditation, ritual guidance, or assistance from another Flow adept."
       ],
       /* the book's sub-sub-bullet under the failure line, a pointer: "This is Breakflow
          Restoration; see The Flow." The Flow chapter's Full Restoration line states the check,
          both outcomes and the 2d6 (EN.flow.breakflowRestoration.full), so the first bullet and
          its two sub-bullets are its. Indices count top-level bullets; sub-bullets go with them. */
       pointer: "This is Breakflow Restoration; see The Flow.",
-      inFlowChapter: [0],
-      flavor: "A long night spent calling the current back after it stopped answering. Sometimes it answers." }
+      inFlowChapter: [0] }
   ],
 
   medical: {
