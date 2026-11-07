@@ -172,13 +172,18 @@ window.EN = window.EN || {};
       build: function (ctx, K) {
         var C = H().cooling, cols = C.columns || [];
         return [
-          K.proseBlock(C.intro),
+          // "the ways Heat comes down" are the player rule's own line (Cred & Heat, Heat decreases)
+          K.proseBlock(C.intro, { terms: { "ways Heat comes down": "so-credheat/heat-decreases" } }),
           (C.rows || []).map(function (r) {
             var node = K.ruleBlock(r.name, runIn(cols[1]) + ": " + r.costs + "\n" + runIn(cols[2]) + ": " + r.does);
             // Lie low asks for the lifestyle to be paid: the player rule it means
             if (r.key === "lieLow") addLinks(node, K, "Lifestyle:", [["ref-economy/lifestyle-costs", "Lifestyle Costs"]]);
+            if (r.key === "dataScrub") addLinks(node, K, "The price:", [["ref-economy/common-service-costs", "Common Service Costs"]]);
             if (r.key === "bribe") addLinks(node, K, "The tiers:", [["ref-economy/bribe-thresholds", "Bribe Thresholds"]]);
-            if (r.key === "legalScrub") addLinks(node, K, "Running it:", [["gms-sitdown", "Sit-Down Rules"]]);
+            if (r.key === "legalScrub") {
+              addLinks(node, K, "The price:", [["ref-economy/common-service-costs", "Common Service Costs"]]);
+              addLinks(node, K, "Running it:", [["gms-sitdown", "Sit-Down Rules"]]);
+            }
             return node;
           }),
           K.proseBlock(paras(C.after))
@@ -200,7 +205,7 @@ window.EN = window.EN || {};
       kids.push(K.note(B.home, { terms: { "Friction": "so-friction" } }));
       kids.push(K.entry("results", "Results", [
         K.subTitle("Results"),
-        K.refTable(["Result", "Pressure", "Also"], (B.results || []).map(function (r) { return [r.name, String(r.pressure), r.also || ""]; }), [0]),
+        K.refTable(["Result", "Pressure Dealt", "Also"], (B.results || []).map(function (r) { return [r.name, String(r.pressure), r.also || ""]; }), [0]),
         linkLine(K, "Each result is its Dice Pool margin in", [["rz-margin", "Success Margin & Consequence"]]),
         linkLine(K, "Social Fallout:", [["so-fallout", "Social Fallout Table"], ["rz-social/social-fallout-rule", "Social Fallout Rule"]])
       ]));
@@ -264,9 +269,15 @@ window.EN = window.EN || {};
       var Cl = I.classification;
       kids.push(K.ruleBlock("Classification", paras([Cl.intro].concat((Cl.rows || []).map(function (r) { return r.name + ". " + r.text; }))
         .concat([Cl.chromatic && Cl.chromatic.text, Cl.ratingStays, Cl.disclosure, Cl.sealedWorse]))));
-      kids.push(K.ruleBlock("The anchor", I.anchor.text));
+      kids.push(K.ruleBlock("The anchor", I.anchor.text, null, { terms: { "Focal Anchor": "fl-dist-anchor" } }));
       kids.push(K.ruleBlock("Dive profiles", paras([I.profiles.intro].concat((I.profiles.rows || []).map(function (r) { return r.name + ". " + r.text; })))));
-      if (I.dive) kids.push(K.ruleBlock(I.dive.name, paras([I.dive.text, I.dive.pressure])));
+      if (I.dive) {
+        kids.push(K.ruleBlock(I.dive.name, paras([I.dive.text, I.dive.pressure])));
+        // the Toolkit's collapse stages; the Breach row's Body Save names its DC ladder (Hazards & Set Pieces)
+        if ((I.dive.stages || []).length) kids.push(K.refTable(["Stage", "Signs", "What It Means"],
+          I.dive.stages.map(function (s) { return [s.n + ". " + s.name, s.signs, s.means]; }), [0]));
+        kids.push(linkLine(K, "The Breach Save DC:", [["gmh-dc", "DC by Grade"]]));
+      }
       var C = ref(I.claims && I.claims.ref);
       if (C) {
         kids.push(K.subTitle(C.name || "Claims and Salvage"));

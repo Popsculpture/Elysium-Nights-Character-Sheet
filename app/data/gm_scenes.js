@@ -108,7 +108,7 @@ EN.gmBook.scenes = {
   sitdown: {
     name: "Sit-Down",
     // GMH p15
-    intro: "A Sit-Down is a fight with chairs. It deserves the same prep as one: know who's across the table, what they can take, what they hit back with, and what the room is doing to everybody.",
+    intro: "A Sit-Down deserves the same prep as a fight: know who's across the table, what they can take, what they hit back with, and what the room is doing to everybody.",
     // GMH p6
     home: "Social conflicts use Friction from Social Pressure and Faction Standing; the big ones run as a Sit-Down (Optional Systems), with Resolve tiers for the people and factions involved.",
 
@@ -366,7 +366,7 @@ EN.gmBook.scenes = {
   chase: {
     name: "Chase",
     // GMH p17
-    intro: "Chases happen when a plan meets a door it didn't expect. They're also the scene most likely to arrive without warning, so the prep is short and the hazard tables do most of the work.",
+    intro: "Chases are the scene most likely to arrive without warning, so the prep is short and the hazard tables do most of the work.",
     // GMH p6
     home: "Chases use Lead from Vehicles and Chases; the full rules are under Chase Rules (Prep Templates).",
 
@@ -553,7 +553,7 @@ EN.gmBook.scenes = {
   incursion: {
     name: "Incursion",
     // GMH p26
-    intro: "An Incursion is a bounded piece of the city where reality has been overwritten. A parking garage gains another mile of fourth floor. A laundromat has a staircase behind its back mirror. Inside, the changes obey rules of their own. Somewhere within is the anchor holding them in place.",
+    intro: "An Incursion is a bounded piece of the city where reality has been overwritten. Inside, the changes obey rules of their own. Somewhere within is the anchor holding them in place.",
     briefing: "A briefing lists the Incursion's rating, classification, and dive profile.",
 
     refs: {
@@ -601,7 +601,7 @@ EN.gmBook.scenes = {
       gradeIsRating: true,
       legal: "Freelancers may legally contract for Incursions rated at or below their reported Caliber.",
       posting: {
-        text: "Postings list the rating, known classifications, and number of previous entries. They should say where the estimate came from. \"Three crews entered; one returned\" belongs in the briefing.",
+        text: "Postings list the rating, known classifications, and number of previous entries. They should say where the estimate came from.",
         lists: ["the rating", "known classifications", "number of previous entries"],
         source: "They should say where the estimate came from.",
         example: "Three crews entered; one returned"
@@ -629,7 +629,7 @@ EN.gmBook.scenes = {
           text: "The Incursion changes classification when a trigger is met. A gate scouted as Open might become Sealed once the crew is inside." }
       ],
       chromatic: {
-        text: "For a Chromatic Incursion, the GM records its starting classification, the classification it becomes, and the trigger. The change can be sudden; its signs should exist before it happens. An old entry report may describe a doorway that vanished. A gate may briefly refuse a thrown object. Someone might notice that every surviving crew left before reaching the same room.",
+        text: "For a Chromatic Incursion, the GM records its starting classification, the classification it becomes, and the trigger. The change can be sudden; its signs should exist before it happens.",
         record: [
           { key: "from", label: "its starting classification" },
           { key: "becomes", label: "the classification it becomes" },
@@ -638,7 +638,7 @@ EN.gmBook.scenes = {
         signs: ["An old entry report may describe a doorway that vanished.", "A gate may briefly refuse a thrown object.", "Someone might notice that every surviving crew left before reaching the same room."]
       },
       ratingStays: "The Incursion's rating doesn't change merely because its classification changes. Reassess it when new evidence shows that the original threat estimate was wrong.",
-      disclosure: "A posting must disclose a known seal or known Chromatic change. When reports conflict, mark the classification provisional and include the evidence. A licensed claim agent can't bury a confirmed trap in the fine print.",
+      disclosure: "A posting must disclose a known seal or known Chromatic change. When reports conflict, mark the classification provisional and include the evidence.",
       provisional: "When reports conflict, mark the classification provisional and include the evidence.",
       sealedWorse: "Time distortion, extreme weather, and other survival pressures can make a Sealed dive worse. Set them as local rules for the site."
     },
@@ -650,7 +650,7 @@ EN.gmBook.scenes = {
        EN.flow.disturbances (the Codex's fl-dist-anchor). */
     // GMH p28
     anchor: {
-      text: "The anchor is whatever holds the overwrite in place, and it isn't always an object. It can be a thing (a fused jukebox, a clock stopped at 3:11), a resident, usually the site's boss, that has to die or leave, or a condition that has to be met (every light in the building on at once). When the anchor is an object, run it as a Focal Anchor (Flow Disturbances), reading the rating as its Severity: Defense 14, Vitality 15 x the rating. Several uncontrolled collapses at once is a Cascade. The city has had one.",
+      text: "The anchor is whatever holds the overwrite in place, and it isn't always an object. It can be a thing, a resident, usually the site's boss, that has to die or leave, or a condition that has to be met. When the anchor is an object, run it as a Focal Anchor (Flow Disturbances), reading the rating as its Severity: Defense 14, Vitality 15 x the rating. Several uncontrolled collapses at once is a Cascade.",
       kinds: [
         { key: "thing", name: "a thing", examples: "a fused jukebox, a clock stopped at 3:11" },
         { key: "resident", name: "a resident, usually the site's boss, that has to die or leave", examples: null },
@@ -676,7 +676,7 @@ EN.gmBook.scenes = {
         { key: "wildcard", name: "Wildcard",
           text: "An Incursion with an exceptional condition or prize. Its anchor may demand something unexpected. Its salvage may be valuable to someone who has kept that interest quiet. The GM knows what makes the site unusual; the briefing contains what earlier entrants learned." },
         { key: "crucible", name: "Crucible",
-          text: "An Incursion that puts a capability under sustained pressure. A Shaper works against unfamiliar Flow. A Codebreaker faces a hostile #GRID. Another crew learns to navigate a place where distance refuses to stay measured. What they learn can lead to training and better postings. Advancement follows the normal rules." },
+          text: "An Incursion that puts a capability under sustained pressure. What they learn can lead to training and better postings. Advancement follows the normal rules." },
         { key: "convergence", name: "Convergence",
           text: "Several objectives lead into the same Incursion. Residents, Entities, factions, and rival claim holders pursue their own plans while the crew explores. Removing or destroying the anchor collapses the site. The dispute over what happened there may continue after the streets return to normal." }
       ]
