@@ -1866,7 +1866,7 @@ EN.codexView = (function () {
           + "\n- On failure and at or below half max Wounds: also fall Unconscious."
           + "\n- Wounds reach 0 while exposed: death."
           + "\n\n" + (B.kinds[1].riders || []).join("\n")
-          + "\n\nBoth conditions are built from one spec in the data, so if Drowning changes, Vacuum changes with it."));
+          ));
         kids.push(ruleBlock("Sealing against vacuum", B.vacuumSeal.rule + "\n\n"
           + B.vacuumSeal.paths.map(function (p) { return p.name + ": " + p.how; }).join("\n\n")));
         kids.push(subTitle("Caustic Environments"));
@@ -1883,7 +1883,7 @@ EN.codexView = (function () {
           null, { terms: { "Armor Repair": "gr-craft/armor-repair" } }));
         kids.push(subTitle("Mitigations"));
         kids.push(el("p", { style: { margin: "0 0 8px", fontSize: "13px", color: "var(--text2)", lineHeight: "1.5" },
-          text: "Nothing new. Each of these already exists elsewhere in the books, and each one changes an outcome on a Freelancer's Hazards panel rather than only being described." }));
+          text: "Each of these changes an outcome on a Freelancer's Hazards panel." }));
         // a Companion lineage's feature leaves both desktops while Supplemental content is off (EN.launch)
         var mits = H.mitigations.filter(function (m) { return !heldLineageRow(m); });
         kids.push(refTable(["Mitigation", "Source", "Effect"], mits.map(function (m) {

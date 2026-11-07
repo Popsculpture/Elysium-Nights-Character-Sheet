@@ -12,7 +12,7 @@ window.EN = window.EN || {};
 
 EN.hazards = {
 
-  intro: "Elysium kills with its weather as reliably as with its guns. Cold, heat, thin air and going without run on a clock rather than on damage: the clock ticks, you save, and a failure costs you a level of Fatigue. Vacuum and caustic air are faster and much less forgiving.",
+  intro: "Cold, heat, thin air and going without run on a clock rather than on damage: the clock ticks, you save, and a failure costs you a level of Fatigue. Vacuum and caustic air are faster and much less forgiving.",
 
   /* ---- 3.1 Exposure -----------------------------------------------------
      Clock-driven, not damage-driven. Every exposure runs its own escalating
@@ -66,7 +66,7 @@ EN.hazards = {
      of the above is rolled at all. Carried here because `intro` describes what exposure
      DOES and this says when to use it; the two are not interchangeable. Same `gmGuidance`
      field name as kits.js and resolution.js. */
-  gmGuidance: "Exposure is a pacing tool, not a damage source. Roll it when the clock matters: a crew waiting out a patrol in a freezer, a job that runs long above the cloud line, a shuttle with a slow leak. If nobody is making a decision about the environment, don't roll for it. The point is to make the room a problem, not to tax the crew for existing in weather.",
+  gmGuidance: "Exposure is a pacing tool, not a damage source. Roll it when the clock matters. If nobody is making a decision about the environment, don't roll for it.",
 
   /* ---- 3.2 Vacuum -------------------------------------------------------
      Mirrors the existing Drowning condition exactly. The two share ONE spec so
