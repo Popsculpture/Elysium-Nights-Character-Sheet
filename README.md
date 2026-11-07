@@ -58,9 +58,61 @@ settings, never part of a character or its export.
 
 ## Tech
 
-Vanilla JS, no build step, no backend. Everything is static HTML/CSS/JS and runs straight from
-the filesystem (`file://`-safe). Character data persists in the browser's `localStorage`; use the
-**⤓ Export Record** button on #PRINT to move a Freelancer between devices.
+Vanilla JS, no build step. Everything is static HTML/CSS/JS and runs straight from the filesystem
+(`file://`-safe). Character data persists in the browser's `localStorage`; use the
+**⤓ Export Record** button on #PRINT to move a Freelancer between devices. On the live site a
+player can also jack in with Discord: their characters then save to their account (Supabase,
+`supabase/migrations`), and the content packs below download for them.
+
+## Content packs
+
+Some content is not in this repo at all. The Freelancer's Companion (catalog code EN1101) is a
+**content pack**: it lives in the private repo `Popsculpture/Elysium-Nights-Packs`, the database
+serves it (`content_packs`) only to an account that holds it, and the app downloads it, caches it per
+account, and merges it back into the data it came from (`app/js/packs.js`). Jacking out takes it off
+the device again. `app/data/launch.js` keeps the public manifest: the keys and names of what the pack
+owns, so a character that uses it can be recognised without it. On a device without the pack such a
+character is locked: read-only, stored exactly as it was, and never pushed to the account, until the
+pack loads.
+
+Who holds a pack is decided in the database, never in the app. `products.rule` is `signed_in` (any
+account that has jacked in, whatever the sign-in provider) or `granted` (only accounts with a row in
+`entitlements`). The Companion is `signed_in`.
+
+### Publish a pack
+
+From a checkout of the packs repo, with the Supabase CLI logged in once (`npx supabase@2 login`):
+
+    node tools/publish.js --dry-run
+    node tools/publish.js
+
+1. Edit the pack source (`src/EN1101/`) and commit it.
+2. Run the dry run. It runs the real upsert against the live database inside a transaction that is
+   always rolled back, and checks that the stored pack reads back byte for byte. Nothing is published.
+3. Run the publish. It stores the build as the live version plus one, so every publish bumps the
+   version. A player's app downloads it the next time it checks (on start, and when they jack in);
+   an app whose cache already holds the live version downloads nothing.
+
+Instead of the CLI login, `--via db` reads a connection string from `DATABASE_URL`, and `--via rest`
+reads the service role key from `SUPABASE_SERVICE_ROLE_KEY`. Keep both in your shell or an untracked
+`.env`. Never commit them, and never put either in this repo or the app.
+
+### Grant an entitlement
+
+For a `granted` product (a backer reward, a paid supplement), one row per account:
+
+1. Find the player's user id: Supabase dashboard, **Authentication**, **Users**, the player's row
+   (their Discord name is under the user's metadata), copy the **UID**.
+2. Open **Table Editor**, the `entitlements` table, **Insert row**: `user_id` is that UID, `sku` is
+   the product (for example `EN1201`), `source` says why (`backer`, `purchase`, `comp`). `granted_at`
+   fills itself.
+3. Save. The player's app picks the pack up the next time it checks; jacking out and in again makes
+   it check at once.
+
+To take a grant back, delete the row; the pack leaves that player's device the next time the app
+checks. Players can read their own rows and nothing else, and no player can write to `entitlements`
+or `content_packs` (`supabase/tests/entitlements_checks.sql` proves both against the live project).
+A `signed_in` product needs no rows at all.
 
 ## Install it on a phone
 
