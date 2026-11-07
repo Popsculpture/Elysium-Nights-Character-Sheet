@@ -329,16 +329,16 @@ EN.rules = {
     ],
     damageNote: "Size sets the die. Balance sets the trait: anything that sloshes, sags, squirms, or carries its weight at the wrong end is Unwieldy at any size. Pick a base die and a damage type (Bludgeoning, Slashing, or Piercing) from the object's shape and heft. The GM may shift the die one step either way for exceptionally dense or soft materials.",
     damage: [
-      { size: "Tiny",       examples: "Bottle, mug, wrench, brick",          die: "1d4" },
-      { size: "One-Handed", examples: "Pipe, chair leg, crowbar, laptop",    die: "1d6" },
-      { size: "Two-Handed", examples: "Barstool, small sign, toolbox",      die: "1d8" },
-      { size: "Heavy",      examples: "Cinder block, street sign, engine block", die: "1d10 (gains Heavy)" }
+      { size: "Tiny",       die: "1d4" },
+      { size: "One-Handed", die: "1d6" },
+      { size: "Two-Handed", die: "1d8" },
+      { size: "Heavy",      die: "1d10 (gains Heavy)" }
     ],
     thrownNote: "When you throw something that was never meant to fly, set its range by weight.",
     thrown: [
-      { kind: "Light",    range: "4 / 12", examples: "Cans, bottles, tools, loose parts" },
-      { kind: "Standard", range: "3 / 9",  examples: "Bricks, one-handed tools, small crates" },
-      { kind: "Heavy",    range: "2 / 6",  examples: "Barstools, cinder blocks", note: "Attack rolls suffer Snag." }
+      { kind: "Light",    range: "4 / 12" },
+      { kind: "Standard", range: "3 / 9" },
+      { kind: "Heavy",    range: "2 / 6", note: "Attack rolls suffer Snag." }
     ],
     desperation: [
       "Throwing a Melee Weapon: when you hurl a melee weapon that lacks the Thrown trait, it gains a range of 2 / 6. Use your Athletics skill for the Weapon Attack. The attack gains no Weapon Proficiency Bonus and ignores all of the weapon's normal melee traits, including Reach and Finesse.",
@@ -346,7 +346,7 @@ EN.rules = {
     ],
     specialEffects: "On a Critical hit or a high Margin of success, the GM may rule that an improvised weapon inflicts a fitting condition: Bleeding from a shattered bottle, Staggered from a slab of concrete. When this happens, the Target makes a relevant Body or Wits Save to resist it.",
     // PHB:9178-9184, in the book's words (the author's answer 4, 24 October 2026)
-    peopleIntro: "To swing a person, you first have to Grapple them.\n\nAn Unconscious, Restrained, or willing Target can be Grappled automatically as a Swift Action. A conscious, unwilling Target must be Grappled by force and can be wielded until they break free.",
+    peopleIntro: "To swing a motherfucker at another motherfucker, you first have to Grapple them.\n\nAn Unconscious, Restrained, or willing Target can be Grappled automatically as a Swift Action. A conscious, unwilling Target must be Grappled by force and can be wielded until they break free.",
     wieldedBody: "A body is a Heavy, Unwieldy improvised weapon dealing 1d10 Bludgeoning. Every attack carries Snag, and any features or abilities that augment improvised weapons apply.\n\nBoth the Target and the body you swing take the rolled damage.",
     meatShield: [
       "A shield smaller than you grants Half Cover (+2 Defense). One your Size or larger grants Three-Quarter Cover (+5 Defense), against attacks that have to pass through them.",

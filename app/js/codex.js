@@ -1655,8 +1655,8 @@ EN.codexView = (function () {
         .concat((C.coverMaterials || []).length
           /* each category's reading ("No physical protection. Obscures vision only.") is a second
              two-column table under the first, so the four-column table stays phone-width */
-          ? [K.entry("cover-material-table", "Cover Material Table", [K.refTable(["Category", "Structure", "Integrity"],
-              C.coverMaterials.map(function (m) { return [m.category, String(m.structure), String(m.integrity)]; }), [0]),
+          ? [K.entry("cover-material-table", "Cover Material Table", [K.refTable(["Category", "Structure", "Integrity", "Examples"],
+              C.coverMaterials.map(function (m) { return [m.category, String(m.structure), String(m.integrity), m.examples]; }), [0]),
               C.coverMaterials.some(function (m) { return m.meaning; })
                 ? K.refTable(["Category", "What it means"], C.coverMaterials.filter(function (m) { return m.meaning; }).map(function (m) { return [m.category, m.meaning]; }), [0])
                 : null])]

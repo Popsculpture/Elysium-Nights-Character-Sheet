@@ -59,7 +59,7 @@ EN.basics = {
     intro: "**Caliber** is a number determined by your class level. Features use it to calculate scaling bonuses, multiply resource pools, or determine how many times you can use an ability per rest.",
     focus: "Every class also has a **Saving Throw Focus**. When you make a Saving Throw that matches your Focus, you add your Caliber to the roll alongside the Attribute Modifier.",
     // The Handbook's paragraph under the Caliber table (19 October 2026 audit, CC-07), trimmed in the Codex style
-    appraisal: "The city uses the Caliber recorded on your #PRINT, from your last appraisal. It determines what rated work you can contract for, what your insurance costs, and which Guild memberships you can apply for. Your sheet shows your actual Caliber. Your Freelancer knows only what their last appraisal reported."
+    appraisal: "The city uses the Caliber recorded on your #PRINT. It comes from your last appraisal and stays there until you get another one. It determines what rated work you can contract for, what your insurance costs, and which Guild memberships you can apply for. Your sheet shows your actual Caliber. Your Freelancer knows only what their last appraisal reported."
   },
 
   /* Saving Throws by Attribute: the Handbook's "When to Use Saving Throws" table (Saving Throws,
