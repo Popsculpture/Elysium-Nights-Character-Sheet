@@ -6,7 +6,8 @@
    nothing here is computed. The Downtime check, the event roll, the held
    events and the Bounty tracker are js/gm_heat.js.
 
-   Every `text` is the book's wording with PDF line breaks rejoined (table
+   Every `text` is the book's wording, trimmed to the Codex style (flavour
+   and worked examples cut, every rule kept), with PDF line breaks rejoined (table
    cells split across lines too: "9 to" + "10", "The" + "precinct"). Table
    column headers are kept in the capitals the page prints them in, and the
    Glimmer glyph is the book's own (U+1D4A2), printed on the first number of a
@@ -56,7 +57,6 @@ EN.gmBook.heat = {
   // GMH p113
   name: "Heat Response",
   intro: [
-    "Heat is a number on the crew's sheet. To the people who gave it to them, it's a file, a budget line, a grudge, a name on a whiteboard in a room the crew will never see. This chapter is what that room decides to do.",
     "The PHB says high Heat brings active opposition: assets, agents, hired help showing up at inconvenient times. Here is when they show up, who they are, and how much of a fight they bring."
   ],
 
@@ -70,16 +70,16 @@ EN.gmBook.heat = {
     name: "The Heat Check",
     paragraphs: [
       "At the start of each Downtime, roll a d10 for every source the crew has Heat with. If the roll is equal to or lower than that source's Heat, the source acts: pick or roll an event from its band in the Heat Events tables, and play it during Downtime or open the next job with it.",
-      "Heat is tracked per Freelancer, but the city doesn't care whose name is on which file. Roll once per source, using the highest Heat anyone in the crew has with it. The event lands on whoever earned it, and splashes on whoever is standing next to them."
+      "Heat is tracked per Freelancer, but roll once per source, using the highest Heat anyone in the crew has with it. The event lands on whoever earned it, and splashes on whoever is standing next to them."
     ],
     guidelinesLead: "A few guidelines:",
     guidelines: [
       { key: "onePerSource", name: "One event per source per Downtime.",
-        text: "A crew with Heat from three sources can have a very bad week. That's the point." },
+        text: "A crew with Heat from three sources can have a very bad week." },
       { key: "alwaysAtTen", name: "At Heat 10 the check always triggers.",
-        text: "The order is out, and orders don't take weeks off." },
+        text: "" },
       { key: "canWait", name: "Events can wait.",
-        text: "If the table is mid-arc and a raid would derail it, hold the event and spend it later. The source doesn't forget. It reschedules." },
+        text: "If the table is mid-arc and a raid would derail it, hold the event and spend it later. The source doesn't forget." },
       { key: "territory", name: "Territory still matters.",
         text: "The encounters on entering a source's territory (Mechanical Effects, Cred and Heat) happen as well, on top of the check." }
     ],
@@ -114,7 +114,7 @@ EN.gmBook.heat = {
         sends: "Interference. A job sabotaged, a safehouse searched, a contact bought, a supplier who suddenly can't sell.",
         fight: "Fair Fight", difficulty: "fair", mult: 1 },
       { key: "team", heat: "7 to 8", min: 7, max: 8, phbSays: "Hunted",
-        sends: "A team. People whose job this week is the crew. They come with a plan and they come prepared.",
+        sends: "A team. People whose job this week is the crew. They come with a plan.",
         fight: "Hard Contract (1.5x)", difficulty: "hard", mult: 1.5 },
       { key: "order", heat: "9 to 10", min: 9, max: 10, phbSays: "Marked",
         sends: "The order. The source's best, sent to finish it, and a Bounty posted on the Exchange (The Bounty).",
@@ -122,8 +122,8 @@ EN.gmBook.heat = {
         difficulty: "red", mult: 2, everyCheck: true, bountyTakers: true }
     ],
     after: [
-      "A source sends what it has. A Ferrymark gang at Heat 8 doesn't send a Wetwork Operative; it sends every Ferryman with a grudge and a boat. Kindred at Heat 8 does send the operative, and a recovery team to collect afterward. Build the team from the source's own people first (By Source), and its Grade from the crew's Caliber.",
-      "The ladder is a ceiling, not a schedule. A source at Heat 7 can still send a tail or file a complaint. It just doesn't have to stop there. The exception is the top band: at Heat 9 to 10, every check that triggers brings a Red Work team on top of the rolled event. The order doesn't wait for the right moment."
+      "A source sends what it has. Build the team from the source's own people first (By Source), and its Grade from the crew's Caliber.",
+      "The ladder is a ceiling, not a schedule. A source at Heat 7 can still send a tail or file a complaint. The exception is the top band: at Heat 9 to 10, every check that triggers brings a Red Work team on top of the rolled event."
     ],
     topBand: { min: 9, difficulty: "red",
       text: "at Heat 9 to 10, every check that triggers brings a Red Work team on top of the rolled event" }
@@ -136,15 +136,15 @@ EN.gmBook.heat = {
   events: {
     // GMH p114
     name: "Heat Events",
-    intro: "Roll a d6 on the source's band, or pick. Read each line through the source: a \"visit\" from the precinct is a uniform at the door; from the Ashriders it's six engines idling in the street.",
+    intro: "Roll a d6 on the source's band, or pick. Read each line through the source (By Source).",
     columns: ["D6", "EVENT"],
     die: "d6", sides: 6,
     bands: [
       // GMH p114
       { key: "file", title: "Heat 1 to 2: The File", name: "The File", min: 1, max: 2, rows: [
-        { n: 1, text: "A fine arrives for something the crew did, or nearly did. It's real, it's due, and it's ten percent higher if they argue." },
+        { n: 1, text: "A fine arrives for something the crew did, or nearly did. It's due, and it's ten percent higher if they argue." },
         { n: 2, text: "A Freelancer's #PRINT picks up a soft flag. Doors still open, but slower, and someone writes down the time." },
-        { n: 3, text: "A contact mentions that somebody was asking about the crew. Politely. With a business card." },
+        { n: 3, text: "A contact mentions that somebody was asking about the crew." },
         { n: 4, text: "A payment from the last job is held for review. It clears after a week, minus a processing fee nobody explains." },
         { n: 5, text: "The crew's regular place gets a new rule, a new camera, or a new face behind the counter." },
         { n: 6, text: "Nothing happens. The file gets thicker. Next Downtime, roll this source at +1 Heat.", carry: 1 }
@@ -152,7 +152,7 @@ EN.gmBook.heat = {
       // GMH p115
       { key: "eyes", title: "Heat 3 to 4: The Eyes", name: "The Eyes", min: 3, max: 4, rows: [
         { n: 1, text: "A tail. Same face, three days running, never close enough to confront without making a scene." },
-        { n: 2, text: "A drone takes an interest in the safehouse. It doesn't do anything. It just stays." },
+        { n: 2, text: "A drone takes an interest in the safehouse. It doesn't do anything." },
         { n: 3, text: "A contact gets a visit and calls afterward, scared, asking the crew to lose their number for a while." },
         { n: 4, text: "The crew's #GRID traffic gets slow in a way that means someone is reading it." },
         { n: 5, text: "A friendly face offers the crew easy work. The work is a test, and the source is watching how they take it." },
@@ -173,7 +173,7 @@ EN.gmBook.heat = {
         { n: 2, text: "A team hits the crew mid-job, at the worst moment, on purpose." },
         { n: 3, text: "Someone the crew loves is picked up \"for questioning.\" The release terms are a meeting." },
         { n: 4, text: "A Freelancer's gear, vehicle, or cyberware is targeted: a repossession, a hack, a fire." },
-        { n: 5, text: "The source hires another crew to do it, at Hard Contract pay. They're professionals. They might even be polite." },
+        { n: 5, text: "The source hires another crew to do it, at Hard Contract pay. They're professionals." },
         { n: 6, text: "A Hard Contract ambush on the road between jobs.", difficulty: "hard" }
       ] },
       // GMH p116
@@ -183,7 +183,7 @@ EN.gmBook.heat = {
         { n: 3, text: "The source burns a Freelancer's #PRINT: frozen accounts, flagged face, a warrant with their name spelled right." },
         { n: 4, text: "Every ally the crew has gets an offer to step away. Some take it." },
         { n: 5, text: "The source makes the crew's district unlivable: rent tripled, water off, a raid every night until somebody gives them up." },
-        { n: 6, text: "Red Work, and the source isn't hiding it. This is the event people talk about afterward.", difficulty: "red" }
+        { n: 6, text: "Red Work, and the source isn't hiding it.", difficulty: "red" }
       ] }
     ]
   },
@@ -202,7 +202,7 @@ EN.gmBook.heat = {
   // GMH p116
   sources: {
     name: "By Source",
-    intro: "Every source climbs the same ladder, but each climbs it in its own shoes. Use these notes to color an event, and to pick who shows up when it comes to a fight.",
+    intro: "Every source climbs the same ladder. Use these notes to color an event, and to pick who shows up when it comes to a fight.",
     columns: ["SOURCE", "HOW IT COMES AT THE CREW", "WHO IT SENDS"],
     rows: [
       { key: "kindred", name: "Kindred",
@@ -308,10 +308,10 @@ EN.gmBook.heat = {
   // GMH p117
   bounty: {
     name: "The Bounty",
-    text: "The moment a source reaches Heat 9, its own people stop being enough, and it starts spending money. It posts a Bounty on the Hazard Contractors' Exchange: open to any rated Freelancer, priced in public, with the crew's faces on the posting. The Exchange takes its cut and asks no questions. That's its whole business.",
+    text: "The moment a source reaches Heat 9, it starts spending money. It posts a Bounty on the Hazard Contractors' Exchange: open to any rated Freelancer, priced in public, with the crew's faces on the posting. The Exchange takes its cut and asks no questions.",
     postsAt: 9,
     price: { name: "The price.",
-      text: "Price each Freelancer the way Paying the Crew prices any Bounty, 𝒢3 to 𝒢5 per XP, treating them as a Solo of the Grade that matches their Caliber. A Freelancer with Heat 9 is a problem the source budgets like a monster. Breathing delivery doubles it." },
+      text: "Price each Freelancer the way Paying the Crew prices any Bounty, 𝒢3 to 𝒢5 per XP, treating them as a Solo of the Grade that matches their Caliber. Breathing delivery doubles it." },
     perXpLow: 3, perXpHigh: 5,
     aliveMult: 2,
     columns: ["FREELANCER'S CALIBER", "COUNTS AS", "BOUNTY (KILL)", "BOUNTY (ALIVE)"],
@@ -334,11 +334,11 @@ EN.gmBook.heat = {
     ],
     after: [
       "Past 𝒢5,000 a bounty crosses into Nexus territory (Paying the Crew): still paid in Glimmer, and watched like Nexus.",
-      "Corporate sources usually post alive-only. They have questions, and recovery teams."
+      "Corporate sources usually post alive-only."
     ],
     nexusAbove: 5000,
     whoTakesIt: { name: "Who takes it.",
-      text: "Rival crews, mostly, and some of them are people the crew has worked with. Build a taker as a rival crew (Enemy Freelancers and Named Rivals), and let the crew hear about them first: a Ringer who sold the crew's address, a fixer who won't meet their eyes, a familiar van parked across the street. Once the Bounty is up, every Heat check against that source also brings whoever has taken it." },
+      text: "Rival crews, mostly, and some of them are people the crew has worked with. Build a taker as a rival crew (Enemy Freelancers and Named Rivals), and let the crew hear about them first. Once the Bounty is up, every Heat check against that source also brings whoever has taken it." },
     takersEveryCheck: true,
     takingItDown: { name: "Taking it down.",
       text: "The posting stays up until the source pulls it, the source's Heat falls below 7, or someone pays the Exchange to cancel it. Cancelling costs the full kill price, paid by the crew or by someone who owes them a great deal. The Exchange's lawyers can also find a flaw in the posting, for a fee, which buys a week." },
@@ -360,7 +360,7 @@ EN.gmBook.heat = {
   // GMH p118
   cooling: {
     name: "Cooling Off",
-    intro: "The PHB lists the ways Heat comes down: quiet Downtime (1 per month, at your discretion), a data scrub, a bribe, a legal scrub, a faction or contact who clears the record, and a bigger fish. Here's how to price them so the crew can plan around it.",
+    intro: "The PHB lists the ways Heat comes down, quiet Downtime among them (1 per month, at your discretion). Here's how to price them so the crew can plan around it.",
     columns: ["METHOD", "WHAT IT COSTS", "WHAT IT DOES"],
     rows: [
       { key: "lieLow", name: "Lie low",
@@ -390,7 +390,7 @@ EN.gmBook.heat = {
     ],
     after: [
       "Two cautions. Bribes and scrubs are opportunities for a Mixed Result: the record is cleared and someone now has a copy. And Heat with a gang or a shrine rarely responds to money. Gangs want respect, restitution, or a favor. Shrines want amends, made in person, at the shrine that knows the spirit's name.",
-      "The crew can make their own bigger fish. That's a job, and a dangerous one, and exactly the kind of thing that earns Heat somewhere else."
+      "The crew can make their own bigger fish. That's a job, and a dangerous one, and the kind of thing that earns Heat somewhere else."
     ],
     moneyRarelyWorks: ["gang", "shrine"]   // By Source keys: "Heat with a gang or a shrine rarely responds to money"
   }

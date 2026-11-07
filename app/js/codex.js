@@ -681,7 +681,8 @@ EN.codexView = (function () {
     else ruleText(p, text || "", { conditions: opts.conditions, self: anchor, used: {}, terms: opts.terms }, anchor, name);
     var node = el("div.feature", anchor ? { dataset: { cxEntry: anchor } } : null, [
       el("h4", null, [document.createTextNode(name), extra ? el("span.src", { text: extra }) : null]),
-      p
+      // a heading that is the whole rule ("At Heat 10 the check always triggers.") draws no empty paragraph
+      text ? p : null
     ]);
     record(s, name, text || "");
     return node;
