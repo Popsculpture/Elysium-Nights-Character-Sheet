@@ -165,8 +165,7 @@ EN.gmBook.card = {
             { key: "elite",       cells: ["Elite [4]", "20", "+8", "40"],          tier: "Elite",       rank: 4,  security: 20, cipherSave: 8, integrity: 40 },
             { key: "apex",        cells: ["Apex [5]", "21", "+9", "50"],           tier: "Apex",        rank: 5,  security: 21, cipherSave: 9, integrity: 50 }
           ] },
-        /* sameAs EN.grid.hardenedNote. The card limits Hardened to Improved
-           and up; EN.grid.hardenedNote states no lower limit. */
+        /* sameAs EN.grid.hardenedNote. Both limit Hardened to Improved and up. */
         { kind: "text",
           md: "**Hardened** (Improved and up): add the Tier to Cipher Save.",
           text: "Hardened (Improved and up): add the Tier to Cipher Save.",

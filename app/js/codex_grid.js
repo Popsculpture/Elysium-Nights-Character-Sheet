@@ -7,7 +7,7 @@
    Stability Check, the cipher formulas, device Integrity and repair, the rig
    notes) rendered nowhere at all. The tab keeps its working tools and the
    catalogs (ciphers, the B&E Buddy suite, rigs, mods) and links here. The Burner
-   Relay table lives here too: the relay rows are in no gray market listing.
+   Relay table lives here too.
      grid: "The #GRID", order 80, audience "both", panel ids "gd-"
    The Basics keeps its primer (bx-grid); this chapter is the full text. Every
    rule line is a field of EN.grid, or of EN.classes.codebreaker.extra for the
@@ -53,18 +53,19 @@ window.EN = window.EN || {};
       var g = G();
       return [
         K.entry("node-tiers", "Node Tiers", [
+          g.nodeAttributes ? K.proseBlock(g.nodeAttributes) : null,
           K.refTable(["Tier", "Security Rating", "Cipher Save Bonus", "System Integrity"], g.nodeTiers.map(function (n) {
             return [n.tier, String(n.security), plus(n.saveBonus), n.integrity == null ? "-" : String(n.integrity)];
           }), [0])
-        ]),
+        ], { text: g.nodeAttributes || "" }),
         g.lowSecurityNote ? K.ruleBlock("Low-Security Nodes", g.lowSecurityNote) : null,
         g.hardenedNote ? K.ruleBlock("Hardened Nodes", g.hardenedNote) : null,
         (g.firewalls || []).length ? K.subTitle("Firewalls") : null,
         (g.firewalls || []).length ? K.entry("firewalls", "Firewalls", [
+          g.firewallNote ? K.proseBlock(g.firewallNote) : null,
           K.refTable(["Tier", "Price", "Security Bonus", "Damage Threshold"], g.firewalls.map(function (f) {
             return [f.tier, glim(f.price), plus(f.securityBonus), String(f.threshold)];
-          }), [0]),
-          g.firewallNote ? K.proseBlock(g.firewallNote) : null
+          }), [0])
         ], { text: g.firewallNote || "" }) : null,
         K.seeAlso("Cipher damage against a Firewall:", [["gd-ciphers/cipher-damage", "Cipher Damage"], ["gd-ciphers/minion-rule", "Minion Rule"]])
       ];
@@ -76,10 +77,11 @@ window.EN = window.EN || {};
       return [
         g.scanIntro ? K.proseBlock(g.scanIntro) : null,
         K.entry("concealment", "Concealment", [
+          g.scanDcNote ? K.proseBlock(g.scanDcNote) : null,
           K.refTable(["Concealment", "Scan DC", "Scan Snag", "Reads As"], g.scanning.map(function (s) {
             return [s.quality, String(s.dc), String(s.snag), s.reads];
           }), [0])
-        ]),
+        ], { text: g.scanDcNote || "" }),
         (g.scanMods || []).length ? K.subTitle("What Helps, What Hurts") : null,
         (g.scanMods || []).length ? K.entry("scan-modifiers", "Scan Modifiers", [
           K.refTable(["Modifier", "Condition", "d20", "Dice Pool"], g.scanMods.map(function (m) {
@@ -110,6 +112,7 @@ window.EN = window.EN || {};
     { id: "gd-ciphers", title: "Running Ciphers", tag: "ATTACK · SAVE · DAMAGE", order: 50, when: has("cipherAttackFormula"), build: function (ctx, K) {
       var g = G(), ex = exploits();
       return [
+        g.cipherAnatomy ? K.ruleBlock("Cipher Anatomy", g.cipherAnatomy) : null,
         K.ruleBlock("Cipher Attack", unlead(g.cipherAttackFormula, "Cipher Attack")),
         g.cipherSaveFormula ? K.ruleBlock("Cipher Save DC", unlead(g.cipherSaveFormula, "Cipher Save DC")) : null,
         g.cipherOutcomes ? K.ruleBlock("Cipher Outcomes", g.cipherOutcomes) : null,
@@ -117,8 +120,8 @@ window.EN = window.EN || {};
         g.cipherComplexityNote ? K.ruleBlock("Complexity and Casting Cost", g.cipherComplexityNote) : null,
         (g.cipherDamage || []).length ? K.subTitle("Cipher Damage") : null,
         (g.cipherDamage || []).length ? K.entry("cipher-damage", "Cipher Damage", [
-          K.refTable(["Complexity", "CX", "Damage"], g.cipherDamage.map(function (r) { return [r.complexity, String(r.c), r.roll]; }), [0, 2]),
-          g.cipherDamageNote ? K.proseBlock(g.cipherDamageNote) : null
+          g.cipherDamageNote ? K.proseBlock(g.cipherDamageNote) : null,
+          K.refTable(["Complexity", "CX", "Damage"], g.cipherDamage.map(function (r) { return [r.complexity, String(r.c), r.roll]; }), [0, 2])
         ], { text: g.cipherDamageNote || "" }) : null,
         g.minionRule ? K.ruleBlock("Minion Rule", g.minionRule) : null,
         /* The Codebreaker's own moves. The #GRID tab spends their Bandwidth (USE); the rule
@@ -179,14 +182,13 @@ window.EN = window.EN || {};
         g.buddyNote ? K.subTitle("Other Rigs") : null,
         g.buddyNote ? K.ruleBlock("B&E Buddy", g.buddyNote) : null,
         g.relayNote ? K.ruleBlock("Burner Relays", g.relayNote) : null,
-        /* FG-08: the Burner Relay table (PHB:9639-9648). The relay rows were data with no reader: the
-           old note below said they were in the gray market, and they are not, so this is the only place. */
+        /* FG-08: the Burner Relay table (PHB:9639-9648). */
         (g.relays || []).length ? K.entry("burner-relay-table", "Burner Relay Table", [
           K.refTable(["Burner Tier", "Price", "Save DC", "Attack Bonus", "Max Node Tier"], g.relays.map(function (r) {
             return [r.tier + " [" + r.t + "]", glim(r.price), String(r.saveDc), plus(r.attack), "Tier " + r.maxNode];
           }), [0])
         ]) : null,
-        K.note("Smartdeck and B&E Buddy tier rows, prices and the hardware mods are catalogs: they are in the Inventory tab's gray market, and the #GRID tab runs the B&E Buddy Cipher Suite. The Burner Relay rows are not in the gray market; the table above is where they are.")
+        K.note("Smartdecks, B&E Buddies, Burner Relays and the hardware mods are sold in the Inventory tab's gray market, and the #GRID tab runs the B&E Buddy Cipher Suite.")
       ];
     } },
 
