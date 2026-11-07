@@ -292,6 +292,33 @@ EN.cloud = (function () {
     return true;
   }
 
+  /* ---- uploading a local-only character later ---------------------------------
+     A character kept local (Not now on the upload question, or one whose row was deleted on
+     another device) can still go up: the character manager has an upload button on its row,
+     and Settings has one for all of them (the author, 7 Nov 2026). */
+  function localOnlyIds() {
+    if (!user) return [];
+    var b = book();
+    return Object.keys(roster()).filter(function (id) {
+      var ch = roster()[id];
+      return ch && !(ch.meta && ch.meta.example) && b.localOnly[id] && !b.links[id];
+    });
+  }
+  function upload(ids) {
+    if (!client || !user) return Promise.resolve(0);
+    var b = book(), n = 0;
+    (ids || []).forEach(function (id) { if (b.localOnly[id] && roster()[id]) { delete b.localOnly[id]; n++; } });
+    saveBook(b);
+    if (!n) return Promise.resolve(0);
+    paint();
+    return sync().then(function () {
+      if (status === "ok") EN.ui.toast(n === 1 ? "1 character uploaded to your account." : n + " characters uploaded to your account.");
+      else EN.ui.toast("Could not reach your account. The upload will finish when the link is back.");
+      if (EN.app && EN.app.render) EN.app.render();
+      return n;
+    });
+  }
+
   /* ---- sign in, sign out ---------------------------------------------------- */
   function returnUrl() {
     // back to whichever domain and folder the player started on (both are on the allow list)
@@ -393,6 +420,11 @@ EN.cloud = (function () {
       ])
     ]));
     kids.push(el("p#cloud-set-hint.set-hint", { text: linkTip() }));
+    var lo = localOnlyIds();
+    if (lo.length) kids.push(el("button.btn.primary", { type: "button", "data-cloud": "upload-all", style: { width: "100%", marginBottom: "8px" },
+      title: "Upload the characters kept on this device only, so they follow you to any browser",
+      onclick: function () { upload(localOnlyIds()).then(function () { if (EN.settings && EN.settings.refresh) EN.settings.refresh(); }); } },
+      lo.length === 1 ? "⤒ UPLOAD 1 LOCAL-ONLY CHARACTER" : "⤒ UPLOAD " + lo.length + " LOCAL-ONLY CHARACTERS"));
     kids.push(el("button.btn", { type: "button", "data-cloud": "out", title: "Jack out. Your characters stay on this device.", style: { width: "100%" },
       onclick: function () { jackOut(); } }, "JACK OUT"));
     return kids;
@@ -444,6 +476,9 @@ EN.cloud = (function () {
     status: function () { return status; },
     // whether deleting this record also deletes a row in the player's account (the delete warnings)
     linked: function (id) { var b = user ? book() : null; return !!(b && b.links[id]); },
+    // characters kept on this device only while jacked in, and the upload that sends them up
+    localOnly: function (id) { return localOnlyIds().indexOf(id) !== -1; },
+    upload: upload,
     // the test suite swaps in a stand-in client (no network, no Discord)
     _useClient: function (c) { start(); user = null; wire(c); }
   };

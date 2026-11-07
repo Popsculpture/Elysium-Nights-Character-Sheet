@@ -4560,6 +4560,12 @@ EN.builder = (function () {
         live ? el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }, "LIVE")
              : el("button.btn.sm", { title: "Make this the live record", onclick: function () { store.setActive(id); _step = 0; closeManager(); } }, "OPEN"),
         el("button.btn.sm", { title: "Export this record as .json", onclick: function () { exportChar(roster[id]); } }, "⤓"),
+        // jacked in, a character kept on this device only can still go up to the account (js/cloud.js)
+        (EN.cloud && EN.cloud.localOnly && EN.cloud.localOnly(id))
+          ? el("button.btn.sm", { "data-cloud-upload-row": id, style: { color: "var(--accent)", borderColor: "var(--accent)" },
+              title: "Kept on this device only. Upload it to your account",
+              onclick: function () { EN.cloud.upload([id]); } }, "⤒ UPLOAD")
+          : null,
         EN.ui.armButton("del:" + id, {
           label: "✕", armedLabel: cloudLinked(id) ? "SURE? CLOUD TOO" : "SURE?",
           title: "Delete this record permanently" + (cloudLinked(id) ? ", here and in your cloud account" : ""),
