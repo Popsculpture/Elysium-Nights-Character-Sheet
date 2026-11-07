@@ -11,7 +11,8 @@
    Synthesis and Master Forging pairs. Nothing is
    written here that the data does not say: every rule line is a field of EN.flow
    (or EN.basics.flow.check, the one Flow Attribute Check text), and the only words of
-   this file's own are headings and the small pointers between panels.
+   this file's own are headings and the small pointers between panels. The rule text
+   is trimmed to what a player acts on; worked examples are left out.
    The API is documented in the header of app/js/codex.js.
    =========================================================================== */
 window.EN = window.EN || {};
@@ -37,6 +38,8 @@ window.EN = window.EN || {};
       return [
         K.subTitle("Core Concepts"),
         K.el("div", null, f.coreConcepts.map(function (c) { return K.ruleBlock(c.term, c.text, extra[c.term] || null); })),
+        f.unattunedRule ? K.ruleBlock("Unattuned", f.unattunedRule) : null,
+        f.clankersRule ? K.ruleBlock("Clankers and the Flow", f.clankersRule) : null,
         K.subTitle("Rolling with the Current"),
         K.ruleBlock("Flow Attack", f.checkNote, f.flowAttackFormula),
         K.ruleBlock("Flow Save DC", f.saveNotation, f.saveDcFormula),
@@ -53,6 +56,7 @@ window.EN = window.EN || {};
       function fp(n) { return n ? "+" + n : "0"; }
       // the two dormant Deliveries' own rules: the last line of the Directed and Focused descriptions
       function lastLine(key) { var b = byKey(f.delivery, key); return b ? String(b.desc).split("\n").pop() : null; }
+      var instant = byKey(f.duration, "instant");
       return [
         f.shapingRules ? K.ruleBlock("Shaping", f.shapingRules) : null,
         f.whenToRoll ? K.ruleBlock("When to Roll", f.whenToRoll, null, { conditions: true }) : null,
@@ -75,16 +79,19 @@ window.EN = window.EN || {};
           f.durationIntro ? K.proseBlock(f.durationIntro) : null,
           K.refTable(["Duration", "FP", "Lasts", "Upkeep"], f.durationTable.map(function (r) { return [r.name, String(r.fp), r.lasts, r.upkeep]; }), [0])
         ]),
+        instant ? K.ruleBlock("Instant", instant.desc) : null,
         K.entry("other-costs", "Other Costs", [
           K.subTitle("Other Costs"),
           K.refTable(["Other Cost", "FP", "Notes"], f.otherCostsTable.map(function (r) { return [r.name, String(r.fp), r.notes]; }), [0])
         ]),
-        f.workedExample ? K.ruleBlock("Worked Example", f.workedExample) : null,
         lastLine("directed") ? K.ruleBlock("Imbue", lastLine("directed").replace(/^Imbue: /, "")) : null,
         lastLine("focused") ? K.ruleBlock("Sigil", lastLine("focused").replace(/^Sigil: /, "")) : null,
         f.precisionShaping ? K.ruleBlock("Precision Shaping", f.precisionShaping.desc, "+" + f.precisionShaping.fp + " FP") : null,
+        f.obstructionsRule ? K.ruleBlock("Obstructions", f.obstructionsRule) : null,
         f.scalingNote ? K.ruleBlock("Scaling", f.scalingNote) : null,
         f.zonesRule ? K.ruleBlock("Zones", f.zonesRule) : null,
+        f.resonantPatterns ? K.ruleBlock("Resonant Patterns", f.resonantPatterns) : null,
+        K.seeAlso("Objects caught in an area:", [["ref-cover/effects-and-objects", "Effects and Objects"]]),
         K.seeAlso("Each Resonance's Empowered Effects:", [["fl-resonances", "Resonances"]]),
         K.seeAlso("Holding an effect past this turn:", [["fl-sustain", "Sustained Effects"]]),
         K.seeAlso("A second Resonance in one Invocation:", [["fl-advanced/layered-force", "Layered Force"]])
@@ -101,12 +108,13 @@ window.EN = window.EN || {};
       var out = [];
       if (f.saveNotation) out.push(K.note(f.saveNotation));
       if (f.resonanceUnlockNote) out.push(K.ruleBlock("Resonance Unlocks", f.resonanceUnlockNote));
+      if (f.objectInteractions) out.push(K.ruleBlock("Object Interactions", f.objectInteractions));
       f.resonances.forEach(function (r) {
         var how = r.resolution === "save"
           ? "Flow Save DC" + (r.saveAttr && r.saveAttr !== "varies" ? " (" + r.saveAttr + ")" : "")
           : "Flow Attack vs Defense";
-        var lines = ["Focus: " + r.focus + ". Resolves with a " + how + "."];
-        [r.damageNote, r.armorNote, r.targeting, r.stabilityNote, r.special].forEach(function (t) { if (t) lines.push(t); });
+        var lines = [r.plain + " Resolves with a " + how + "."];
+        [r.damageNote, r.armorNote, r.targeting, r.stabilityNote, r.ruleNote, r.special].forEach(function (t) { if (t) lines.push(t); });
         lines.push("Base: " + r.base);
         if ((r.empowered || []).length) {
           lines.push("Empowered Effects:");
@@ -141,7 +149,8 @@ window.EN = window.EN || {};
       var f = F();
       return [
         K.entry("strain-stages", "Strain Stages", [
-          K.refTable(["Stage", "Name", "Symptoms", "Effect"], f.strainTrack.map(function (s) { return [String(s.stage), s.name, s.symptoms || "", s.penalty]; }), [0, 1])
+          f.strainNote ? K.proseBlock(f.strainNote) : null,
+          K.refTable(["Stage", "Name", "Effect"], f.strainTrack.map(function (s) { return [String(s.stage), s.name, s.penalty]; }), [0, 1])
         ]),
         K.seeAlso("How Strain builds:", [["fl-overdraw/strain-points", "Strain Points"], ["fl-overdraw/non-combat-overdraw", "Non-Combat Overdraw"]]),
         K.seeAlso("Clearing it:", [["fl-recovery", "Ritual Recovery"], ["fl-breakflow/breakflow-restoration", "Breakflow Restoration"]]),
@@ -170,7 +179,7 @@ window.EN = window.EN || {};
         K.ruleBlock("Breakflow Check", b.check, "DC " + b.dcFormula),
         K.ruleBlock("In Breakflow", b.onFailure, null, { conditions: true }),
         // the two routes are named lines, so each is an anchor of its own (full-restoration, rough-restoration)
-        r ? K.ruleBlock("Breakflow Restoration", "- " + r.full + "\n- " + r.rough) : null,
+        r ? K.ruleBlock("Breakflow Restoration", r.intro + "\n- " + r.full + "\n- " + r.rough) : null,
         // the Handbook's Disturbed Ground run-in follows Rough Restoration, so point at it from here (both desktops)
         K.seeAlso("In a Flow Disturbance:", [["fl-dist/disturbed-ground", "Disturbed Ground"]]),
         K.seeAlso("The condition:", [["ref-conds/breakflow", "Breakflow"]])
@@ -219,6 +228,7 @@ window.EN = window.EN || {};
      in the Strain track). Strain and Breakflow on their own stay the conditions' words. */
   CV.terms({
     "Flow chapter": "fl-core",
+    "Clankers and The Flow": "fl-core/clankers-and-the-flow",
     "Order of Shaping": "fl-shaping",
     "Free-Shaping": "fl-shaping",
     "Precision Shaping": "fl-shaping/precision-shaping",
@@ -252,8 +262,7 @@ window.EN = window.EN || {};
      rendered from EN.flow.disturbances (app/data/flow.js, which names its source
      lines in the book). Five panels for both desktops and one for the Admin
      desktop (Placing an Anomaly), which reads the GM's own data: the Breakflow
-     Bleed Set Piece (EN.gmBook.hazards) and the Filtration Stack worked example
-     (EN.gmBook.encounters), the two GM sites that send a reader here.
+     Bleed Set Piece (EN.gmBook.hazards), a GM site that sends a reader here.
        fl-dist          Flow Disturbances (core concepts, the six Anomalies). The Handbook prints
                         no Core Concepts or Gameplay Summary here, so the app keeps both and tags
                         them APP SUMMARY (author ruling 10); the Clankers line is no longer drawn.
@@ -279,10 +288,6 @@ window.EN = window.EN || {};
   function gmBleed() {
     var H = EN.gmBook && EN.gmBook.hazards, items = (H && H.setPieces && H.setPieces.items) || [];
     return byKey(items, "bleed");
-  }
-  function gmFiltration() {
-    var E = EN.gmBook && EN.gmBook.encounters;
-    return byKey((E && E.examples) || [], "filtration");
   }
 
   /* MOVED TO THE GAME MASTER'S TOOLKIT (2026-10-16 handoff, section 8): Repairing a Null
@@ -339,7 +344,7 @@ window.EN = window.EN || {};
           outcomeTable(K, c.outcomes),
           K.proseBlock(c.complete)
         ]),
-        cf ? K.ruleBlock("Counter Flow", cf.intro + "\n" + named(cf.rules) + "\n" + cf.note, "d20 METHOD") : null,
+        cf ? K.ruleBlock("Counter Flow", cf.intro + "\n" + named(cf.rules), "d20 METHOD") : null,
         d.ritualChorus ? K.ruleBlock("Ritual Chorus", d.ritualChorus) : null,
         // the Toolkit's Anomalies at the Table: each run-in is its own card, Admin only (no wrapper, no GM label)
         admin(ctx) ? (d.gmGuidance || []).map(function (g) { return K.ruleBlock(g.label, g.text); }) : null,
@@ -395,17 +400,15 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 14 · the GM's side: where the book puts one ---------------------------
-       Admin only. Nothing here is new text: the Set Piece and the worked example are
-       the GM data's own copies, shown here because both send their reader to this
-       chapter for the rules. */
-    { id: "fl-dist-gm", title: "Placing an Anomaly", tag: "SET PIECE · WORKED EXAMPLE", audience: "gm", order: 140,
+       Admin only. Nothing here is new text: the Set Piece is the GM data's own copy,
+       shown here because it sends its reader to this chapter for the rules. */
+    { id: "fl-dist-gm", title: "Placing an Anomaly", tag: "SET PIECE", audience: "gm", order: 140,
       when: function () { return !!(D() && gmBleed()); },
       build: function (ctx, K) {
-        var sp = gmBleed(), ex = gmFiltration();
+        var sp = gmBleed();
         if (!sp) return [];
         return [
           K.ruleBlock(sp.name, sp.text, "SET PIECE · GRADE " + sp.grade),
-          ex ? K.ruleBlock(ex.name, ex.text, "WORKED EXAMPLE · CALIBER " + ex.caliber) : null,
           K.seeAlso("An Incursion's object anchor runs as a Focal Anchor:", [["gms-incursion/the-anchor", "The anchor"], ["fl-dist-anchor", "The Focal Anchor"]]),
           K.seeAlso("Pricing and running it as a hazard:", [["gmh-pricing", "Pricing Hazards"], ["gmh-count", "How Many Hazards"]])
         ];
