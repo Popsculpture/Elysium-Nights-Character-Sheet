@@ -191,28 +191,7 @@ EN.hazards = {
       source: { type: "lineageFeature", name: "Void Lung" }, lineage: "freeborn",
       summary: "Hold your breath for up to 15 minutes, and Edge on thin-air saves while the clock still runs.",
       note: "Void Lung holds fifteen minutes of breath, which is a long time in vacuum, and lungs built for recycled air get Edge on thin-air saves. Fifteen minutes is 150 rounds, at the Handbook's flat rate of 10 rounds to the minute, and it covers both Vacuum and Drowning. The save clock starts when those run out rather than never starting, so the tracker stays live and counts down. A Vacuum's 1d6 Cold still lands every round regardless of held breath.",
-      effects: { breathMinutes: 15, edgeOn: ["thinair"] } },
-
-    { key: "hearthglow", name: "Hearthglow", kind: "Cinder-Heart Feature",
-      source: { type: "lineageFeature", name: "Hearthglow" }, lineage: "cinder-heart",
-      summary: "No Fatigue from cold, self and allies within 2 spaces.",
-      note: "The sheet is one character, so it applies the self half. The 2 space aura is the GM's to run at the table.",
-      effects: { noFatigue: ["cold"] } },
-
-    { key: "hazard-seal", name: "Hazard Seal", kind: "Durabody Trait",
-      source: { type: "lineageFeature", name: "Hazard Seal" }, lineage: "durabodies",
-      // Freelancer's Companion: Resistance to Acid and Toxic damage, no longer an immunity. The
-      // Resistance is on the sheet through the engine's damage resistances (engine.js "Hazard Seal"),
-      // so this row carries no caustic effect: the caustic damage still lands, and Resistance halves it.
-      summary: "Resistance to Acid and Toxic damage; operate submerged in polluted or caustic liquids without penalty.",
-      note: "Freelancer's Companion: no immunity. Caustic damage still lands, inside and lingering; your Resistance to Acid halves it. It gives no resistance to extreme thermal hazards like lava or liquid nitrogen.",
-      effects: {} },
-
-    { key: "frictionless-stasis", name: "Frictionless Stasis", kind: "Harbinger Trait",
-      source: { type: "lineageFeature", name: "Frictionless Stasis" }, lineage: "harbinger",
-      summary: "Stops the residue, not the acid: no lingering damage after exit.",
-      note: "The 1d6 Acid while you stand in it is untouched. Nothing clings, so there is nothing to wash off either.",
-      effects: { noCausticLinger: true } }
+      effects: { breathMinutes: 15, edgeOn: ["thinair"] } }
   ]
 };
 

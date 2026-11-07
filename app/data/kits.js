@@ -148,38 +148,28 @@ EN.kits = {
      glimmer: cash straight onto the Glimmer Stick instead of gear.
      replacesSlot: this extra supplants that Class Kit slot (Toxicologist). */
   subclassExtras: {
-    rigger:           { items: [{ name: "Wireless Transceiver" }, { name: "#GRIDline Cable" }] },
     gridweaver:       { items: [{ name: "Disguise and Styling Kit" }] },
     burner:           { items: [{ name: "Thermite Slug" }, { name: "Fire Extinguisher" }] },
     juggernaut:       { items: [{ name: "Scrap Shield" }] },
     reaver:           { items: [{ name: "Hatchet" }, { name: "Vita-Pop" }] },
-    arsenal:          { items: [{ name: "Smoke Grenade" }] },
     the_suit:         { items: [{ name: "Document and Contract Kit" }] },
     the_grifter:      { items: [{ name: "Fake License Portfolio" }] },
-    the_fixer:        { items: [{ name: "Faraday Pouch" }, { name: "Wireless Transceiver" }] },
     the_vanguard:     { items: [{ name: "Ballistic Bracer" }] },
     the_deadeye:      { items: [{ name: "Tracer Rounds", label: "Tracer Rounds (10)" }] },
-    the_headhunter:   { items: [{ name: "Custody and Control Kit" }, { name: "Standard Cuffs" }] },
     smuggler:         { items: [{ name: "Tag Eraser" }, { name: "Fake License Portfolio" }] },
     // `row` is the Subclass Extras table's Wildcard row in the book's words (PHB:3327; the author's answer 4, 24 October 2026)
     wildcard:         { glimmer: 75, row: "𝒢75 on the Glimmer Stick, on top of whatever is left of your 𝒢800", note: "A Wildcard skips the gadget. Their subclass gear is 𝒢75 straight onto the stick, better odds on the cash they start with." },
-    shiv:             { items: [{ name: "Dagger" }] },
     harmonist:        { items: [{ name: "Flow Tonic Vial" }] },
-    kensei:           { items: [{ name: "Shock Gloves" }] },
-    icon:             { items: [{ name: "Streaming Rig" }] },
     sourcerer:        { items: [{ name: "Wireless Transceiver" }, { name: "Multi Tool" }] },
     the_lifeline:     { items: [{ name: "Bio Monitor Band" }, { name: "Trauma Slap Patch" }] },
     the_toxicologist: { items: [{ name: "Dart Gun" }, { name: "Darts" }], replacesSlot: "weapon",
-                        note: "A Toxicologist doesn't pick a weapon above. They start with a Dart Gun and Darts instead. The dart platform is what the toxins ride on, straight into First Do No Harm." },
-    the_ripper:       { items: [{ name: "Engineering Toolkit" }] }
+                        note: "A Toxicologist doesn't pick a weapon above. They start with a Dart Gun and Darts instead. The dart platform is what the toxins ride on, straight into First Do No Harm." }
   },
 
   /* Alternate Picks: an opt-in swap on the Subclass Extra */
   altPicks: {
     the_toxicologist: { label: "Flux Gel Sprayer instead of the Dart Gun and Darts", note: "Restraint over poison.",
                         items: [{ name: "Flux Gel Sprayer" }], replacesSlot: "weapon" },
-    icon:             { label: "Field Recording Kit instead of the Streaming Rig", note: "Journalist instead of live feed celebrity.",
-                        items: [{ name: "Field Recording Kit" }] },
     the_lifeline:     { label: "Drop the Bio Monitor Band; keep the Trauma Slap Patch alone",
                         items: [{ name: "Trauma Slap Patch" }] }
   },

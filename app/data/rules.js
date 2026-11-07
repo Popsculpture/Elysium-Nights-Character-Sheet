@@ -164,69 +164,10 @@ EN.rules = {
   // Any feature NOT in this list is unlocked only later via Lineage Evolution.
   lineageCreationFeatures: {
     freeborn: ["Void Lung", "Radiation Calluses", "Lowlight Optics", "Spinward Bones"],
-    nextgen: ["Dermal Plating", "Synthetic Musculature", "Dermal Induction", "Living Relay"],
-    phasebound: ["Spatial Flicker", "Static Premonition", "Entropic Lash", "Temporal Snare"],
-    arboreal: ["Ironbark Carapace", "Timber Fortitude", "Canopy Reach", "Deep Roots"],
     floral: ["Pheromone Bloom", "Venom Nectar", "Briar Strike", "Scent Marker"],
-    mycelial: ["Fungal Network", "Decay Whisper", "Spore Hallucination", "Sludge Crawler"],
     laborframes: ["Heavy Payload", "Vice Grip", "Lockpoint Stance", "Demolition Engine"],
-    durabodies: ["Blast Deflection", "Ablative Armor", "Redundant Systems", "Hazard Seal"],
-    lifelikes: ["Empathy Emulator", "Biometric Spoofing", "Vital Static", "Disarming Cadence"],
-    hulsk: ["Hulskpitality", "Brutal Frame", "Slaughterhouse Charge", "Ironhide Tusks"],
-    skarn: ["Neon Chameleon", "Warmblood Sense", "Butcher Spurs", "Prey Stalker's Grip"],
     ryn: ["Rabbitwire Reflex", "Feral Reprisal", "Highground Hunger", "Hare-Trigger Instinct"],
-    "cinder-heart": ["Forge-Blooded", "Cauterizing Vitae", "Volcanic Temper", "Fanatical Fervor"],
-    harbinger: ["Calculated Execution", "Frictionless Stasis", "Algorithmic Insight", "Uncanny Presence"],
     grinling: ["Hyper-Kinetic Metabolism", "Scavenger's Maw", "Disjointed Anatomy", "Predator's Glare"]
-  },
-
-  // NextGen "Open Architecture", structured Integration pairings for the UI.
-  // Each combo pairs a NextGen Lineage Feature with its matching cyberware.
-  openArchitecture: {
-    // Synced to the Freelancer's Companion (Open Architecture, The Seven Integrations), 28 Oct 2026.
-    intro: "Your body was engineered to standardized interface specifications, with pre-threaded neural shunts, reserved anatomical space, and tolerances no baseline human was ever given. Taking this feature unlocks the Integration clause of every NextGen Lineage Feature you possess, now or in the future. Whenever you have both halves of a listed pairing, the Lineage Feature and its matching cyberware at any tier, that clause activates.",
-    /* ADDITIVE, never subtractive. The old model had the Lineage Feature's effect "end as a
-       separate system and be absorbed into the chrome", which meant the app had to REMOVE a
-       feature's effects and substitute new ones. That model is gone, along with the term
-       Engineered Baseline. The feature keeps working in full, the implant keeps working in
-       full, and a third NAMED record switches on while both halves are held. */
-    rule: "You retain the full benefits of both the Lineage Feature and the cyberware. Integration doesn't replace, absorb, or remove either one unless its own text specifically says otherwise. Instead, the pairing opens an additional capability that lasts only as long as you hold both halves. The matching cyberware's Static Point cost is reduced by 1 (minimum 0). Nothing is traded away. You never lose a Lineage Feature to an install, and the install never has to work around you. You select Open Architecture only once. It applies to every qualifying combination you ever assemble. Without it, your Lineage Features and your chrome do the same work from separate rooms.",
-    combos: [
-      { key: "dermal-aegis", name: "Dermal Aegis", feature: "Dermal Plating", cyberware: "Subdermal Armor",
-        text: "Your engineered plating and Subdermal Armor lock together into a single load-bearing shell.\n\u2022 The first time each round a physical attack hits you, increase your Subdermal Armor's DR by 2 against that attack, applied at passive mitigation.\n\u2022 Any effect of that attack that would knock you Prone or forcibly move you fails to do so.",
-        // passive, no action cost, so it never competes with an Impulse. Per-ROUND flag,
-        // reset at round start, and it lands at damage step 3 rather than step 2.
-        cadence: "round", cost: "passive", step: 3 },
-      { key: "reinforced-physique", name: "Reinforced Physique", feature: "Synthetic Musculature", cyberware: "Reinforced Skeleton",
-        text: "Your synthetic muscle and Reinforced Skeleton drive through an impact as a single system.\n\u2022 Once per turn when you hit a Target with an unarmed strike, you can immediately attempt to Shove or Trip that Target at no action cost, as part of the same attack.",
-        // Grapple is deliberately EXCLUDED; that stays with Street Scrapper, which charges a
-        // Swift Action for it. Do not add Grapple here.
-        cadence: "turn", cost: "free", maneuvers: ["Shove", "Trip"] },
-      { key: "dermal-neuralink", name: "Dermal Neuralink", feature: "Dermal Induction", cyberware: "Neural Interface (Datajack)",
-        text: "Your Neural Interface routes directly through your skin, turning physical contact into a hardwired connection.\n\u2022 Your Neural Interface has no exposed port and leaves no visible scarring.\n\u2022 A Link you make by touch stays open after you let go, until the end of the scene or until you move more than 12 spaces away.\n\u2022 Once per Encounter as a Swift Action, you can touch a Rudimentary or Standard Node (a camera, automated door, or terminal) and silently slave it until the end of the Encounter without triggering an alert or network notification.\n\u2022 This cancels the Streetware Datajack's visible-port drawback, but not its lack of encryption. Interception and tracing of your #GRID activity at range are still governed by the Datajack's own tier.",
-        // suppresses the Streetware visible-port drawback ONLY; the tier's interception
-        // penalty is untouched, and tier-based encryption is unchanged at every tier.
-        cadence: "encounter", cost: "Swift Action", negates: "streetware-visible-port" },
-      { key: "living-transceiver", name: "Living Transceiver", feature: "Living Relay", cyberware: "Subdermal Comm",
-        text: "Your Living Relay and Subdermal Comm fuse into a single communications hub.\n\u2022 Any willing ally connected to your Living Relay can send communications through your Subdermal Comm as though they had a compatible comm of their own.\n\u2022 Incoming communications can be rebroadcast through your Living Relay to any connected allies.\n\u2022 Communications that leave the Living Relay use your Subdermal Comm's normal range, encryption, and interception rules.\n\u2022 You are the hub. If you go down, the crew goes quiet.",
-        // TWO legs that do not merge: the relay leg keeps its own properties, the comm leg
-        // keeps its own range and encryption. Conditional on the character being up.
-        cadence: "passive", cost: "passive", requiresConscious: true },
-      { key: "hitscan-optics", name: "Hitscan Optics", feature: "Hitscan", cyberware: "Cyberoptics",
-        text: "Your Hitscan subroutine feeds its Priority Target data directly into your Cyberoptics.\n\u2022 While you have a Priority Target, Threat Targeting is automatically active against it and doesn't occupy one of your Cyberoptic modes.\n\u2022 Once per round when you hit your Priority Target, choose one ally who can see it. That ally's next hit against it before the start of your next turn deals an additional 1d4 damage.",
-        // the mode rides FREE, on top of the tier budget (1/2/3), and must not decrement it
-        cadence: "round", cost: "free", grantsFreeMode: "Threat Targeting" },
-      { key: "synaptic-reflex", name: "Synaptic Reflex", feature: "Tuned Synapses", cyberware: "Reflex Booster",
-        text: "Your nervous system stays ahead of the booster instead of struggling to keep up.\n\u2022 The Reflex Booster's extra Move or Swift Action can be used a number of times equal to your Caliber per Encounter instead of once. You can't use it more than once per turn.",
-        // MUTATES an existing implant counter rather than adding an ability: max goes from
-        // 1 to Caliber, and the per-turn cap closes a spend-Swift-gain-Swift churn loop.
-        cadence: "encounter", cost: "mutates", mutates: { implant: "reflex", maxUses: "caliber", perTurnCap: 1 } },
-      { key: "springstep", name: "Springstep", feature: "Calibrated Gait", cyberware: "Spring Joints",
-        text: "Your gait calibration turns every landing into a controlled impact.\n\u2022 When you land from a leap, jump, or fall of 2 or more spaces, each Target of your choice within 1 space of your landing space must succeed on a Body Save (DC 8 + your Body Modifier + your Caliber) or be knocked Prone.",
-        // Caliber DC, not a proficiency DC: no trainable proficiency sits behind leg chrome.
-        // Targets are player-selected, so allies are never forced into the save. No cap.
-        cadence: "trigger", cost: "free", saveDC: { base: 8, attr: "BOD", caliber: true } }
-    ]
   },
 
   /* ---- Size -------------------------------------------------------------
@@ -247,33 +188,20 @@ EN.rules = {
     { size: "Huge",   underFt: Infinity, imperial: "over 16 ft.",  metric: "over 4.8 m" }
   ],
   sizeBandNote: "Two overrides stay with the GM and are not automated. Bulk overrides height: something low and wide, or long and coiled, sits a category above what its height alone suggests. Non-upright bodies (animals, drones, vehicles) are measured on their longest dimension, not height.",
-  // Height range per lineage, the source of truth for that lineage's Sizes.
-  // Harbingers have no variance: every Harbinger is exactly 6 ft.
+  // Height range per lineage, the source of truth for that lineage's Sizes. The Freelancer's
+  // Companion's lineages arrive with its pack (js/packs.js), slotted back in the book's order.
   lineageHeight: {
     freeborn:      { min: 3, max: 7 },
-    nextgen:       { min: 3, max: 7 },
-    phasebound:    { min: 3, max: 7 },
-    mycelial:      { min: 2, max: 4 },
     floral:        { min: 5, max: 6 },
-    arboreal:      { min: 6, max: 10 },
-    lifelikes:     { min: 3, max: 7 },
-    durabodies:    { min: 6, max: 8 },
     laborframes:   { min: 6, max: 10 },
-    skarn:         { min: 3, max: 4 },
     ryn:           { min: 3, max: 7 },
-    hulsk:         { min: 6, max: 9 },
-    grinling:      { min: 3, max: 5 },
-    "cinder-heart": { min: 3, max: 7 },
-    harbinger:     { min: 6, max: 6, fixed: true }
+    grinling:      { min: 3, max: 5 }
   },
   // Derived from lineageHeight via the bands above, listed explicitly so the
   // pairing can be validated without recomputing it.
   lineageSize: {
-    freeborn: ["Small", "Medium"], nextgen: ["Small", "Medium"], phasebound: ["Small", "Medium"],
-    mycelial: ["Small", "Medium"], floral: ["Medium"], arboreal: ["Medium", "Large"],
-    lifelikes: ["Small", "Medium"], durabodies: ["Medium", "Large"], laborframes: ["Medium", "Large"],
-    skarn: ["Small", "Medium"], ryn: ["Small", "Medium"], hulsk: ["Medium", "Large"],
-    grinling: ["Small", "Medium"], "cinder-heart": ["Small", "Medium"], harbinger: ["Medium"]
+    freeborn: ["Small", "Medium"], floral: ["Medium"], laborframes: ["Medium", "Large"],
+    ryn: ["Small", "Medium"], grinling: ["Small", "Medium"]
   },
   // The printed Species Traits row for each species: the Size label only. The
   // height sentence after it lives in species.js traits.size, so the Species
@@ -363,12 +291,8 @@ EN.rules = {
   // `lineage` is the display label the Codex prints; `lineageKey` is the
   // lineage's key, so a listing can drop rows for a lineage EN.launch holds.
   sizeShiftFeatures: [
-    { name: "Synthetic Musculature", lineage: "NextGen",    lineageKey: "nextgen",      effect: "+2 Encumbrance Threshold; counts as one Size larger for grappling." },
     { name: "Heavy Payload",         lineage: "Laborframe", lineageKey: "laborframes",  effect: "+2 Encumbrance Threshold; counts as one Size larger for grappling; carrying a willing ally of your Size or smaller does not reduce Speed." },
-    { name: "Sludge Crawler",        lineage: "Mycelial",   lineageKey: "mycelial",     effect: "Counts as one Size smaller in narrow corridors and tight spaces, at full Speed (exempt from the tight-geometry halving)." },
     { name: "Disjointed Anatomy",    lineage: "Grinling",   lineageKey: "grinling",     effect: "Squeezes as one Size smaller without penalty." },
-    { name: "Unshakable Bulk",       lineage: "Hulsk",      lineageKey: "hulsk",        effect: "Moving through the space of a smaller enemy costs no extra movement (waives the 2-Speed cost)." },
-    { name: "Breaching Charge",      lineage: "Durabody",   lineageKey: "durabodies",   effect: "Moves in a straight line through the spaces of anyone smaller, ignoring Difficult Terrain." },
     { name: "Impossible Geometry",   lineage: "Grinling",   lineageKey: "grinling",     effect: "May move through occupied spaces regardless of Size; cannot end its turn there." }
   ],
 
@@ -381,10 +305,8 @@ EN.rules = {
        Heavy Armor proficiency is still what lets you WEAR a frame. This one is the training
        the Powered trait refers to (its Powered Benefits). No class or background grants it. */
     armor: ["Light Armor", "Medium Armor", "Heavy Armor", "Physical Shields", "Powered Frames", "Warding Foci"],
-    /* Culinary Tools: the Freelancer's Companion's new Tool Category (Kit / Gear), gained through
-       the Street Chef Talent or with Training Points. A saved character has no entry for it and
-       reads Untrained; nothing needs migrating. */
-    tools: ["Medical Tools", "Engineering Tools", "Systems Tools", "Investigation Tools", "Infiltration Tools", "Security Tools", "Fieldcraft Tools", "Media Tools", "Glamour Tools", "Bureaucracy Tools", "Ritual Implements", "Culinary Tools"],
+    /* The Freelancer's Companion adds one Tool Category, Culinary Tools, with its pack (js/packs.js). */
+    tools: ["Medical Tools", "Engineering Tools", "Systems Tools", "Investigation Tools", "Infiltration Tools", "Security Tools", "Fieldcraft Tools", "Media Tools", "Glamour Tools", "Bureaucracy Tools", "Ritual Implements"],
     vehicles: ["Ground Vehicles", "Aerial Vehicles", "Marine Vehicles", "Industrial / Mechs", "Starcraft"]
   },
   // Armor can be ACQUIRED with TP but not upgraded to higher tiers (per rules).
@@ -552,7 +474,7 @@ EN.rules = {
   },
 
   /* Default flow attribute per Shaper subclass (overridden by data) -------- */
-  shaperFlowAttrBySubclass: { icon:"Presence", harmonist:"Mystique", kensei:"Body", sourcerer:"Tech" }
+  shaperFlowAttrBySubclass: { harmonist:"Mystique", sourcerer:"Tech" }
 };
 
 /* Convenience indexes (built once at load) ---------------------------------- */

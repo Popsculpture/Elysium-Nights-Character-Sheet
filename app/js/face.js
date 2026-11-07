@@ -196,7 +196,7 @@ EN.faceView = (function () {
     if (srcs.length > 1) {
       kids.push(el("p.help", { style: { margin: "0 0 10px", color: "var(--text2)" } }, [
         el("span.chip", { style: { fontSize: "8.5px", color: "var(--accent)", borderColor: "var(--accent)", marginRight: "7px" }, text: "ONE PER FEATURE" }),
-        document.createTextNode("One Persona may be active per feature, and the two do not have to belong to the same individual: you can wear one person's fingerprints and another's mannerisms at once. A second Persona does not make the lie better. It makes the lie cover more ground.")
+        document.createTextNode("Each feature keeps its own active Persona, and the two can copy different people. Running both widens what your cover holds up against; it does not raise any one roll.")
       ]));
     }
     kids.push(el("p.help", { style: { margin: "0 0 10px", color: "var(--text3)" } }, [

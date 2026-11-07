@@ -1,10 +1,9 @@
 window.EN = window.EN || {};
 /* `hooks`: the Player's Handbook prints ONE Backstory Hook for each of the ten launch
    Backgrounds (badge, boardroom-exile, cipher-punk, courier, dealer, ganger, gearhead,
-   glow-idol, minimum-wage-mage, street-doc), so those carry one. The Freelancer's Companion
-   prints one for each of its ten Backgrounds (data/launch.js `companion`), so those carry one too.
-   `blurb`: the book's own words, the Handbook (EN1001) for its ten and the Companion (EN1101) for
-   its ten. The books dropped one flavor sentence from each Handbook blurb on 13 October; the app
+   glow-idol, minimum-wage-mage, street-doc), so those carry one. The Freelancer's Companion's ten
+   Backgrounds arrive with its pack (js/packs.js), in the same shape.
+   `blurb`: the book's own words. The books dropped one flavor sentence from each Handbook blurb on 13 October; the app
    follows (author's ruling, 28 October 2026). */
 EN.backgrounds = [
   {
@@ -63,25 +62,6 @@ EN.backgrounds = [
       "The handle you retired, and who keeps using it to frame you."
     ],
     personalItem: "A battered deck, drive, or interface rig loaded with obsolete code that you can't bear to wipe."
-  },
-  {
-    key: "click-chaser",
-    name: "Click Chaser",
-    blurb: "You chased truth the hard way through half-drunk sources, corrupted files, and stories that didn't want to be told. You learned how to sort signal from noise, when a leak is bait, and when silence is the loudest answer you're going to get.",
-    skills: {
-      granted: ["Investigation"],
-      choose: { count: 1, options: ["Acrobatics", "Perception"] }
-    },
-    proficiencies: [
-      "Tools: Choose one (Media Tools, Fieldcraft Tools)",
-      "Weapon/Vehicle: Choose one (Ground Vehicles, Simple Weapons)"
-    ],
-    feature: { name: "Press Pass", text: "You know how to bypass gatekeepers. Bouncers, receptionists, and low-level security are more likely to let you into press areas, crime scenes, or corporate lobbies if you confidently claim you are following a lead. Whistleblowers and nervous sources inherently trust you to protect their anonymity." },
-    contacts: "Choose two media contacts, such as a stringer on your beat, a whistleblower inside a corp, or a bored editor who still answers your calls.",
-    hooks: [
-      "The source who vanished, and the message they left you with."
-    ],
-    personalItem: "A worn press pass, old audio recorder, or a printed copy of the best article you ever wrote."
   },
   {
     key: "courier",
@@ -179,44 +159,6 @@ EN.backgrounds = [
     personalItem: "A coded journal, an engraved lighter, or an empty perfume bottle from a very expensive client."
   },
   {
-    key: "homesteader",
-    name: "Homesteader",
-    blurb: "When systems failed or never arrived, you built something anyway. You learned to grow food where it shouldn't grow, route water where it shouldn't flow, and keep people alive with whatever was on hand. Rooftops, fringe zones, and forgotten blocks became home because you made them work.",
-    skills: {
-      granted: ["Athletics"],
-      choose: { count: 1, options: ["Perception", "Engineering"] }
-    },
-    proficiencies: [
-      "Tools: Choose one (Fieldcraft Tools, Engineering Tools)",
-      "Weapon/Vehicle: Choose one (Simple Weapons, Industrial / Mechs)"
-    ],
-    feature: { name: "Concrete Oasis", text: "You know the hidden architecture of the city. You can always find a safe, dry, and hidden place for your crew to rest in urban ruins, abandoned zones, or fringe blocks. Local squatters and fringe communities will usually share a meal or basic local news with you rather than driving you out." },
-    contacts: "Choose two community contacts, such as a neighbor organizer, a supply broker, or a local utility insider.",
-    hooks: [
-      "The rooftop, lot, or fringe block you turned into home, and who wants it back."
-    ],
-    personalItem: "A battered multi-tool, a sealed packet of heritage seeds, or a hand-tested water filter."
-  },
-  {
-    key: "hired-gun",
-    name: "Hired Gun",
-    blurb: "You learned to live by contracts and exit plans. You learned how targets think, how clients lie, and how fast situations spiral when money is involved. You trust preparation over bravado and silence over promises.",
-    skills: {
-      granted: ["Athletics"],
-      choose: { count: 1, options: ["Perception", "Intuition"] }
-    },
-    proficiencies: [
-      "Tools: Choose one (Security Tools, Medical Tools)",
-      "Weapon/Vehicle: Choose one (Longarms, Heavy Weapons)"
-    ],
-    feature: { name: "Professional Courtesy", text: "You know the unspoken etiquette of the mercenary underworld. You can easily find the local safe bars, weapon fences, or neutral ground fixers in a new district. Other professional muscle will generally treat you with mutual respect and avoid starting unnecessary fights with you in neutral territory." },
-    contacts: "Choose two professional contacts, such as a fixer, a dispatcher, or a former client.",
-    hooks: [
-      "The target you could have taken, and the reason you let them walk."
-    ],
-    personalItem: "A battered token from a contract you barely survived, or a casing from a shot you regret taking."
-  },
-  {
     key: "minimum-wage-mage",
     name: "Minimum Wage Mage",
     blurb: "You survived something that should have killed you and came back Flow-touched, with resonance humming under your skin. But progress never stops, so you went right back to your shift, your queues, your scripts, and the polite misery of a job that pays just enough to keep you showing up.",
@@ -236,101 +178,6 @@ EN.backgrounds = [
     personalItem: "A cheap, mass-produced uniform nametag or a breakroom coffee mug that somehow survived your awakening."
   },
   {
-    key: "outrider",
-    name: "Outrider",
-    blurb: "You live outside rules that never served you. You learned to trust your own code because everything else came with strings attached. Whether you ran contraband, dodged warrants, or simply refused to settle, movement kept you alive.",
-    skills: {
-      granted: ["Perception"],
-      choose: { count: 1, options: ["Stealth", "Athletics"] }
-    },
-    proficiencies: [
-      "Tools: Choose one (Fieldcraft Tools, Medical Tools)",
-      "Weapon/Vehicle: Choose one (Ground Vehicles, Industrial / Mechs)"
-    ],
-    feature: { name: "Nomad's Network", text: "You know the smuggling routes and hidden rest stops outside the city limits. You can secure safe passage or a temporary hideout with outlaw crews, drifters, and smugglers, provided you don't bring corporate security or the law down on their heads." },
-    contacts: "Choose two outlaw contacts, such as a driver, a fence, or a tunnel runner.",
-    hooks: [
-      "The place you can't return to, and the person waiting there anyway."
-    ],
-    personalItem: "A spent bullet, a broken shackle, or a cut-off ID tag kept as a reminder of what you escaped."
-  },
-  {
-    key: "rocker",
-    name: "Rocker",
-    blurb: "You learned how sound moves people. Small rooms, street corners, and improvised stages taught you how to pull a crowd together and aim them like a weapon or a shield. Even without an instrument in your hands, you still know how to make people listen.",
-    skills: {
-      granted: ["Persuasion"],
-      choose: { count: 1, options: ["Acrobatics", "Intuition"] }
-    },
-    proficiencies: [
-      "Tools: Choose one (Media Tools, Glamour Tools)",
-      "Weapon/Vehicle: Choose one (Simple Weapons, Sidearms)"
-    ],
-    feature: { name: "Backstage Pass", text: "You know the local underground music scene inside and out. You can secure entry to underground shows, raves, or private venue backrooms. Independent artists and their hardcore fans view you favorably and might hide you if you are running from authorities or corporate security." },
-    contacts: "Choose two scene contacts, such as a venue owner, a protest organizer, or a street photographer.",
-    hooks: [
-      "The song that started a riot, and the person who got blamed for it."
-    ],
-    personalItem: "A sticker-layered instrument case, a patched jacket, or a broken drumstick from your best show."
-  },
-  {
-    key: "spacer",
-    name: "Spacer",
-    blurb: "You learned how fragile everything is when there's nothing beneath your feet. Vacuum, microgravity, and long stretches of isolation teach habits that never fully go away. You learned to trust tethers, check seals twice, and fix things where failure means drifting forever.",
-    skills: {
-      granted: ["Engineering"],
-      choose: { count: 1, options: ["Perception", "Systems"] }
-    },
-    proficiencies: [
-      "Tools: Choose one (Engineering Tools, Fieldcraft Tools)",
-      "Weapon/Vehicle: Choose one (Starcraft, Aerial Vehicles)"
-    ],
-    feature: { name: "Dockside Fraternity", text: "You are part of the tight-knit community that keeps orbit running. Dockworkers, shuttle pilots, and orbital mechanics will generally offer you a drink and a place to lay low. You can freely access standard commercial launch pads and hangar bays without raising suspicion." },
-    contacts: "Choose two spacer contacts, such as a dockmaster, a tug pilot, or a salvage operator.",
-    hooks: [
-      "The salvage you brought home, and the quiet people who came asking for it."
-    ],
-    personalItem: "A mission patch, a chipped hull fragment, or a worn tether snap."
-  },
-  {
-    key: "spotlight-survivor",
-    name: "Spotlight Survivor",
-    blurb: "For a while, your face meant something. You learned how attention distorts reality, how praise becomes pressure, and how fast the crowd moves on. Even after the spotlight faded, you remember how to work it, and how dangerous it can be.",
-    skills: {
-      granted: ["Persuasion"],
-      choose: { count: 1, options: ["Deception", "Intuition"] }
-    },
-    proficiencies: [
-      "Tools: Choose one (Media Tools, Medical Tools)",
-      "Weapon/Vehicle: Choose one (Simple Weapons, Sidearms)"
-    ],
-    feature: { name: "Faded Star", text: "You still have a few loyal fans who remember your peak. Once per session, you can rely on a fan, paparazzi, or former admirer you run into on the street to grant you a minor favor, such as creating a distraction, offering a free ride, or letting you borrow a burner comm, just for the thrill of being near you." },
-    contacts: "Choose two fame-related contacts, such as a former agent, a devoted fan, or a gossip blogger.",
-    hooks: [
-      "The rumor that still follows you, and the person who benefits from it."
-    ],
-    personalItem: "A clipped headline, an archived feed capture, or a faded poster from the height of your fame."
-  },
-  {
-    key: "starhuffer",
-    name: "Starhuffer",
-    blurb: "You went looking for the real in the city's blank spaces. Rooftops, dead rails, little candle shrines, anywhere the sky can still reach you. You read the streetlights like false constellations. The city is loud, but you know where the veil thins and the stars come through.",
-    skills: {
-      granted: ["Awareness"],
-      choose: { count: 1, options: ["Esoterica", "Intuition"] }
-    },
-    proficiencies: [
-      "Tools: Choose one (Ritual Implements, Fieldcraft Tools)",
-      "Weapon/Vehicle: Choose one (Simple Weapons, Starcraft)"
-    ],
-    feature: { name: "Thin Places", text: "You have an innate sense of the city's spiritual architecture. You can easily locate the nearest rooftop shrine, dead zone, or quiet place where the Flow is calmest. Seekers, street mystics, and urban monks will offer you cryptic advice and safe harbor in these places." },
-    contacts: "Choose two contemplative or occult contacts, such as a mentor, a fellow student, or a shrine caretaker.",
-    hooks: [
-      "The ritual, practice, or discipline you swear is harmless, and the sign that it isn't."
-    ],
-    personalItem: "A worn bead string, a focus token, or a handmade talisman that brings you peace."
-  },
-  {
     key: "street-doc",
     name: "Street Doc",
     blurb: "You learned medicine where mistakes are immediate and forgiveness is rare. Back rooms, street clinics, and makeshift wards taught you triage over theory. You know how to work fast, improvise, and keep people alive with tools that were never meant for the job.",
@@ -348,43 +195,5 @@ EN.backgrounds = [
       "The clinic, crew, or ripper with your number, and the favor they'll demand."
     ],
     personalItem: "A stained manual, a sterile scalpel you never use, or an overlay full of hard-won surgical notes."
-  },
-  {
-    key: "wageslave",
-    name: "Wageslave",
-    blurb: "You worked inside the machine at the level nobody brags about. Tickets, queues, scripts, and training modules taught you how systems actually fail. You learned where processes slow down, who rubber-stamps what, and how a single form can ruin someone's week.",
-    skills: {
-      granted: ["Systems"],
-      choose: { count: 1, options: ["Investigation", "Persuasion"] }
-    },
-    proficiencies: [
-      "Tools: Choose one (Bureaucracy Tools, Investigation Tools)",
-      "Weapon/Vehicle: Choose one (Simple Weapons, Ground Vehicles)"
-    ],
-    feature: { name: "Red Tape Navigator", text: "You know exactly how municipal and corporate bureaucracy works. You know the exact forms to file, lines to stand in, and clerks to bribe to get public records, zoning permits, or architectural blueprints without drawing attention to yourself or leaving a digital footprint." },
-    contacts: "Choose two office contacts, such as a coworker, a supervisor, or an IT tech who knows shortcuts.",
-    hooks: [
-      "The shortcut you discovered in the system, and the day you used it for revenge or mercy."
-    ],
-    personalItem: "A lanyard of old badges and access cards that should have been deactivated years ago, or a 'World's Okayest Employee' desk plaque."
-  },
-  {
-    key: "whitecoat",
-    name: "Whitecoat",
-    blurb: "You lived in labs where theory becomes reality. You learned how fragile innovation is, how quickly ethics get rewritten, and how often credit disappears into team effort. You still think in models and failure cases, because you know what happens when no one does.",
-    skills: {
-      granted: ["Engineering"],
-      choose: { count: 1, options: ["Systems", "Investigation"] }
-    },
-    proficiencies: [
-      "Tools: Choose one (Engineering Tools, Investigation Tools)",
-      "Weapon/Vehicle: Choose one (Simple Weapons, Ground Vehicles)"
-    ],
-    feature: { name: "Academic Privilege", text: "You speak the language of corporate labs and university research. You can gain free access to public university archives, corporate libraries, and academic databases. Other scientists, technicians, and researchers will often talk shop with you, occasionally revealing non-classified project details they wouldn't share with the press." },
-    contacts: "Choose two research contacts, such as a former supervisor, a colleague who left for black-market work, or a scientist who quietly doubts their employer.",
-    hooks: [
-      "The prototype you helped build, and the first time you realized it wasn't safe."
-    ],
-    personalItem: "A fragment of an experimental chip, a cracked safety lens, or a core from a prototype that never shipped."
   }
 ];

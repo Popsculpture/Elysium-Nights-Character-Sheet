@@ -36,8 +36,6 @@ EN.classPicker = {
       blurb: "Conduits for the Flow. They tune their bodies to the current and weave it into Invocations that bend gravity, heat and space. The Harmonist (Mystique), The Sourcerer (Tech).",
       subs: {
         harmonist: { flowAttribute: "Mystique" },
-        kensei: { flowAttribute: "Body" },
-        icon: { flowAttribute: "Presence" },
         sourcerer: { flowAttribute: "Tech" }
       }
     },

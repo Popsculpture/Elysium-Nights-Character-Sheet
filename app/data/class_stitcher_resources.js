@@ -286,34 +286,6 @@ EN.classes.stitcher = {
           text: "Once per Long Rest, as an **Action**, force one target within 12 spaces to make a Body Save (DC = 8 + your Tech Modifier + your Rig's Output Bonus).\n\n• **On a failure:** The target takes 8d10 Toxic damage and suffers severe necrosis. For 1 minute, it can't regain Vitality or Wounds and takes an additional 2d10 Toxic damage at the start of each of its turns.\n• **On a success:** It takes half the initial damage and suffers no ongoing effects.\n\nIf a target dies while under this necrosis, its body bursts, dealing 4d6 Acid damage to all other enemies within 2 spaces."
         }
       ]
-    },
-    {
-      key: "the_ripper",
-      name: "The Ripper",
-      description: "You're a visionary cybernetic surgeon, operating in the bleeding-edge space where flesh meets chrome. From sterile corporate clinics to blood-stained underground chop shops, you don't just heal people; you upgrade them. You treat the nervous system like hackable hardware, tuning implants, salvaging scrap from the dead, and bypassing biological limiters to turn your crew into calibrated weapons.",
-      features: [
-        {
-          level: 1,
-          name: "Black Market Butcher",
-          grants: { tools: ["Engineering Tools"] },
-          text: "You gain Proficiency with Engineering Tools. If you spend 10 minutes extracting tech from a defeated enemy with cybernetics or the Machine Physiology trait, you harvest Cyber-Scrap. You also harvest organic salvage from defeated biological enemies (adrenal tissue, bio-gel), which is stored and used identically to Cyber-Scrap (including for Rig Fuel and Pawn It). You can hold Cyber-Scrap up to your Tech Modifier, and use it in two ways:\n\n• **Rig Fuel:** As an **Action**, break down a piece of Cyber-Scrap into your Triage Rig to regain 1 spent Triage.\n• **Pawn It:** Sell Cyber-Scrap to fixers, merchants, or underground clinics for a modest payout (the exact \u{1D4A2} value is set by the GM based on the tier of the enemy it was harvested from).\n\n**Chop Rig:** Your Triage Rig is a Chop Rig. Surgical arms on one side, a hopper on the other. It holds a body open and it eats what comes out. Harvesting Cyber-Scrap takes 1 minute instead of 10, you can hold Cyber-Scrap up to **twice your Tech Modifier**, and as an **Action** you can spend 1 Cyber-Scrap to apply an Aftermarket Hot-Wire to a willing ally within your melee reach. That tuning lasts until the end of the encounter and doesn't count against your usual number of Hot-Wires."
-        },
-        {
-          level: 3,
-          name: "Hot-Wired Implants",
-          text: "Whenever you finish a Short or Long Rest, you can apply an Aftermarket Hot-Wire to a number of willing allies up to your Tech Modifier (minimum 1). An ally must possess cybernetics or the Machine Physiology trait, and the tuning must match their installed hardware (for example, you can't perform an Optical Overclock on organic eyes). The Machine Physiology trait meets every hardware requirement. An ally can have only one Hot-Wire at a time; it stays active until you finish your next Short or Long Rest, when you must recalibrate it or it powers down. Choose from the following tunings:\n\n• **Optical Overclock** *(requires Cyberoptics):* They ignore the defensive penalties of partial Cover when making ranged attacks, and they gain Darkvision up to 12 spaces.\n• **Dermal Reinforcement** *(requires Integument cyberware):* They gain a +1 bonus to Defense. The first time they take Wound damage during an encounter, the incoming damage is reduced by an amount equal to your Caliber.\n• **Pneumatic Bypass** *(requires Arms or Legs cyberware):* Their unarmed strike damage die increases by one size, and they gain Edge on in-combat Athletics checks to grapple, shove, or break objects.\n• **Synaptic Accelerator** *(requires Neural cyberware):* Their Speed increases by 1, and they gain a +2 bonus to Initiative.\n• **Recoil Compensator** *(requires Integument or Arms cyberware):* They ignore the penalties of wielding weapons with the Heavy or High Recoil trait, and they gain Edge on Body Saves against being knocked Prone.\n• **Adrenal Tuning** *(requires a living, organic ally; can't be applied to a fully synthetic body such as a Clanker):* Their Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they gain Vigor equal to your Caliber."
-        },
-        {
-          level: 7,
-          name: "Combat Overclock",
-          text: "As a **Swift Action**, spend 2 Triage to jam an overclocking cocktail into yourself or a willing ally within your melee reach. Until the start of your next turn, the target's Speed is doubled, and whenever they take the Attack action they may make one additional attack as part of it. When the effect ends, the target gains the Drowsy condition and can't be affected by Combat Overclock again until they finish a Short or Long Rest."
-        },
-        {
-          level: 10,
-          name: "Cyber-Rejection",
-          text: "Once per Long Rest, as an **Action**, force an enemy within 12 spaces to make a Body Save (DC = 8 + your Tech Modifier + your Rig's Output Bonus).\n\n• **On a failure:** For 1 minute, their Speed is halved, they suffer Snag on all attack rolls and physical saving throws, and they take 4d10 Toxic damage at the start of each of their turns. They may repeat the Save at the end of each of their turns to end the effect.\n• **On a success:** They take half the initial 4d10 damage and suffer no ongoing effects."
-        }
-      ]
     }
   ],
 
@@ -328,41 +300,7 @@ EN.classes.stitcher = {
         name: p.name + (p.action ? " (" + p.action + ")" : ""),
         text: p.text
       };
-    }),
-    // The Ripper's Hot-Wire tunings in the Freelancer's Companion's (EN1101) words. The Machine
-    // Physiology trait meets every hardware requirement below.
-    aftermarketTunings: [
-      {
-        name: "Optical Overclock",
-        requires: "Cyberoptics",
-        text: "They ignore the defensive penalties of partial Cover when making ranged attacks, and they gain Darkvision up to 12 spaces."
-      },
-      {
-        name: "Dermal Reinforcement",
-        requires: "Integument cyberware",
-        text: "They gain a +1 bonus to Defense. The first time they take Wound damage during an encounter, the incoming damage is reduced by an amount equal to your Caliber."
-      },
-      {
-        name: "Pneumatic Bypass",
-        requires: "Arms or Legs cyberware",
-        text: "Their unarmed strike damage die increases by one size, and they gain Edge on in-combat Athletics checks to grapple, shove, or break objects."
-      },
-      {
-        name: "Synaptic Accelerator",
-        requires: "Neural cyberware",
-        text: "Their Speed increases by 1, and they gain a +2 bonus to Initiative."
-      },
-      {
-        name: "Recoil Compensator",
-        requires: "Integument or Arms cyberware",
-        text: "They ignore the penalties of wielding weapons with the Heavy or High Recoil trait, and they gain Edge on Body Saves against being knocked Prone."
-      },
-      {
-        name: "Adrenal Tuning",
-        requires: "a living, organic ally; can't be applied to a fully synthetic body such as a Clanker",
-        text: "Their Speed increases by 1, they gain a +1 bonus to Body Saves, and the first time each encounter they drop below half their maximum Vitality, they gain Vigor equal to your Caliber."
-      }
-    ]
+    })
   }
 };
 

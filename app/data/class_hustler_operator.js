@@ -209,34 +209,6 @@ EN.classes.hustler = {
           text: "Once per Long Rest, as an **Action**, deliver a devastating lie (a forged termination order, proof a boss sold them out, the \"activation phrase\" of a sleeper program that doesn't exist). Choose a number of enemies up to your Presence Modifier within 12 spaces who can hear and understand you. They must make a Presence Save (DC = 8 + your Presence Modifier + your Caliber).\n\n• **On a failure:** Their morale collapses. The GM chooses how they break: they drop their weapons and flee the encounter, or they turn on their own side for the rest of the encounter.\n• **On a success:** They are Confused until the end of their next turn."
         }
       ]
-    },
-    {
-      key: "the_fixer",
-      name: "The Fixer",
-      description: "You're the underworld's shot caller. You make sure your crew never runs out of luck, ammo, or options by working a vast network of favors, debts, and street-level operatives. You don't just know a guy; you own the guy, and you're always ready to collect.",
-      features: [
-        {
-          level: 1,
-          name: "Street Broker",
-          grants: { tools: ["Investigation Tools"] },
-          text: "You gain Proficiency with Investigation Tools and +1 Edge Die on all out-of-combat Dice Pool checks made to locate restricted gear, secure black-market Nexus Token exchanges, or find a safehouse. By spending one minute examining a weapon, vehicle, or piece of cybertech, you determine its exact black-market value, its origin (manufacturer or previous owner's faction), and whether it is counterfeit, bugged with a tracker, or malfunctioning."
-        },
-        {
-          level: 3,
-          name: "The Fix Is In",
-          text: "As an **Impulse Action** when an ally within 6 spaces takes damage from an attack, spend 1 Leverage to cash in a micro-favor (a bribed grid worker cutting the lights, a street kid dropping an obstacle). Reduce the incoming damage by 1d6 + your Presence Modifier + your Caliber. If this reduces the damage to 0, the ally may immediately move up to 2 spaces without provoking Opportunity Attacks."
-        },
-        {
-          level: 7,
-          name: "Off-the-Books Asset",
-          text: "Once per Encounter, as an **Action**, spend 2 Leverage to ping a heavy hitter on standby. Target an Area 2 you can see within 24 spaces. All enemies in the area must make an Agility Save (DC = 8 + your Presence Modifier + your Caliber). On a failure, they take 3d8 + your Presence Modifier Ballistic or Energy damage (your choice) and are knocked Prone. On a success, they take half damage and aren't knocked Prone."
-        },
-        {
-          level: 10,
-          name: "Corner the Market",
-          text: "Once per Long Rest, when you roll Initiative, choose a number of enemies up to your Presence Modifier. Those enemies begin the encounter with their logistics compromised:\n\n• **Bad Ammo/Corrupted Cybernetics:** They must spend a **Swift Action** on their first turn clearing a weapon jam or rebooting before they can attack.\n• **Tampered Gear:** They can't use consumable items, explosives, or healing tech for the encounter.\n\n**The Setup:** You start the encounter with 2 temporary Leverage. This can exceed your normal maximum, but it must be spent before the end of the first round or it is lost."
-        }
-      ]
     }
   ],
   extra: {
@@ -450,34 +422,6 @@ EN.classes.operator = {
           name: "The Killing Floor",
           action: "Action",
           text: "Once per Long Rest, as an **Action**, declare an Area 20 you can see as your kill zone for 1 minute. Any enemy that moves, attacks, or shapes an Invocation within the area triggers an Overwatch shot from you, provided you have Line of Sight. You may take an unlimited number of **Impulse Actions** to make these shots, but you can fire at each enemy only once per round. You can't use this feature while benefiting from Total Cover, though you may still benefit from Half or Three-Quarter Cover."
-        }
-      ]
-    },
-    {
-      key: "the_headhunter",
-      name: "The Headhunter",
-      description: "You track people through a city built to lose them in. When a high-value target runs, you run them down: one enemy isolated, every exit closed behind them, brought in dead or alive. Your prey stops thinking of you as a mercenary somewhere around the third closed door. After that, you're just the thing that's coming.",
-      features: [
-        {
-          level: 1,
-          name: "Prey Drive",
-          grants: { skills: ["Investigation"] },
-          text: "You gain Proficiency in the Investigation skill, and you permanently upgrade your Focus Fire maneuver. When you spend 1 Discipline to mark a target with Focus Fire, the tracking benefits last 1 full minute (the Edge from Focus Fire still applies only to the first attack, made by you or an Ally). For that minute, the target can't benefit from the Hidden or Invisible conditions against you, and you always know its exact location while it stays within 24 spaces."
-        },
-        {
-          level: 3,
-          name: "Disarming Precision",
-          text: "Whenever you hit an enemy with a weapon attack, you may spend 1 Discipline. The target must make a Body or Agility Save, its choice (DC = 8 + your Wits Modifier + your Caliber). On a failure, they drop one weapon or object they are holding. If they try to pick it up before the end of their next turn, you may immediately fire a single retaliatory shot at them as an **Impulse Action**."
-        },
-        {
-          level: 7,
-          name: "Cornered Prey",
-          text: "As an **Action**, spend 2 Discipline to unleash a sequence of shots or strikes against an enemy within your weapon's range, ignoring the Defense bonuses from Half or Three-Quarter Cover. The target must make an Agility Save (DC = 8 + your Wits Modifier + your Caliber).\n\n• **On a failure:** They take 3d6 damage of one type the weapon normally deals (your choice if it deals more than one) and are Staggered until the end of your next turn. If their cover is Average or weaker (standard doors, drywall, shipping crates), it is instantly reduced to 0 Integrity. If their cover is Heavy, Fortified, or Hardened, it stays intact, but they still take the damage and condition.\n• **On a success:** They take half damage, aren't Staggered, and their cover takes no damage."
-        },
-        {
-          level: 10,
-          name: "Dead or Alive",
-          text: "Once per Long Rest, as an **Action**, declare an execution order on a target within 12 spaces. For 1 minute, your weapon attacks against it go straight past whatever is keeping it upright.\n\n**Systemic Trauma:** Half of all damage you deal to the target (rounded up) is dealt as direct Wound damage, reducing its maximum Vitality and forcing the standard Body Save against Fatigue and crippling conditions.\n\n**Precision Targeting:** Whenever you hit the target with a weapon attack, you may spend 2 Discipline to apply one effect:\n\n• **Dead (Arterial Strike):** Inflict 2 stacks of Bleeding on the target.\n• **Alive (Tendon Shot):** The target must make a Body Save (DC = 8 + your Wits Modifier + your Caliber). On a failure, it is knocked Prone and its Speed is reduced to 0; it can't stand or walk until it receives medical attention or Flow healing.\n\nIf this assault reduces the target to 50 percent or less of its total Wounds, it is knocked Unconscious and stabilized, letting you collect the bounty dead or alive."
         }
       ]
     }

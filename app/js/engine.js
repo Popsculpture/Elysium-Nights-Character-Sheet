@@ -358,9 +358,9 @@ EN.engine = (function () {
     });
     return out;
   }
-  /* Talents whose text grants Proficiency with one named category. Street Chef (the Freelancer's
-     Companion): "You gain Proficiency with Culinary Tools". A free "proficient" floor, like the
-     picks below, so TP already spent on that category is returned. */
+  /* Talents whose text grants Proficiency with one named category: Street Chef (a Freelancer's
+     Companion Talent) grants Culinary Tools. A free "proficient" floor, like the picks below, so
+     TP already spent on that category is returned. */
   var TALENT_GEAR_GRANT = { "street-chef": { tools: ["Culinary Tools"] } };
   /* Talents whose text grants Proficiency with one category of the player's choice. Asphalt Rider:
      "You gain Proficiency with one vehicle category of your choice." Junk Tinkerer: "Choose one
@@ -766,7 +766,7 @@ EN.engine = (function () {
     "Ironhide Tusks":        { dr: 1 },
     "Slipstream Runner":     { speed: 2 },
     "Calibrated Gait":       { speed: 1 },
-    // Freelancer's Companion: "You can never be Surprised, and you gain Edge on Initiative rolls."
+    // Freelancer's Companion: Static Premonition's Surprise immunity and Initiative Edge.
     // (It used to add Caliber to Initiative; initCaliber stays in the reader for no row now.)
     "Static Premonition":    { initEdge: true, condImmune: ["Surprised"] },
     "Tuned Synapses":        { initEdge: true, speedFirstRound: 2 },
@@ -796,7 +796,7 @@ EN.engine = (function () {
     "Canopy Reach":          { unarmedReach: 1, meleeReach: 1 },
     // standing damage-type grants, read by damageResistances()
     "Radiation Calluses":   { resist: ["Radiation"] },
-    // Freelancer's Companion: Hazard Seal is now "Resistance to Acid and Toxic damage"
+    // Freelancer's Companion: Hazard Seal's two resistances
     "Hazard Seal":           { resist: ["Acid", "Toxic"] },
     // condition immunity, the axis damageResistances deliberately does not carry
     "Timber Fortitude":      { condImmune: ["Frightened"] },
@@ -4191,8 +4191,7 @@ EN.engine = (function () {
 
        `immuneCaustic` is deliberately NOT in this gate. The reasoning above is about a
        chemsuit worn OVER the plate, which is `blocksCaustic`. Hazard Seal is the other
-       kind: a Durabody sealing its own internal systems ("prevents internal flooding and
-       chemical burns"). It stops the Acid reaching the CHARACTER and does nothing for the
+       kind: a Durabody sealing its own internal systems (see the Hazard Seal feature). It stops the Acid reaching the CHARACTER and does nothing for the
        suit strapped on the outside, so folding it in here let a Durabody's unsealed armor
        sit in the wash forever without losing its DR, and made the panel claim the trait was
        "worn over" the armor. The book degrades unsealed gear regardless of who is wearing
@@ -4500,8 +4499,8 @@ EN.engine = (function () {
     var unarmedStrike = resolveUnarmedStrike(ch);
     var defLoadout = defensiveLoadout(ch);
     var defense = defenseBase + attributes[defenseAttr].mod + (defLoadout.shieldDef || 0);
-    /* Open Architecture, Calibrated Gait + Cyberlegs or Spring Joints: "The implant grants an
-       additional +1 Speed beyond its normal benefits." The only one of the seven numeric
+    /* Open Architecture, Calibrated Gait + Cyberlegs or Spring Joints: the Springstep
+       Integration's Speed clause. The only one of the seven numeric
        clauses with a channel to land in; see the note beside oaSaved for why the others do
        not. Read off the generic pairing list rather than a bespoke test, so a data change to
        the combo (a third qualifying implant, say) needs no code here. */
@@ -4532,8 +4531,8 @@ EN.engine = (function () {
     // the Upgrade counts only while the Talent itself is held (as Parallel Processing checks): a
     // slot turned to +2 ATTRIBUTES leaves an orphaned Upgrade record behind
     if (talentUpgradeHeld(ch, "asphalt-rider")) speedFeatures.push({ label: "Asphalt Rider (Upgrade)", val: 2 });
-    /* Blitz Logic: "Your Speed increases by 2." Speed Freak: "Your Speed increases by 2", and its
-       Upgrade "Your Speed increases by an additional 2 (4 total)". Freelancer's Companion; the book
+    /* Blitz Logic and Speed Freak (and Speed Freak's Upgrade): Freelancer's Companion Talents
+       that raise Speed by a flat amount (see their text in the pack); the book
        prints no armor, Load or other condition on either, so they are flat rows (author's ruling,
        28 October 2026). */
     if (talentHeld(ch, "blitz-logic")) speedFeatures.push({ label: "Blitz Logic", val: 2 });
