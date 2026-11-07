@@ -67,7 +67,9 @@ window.EN = window.EN || {};
      would say its own name twice, so a note that opens with its heading loses that opening. */
   function afterLabel(text, label) {
     text = String(text || "");
-    return text.indexOf(label + ":") === 0 ? text.slice(label.length + 1).trim() : text;
+    if (text.indexOf(label + ":") !== 0) return text;
+    text = text.slice(label.length + 1).trim();
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
   function plus(n) { return n > 0 ? "+" + n : String(n); }
   /* True when this desktop leaves a Toolkit block out: the Freelancer desktop, while the
@@ -122,8 +124,9 @@ window.EN = window.EN || {};
         // an optional rule (Settings): off, Firing Modes ends at the mode list
         var jamNote = g.firingModesNote && (!EN.launch || !EN.launch.rule || EN.launch.rule("weaponJam")) ? g.firingModesNote : "";
         var jam = jamNote ? K.linkify(el("p"), jamNote, { conditions: true }) : null;
-        kids.push(K.entry("firing-modes", "Firing Modes", [el("h4", { text: "Firing Modes" }), line, jam],
-          { tag: "div.feature", text: modes.join(", ") + (jamNote ? ". " + jamNote : "") }));
+        var modesIntro = g.firingModesIntro ? K.linkify(el("p"), g.firingModesIntro, { conditions: true }) : null;
+        kids.push(K.entry("firing-modes", "Firing Modes", [el("h4", { text: "Firing Modes" }), modesIntro, line, jam],
+          { tag: "div.feature", text: (g.firingModesIntro ? g.firingModesIntro + " " : "") + modes.join(", ") + (jamNote ? ". " + jamNote : "") }));
       }
       var am = g.ammo;
       if (am) {
@@ -131,7 +134,8 @@ window.EN = window.EN || {};
         if (am.trackingNote) kids.push(K.ruleBlock("Tracking Ammunition", am.trackingNote));
         var gi = am.groupIntros || {};
         [["Plentiful", "Plentiful Ammo"], ["Counted", "Counted Ammo"], ["Specialty", "Specialty Ammo"], ["Launcher Shell", "Launcher Shells"]].forEach(function (p) {
-          if (gi[p[0]]) kids.push(K.ruleBlock(p[1], gi[p[0]]));
+          // the Specialty line is the market's too; the spending rules below it are the Codex's
+          if (gi[p[0]]) kids.push(K.ruleBlock(p[1], gi[p[0]] + (p[0] === "Specialty" && am.specialtyNote ? "\n" + am.specialtyNote : "")));
         });
         // the Handbook prints the Mystech Ammunition section (PHB 12898, with Backlash), so it shows on
         // both desktops (r7, ruling 11); the Mystech rounds themselves stay held
@@ -169,6 +173,7 @@ window.EN = window.EN || {};
         if ((wp.slots || []).length) {
           kids.push(K.entry("weapon-slots", "Weapon Slots", [
             el("h4", { text: "Weapon Slots" }),
+            (wp.rules || {}).slots ? K.proseBlock(wp.rules.slots) : null,
             K.refTable(["Slot", "Firearm", "Melee", "Bow"], wp.slots.map(function (s) {
               return [s.name + (s.capacity ? " (holds " + s.capacity + ")" : ""), s.firearm || "", s.melee || "", s.bow || ""];
             }), [0])
@@ -181,6 +186,7 @@ window.EN = window.EN || {};
         if (Object.keys(byGroup).length || profiles.length) {
           kids.push(K.entry("slot-count", "Slot Count", [
             el("h4", { text: "Slot Count" }),
+            (wp.rules || {}).slotCount ? K.proseBlock(wp.rules.slotCount) : null,
             Object.keys(byGroup).length ? K.refTable(["Weapon Type", "Slots"], Object.keys(byGroup).map(function (k) { return [k, String(byGroup[k])]; }), [1]) : null,
             profiles.length ? K.refTable(["Frame Profile", "Slots"], profiles.map(function (p) { return [p.name, String(p.count)]; }), [1]) : null
           ], { tag: "div.feature" }));
@@ -196,6 +202,7 @@ window.EN = window.EN || {};
         if (r.dieStep) kids.push(K.ruleBlock(r.dieStepHead || "Oomph +1 from hardware", r.dieStep));
         if (r.stabilized) kids.push(K.ruleBlock("Stabilized Sources", r.stabilized));
         if (r.flatBonus) kids.push(K.ruleBlock("Flat Bonuses", r.flatBonus));
+        if (r.exclusions) kids.push(K.ruleBlock("Mutual Exclusions", r.exclusions));
       }
       if (EN.armorMods) {
         kids.push(K.subTitle("Armor Mods"));
@@ -245,12 +252,14 @@ window.EN = window.EN || {};
       var tiers = ((EN.rules || {}).profTiers) || {};
       var snag = C.snagForTier || {};
       kids.push(K.subTitle("Projects"));
+      if (r.procedure) kids.push(K.ruleBlock("Project Procedure", r.procedure));
       /* Difficulty, Examples and the rest of the Toolkit's Bench Work are GM Toolkit text: Admin
          desktop only, no GM label. */
       var gmCols = !!(ctx && ctx.portal === "admin");
       if ((C.tiers || []).length) {
         kids.push(K.entry("project-tiers", "Project Tiers", [
           el("h4", { text: "Project Tiers" }),
+          r.tiers ? K.proseBlock(r.tiers) : null,
           K.refTable(["Tier", "Target Progress", "Required Skill Tier", "Base Snag Dice", "Typical Time Segment"].concat(gmCols ? ["Difficulty", "Examples"] : []), C.tiers.map(function (t) {
             // the book's printed cells ("10+", "Expertise or Mastery"); the tier name is the fallback
             return [t.name, t.targetText != null ? t.targetText : (t.target == null ? "GM Defined" : String(t.target)),
@@ -265,6 +274,7 @@ window.EN = window.EN || {};
         var bands = marginBands(), hasBands = Object.keys(bands).length > 0;
         kids.push(K.entry("work-interval-outcomes", "Work Interval Outcomes", [
           el("h4", { text: "Work Interval Outcomes" }),
+          r.outcomes ? K.proseBlock(r.outcomes) : null,
           K.refTable(hasBands ? ["Pool Margin", "Outcome", "Progress"] : ["Outcome", "Progress"], C.outcomes.map(function (o) {
             var row = [o.name, o.note || String(o.progress)];
             return hasBands ? [bands[o.key] || ""].concat(row) : row;
@@ -280,6 +290,7 @@ window.EN = window.EN || {};
         ], { tag: "div.feature" }));
       }
       if (r.untrained) kids.push(K.ruleBlock("Untrained Crafters", r.untrained));
+      if (r.focus) kids.push(K.ruleBlock("Skill Focus and Specialization", r.focus));
       if ((C.kinds || []).length) {
         kids.push(K.subTitle("Kinds of Project"));
         C.kinds.forEach(function (k) { kids.push(K.ruleBlock(k.name, k.desc)); });
@@ -288,6 +299,7 @@ window.EN = window.EN || {};
       if ((C.craftSkills || []).length) {
         kids.push(K.entry("craft-skills", "Craft Skills", [
           el("h4", { text: "Craft Skills" }),
+          C.craftSkillsNote ? K.proseBlock(C.craftSkillsNote) : null,
           el("p", { text: C.craftSkills.join(", ") }),
           Object.keys(kc).length ? K.refTable(["Tool Category", "Serves"], Object.keys(kc).map(function (k) { return [k, kc[k]]; }), [0]) : null
         ], { tag: "div.feature" }));
@@ -354,8 +366,10 @@ window.EN = window.EN || {};
       var q = W.qualityTiers || {};
       if (Object.keys(q).length) {
         kids.push(K.subTitle("Quality Tiers"));
+        if (W.qualityIntro) kids.push(K.proseBlock(W.qualityIntro));
         // Blackware and Prototype are Toolkit tiers; the Admin desktop keeps all four
         Object.keys(q).forEach(function (k) { if (!toolkitOff(ctx, "cyberTier", k)) kids.push(K.ruleBlock(k, q[k])); });
+        if (W.enhancementNote) kids.push(K.ruleBlock("Enhancement Bonuses", W.enhancementNote));
       }
       return kids;
     } };

@@ -88,6 +88,7 @@ EN.crafting = {
   ],
 
   /* primary craft skills; each skill's Attribute and bonus are read live from the character */
+  craftSkillsNote: "Every Project has one primary Skill and one or more kits. The Skill follows the work: Engineering for mechanical gear, Systems for electronics and software, Medtech for drugs and implants, Esoterica or Awareness for Flow work.",
   craftSkills: ["Engineering", "Systems", "Medtech", "Investigation", "Esoterica", "Awareness"],
 
   /* crafting tool categories to the skill they serve (drives the Kits readout) */
@@ -101,9 +102,9 @@ EN.crafting = {
   },
 
   rules: {
-    emergency: "The d20 Method is for emergency fixes under pressure: one roll of d20 plus the Skill, and the fix holds for the scene. It rarely creates a permanent upgrade.",
-    materials: "Building from scratch, raw materials and components cost half the item's market price. Salvaging parts from similar broken gear can reduce or eliminate that cost.",
-    kits: "A kit's Basic Use is open to anyone. Its Proficient Use needs the matching Tool Proficiency; without it you own the kit but not its edge. Without suitable kits, a demanding Project may need more Progress, take Snag Dice, or be impossible until the right tools, parts, or facilities are secured.",
+    emergency: "The d20 Method is for emergency fixes under pressure: one d20 roll against a DC the GM sets by how improvised it is, with the relevant Skill and Attribute plus your Skill Proficiency Bonus, Caliber from a relevant Skill Focus, and Edge or an expanded critical range from a relevant Specialization or kit. Success holds for the scene, or long enough to matter. Failure loses time or worsens the issue, and the GM may apply Snag to future attempts until it is handled as a Project.",
+    materials: "Building from scratch, raw materials and components cost half the item's market price. Salvaging parts from similar broken gear can reduce or eliminate that cost. Hard-to-get parts or schematics can take a scene or a small Project of their own.",
+    kits: "A kit's Basic Use is open to anyone. Its Proficient Use needs the matching Tool Proficiency. Without suitable kits, a demanding Project may need more Progress, take Snag Dice, or be impossible until the right tools, parts, or facilities are secured.",
     oneProjectPerMod: "Each modification is its own Project. You cannot batch several upgrades into a single roll.",
     overEngineering: "Over-Engineering pushes an item one Part past its listed capacity. The work becomes a Prototype-tier Project, and the finished item carries a Mandatory Flaw: a permanent quirk, a heavy maintenance burden, or a glaringly obvious visual tell. It never adds a mount the frame lacks. One extra Part is the ceiling.",
     /* These two were typed inline on the Fabrication bench (its intro line and its UNTRAINED
@@ -114,6 +115,12 @@ EN.crafting = {
        that the app shows a warning below it and does not refuse the work; the Untrained Dice Pool
        effect (PHB Proficiency Tiers: add +2 Snag Dice to the pool) applies to every Work Interval. */
     untrained: "Each Project tier lists a Required Skill Tier. Below it, the bench warns you and still lets you work. Untrained, every Work Interval adds +2 Snag Dice.",
+    /* PHB Crafting and Projects: the lead lines of the two table entries, the Project Procedure, and
+       Skill Focus and Specialization in Projects. The Codex reads these; the bench does not. */
+    tiers: "A Project's tier sets its Target Progress, the Skill tier it requires, and its typical time.",
+    outcomes: "Each Work Interval's Dice Pool margin sets the Progress it earns.",
+    procedure: "Crafting runs on Projects, for what no shop stocks. Most Projects use the Dice Pool Method during Downtime.\n- Define the Project: agree with the GM on the work, its tier, the primary Skill and Attribute, kits and materials, and tags such as illegal, unstable, or Flow-bound. The GM sets the Work Interval and the Difficulty of each interval.\n- Secure plans and materials (see Materials).\n- Roll Work Intervals until Progress is met.\n- Finish: when Progress meets or exceeds Target Progress, the Project is complete. A run of strong results can earn the item a small quality edge; weak ones leave quirks.",
+    focus: "On emergency fixes, a relevant Skill Focus adds your Caliber and a relevant Specialization expands your critical threat range by 1. On Work Interval rolls, they add Edge Dice equal to your Caliber and +2 Edge Dice, respectively.",
     /* PHB Crafting and Projects, Flow-Bound Crafting, word for word */
     flowBound: "Tuning resonance, stabilizing an effect into a tool, repairing Mystech, or containing an entity or anomaly rather than destroying it are Flow-bound Projects, often on Esoterica or Awareness, sometimes with Engineering. Advanced and Prototype Flow items usually require Expertise or Mastery, and failures can cause backlash, echoes, contamination, or a new anomaly."
   },
@@ -238,12 +245,12 @@ EN.crafting = {
     rebuildCost: function (it) { return EN.crafting.materialCost(it); },
     rebuildTier: "standard",
     // the first two were typed inline on the Impact Table's Armor Integrity panel
-    intro: "Damage lowers a suit's DR; repair raises it back toward the printed value and never past it.",
+    intro: "Damage lowers a suit's DR; repair during Downtime raises it back toward the printed value and never past it.",
     leasedText: "A leased suit is priced off what it is worth, its Buyout, not off the deposit.",
-    shopText: "Hand it to a shop. One Downtime period and 10 percent of the suit's listed price per point of DR restored. No roll.",
-    benchText: "Do it yourself. A Simple Project using Engineering, parts at 5 percent of the listed price per point. A Portable Fabrication Rig prints the plate from stock, so the parts cost nothing.",
+    shopText: "Hand it to a shop. One Downtime period and 10 percent of the suit's listed price per point of DR restored. No roll and no risk.",
+    benchText: "Do it yourself with Engineering Tools. A Simple Project using Engineering, parts at 5 percent of the listed price per point. A Portable Fabrication Rig with stock on hand makes the parts free, and salvage cuts material costs as usual.",
     breachedText: "A suit at 0 DR is past repair. Rebuilding it is a Standard Project at full parts cost.",
-    qualityText: "Clean run: the plate seats true, and the next point of DR this suit would lose is absorbed for free."
+    qualityText: "Clean repair run: the next point of DR this suit would lose is absorbed for free."
   },
 
   /* ---- derivation: map a catalog item to a craft Skill, a Project tier, a cost ---- */

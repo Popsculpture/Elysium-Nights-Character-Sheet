@@ -265,27 +265,32 @@ EN.weaponParts = {
 
   /* ---- stacking + over-engineering rules (surfaced as bench guidance) ---- */
   rules: {
-    /* PHB Weapon Customization, under its heading "The Utility Exception", word for word (23 Oct 2026
+    /* PHB Weapon Customization, under its heading "The Utility Exception", trimmed (23 Oct 2026
        handoff, section 7). The Codex prints it as a block after the Slot Count entry. The install
        count in inventory.js already sums both Utility Parts against the Slot Count. */
-    utility: "Every slot holds one Part. Utility holds two, and both count against the weapon's Slot Count. A duty pistol can run a Weapon Light and a Suppressor at once. A katana can wear a Quick-Release Tether and an Anti-Theft Module.",
+    utility: "Every slot holds one Part. Utility holds two, and both count against the weapon's Slot Count.",
     stabilized: "Stabilized sources do not stack: multiple Parts negate the High Recoil Snag only once.",
-    /* The book's Stacking Rules, third paragraph, word for word (PHB Weapon Customization). The
+    /* The book's Stacking Rules, third paragraph, trimmed (PHB Weapon Customization). The
        Codex prints it under Stabilized Sources. */
-    flatBonus: "Flat bonuses do not stack. If a Target Spotter and a Low-Light Sensor Suite both add +5 to Passive Perception, take the highest number and drop the rest.",
+    flatBonus: "Flat bonuses do not stack: take the highest number and drop the rest.",
     /* PHB Weapon Customization, Install, Acquisition, and Time: the Fabrication line and the
-       high-scrutiny commission paragraph (under Legality), word for word. Each book run-in heading
+       high-scrutiny commission paragraph (under Legality), trimmed. Each book run-in heading
        ("Fabrication:", "High-scrutiny commissions.") is the title of its Codex block, so the text
        starts after it. The install line below paraphrases the other two ways in; these two are what
        it left out. */
-    fabrication: "Legwork. Complex, built-to-order work that requires reaching out through a fixer or face. Resolve it as a crafting Project on the Dice Pool Method. This uses the exact same structure required for repairing a drone or cleansing an anomaly. It can be a serious expense or an adventure arc on its own. Most Restricted and all Contraband Parts require this kind of sweat to acquire.",
+    fabrication: "Fabrication is complex, built-to-order work that requires reaching out through a fixer or face. Resolve it as a crafting Project on the Dice Pool Method. Most Restricted and all Contraband Parts require it.\n\nSignature conversion: Fabrication can also turn a heavily configured weapon into a custom signature weapon. The current configuration is welded in permanently. The weapon gains a defined special property worked out with the GM, and from that point it follows the signature rules: 0 further slots, fixed Parts, and physical limits. Treat the conversion as a major expense, a campaign milestone, or both.",
     commissions: "Day-to-day purchases at street level are paid in Glimmer. A fabrication commission routed through an institutional broker, a corporate armorer, or a black-market clearinghouse that demands a paper trail is different. Those are high-scrutiny transactions billed in Nexus, subject to the GM's discretion.",
+    /* PHB Weapon Customization: the lead lines of the two table entries, and the book's Mutual
+       Exclusions paragraph. The Codex reads these three. */
+    slots: "A Slot is where a Part goes on a weapon. A Part's Slot says where it goes, its Part Type says how you install it, and the two are independent.",
+    slotCount: "Slot Count is how many Parts a weapon can hold, set by its type or frame. Size doesn't change it on melee weapons: a dagger and a greatsword each carry four.",
+    exclusions: "Some Parts can't share a build for physical reasons. Those exclusions are listed in the individual entries.",
     /* The Parts rules line, 16 October handoff, word for word under its heading. The key stays
        `dieStep` because the bench footer and the Codex read it by that name. */
     dieStepHead: "Oomph +1 from hardware",
     dieStep: "A weapon takes at most Oomph +1 from aftermarket Parts. It does stack with Oomph from outside sources: class features, cyberware, or the Flow. A printed limit on a specific item always wins.",
     legality: "A Part never lowers a weapon's legality, only raises the heat. The strictest tag among the weapon and everything on it is what a scanner reports.",
-    install: "Accessories snap on anytime out of initiative, no roll. Mods are bench work: Downtime with a relevant tool kit and Proficiency, occasionally a single Engineering check or a short crafting Project."
+    install: "Accessories snap on anytime out of initiative, no roll. Mods are bench work: Downtime with a relevant tool kit (Engineering Tools or a weaponsmith kit) and Proficiency in it. No roll unless the GM decides the work fights back; then it is a single Tech (Engineering) check or a short crafting Project."
   }
 };
 

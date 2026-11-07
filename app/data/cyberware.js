@@ -13,7 +13,7 @@
 window.EN = window.EN || {};
 
 EN.cyberware = {
-  intro: "Cybernetics are mass-produced inorganic hardware: cut living tissue out, bolt something colder in. You get tactical advantages a flesh body cannot match, and Static, low-grade electromagnetic noise that grows with every piece of chrome.",
+  intro: "Cybernetics are mass-produced inorganic hardware that replace living tissue. You get tactical advantages a flesh body cannot match, and Static, low-grade electromagnetic noise that grows with every piece of chrome.",
 
   /* Interface Zones + approximate silhouette anchor points */
   // anchors live in the background silhouette's coordinate space (viewBox 825 x 1970)
@@ -35,20 +35,20 @@ EN.cyberware = {
     { index: 0, min: 0,  max: 2,        name: "Safe Capacity",        effects: [] },
     { index: 1, min: 3,  max: 4,        name: "Minor Friction",       effects: ["−1 max Resilience Die", "−1 max Reservoir (FP)"] },
     { index: 2, min: 5,  max: 6,        name: "System Integration",   effects: ["−2 max Resilience Dice", "−2 max FP"],
-      extra: ["Hardwired: targetable by Quick Hacks; Snag vs EMP & Electromagnetic Invocations"] },
+      extra: ["Hardwired: targetable by Quick Hacks and system abilities; Snag on Saves vs EMP, digital viruses & Electromagnetic Invocations; no Machine Physiology immunities"] },
     { index: 3, min: 7,  max: 8,        name: "Visceral Rejection / Resonant Dissonance", effects: ["−3 max Resilience Dice", "−3 max FP"],
       extra: ["Resonant Feedback: failed Breakflow → 1d4 Electric per Threshold", "Healing Penalty: A Shaper must spend an Empowered Effect (1 FP) to use Visceral Resonance on you; the base 0 FP Patch effect automatically fails to penetrate your inorganic mass."] },
     { index: 4, min: 9,  max: 10,       name: "Biological / Mechanical Stagnation", effects: ["−4 max Resilience Dice", "−4 max FP"],
-      extra: ["Maintenance Required: no natural Wound recovery on a Long Rest"] },
+      extra: ["Maintenance Required: no natural Wound recovery on a Long Rest; Wounds must be treated via medical or engineering actions"] },
     { index: 5, min: 11, max: Infinity, name: "The Ghost Fades",       effects: ["−5 max Resilience Dice", "−5 max FP"],
       extra: ["Dead Battery: lose the free Resilience Die at 0 dice on a Short Rest"] }
   ],
 
-  /* The book's Chrome Tax sentences, word for word (23 Oct handoff, section 7; PHB The Chrome Tax and
+  /* The book's Chrome Tax sentences, trimmed (23 Oct handoff, section 7; PHB The Chrome Tax and
      Calculating Thresholds). The Codex prints `zonesNote` after the Interface Zones table and
      `stackNote` under the Chrome Tax table. No zone cap is built: the limit is Static, plus common
      sense, and `anatomy` below is that common sense. */
-  zonesNote: "Zones have no fixed capacity: install as much as you can stand, keep a running total in Total Static, and ignore the math until it matters. Static is the limit, plus common sense: you have one set of eyes, two arms, two legs, and one heart to replace.",
+  zonesNote: "Each piece of hardware specifies which of the six zones it occupies. Zones have no fixed capacity: install as much as you can stand, keep a running total in Total Static, and ignore the math until it matters. Static is the limit, plus common sense: you have one set of eyes, two arms, two legs, and one heart to replace.",
   /* The common sense of `zonesNote` ("one set of eyes, two arms, two legs, and one heart"), the
      author's ruling of 24 October 2026 (section 9, item 6): at most one Cyberoptics install, two
      Cyberarms, one Cyberlegs install (it replaces both legs, so it installs as a pair) and one
@@ -66,14 +66,17 @@ EN.cyberware = {
 
   /* Two rules the Chrome tab stated only in its own UI (the gauge's caption and tooltip, and the
      Tech Bay's platform panel); they live here so the tab and the Codex read one copy. */
-  taxNote: "Every installed piece adds its Static Points (SP) to your Total Static. The Chrome Tax is that one whole-body total, never counted per zone, and the Threshold it reaches sets your penalties.",
-  platformNote: "A platform piece (a Cyberarm or Cyberleg) carries mod slots. A compatible mod seated in a platform adds no SP to Total Static; the platform already paid it. A mod that is not compatible cannot occupy a slot and pays its full SP.",
+  taxNote: "Every piece of cyberware carries a Static Point (SP) cost based on how much of the body it replaces, and every installed piece adds its SP to your Total Static. The Chrome Tax is that one whole-body total, never counted per zone. Penalties land in steps, every time you cross a Static Threshold: the first at 3 SP, then one every 2 SP, up to Threshold 5.\nIf you uninstall cyberware, your Total Static decreases, and you may drop into a lower Threshold, recovering your lost maximums after a Long Rest. Clankers track Static too; see Clankers and Cyberware (Static).",
+  platformNote: "A platform piece (a Cyberarm or Cyberleg) carries mod slots; each platform tier specifies how many. A compatible mod seated in a platform adds no SP to Total Static; the platform already paid it. A mod that is not compatible cannot occupy a slot and pays its full SP.",
 
+  /* PHB Quality Tiers and Enhancement Bonuses: the Codex prints these around the tier entries. */
+  qualityIntro: "Every piece of cyberware is built at a manufacturing tier. The same implant does the same job at every tier. Its tier tells you where it came from, what it can do, and what it costs you.",
+  enhancementNote: "Some well-calibrated cyberware grants an Enhancement Bonus to the attribute named in its spec block. Enhancement Bonuses to the same attribute don't stack; use the highest one. An Enhancement Bonus counts toward your attribute total and can't raise an attribute above its normal maximum.",
   qualityTiers: {
-    Streetware: "Unlicensed clinics, harvested parts, refurbished junk. Cheap, visible welds and scars; no Enhancement Bonus.",
-    Brandware:  "Licensed retailers and corp clinics. Reliable, registered, warrantied. Grants the listed Enhancement (+1).",
-    Blackware:  "Stolen, prototype, military, experimental. Higher SP and price, extra capabilities. Enhancement doubled (+2).",
-    Prototype:  "One-off Mystech builds. Singular tier; rarely for sale."
+    Streetware: "Streetware is the cheap shortcut from unlicensed clinics, harvested parts, and refurbished junk. Visible welds and scars; some pieces carry mechanical drawbacks. No Enhancement Bonus.",
+    Brandware:  "Brandware is the standard, from licensed retailers and corp clinics: reliable, registered, warrantied. Grants the listed Enhancement (+1).",
+    Blackware:  "Blackware is stolen, prototype, military, or experimental chrome. Higher SP and price, extra capabilities. Enhancement doubled (+2).",
+    Prototype:  "Prototype is a singular tier of one-off Mystech builds, rarely for sale."
   },
 
   /* base pieces, `short` drives the market listing name "<Tier> <short>" */
