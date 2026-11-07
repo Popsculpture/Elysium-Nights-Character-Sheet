@@ -1916,8 +1916,7 @@ EN.codexView = (function () {
       build: function (ctx, K) {
         var V = EN.vehicles, ruleBlock = K.ruleBlock, bullets = K.bullets;
         var kids = [];
-        kids.push(ruleBlock("Buying a Vehicle", V.intro
-          + "\n\nA vehicle's list price is twenty weeks of its upkeep.\n\n"
+        kids.push(ruleBlock("Buying a Vehicle", "A vehicle's list price is twenty weeks of its upkeep.\n\n"
           /* a mirrored table row: Legality last, in the book's short words (2026-10-16); the
              Availability column only while EN.launch lets it show */
           + V.profiles.map(function (v) {
@@ -1927,8 +1926,7 @@ EN.codexView = (function () {
             }).join("\n")
           + "\n\n" + V.unlisted));
         // the printed stat lines, which nothing else in the app shows a buyer before the Garage
-        if (V.statsNote) kids.push(ruleBlock("Vehicle Stats", V.statsNote + "\n\n"
-          + V.profiles.map(function (v) {
+        kids.push(ruleBlock("Vehicle Stats", V.statsNote + "\n\n" + V.profiles.map(function (v) {
               return v.name + " | Speed " + v.speed + " | Handling " + (v.handling > 0 ? "+" : "") + v.handling
                 + " | Structure " + v.structure + " | Integrity " + v.integrity + " | Node " + v.nodeTier
                 + " | Cargo " + v.cargo + ((v.traits || []).length ? " | " + v.traits.join(", ") : "");
@@ -1951,8 +1949,7 @@ EN.codexView = (function () {
                + (showAvail() && m.availability ? " | " + m.availability : "") + " | " + legalShort(m.legality) + "\n    " + m.effect;
         }).join("\n\n")));
         kids.push(ruleBlock("Mod Slots by Profile", V.profiles.map(function (v) {
-          return v.name + " | Tier " + v.tier + " | " + v.modSlots + " slots"; }).join("\n")
-          + "\n\nMod Slot Count is 1 + the vehicle's Tier."));
+          return v.name + " | Tier " + v.tier + " | " + v.modSlots + " slots"; }).join("\n")));
         return kids;
       } },
     { id: "ref-economy", title: "Economy & Rewards", order: 20, when: function () { return !!EN.economy; },
@@ -1964,16 +1961,15 @@ EN.codexView = (function () {
         function gp(v, open) { return g(v) + (open ? "+" : ""); }
         kids.push(ruleBlock("Currency and Exchange",
           E.currencies.map(function (c) { return c.symbol + " " + c.name + " | " + c.use; }).join("\n")
-          + "\n\n" + E.exchangeRate));
+          + "\n\n" + E.exchangeRate + "\n\n" + E.currencyNotes.join("\n\n")));
         // What a token actually returns, as opposed to what the ledger says it is worth.
         // Reference only: nothing in the app converts a wallet, because the bands are wide
         // and the cheap one comes with strings that are a scene rather than a number.
         if (E.nexusConversion) kids.push(ruleBlock("Converting Nexus to Glimmer",
-          E.nexusConversionNote + "\n\n"
-          + E.nexusConversion.map(function (c) { return c.channel + " | " + g(c.low) + " to " + g(c.high) + " per ◎ | " + c.note; }).join("\n")
+          E.nexusConversion.map(function (c) { return c.channel + " | " + g(c.low) + " to " + g(c.high) + " per ◎"; }).join("\n")
           + "\n\nUnlicensed conversion may also involve:\n" + bullets(E.nexusUnlicensedRisks)
           + "\n\n" + E.nexusAssumptions
-          + "\n\nThe sheet never converts a wallet for you. A cash-out is a scene: who is changing it, what they want, and what it costs you later."));
+          + "\n\nThe sheet never converts a wallet for you."));
         // the Handbook's Access Rules for Nexus Conversion: three conditions, a rule of thumb, a pointer (social W20)
         if (E.nexusAccess) kids.push(ruleBlock("Access Rules for Nexus Conversion", E.nexusAccess.intro + "\n"
           + E.nexusAccess.conditions.map(function (c, i) { return (i + 1) + ". " + c; }).join("\n")
@@ -2002,19 +1998,33 @@ EN.codexView = (function () {
           return l.item + " | 𝒢" + l.cost + " | " + l.renewal; }).join("\n")));
         // the shape the Bills tab tracks, and nothing more: the book runs debt as pressure, not interest
         if (E.debtNote) kids.push(ruleBlock("Debt", E.debtNote
-          + ((E.debtKinds || []).length ? "\n\nKinds of debt: " + E.debtKinds.join(", ") + "." : "")));
-        kids.push(ruleBlock("Day Jobs and Between-Contract Income", E.dayJobs.map(function (j) {
+          + ((E.debtKinds || []).length ? "\n\nKinds of debt: " + E.debtKinds.join(", ") + "." : "")
+          + "\n\n" + E.debtRules.start + "\n" + bullets(E.debtRules.pressure) + "\n\n" + E.debtRules.paying));
+        kids.push(ruleBlock("Day Jobs and Between-Contract Income", E.dayJobsIntro + "\n\n" + E.dayJobs.map(function (j) {
           return j.job + " | 𝒢" + j.pay + "/wk | " + j.time + " | " + j.web; }).join("\n")));
         // How Day Jobs Affect Play, the Handbook's paragraphs under the table (social W20)
         if ((E.dayJobsEffect || []).length) kids.push(ruleBlock("How Day Jobs Affect Play", E.dayJobsEffect.join("\n\n")));
         // Reward Types and the GM Reward Tables moved to the Game Master's Toolkit: ref-rewards, Admin only
-        kids.push(ruleBlock("Splitting a Payout", E.splitNote + "\n\n" + E.splitExample
+        kids.push(ruleBlock("Splitting a Payout", E.splitNote
           + "\n\nNot every reward divides cleanly:\n" + bullets(E.splitNonStandard)
           // the tool that does the math is on a different tab on each desktop (one splitter, EN.engine.splitPayout)
           + (ctx.portal === "admin" ? "\n\nThe Payroll tab splits a payout with the same math as a Freelancer's Payout Splitter."
                                     : "\n\nThe Inventory tab has a Payout Splitter that does this math.")));
+        // the rest of the chapter: fences, Flow-touched and haunted goods, identity theft, services, bribes
+        kids.push(ruleBlock("Typical Fence Rates", E.fenceRatesNote + "\n\n"
+          + E.fenceRates.map(function (f) { return f.goods + " | " + f.payout + " | " + f.notes; }).join("\n")
+          + "\n\nFence rates shift further based on:\n" + bullets(E.fenceShifts)));
+        kids.push(K.seeAlso("Who buys what:", [["so-contacts/choosing-a-fence", "Choosing a Fence"]]));
+        kids.push(ruleBlock("Flow-Touched Goods", E.flowTouched + "\n" + bullets(E.flowTouchedFactors)));
+        kids.push(ruleBlock("Haunted Property", E.hauntedProperty));
+        kids.push(ruleBlock("Identity Theft", E.identityTheft.taken + "\n"
+          + E.identityTheft.recovery.map(function (r, i) { return (i + 1) + ". " + r; }).join("\n")
+          + "\n\n" + E.identityTheft.protection));
+        kids.push(ruleBlock("Common Service Costs", E.serviceCosts.map(function (c) { return c.service + " | 𝒢" + c.cost; }).join("\n")));
+        kids.push(ruleBlock("Bribe Thresholds", E.bribeTiers.map(function (b) { return b.tier + " | 𝒢" + b.cost + " | " + b.buys; }).join("\n")
+          + "\n\n" + E.bribeNote));
         kids.push(ruleBlock("Not Yet In The App",
-          "These parts of the chapter are rules the sheet does not model yet. They live in the Player's Handbook:\n\n"
+          "The sheet does not track or price these. Run them at the table:\n\n"
           + bullets(E.notModelled)
           // sections that left the Handbook for the Game Master's Toolkit, named on the Admin desktop only
           + (ctx.portal === "admin" && (E.notModelledToolkit || []).length
@@ -2031,9 +2041,9 @@ EN.codexView = (function () {
         return [
           ruleBlock("Reward Types", E.rewardTypes.map(function (r) {
             return r.type + " | " + r.meaning; }).join("\n")),
-          (E.glimmerRewards || []).length ? ruleBlock("GM Reward Tables", E.rewardTablesNote + "\n\nGlimmer Rewards (1d8)\n"
+          (E.glimmerRewards || []).length ? ruleBlock("GM Reward Tables", "Glimmer Rewards (1d8)\n"
             + E.glimmerRewards.map(function (r) { return r.roll + ". " + r.reward + " | 𝒢" + r.value; }).join("\n")
-            + "\n\nNexus Token Rewards (1d8). " + E.nexusRewardsNote + "\n"
+            + "\n\nNexus Token Rewards (1d8)\n"
             + (E.nexusRewards || []).map(function (r) { return r.roll + ". " + r.reward; }).join("\n")) : null,
           K.seeAlso("Dividing it up:", [["ref-economy/splitting-a-payout", "Splitting a Payout"]])
         ];

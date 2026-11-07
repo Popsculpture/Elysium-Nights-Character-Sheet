@@ -85,7 +85,6 @@ window.EN = window.EN || {};
     { id: "vc-stats", title: "Vehicle Stats & Traits", tag: "CATEGORIES · SPEED · TRAITS", order: 11, when: has("categories"), build: function (ctx, K) {
       var c = C();
       return [
-        prose(K, paras([c.intro, c.statBlocksIntro])),
         K.entry("vehicle-categories", "Vehicle Categories", [K.subTitle("Vehicle Categories"), prose(K, c.categoriesNote),
           K.refTable(["Category", "What It Covers", "Examples"], c.categories.map(function (r) { return [r.category, r.covers, r.examples]; }), [0], LO)]),
         rb(K, "Vehicle Stats", named(c.stats)),
@@ -121,7 +120,6 @@ window.EN = window.EN || {};
       }
       if (H) {
         kids.push(K.subTitle("Cyberware and #GRID Hacking Hooks"));
-        kids.push(prose(K, H.intro));
         kids.push(block(K, "Codebreaker Intrusions", [prose(K, H.codebreaker),
           list(K, H.nodes.map(function (n) { return "**" + n.name + ":** " + n.text; })), prose(K, H.inChase)]));
         kids.push(rb(K, "Rigging and Cyberware", paras([H.riggingIntro, named(H.rigging), H.severed])));
@@ -176,7 +174,7 @@ window.EN = window.EN || {};
         rb(K, "Resolving the Chase", paras([H.resolving, named(outcomes)]))
       ];
       if (gm) {
-        kids.push(rb(K, "Edge and Snag Interactions", paras([H.edgeSnagIntro, named(H.edgeSnag)])));
+        kids.push(rb(K, "Edge and Snag Interactions", named(H.edgeSnag)));
         kids.push(rb(K, "The Crew", paras([H.crewIntro, named([H.tilt])])));
         kids.push(block(K, SH.name, [prose(K, SH.text), list(K, SH.list), prose(K, "**" + SH.cap.name + ":** " + SH.cap.text)]));
         kids.push(block(K, "Pursuit Escalation", [prose(K, paras([E.heat, E.firstResponse])),

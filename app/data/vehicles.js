@@ -8,7 +8,7 @@
 window.EN = window.EN || {};
 
 EN.vehicles = {
-  statsNote: "Speed, Handling, Structure, Integrity, Node Tier, Cargo and Traits come from Vehicle Profiles in Vehicles and Chases. The Piloting Check is d20 + Agility Modifier + Vehicle Proficiency Bonus + the vehicle's Handling.",
+  statsNote: "What these stats mean is in Vehicles and Chases. The Piloting Check is d20 + Agility Modifier + Vehicle Proficiency Bonus + the vehicle's Handling.",
   intro: "The title says the vehicle is yours. The garage, the fuel line, and whoever holds the note all have opinions about that. Buying is the easy part. Then the machine moves in: it wants power and fluids every week, somewhere to sit overnight where nobody strips it or tows it, and money set aside against the afternoon something shears loose in traffic.",
 
   /* ---- the seven printed profiles -------------------------------------
@@ -24,12 +24,12 @@ EN.vehicles = {
     { name: "Light Shuttle", speed: "Very Fast", handling: -1, structure: 11, integrity: 40, nodeTier: "Improved [1]", cargo: 20, traits: ["Flight", "Enclosed"],          category: "Starcraft",          tier: 2, fuel: 2500, reserve: 1500, availability: "Rare",     legality: "Licensed" }
   ],
 
-  unlisted: "For vehicles not listed, base upkeep on the closest example by Category, Tier, and size, then price the vehicle at twenty weeks of that upkeep. Each step up in Tier roughly doubles weekly upkeep, and non-Ground categories carry a premium because of specialty parts, licensing, and limited service options.",
+  unlisted: "For vehicles not listed, base upkeep on the closest example by Category, Tier, and size, then price the vehicle at twenty weeks of that upkeep. Each step up in Tier roughly doubles weekly upkeep, and non-Ground categories carry a premium.",
 
   /* ---- acquisition ----------------------------------------------------- */
   acquisition: [
     { mode: "New",         cost: "List price",           note: "Restricted purchases route through brokers, and per the high-scrutiny commissions rule (Legality, Weapon Customization), those transactions may bill in Nexus at the GM's discretion." },
-    { mode: "Used/salvage", cost: "40 to 60% of list",   note: "It runs. It also arrives with a quirk the GM writes down, drawn from the same menu as lapsed upkeep: the starter that grinds, the signature loud enough to track." },
+    { mode: "Used/salvage", cost: "40 to 60% of list",   note: "Arrives with a quirk the GM writes down, drawn from the same menu as lapsed upkeep." },
     { mode: "Hot",         cost: "25% of list",          note: "Unregistered, and worth Heat with whoever it was stolen from the moment a scanner reads it." },
     { mode: "Leased",      cost: "Upkeep, list as Buyout", note: "Corporate fleets run the Leased trait exactly as written in Gear Traits, with the vehicle's list price as the Buyout. Its Locked state is a dead ignition: the engine won't turn over, installed mods sit inert, and the doors open for whoever holds the note." }
   ],
@@ -55,14 +55,13 @@ EN.vehicles = {
   modRules: [
     "Mod Slot Count = 1 + the vehicle's Tier. The Street Bike and Hydrofoil carry 2, the Sedan, Hauler, and Shuttle carry 3, the VTOL and Mech carry 4.",
     "A vehicle holds at most one mod per slot.",
-    "Firewalls: A vehicle may mount one Firewall from the Firewall table in The #GRID by spending one Mod Slot. A Smartdeck gets its Firewall free because a deck is a hacking tool. A sedan is not.",
-    "Fitting or pulling a mod is bench work: downtime, a garage, and Engineering Tools. Never a combat action.",
-    "Flat bonuses of the same kind do not stack. If two mods each grant the same flat bonus, the higher applies and the other is dead weight bolted to your frame.",
-    "A mod never lowers a vehicle's Legality, it only raises the heat. The strictest tag among the vehicle and everything mounted on it is what a checkpoint scanner reads.",
-    // The Hardpoint Mount below sells a "Mounted weapon" and this is what that means. Without
-    // it the file named a term it never defined, and the attack formula is not the personal
-    // one: a Mounted weapon rolls Tech, not Agility.
-    "Firing a Mounted weapon rolls d20 + Tech Modifier + the weapon's own Weapon Proficiency Bonus (Heavy Weapons for the Heavy Weapons and Explosive Launchers catalogs). A Mounted weapon counts as being in its Setup state: it ignores High Recoil and its range bands are doubled, and the vehicle's feed system counts as the loader for Crew Served. Attacks made from inside a vehicle moving at Fast or Very Fast take Snag unless the weapon is Mounted."
+    "Firewalls: A vehicle may mount one Firewall from the Firewall table in The #GRID by spending one Mod Slot.",
+    "Fitting or pulling a mod is bench work: downtime, a garage, and Engineering Tools. Never a combat action. Where a mod's Effect carries an action type, that timing is for using the mod in play, not for fitting it.",
+    "Flat bonuses of the same kind do not stack. If two mods each grant the same flat bonus, the higher applies.",
+    "A mod never lowers a vehicle's Legality. The strictest tag among the vehicle and everything mounted on it is what a checkpoint scanner reads.",
+    // The Hardpoint Mount below sells a "Mounted weapon": the attack formula is not the personal
+    // one (Tech, not Agility). The rest of the rule is the Codex's Mounted Weapons (EN.chases.combat).
+    "Firing a Mounted weapon rolls d20 + Tech Modifier + the weapon's own Weapon Proficiency Bonus; see Mounted Weapons."
   ],
 
   mods: [
@@ -75,14 +74,14 @@ EN.vehicles = {
     { name: "Ram Bar",            price: 500,  fits: "Ground",             availability: "Common",   legality: "Licensed",
       effect: "Your vehicle takes half damage, rounded down, from rams you initiate." },
     { name: "Cargo Winch",        price: 450,  fits: "Ground, Industrial", availability: "Common",   legality: "Legal",
-      effect: "Counts as a Titan Tether with its own anchor point. Enables rated towing." },
+      effect: "Counts as a Titan Tether with its own anchor point. Enables towing per Capacity and Towing, without improvised rigging." },
     { name: "Hardpoint Mount",    price: 700,  priceAlt: 1400, priceNote: "700 fixed forward, 1,400 turret ring",
       fits: "Any", availability: "Uncommon", legality: "Restricted",
-      effect: "Mounts one Heavy Weapon or Explosive Launcher as a Mounted weapon. A fixed mount fires in a forward arc; a turret ring swings 360 degrees." },
+      effect: "Mounts one Heavy Weapon or Explosive Launcher as a Mounted weapon. A fixed mount fires in a forward arc; a turret ring swings 360 degrees. The weapon and its ammunition are priced separately and carry their own Legality." },
     { name: "Ghost Transponder",  price: 800,  fits: "Any",                availability: "Uncommon", legality: "Contraband",
-      effect: "Edge on checks against scanners, checkpoints, and traffic systems reading the vehicle's identity. Heat generated by this vehicle in a scene drops by 1." },
+      effect: "Edge on checks against scanners, checkpoints, and traffic systems reading the vehicle's identity. Heat generated by this vehicle in a scene drops by 1. If the transponder is ever cracked open by forensics, every identity it wore becomes evidence." },
     { name: "Ejector Seat",       price: 900,  fits: "Any",                availability: "Rare",     legality: "Licensed",
-      effect: "Special: when a crash resolves, one occupant in the rigged seat exits as an Impulse before damage is rolled, thrown 4 spaces up and landing 2 spaces clear, Prone, unharmed; the kit cuts or jettisons the roof as part of firing, and a chute deploys if airborne. One use per installed seat per scene. Launching a passenger (Swift): The seat doesn't check whose weight is in it. As a Swift Action on your turn, you may fire it without waiting for a crash. A willing occupant lands 2 spaces clear and Prone. An unwilling one gets an Agility Save (DC 15) to grab hold and stay put, and goes out the same way on a failure. Either use spends the seat's charge for the scene. Under a ceiling the occupant does not clear the vehicle. Resolve it as forced movement stopped by an obstacle (see Falling & Forced Movement): 1d6 Bludgeoning for every space of the 4 that was cut short, armor applies, and they drop back into their own space Prone. The seat is spent either way, and a crash it was fired to escape still resolves." },
+      effect: "Special: when a crash resolves, one occupant in the rigged seat exits as an Impulse before damage is rolled, thrown 4 spaces up and landing 2 spaces clear, Prone, unharmed; the kit cuts or jettisons the roof as part of firing, and a chute deploys if airborne. One use per installed seat per scene. Launching a passenger (Swift): As a Swift Action on your turn, you may fire it without waiting for a crash. A willing occupant lands 2 spaces clear and Prone. An unwilling one gets an Agility Save (DC 15) to grab hold and stay put, and goes out the same way on a failure. Either use spends the seat's charge for the scene. Under a ceiling the occupant does not clear the vehicle. Resolve it as forced movement stopped by an obstacle (see Falling & Forced Movement): 1d6 Bludgeoning for every space of the 4 that was cut short, armor applies, and they drop back into their own space Prone. The seat is spent either way, and a crash it was fired to escape still resolves." },
     { name: "Overdrive Injector", price: 1500, fits: "Any",                availability: "Rare",     legality: "Restricted",
       effect: "Special: once per scene, the pilot can open it as part of a Chase Check or of the Move Action spent at the controls. For one round, count the vehicle's Speed rating one step higher, including for the straightaway trigger. The engine then takes 5 Integrity, ignoring Structure. A vehicle already rated Very Fast gains no increase because there is no fifth step, but it still takes the damage." },
     { name: "Chameleon Coat",     price: 2000, fits: "Any",                availability: "Rare",     legality: "Restricted",

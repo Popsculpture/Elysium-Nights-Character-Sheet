@@ -1,6 +1,7 @@
 /* ===========================================================================
    ELYSIUM NIGHTS - Economy and Rewards (reference layer)
-   Extracted from Part 3, "Economy and Rewards". Costs in Glimmer.
+   Extracted from Part 3, "Economy and Rewards". Costs in Glimmer. Codex style (author-approved,
+   6 November 2026): the book's own sentences, trimmed of flavour, advice and worked examples.
    This file carries the chapter's TABLES and standing rules, including both
    1d8 GM reward tables and the payout split math. Reward Types and both GM reward
    tables moved to the Game Master's Toolkit (2026-10-16 handoff, section 8): the
@@ -8,12 +9,16 @@
    desktop. What is NOT here is the
    state: billing lifestyle each week, tracking safehouse upgrades a crew owns,
    a Crew Kit ledger, a debt list. `notModelled` names those explicitly so the
-   gap stays visible.
+   gap stays visible. The rules themselves are all here, for the Codex to print.
    =========================================================================== */
 window.EN = window.EN || {};
 
 EN.economy = {
   exchangeRate: "The fair market reference value is 1 Nexus Token = 10,000 Glimmer. That is the number that appears in contracts, ledgers, and official books. Actual cash-out is lower, because verification, compliance, service, laundering, and transfer fees all take a cut.",
+  currencyNotes: [
+    "Nexus Token is the formal name; Nexus alone is accepted shorthand. Carrying Nexus Tokens makes the group more valuable, more visible, and more likely to attract institutional attention.",
+    "At the table, track total Glimmer. The smaller units (100 Flickers = 1 Gleam, 100 Gleams = 1 Glow) exist mainly for in-world flavor."
+  ],
   // The reference value above as a number: the book's figure for its own prose. Nothing
   // in the app converts with it (A6-18, ruling 6). It is NOT a cash-out rate and no wallet
   // converts with it: the two purses stay separate everywhere money actually moves,
@@ -41,10 +46,9 @@ EN.economy = {
      A6-18): the Toolkit calls the Nexus price a street price that usually returns 2,000
      to 4,000 for one token. A Nexus Buyout is still billed in Nexus when bought
      (inventory.js buyoutCost); nothing converts it. */
-  nexusConversionNote: "Actual cash-out is lower than the reference value because verification, compliance, service, laundering, and transfer fees all take a cut. What a token returns depends entirely on who is changing it.",
   nexusConversion: [
-    { channel: "Legal, licensed exchange",       low: 5000, high: 7500, note: "Documented, traceable, and slow enough to be noticed" },
-    { channel: "Unlicensed or black market",     low: 2000, high: 4000, note: "Faster and quieter, and the rate is the smallest thing you give up" }
+    { channel: "Legal, licensed exchange",       low: 5000, high: 7500 },
+    { channel: "Unlicensed or black market",     low: 2000, high: 4000 }
   ],
   nexusUnlicensedRisks: [
     "Contract traps or clawback clauses",
@@ -53,7 +57,7 @@ EN.economy = {
   ],
   nexusAssumptions: "Freelancers should not assume full access to the reference value, instant anonymous cash-out, or guaranteed safety when moving or converting Nexus.",
 
-  /* Access Rules for Nexus Conversion, word for word (19 October 2026 audit, social W20 and
+  /* Access Rules for Nexus Conversion (19 October 2026 audit, social W20 and
      econ-unlisted-rules): the three conditions, the rule of thumb and the pointer. The
      Codex prints them under Converting Nexus to Glimmer. Reference only, like the bands above:
      nothing in the app checks a region, a clock or a clearance. */
@@ -65,7 +69,7 @@ EN.economy = {
       "they meet identification, sponsorship, or clearance requirements"
     ],
     ruleOfThumb: "Rule of thumb: If the scene is loud, illegal, rushed, or under fire, conversion should be difficult, dangerous, or temporarily impossible.",
-    rates: "Exchange rates shift from district to district, and even a fair deal can go sideways. For guidance on rates and conversion risks, see the Game Master's Toolkit."
+    rates: "Exchange rates shift from district to district. For guidance on rates and conversion risks, see the Game Master's Toolkit."
   },
 
   currencies: [
@@ -79,7 +83,7 @@ EN.economy = {
      month, Blacksite Hideout the same, Corporate Platinum 2.5+; 19 October 2026 audit,
      econ-open-prices). The numbers stay the minimum and billing charges them; only the
      displays add the "+". */
-  lifestyleNote: "Lifestyle is what it takes to live between jobs: lodging, food, water, hygiene, transit, comms, the small steady tax of staying alive. It is usually paid per week; in campaigns with longer Downtime the GM may charge per month instead.",
+  lifestyleNote: "Lifestyle covers lodging, food, water, hygiene, transit, and comms between jobs. It is usually paid per week; in campaigns with longer Downtime the GM may charge per month instead.",
   lifestyleTiers: [
     { tier: "Bare Survival", weekly: 200,   monthly: 800,   living: "Shared floor space, cheap food, public wash access, unreliable safety" },
     { tier: "Scraper",       weekly: 500,   monthly: 2000,  living: "Capsule room or shared bunk, local transit, minimal privacy" },
@@ -89,7 +93,7 @@ EN.economy = {
     { tier: "Luxury",        weekly: 15000, monthly: 60000, open: true, living: "Elite living, layered security, image management, privileged access" }
   ],
   lifestyleRules: [
-    "A Character who doesn't pay at least Bare Survival is assumed to be couch surfing, squatting, sleeping rough, or living on favors. That should leave them exposed: a stolen bag, a favor called in at the wrong moment.",
+    "A Character who doesn't pay at least Bare Survival is assumed to be couch surfing, squatting, sleeping rough, or living on favors. That should leave them exposed.",
     "A Character living at Stable or better is assumed to have enough legitimacy and presentation to function comfortably in ordinary legal environments.",
     "A Character living at High Profile or better is no longer invisible. Their money becomes part of their reputation."
   ],
@@ -122,6 +126,7 @@ EN.economy = {
   ],
 
   /* ---- between-contract income ------------------------------------------- */
+  dayJobsIntro: "A Freelancer can pick up a day job at Character creation, or any time they are settled enough to look for steady work. Each one has a weekly pay rate, a time commitment (how many days per week it eats), and a social web (who notices when you don't show up).",
   dayJobs: [
     { job: "Busker or street performer",              pay: "200 to 400",   time: "3 to 5 nights", web: "Other performers, regulars, local fixers" },
     { job: "Bartender or runner at a club",           pay: "300 to 500",   time: "4 to 5 nights", web: "Owners, regulars, dealers, the occasional cop" },
@@ -132,12 +137,12 @@ EN.economy = {
     { job: "Performer at a recurring gig (band, drag, residency)",            pay: "600 to 1,200", time: "3 to 4 nights", web: "Venue owners, fans, scene rivals" },
     { job: "Low-level fence, mod work, or black-market specialist", pay: "800 to 1,500", time: "3 to 5 days", web: "Buyers, suppliers, dangerous people" }
   ],
-  /* How Day Jobs Affect Play, word for word (19 October 2026 audit, social W20 and
+  /* How Day Jobs Affect Play (19 October 2026 audit, social W20 and
      econ-unlisted-rules). One paragraph per entry; the Codex prints them under the day job table. */
   dayJobsEffect: [
-    "A day job gives you a paycheck and ties you to other people. People at the job notice things. A bartender at the wrong club hears about a contract that went bad. A courier with the right route knows what is in which warehouse.",
+    "A day job ties you to other people, and people at the job notice things.",
     "The Character earns the listed weekly pay automatically, as long as they show up.",
-    "On weeks when crew work prevents them from working, the GM may reduce pay or impose social complications (a missed shift, a disappointed boss, a quietly closing door).",
+    "On weeks when crew work prevents them from working, the GM may reduce pay or impose social complications.",
     "The GM may impose Snag on mission planning rolls when a Character is splitting attention between crew work and a day job.",
     "A Freelancer can quit at any time. Quitting cleanly usually costs a goodbye scene, a final favor, or a small social wound. Quitting badly leaves a thread that someone can pull later."
   ],
@@ -154,7 +159,7 @@ EN.economy = {
   /* ---- Hypercare: the book's only ongoing coverage contract ------------
      Billed MONTHLY, unlike lifestyle and safehouse rent which bill weekly.
      Tiers 3 and 4 are priced in Nexus, so cost carries its own currency. */
-  hypercareNote: "A prepaid emergency medical response service keyed to your #PRINT or a linked wearable tag. If you drop to 0 Wounds in a covered service area and the alert is transmitted, a Hypercare team is dispatched.",
+  hypercareNote: "A prepaid emergency medical response service keyed to your #PRINT or a linked wearable tag, billed monthly and paid in advance. If you drop to 0 Wounds in a covered service area and the alert is transmitted, a Hypercare team is dispatched.",
   /* The Handbook's Limitation line for the contract (19 October 2026 audit, hypercare-services),
      word for word. The note above used to end on its first sentence; the Codex prints this as
      the "Limitation:" line under it. Each tier's `services` is the book's Included Services
@@ -173,10 +178,19 @@ EN.economy = {
      Track the holder and the clock; let the principal float a little." So the
      app tracks exactly those three fields and computes no interest. */
   debtKinds: ["Medical", "Gambling", "Faction", "Ritual", "Personal"],
-  debtNote: "Each debt has a principal, a holder, and a clock. Holders rarely send polite reminders; debt in Elysium escalates through pressure, not paperwork.",
+  debtNote: "Each debt has a principal (what is owed, in Glimmer, Nexus, favors, or something stranger), a holder (who is owed), and a clock (when payment is expected, or what triggers collection).",
+  debtRules: {
+    start: "A Character may begin play with debt (negotiated with the GM at Character creation) or accumulate it through play. Debt escalates through pressure, not paperwork. As a deadline approaches or passes, the GM should:",
+    pressure: [
+      "Use the holder as a recurring NPC who shows up at inconvenient times",
+      "Add Snag to social rolls in the holder's territory",
+      "Offer the Character a \"favor\" that wipes some debt at the cost of doing something they wouldn't normally do",
+      "Eventually move to direct collection (cyberware repossession, a forced job, a public humiliation, an organ)"
+    ],
+    paying: "Debt can be paid in cash, at the principal amount plus accumulated interest or pressure fees; in favors, at the holder's discretion; in ritual or symbolic acts, for ritual debt; or in blood, for the worst kinds."
+  },
 
   /* ---- GM reward tables (both printed in full) ------------------------- */
-  rewardTablesNote: "Use these when you need fast numbers.",
   glimmerRewards: [
     { roll: 1, reward: "Street payout", value: "100 to 300" },
     { roll: 2, reward: "Small job", value: "500 to 1,000" },
@@ -187,7 +201,6 @@ EN.economy = {
     { roll: 7, reward: "Corporate operation or high-risk job", value: "30,000 to 50,000" },
     { roll: 8, reward: "Campaign-defining world change", value: "about 100,000, once per campaign" }
   ],
-  nexusRewardsNote: "Nexus should feel rare and meaningful.",
   nexusRewards: [
     { roll: 1, reward: "No direct Nexus, but gain access to an account, pillar, or vault" },
     { roll: 2, reward: "Access code or partial key that may lead to Nexus later" },
@@ -200,13 +213,73 @@ EN.economy = {
   ],
 
   /* ---- splitting a payout ------------------------------------------------ */
-  splitNote: "By default a contract payout splits evenly between every Freelancer who participated. A fixer's cut, when there is one, comes off the top before the split. Typical fixer cuts run 10 to 20 percent, and higher cuts mean better intelligence, more protection, and worse math for the crew. A crew may also vote to dedicate 10 to 30 percent of every payout to a shared Crew Kit.",
-  splitExample: "A four-person crew completing a 3,000 contract with a 15 percent fixer cut: the fixer takes 450, and the remaining 2,550 splits four ways at 637 each, with 2 left to argue over.",
+  splitNote: "By default a contract payout splits evenly between every Freelancer who participated. A fixer's cut, when there is one, comes off the top before the split. Typical fixer cuts run 10 to 20 percent; higher cuts mean better intelligence and more protection. A crew may also vote to dedicate 10 to 30 percent of every payout to a shared Crew Kit, held by one Character or split across multiple accounts. Anything inside the Crew Kit is also a target.",
   splitNonStandard: [
     "Tagged or watched goods may go to the crew member with the best laundering connections.",
     "Narrative rewards (a favor owed, an access code, a faction patron) usually attach to the Character who earned them in fiction.",
     "Single high-value items can be sold and split, kept by one member with the others taking IOU equivalents, or held in trust by the Crew Kit until needed."
   ],
+
+  /* ---- Captured Goods and Fences: the rates --------------------------------- */
+  fenceRatesNote: "To turn loot into Glimmer, a crew has to find a fence who deals in that kind of merchandise, negotiate a price, and complete the transfer without attracting attention. Fences pay a fraction of an item's listed value, depending on the type of goods and the heat on them.",
+  fenceRates: [
+    { goods: "Common contraband (street weapons, drugs, knock-off mods)", payout: "30 to 50 percent of market", notes: "Most fences will take this" },
+    { goods: "Stolen consumer tech",                     payout: "20 to 40 percent of market", notes: "Tracked by serial; a smart fence wipes it first" },
+    { goods: "Corporate equipment or branded gear",      payout: "25 to 50 percent of market", notes: "Branding matters; some fences specialize" },
+    { goods: "Restricted or military-grade equipment",   payout: "30 to 60 percent of market", notes: "Only specialists handle this" },
+    { goods: "Identifying documents, ID chips, #PRINTs", payout: "40 to 60 percent of market", notes: "Pricing depends on forge quality" },
+    { goods: "Relics, antiques, or Flow-touched goods",  payout: "Variable",                   notes: "Specialty market" }
+  ],
+  fenceShifts: [
+    "Heat: If the goods are being actively searched for, expect another 50 percent off the top.",
+    "Reputation: A crew that has fenced cleanly before negotiates better. A burned crew may not get a meeting at all.",
+    "Quantity: Wholesale moves bring better unit rates but draw more attention.",
+    "Timing: Anything sold in a hurry sells for less."
+  ],
+
+  /* ---- Flow-Touched and Haunted Goods --------------------------------------- */
+  flowTouched: "A Flow-touched object has been used in a successful Invocation, fashioned by a Shaper, recovered from the site of a Resonant Storm, or left too long near a Node. Flow-touched goods cost 2x to 10x the listed price of an equivalent normal item, and are almost always Restricted or Contraband in corporate districts. The multiplier depends on:",
+  flowTouchedFactors: [
+    "Stability: A relic that performs reliably costs more. One that performs unpredictably costs less, but sells faster.",
+    "Resonance type: Some Flow signatures are worth more to specific buyers.",
+    "Provenance: Documented relics fetch a premium. Anonymous relics fetch a discount.",
+    "Rumor: A relic with the right story sells. A relic with the wrong story is unsellable."
+  ],
+  hauntedProperty: "Real estate that the #GRID, the Flow, or both haven't finished with typically rents or sells for 30 to 70 percent below market. The discount reflects unpredictable #GRID behavior, occasional Flow phenomena, reputation damage, and active hauntings. A crew may take a haunted safehouse as a financial advantage and accept the complications.",
+
+  /* ---- Identity Theft and Account Compromise --------------------------------- */
+  identityTheft: {
+    taken: "A successful breach of a Freelancer's accounts can take digital Glimmer, stored Nexus (held in audit lock until ownership is resolved), identity (a #PRINT clone with your name on it), faction standing, locations (safehouse address, vehicle registration, frequent destinations), and contacts (your fixer's channel, your fence's preferred drop). Recovery is slow and expensive:",
+    recovery: [
+      "Lock down accounts. Free if you act fast, slow and costly if you don't. Affected accounts go into audit hold for 1d6 days.",
+      "Replace #PRINT identity. 𝒢2,000 to 𝒢5,000 to re-issue it on a fresh chip, plus fees and Downtime, depending on legitimacy tier.",
+      "Restore reputation. If your faction standing was poisoned by fake transactions, recovery may require negotiation, public correction, or a small contract to prove you are still you.",
+      "Track the attacker. Optional, dangerous, and rarely fast."
+    ],
+    protection: "A few services sell protection against this. All are expensive, all have fine print, and none are foolproof."
+  },
+
+  /* ---- Services and Bribes --------------------------------------------------- */
+  serviceCosts: [
+    { service: "Street clinic treatment",            cost: "200 to 800" },
+    { service: "Private medical consult",            cost: "750 to 2,000" },
+    { service: "Basic repair job",                   cost: "250 to 1,000" },
+    { service: "Specialist diagnostics",             cost: "1,000 to 3,000" },
+    { service: "Encrypted courier run",              cost: "500 to 2,500" },
+    { service: "Local fixer fee",                    cost: "250 to 1,500" },
+    { service: "Smuggler passage",                   cost: "1,000 to 5,000" },
+    { service: "Quiet data scrub",                   cost: "750 to 3,000" },
+    { service: "Public legal help",                  cost: "500 to 1,500" },
+    { service: "Private counsel or hush specialist", cost: "2,500+" }
+  ],
+  bribeTiers: [
+    { tier: "Petty Grease",        cost: "50 to 250",        buys: "Looking the other way, faster access, a small convenience" },
+    { tier: "Street Smoothover",   cost: "250 to 1,000",     buys: "A warning, dropped attention, a minor favor" },
+    { tier: "Professional Risk",   cost: "1,000 to 5,000",   buys: "A forged timestamp, a delayed report, a brokered introduction" },
+    { tier: "Serious Corruption",  cost: "5,000 to 20,000",  buys: "Lost evidence, zone access, erased footage, clearance abuse" },
+    { tier: "Career-Ending Money", cost: "20,000+ or ◎1+",   buys: "Deep betrayal, sealed file tampering, institutional compromise" }
+  ],
+  bribeNote: "The money alone is never enough. The target must also believe they can survive the risk.",
 
   /* ---- Choosing a Fence (Captured Goods and Fences) ------------------------
      Part 3 (modifiedTime 2026-10-04T03:05:35.328Z), the section of that name, word for word.
@@ -226,15 +299,13 @@ EN.economy = {
     rule: "A Freelancer who has the right Fence Contact (acquired through Background or earned in play) skips the search phase and goes straight to negotiation. Without one, finding a buyer is its own scene."
   },
 
-  /* sections of the chapter this file does NOT carry yet, so the gap is
-     visible rather than looking like the chapter is fully covered */
+  /* what the sheet itself does not track or price, though the rules are printed above */
   notModelled: [
-    "Crew Kit as a tracked shared fund (the split math itself is in the Payout Splitter)",
-    "Debt escalation, which the Handbook runs as GM pressure rather than paperwork (the debts themselves ARE tracked, in Bills: kind, holder, principal and clock, with no interest calculated)",
-    "Captured Goods and Typical Fence Rates (Choosing a Fence is carried, in the Social chapter's Contacts & Fences)",
-    "Flow-Touched and Haunted Goods",
-    "Identity Theft and Account Compromise",
-    "Services and Daily Spending, Premium Services, Bribes"
+    "The Crew Kit as a tracked fund (the Payout Splitter computes its share)",
+    "Debt escalation (Bills tracks each debt's kind, holder, principal and clock, with no interest calculated)",
+    "Fence sales, and Flow-touched and haunted goods",
+    "Identity theft and account compromise",
+    "Services and bribes"
   ],
   /* 2026-10-16 handoff, section 8: these two sections left the Handbook for the Game
      Master's Toolkit, so the Freelancer's "they live in the book" list no longer names
