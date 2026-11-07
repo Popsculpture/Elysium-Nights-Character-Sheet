@@ -4646,10 +4646,14 @@ EN.engine = (function () {
        manual condition: this lists it, it does not apply it. */
     var ctCarried = [];
     CT.forEach(function (t) { if (t.index > 0 && t.index <= ctIndex) ctCarried = ctCarried.concat(t.extra || []); });
+    /* "If you uninstall cyberware ... you may drop into a lower Threshold, recovering your lost maximums after
+       a Long Rest." ch.chromeHold is the penalty an uninstall left behind (js/inventory.js); Long Rest and
+       Downtime Rest clear it. Only the two maximums wait: the Threshold's other effects follow Total Static. */
+    var chromeHeld = Math.max(0, ch.chromeHold | 0), chromePenalty = Math.max(ctIndex, chromeHeld);
     var chromeTax = {
-      total: staticTotal, index: ctIndex,
+      total: staticTotal, index: ctIndex, held: chromeHeld > ctIndex,
       name: ctTier ? ctTier.name : "Safe Capacity",
-      resDiePenalty: ctIndex, fpPenalty: ctIndex,
+      resDiePenalty: chromePenalty, fpPenalty: chromePenalty,
       effects: (ctTier ? ctTier.effects : []).concat(ctCarried),
       noWoundRecovery: ctIndex >= 4, deadBattery: ctIndex >= 5
     };
@@ -5206,7 +5210,11 @@ EN.engine = (function () {
     var saveAttr = null, resolution, resolutionText;
     var dmgEff = hasDamage && hasEffect;
     var landed = hasDamage && hasEffect ? "the damage and the effect land" : (hasDamage ? "the damage lands" : "the effect lands");
-    if (R && R.resolution === "save") { saveAttr = R.saveAttr || "Agility"; resolution = "save"; }
+    /* a Base effect that allows no save and deals no damage simply lands (Cognitive's Project Thoughts and
+       Sensory Hallucination: only altering a memory allows the save; the author's ruling, 6 Nov 2026) */
+    var landsNoRoll = !!(carried && carried.noRoll && !hasDamage);
+    if (landsNoRoll) { resolution = "none"; }
+    else if (R && R.resolution === "save") { saveAttr = R.saveAttr || "Agility"; resolution = "save"; }
     else if (carried && carried.save) { saveAttr = carried.save; resolution = "save"; }
     else if (areaBand && hasDamage) { saveAttr = "Agility"; resolution = "save"; }
     else if (areaBand && hasEffect && !unknownBase) { resolution = "none"; }
@@ -5224,7 +5232,7 @@ EN.engine = (function () {
       }
       if (R && R.resolution === "save") resolutionText += (R.armorNote ? " · " + R.armorNote : "") + (R.damageNote && hasDamage ? " · " + R.damageNote : "");
     } else if (resolution === "none") {
-      resolutionText = "No roll · it fills the space";
+      resolutionText = landsNoRoll ? "No roll · no save, the effect lands" : "No roll · it fills the space";
     } else {
       resolutionText = "Flow Attack " + fmtMod(flow.attackBonus) + " vs Defense · on a hit, " + landed;
     }

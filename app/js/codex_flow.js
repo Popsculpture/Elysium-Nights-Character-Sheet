@@ -113,7 +113,7 @@ window.EN = window.EN || {};
         var how = r.resolution === "save"
           ? "Flow Save DC" + (r.saveAttr && r.saveAttr !== "varies" ? " (" + r.saveAttr + ")" : "")
           : "Flow Attack vs Defense";
-        var lines = [r.plain + " Resolves with a " + how + "."];
+        var lines = [r.plain + " Focus: " + r.focus + ". Resolves with a " + how + "."];
         [r.damageNote, r.armorNote, r.targeting, r.stabilityNote, r.ruleNote, r.special].forEach(function (t) { if (t) lines.push(t); });
         lines.push("Base: " + r.base);
         if ((r.empowered || []).length) {
@@ -150,7 +150,7 @@ window.EN = window.EN || {};
       return [
         K.entry("strain-stages", "Strain Stages", [
           f.strainNote ? K.proseBlock(f.strainNote) : null,
-          K.refTable(["Stage", "Name", "Effect"], f.strainTrack.map(function (s) { return [String(s.stage), s.name, s.penalty]; }), [0, 1])
+          K.refTable(["Stage", "Name", "Symptoms", "Effect"], f.strainTrack.map(function (s) { return [String(s.stage), s.name, s.symptoms || "", s.penalty]; }), [0, 1])
         ]),
         K.seeAlso("How Strain builds:", [["fl-overdraw/strain-points", "Strain Points"], ["fl-overdraw/non-combat-overdraw", "Non-Combat Overdraw"]]),
         K.seeAlso("Clearing it:", [["fl-recovery", "Ritual Recovery"], ["fl-breakflow/breakflow-restoration", "Breakflow Restoration"]]),

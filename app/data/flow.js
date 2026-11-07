@@ -214,12 +214,12 @@ EN.flow = {
     { key: "cognitive", name: "Cognitive", unlock: 3, focus: "Synapses and Perception", damage: "Psychic",
       plain: "Cognitive is the manipulation of synapses, perception, and neurological patterns.",
       resolution: "save", saveAttr: "Mystique", armorNote: "Bypasses physical armor (Stability Factor).",
-      base: "Project thoughts telepathically to a visible target, induce a minor sensory hallucination, or alter a single short-term memory (an unwilling target makes a Flow Save DC, Mystique, to resist).",
+      base: "Project thoughts telepathically to a visible target, induce a minor sensory hallucination, or alter a single short-term memory (an unwilling target makes a Flow Save DC, Mystique, to resist the alteration).",
       /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
       baseOptions: [
-        { name: "Project Thoughts", save: "Mystique", text: "Project thoughts telepathically to a visible target (an unwilling target makes a Flow Save DC, Mystique, to resist)." },
-        { name: "Sensory Hallucination", save: "Mystique", text: "Induce a minor sensory hallucination (an unwilling target makes a Flow Save DC, Mystique, to resist)." },
-        { name: "Alter Memory", save: "Mystique", text: "Alter a single short-term memory (an unwilling target makes a Flow Save DC, Mystique, to resist)." }
+        { name: "Project Thoughts", noRoll: true, text: "Project thoughts telepathically to a visible target." },
+        { name: "Sensory Hallucination", noRoll: true, text: "Induce a minor sensory hallucination." },
+        { name: "Alter Memory", save: "Mystique", text: "Alter a single short-term memory (an unwilling target makes a Flow Save DC, Mystique, to resist the alteration)." }
       ],
       empowered: [
         { name: "Neural Override", sustain: false, save: "Mystique", text: "Target makes a Flow Save DC (Mystique) or you dictate their movement and Action on their next turn. You can't force direct lethal self-harm." },
@@ -296,11 +296,11 @@ EN.flow = {
      and in the engine. Each Stage keeps the effects of the Stages below it (js/flow.js lists them so). */
   strainNote: "Strain is the cost of Overdraw, counted in five Stages. Each Stage keeps the effects of the Stages below it.",
   strainTrack: [
-    { stage: 1, name: "Ripple", penalty: "You roll with Snag on Invocation rolls." },
-    { stage: 2, name: "Wave", penalty: "All Invocations cost +1 FP." },
-    { stage: 3, name: "Surge", penalty: "Overdraw Vitality damage increases from 1d4 to 1d6 per FP. Snag on Breakflow Checks." },
-    { stage: 4, name: "Rend", penalty: "Must roll a Breakflow Check when Overdrawing. Spending FP (not just Overdraw) costs 1 flat Vitality per FP." },
-    { stage: 5, name: "Collapse", penalty: "Immediate Breakflow; you fall Unconscious." }
+    { stage: 1, name: "Ripple", symptoms: "A faint hum or vibration follows your movements.", penalty: "You roll with Snag on Invocation rolls." },
+    { stage: 2, name: "Wave", symptoms: "Faint static or flickering light surrounds you.", penalty: "All Invocations cost +1 FP." },
+    { stage: 3, name: "Surge", symptoms: "Visual distortions and a racing heartbeat.", penalty: "Overdraw Vitality damage increases from 1d4 to 1d6 per FP. Snag on Breakflow Checks." },
+    { stage: 4, name: "Rend", symptoms: "Crackling energy, tremors, and uncontrolled bursts.", penalty: "Must roll a Breakflow Check when Overdrawing. Spending FP (not just Overdraw) costs 1 flat Vitality per FP." },
+    { stage: 5, name: "Collapse", symptoms: "Total silence and disconnection.", penalty: "Immediate Breakflow; you fall Unconscious." }
   ],
   overdraw: {
     vitalityLoss: "Lose 1d4 Vitality per 1 FP spent past your Reservoir (1d6 at Stage 3 Strain or higher).",
@@ -516,7 +516,6 @@ EN.flow.disturbances = {
   /* the GM advice after Ritual Chorus (the Toolkit's Anomalies at the Table): each label is a bold run-in
      the book prints, shown as its own card with no GM label */
   gmGuidance: [
-    { label: "Environmental Storytelling", text: "An Anomaly should change the tone of a scene." },
     { label: "Escalation", text: "The threat of a Critical Failure (-3 Margin) on a Dice Pool makes Severity 4 and 5 Anomalies dangerous to cleanse. Freelancers will need Ritual Chorus or Flow-infused tools (like a Rite Calibration Kit) to build enough Edge Dice to attempt high-level cleansing safely." }
   ],
 
@@ -609,7 +608,6 @@ EN.flow.disturbances = {
       "The Scar becomes highly volatile; no further repair attempts can be made for **1d4 days**."
     ],
     gmGuidance: [
-      { label: "Atmosphere", text: "Emphasize the sensory deprivation of the Scar." },
       { label: "The Stakes", text: "A Null Scar repair is rarely just a roll. Let it land as one of the big moments of the campaign." },
       { label: "Under Fire", text: "If the Reconstruction Ritual is interrupted by combat, the Project is paused. The Lead Shaper must make a **d20 Flow Attribute Saving Throw (DC 15)** each round they take damage to maintain the anchored connection. The connection only drops (inflicting a **Critical Failure** on the Project) if the Lead Shaper fails this check on **two consecutive rounds**." }
     ]

@@ -48,7 +48,7 @@ EN.gearCatalog.armor = {
      one entry, so a chip on armor falls back to it (traitLookup, armorFirst). Powered and Leased
      have no glossary twin, so theirs are the book's full entries, Effect lines included (r7). */
   traits: {
-    "Wear X": "The threshold where a hit starts costing the shield. X is the shield's Wear Threshold, equal to twice the maximum result of its Block die (8 for 1d4, 12 for 1d6, 16 for 1d8). When you Block an attack whose raw damage is X or more, or any critical hit you Block, mark off 1 of the shield's Durability boxes. See Shield Durability in the Combat chapter.",
+    "Wear X": "X is the shield's Wear Threshold, equal to twice the maximum result of its Block die (8 for 1d4, 12 for 1d6, 16 for 1d8). When you Block an attack whose raw damage is X or more, or any critical hit you Block, mark off 1 of the shield's Durability boxes. See Shield Durability in the Combat chapter.",
     "Streetwear": "Openly armored, but it reads as fashion. Doesn't count as obvious combat gear. Snag on social checks in high-corporate or formal spaces where street kit is out of place.",
     "Hostile Appearance": "Unmistakably combat gear. Snag on social checks to blend in or de-escalate; Edge when you are openly threatening or intimidating.",
     "Bulky": "Rigid, layered, overbuilt. Increases the item's Load by 1, reduces your Speed by 1, and imposes Snag on Acrobatics and Stealth checks. Can't be Concealable.",   // verbatim from Part 3, 2026-08-19: Bulky is the ONE trait that touches Load,

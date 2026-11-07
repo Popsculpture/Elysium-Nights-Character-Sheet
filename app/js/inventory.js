@@ -815,9 +815,11 @@ EN.inventoryView = (function () {
       else if (rule && cw.sided && plan.side) cw.side = plan.side;
       if (plan.replace != null) {
         out = c.cyberware[plan.replace];
-        c.cyberware.splice(plan.replace, 1, cw);
-        c.cyberStash.push(out);
-      } else c.cyberware.push(cw);
+        chromeHoldAround(c, function () {
+          c.cyberware.splice(plan.replace, 1, cw);
+          c.cyberStash.push(out);
+        });
+      } else chromeHoldAround(c, function () { c.cyberware.push(cw); });
       put = cw;
     });
     if (refused) { toast(refused); return; }
@@ -825,11 +827,21 @@ EN.inventoryView = (function () {
     toast(out ? put.name + cyberSideTag(put) + " installed, replacing your " + out.name + cyberSideTag(out) + ", which is back in your Chrome Stash. Static updated on the Cybernetic Frame."
               : "Chrome installed. Static updated on the Cybernetic Frame.");
   }
+  /* Dropping to a lower Static Threshold leaves the old maximums in place until the next Long Rest (ch.chromeHold,
+     read by engine.derive). Taking a Threshold's penalty back on clears the hold. */
+  function chromeHoldAround(c, fn) {
+    var before = EN.engine.derive(c).chromeTax.resDiePenalty;
+    fn();
+    var now = EN.engine.derive(c).chromeTax.index;
+    if (before > now) c.chromeHold = before; else delete c.chromeHold;
+  }
   function uninstallToStash(idx) {
     store.update(function (c) {
       var cw = (c.cyberware || [])[idx]; if (!cw) return;
-      c.cyberware.splice(idx, 1);
-      c.cyberStash = c.cyberStash || []; c.cyberStash.push(cw);
+      chromeHoldAround(c, function () {
+        c.cyberware.splice(idx, 1);
+        c.cyberStash = c.cyberStash || []; c.cyberStash.push(cw);
+      });
     });
     toast("Chrome uninstalled, back in your Chrome Stash.");
   }
@@ -1507,8 +1519,8 @@ EN.inventoryView = (function () {
       ]),
       el("div", null, [
         el("div", { style: { fontFamily: "var(--disp)", fontSize: "14px", letterSpacing: ".06em", color: taxColor }, text: "T" + tax.index + " · " + tax.name }),
-        tax.index > 0
-          ? el("div.mono", { style: { fontSize: "11px", color: "var(--text2)", marginTop: "2px" }, text: "−" + tax.resDiePenalty + (tax.resDiePenalty === 1 ? " Resilience Die" : " Resilience Dice") + " · −" + tax.fpPenalty + " max FP" })
+        tax.resDiePenalty > 0
+          ? el("div.mono", { style: { fontSize: "11px", color: "var(--text2)", marginTop: "2px" }, dataset: { chromeHeld: tax.held ? "1" : "0" }, text: "−" + tax.resDiePenalty + (tax.resDiePenalty === 1 ? " Resilience Die" : " Resilience Dice") + " · −" + tax.fpPenalty + " max FP" + (tax.held ? " · restored on Long Rest" : "") })
           : el("div.mono", { style: { fontSize: "11px", color: "var(--success)", marginTop: "2px" }, text: "Safe capacity, no penalty" })
       ]),
       (tax.effects && tax.effects.length) ? el("ul", { style: { margin: "2px 0 0", paddingLeft: "16px", color: "var(--text3)", fontSize: "11.5px", lineHeight: 1.5 } },
@@ -1564,7 +1576,7 @@ EN.inventoryView = (function () {
           el("div.mono", { style: { fontSize: "26px", lineHeight: 1, color: penalty > 0 ? col : "var(--text)" }, text: String(current) }),
           el("div.mono", { style: { fontSize: "13px", color: "var(--text3)" }, text: "/ " + total })
         ]),
-        el("div.mono", { style: { fontSize: "10px", marginTop: "3px", color: penalty > 0 ? "var(--danger)" : "var(--success)" }, text: penalty > 0 ? "−" + penalty + " · Chrome Tax (T" + tax.index + ")" : "no reduction" })
+        el("div.mono", { style: { fontSize: "10px", marginTop: "3px", color: penalty > 0 ? "var(--danger)" : "var(--success)" }, text: penalty > 0 ? "−" + penalty + (tax.held ? " · restored on Long Rest" : " · Chrome Tax (T" + tax.index + ")") : "no reduction" })
       ]);
     }
     var resBase = d.resilienceMax + tax.resDiePenalty;

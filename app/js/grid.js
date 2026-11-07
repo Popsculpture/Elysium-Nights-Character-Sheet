@@ -324,7 +324,7 @@ EN.gridView = (function () {
      when the cipher's Complexity is above what this character can normally run (engine.relayInfo),
      rolled here or entered from the table. After any firing, a Critical Failure included, the Relay
      and its cipher leave the Stash; a Codebreaker's Repertoire copy of a slotted cipher stays. */
-  function relayResetFire(key) { _relay.key = key; _relay.mode = "combat"; _relay.nat = ""; _relay.margin = ""; _relay.pool = null; _relay.target = ""; _relay.ingenuity = false; }
+  function relayResetFire(key) { _relay.key = key; _relay.mode = "combat"; _relay.nat = ""; _relay.margin = ""; _relay.pool = null; _relay.target = ""; _relay.ingenuity = false; _relay.focus = ""; _relay.spec = false; }
   function openRelay(key) { relayResetFire(key); _relay.last = null; }
   function relaySystemsPoolPoints(d) {
     var s = (d.skills || []).find(function (x) { return x.key === "systems"; });
@@ -359,7 +359,13 @@ EN.gridView = (function () {
   }
   function relayFireCard(ch, d, e, key, info) {
     var row = info.row, cy = info.cipher;
-    var out = eng.relayOutcome(info, _relay.mode, _relay.mode === "pool" ? _relay.margin : _relay.nat);
+    /* The check is a plain Systems (Tech) check (PHB 9867), so a Systems Focus or Specialization applies when the
+       action falls inside its aspect. The sheet can't know that, so the player opts in, one Focus per roll. */
+    var relayFocuses = eng.focusesFor(ch, "skill", "systems"), relaySpec = eng.specFor(ch, "skill", "systems");
+    var focusOn = relayFocuses.some(function (f) { return f.aspect === _relay.focus; }), cal = d.caliber || 1;
+    var checkBonus = info.bonus + (focusOn ? cal : 0);
+    var checkLabel = "Tech + Systems" + (focusOn ? " + Focus" : "");
+    var out = eng.relayOutcome({ needed: info.needed, bonus: checkBonus, dc: info.dc }, _relay.mode, _relay.mode === "pool" ? _relay.margin : _relay.nat);
     var pool = _relay.mode === "pool", red = out && out.result === "reduced" && !pool;
     var atk = row.attack - (red ? 2 : 0), dc = row.saveDc - (red ? 2 : 0);
     var kids = [];
@@ -386,6 +392,16 @@ EN.gridView = (function () {
         return el("button.btn.sm.relay-mode" + (on ? ".primary" : ""), { type: "button", dataset: { mode: m[0] },
           onclick: function () { _relay.mode = m[0]; _relay.nat = ""; _relay.margin = ""; _relay.pool = null; EN.app.render(); } }, m[1]);
       })));
+      if (relayFocuses.length || (pool && relaySpec)) {
+        kids.push(el("div.row.wrap.relay-optin", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, relayFocuses.map(function (f) {
+          var on = f.aspect === _relay.focus;
+          return el("button.btn.sm.relay-focus" + (on ? ".primary" : ""), { type: "button", dataset: { aspect: f.aspect || "" },
+            title: "Skill Focus: use it if this check clearly falls inside the aspect. " + (pool ? "+" + cal + " Edge Dice" : "+" + cal + " on the d20") + ". Only one Focus applies to a roll.",
+            onclick: function () { _relay.focus = on ? "" : f.aspect; _relay.margin = ""; _relay.pool = null; EN.app.render(); } }, (on ? "✓ " : "") + "FOCUS · " + (f.aspect || "Systems").toUpperCase());
+        }).concat(pool && relaySpec ? [el("button.btn.sm.relay-spec" + (_relay.spec ? ".primary" : ""), { type: "button",
+            title: "Specialization: use it if this check falls inside the aspect. +2 Edge Dice.",
+            onclick: function () { _relay.spec = !_relay.spec; _relay.margin = ""; _relay.pool = null; EN.app.render(); } }, (_relay.spec ? "✓ " : "") + "SPECIALIZATION · " + (relaySpec.aspect || "Systems").toUpperCase())] : [])));
+      }
       if (!pool) {
         // untrained in Systems: Snag on the d20, which Human Ingenuity can waive (ruled 29 Oct 2026)
         var snagOn = info.untrained && !(info.human && _relay.ingenuity);
@@ -397,18 +413,18 @@ EN.gridView = (function () {
             onclick: function () { _relay.ingenuity = !_relay.ingenuity; _relay.nat = ""; EN.app.render(); } }, (_relay.ingenuity ? "✓ " : "") + "HUMAN INGENUITY") : null
         ]));
         kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
-          el("span.mono", { style: { fontSize: "12px" }, text: "d20 " + eng.fmtMod(info.bonus) + " (Tech + Systems)" + (snagOn ? " with Snag" : "") + " vs DC " + info.dc + " (10 + Complexity)" }),
+          el("span.mono", { style: { fontSize: "12px" }, text: "d20 " + eng.fmtMod(checkBonus) + " (" + checkLabel + ")" + (snagOn ? " with Snag" : "") + " vs DC " + info.dc + " (10 + Complexity)" }),
           el("button.btn.sm.relay-roll", { type: "button", onclick: function () {
-            var r = eng.rollD20({ mods: [{ label: "Tech + Systems", value: info.bonus }], snag: snagOn ? 1 : 0 });
+            var r = eng.rollD20({ mods: [{ label: checkLabel, value: checkBonus }], snag: snagOn ? 1 : 0 });
             _relay.nat = String(r.nat); _relay.dice = r.dice; EN.app.render(); } }, snagOn ? "ROLL 2d20, KEEP LOWER" : "ROLL d20"),
           el("input.relay-nat", { type: "number", min: "1", max: "20", value: _relay.nat, placeholder: snagOn ? "kept d20" : "your d20", "aria-label": "Natural d20 rolled at the table" + (snagOn ? " (the lower of two)" : ""),
             style: { width: "84px" }, onchange: function (ev) { var v = parseInt(ev.target.value, 10); _relay.nat = (v >= 1 && v <= 20) ? String(v) : ""; _relay.dice = null; EN.app.render(); } })
         ]));
       } else {
         // untrained in Systems: +2 Snag Dice on top of the Complexity's (Human Ingenuity is d20 only)
-        var pts = relaySystemsPoolPoints(d), ep = eng.buildEdgePool(pts), sp = eng.buildSnagPool(info.poolSnag);
+        var pts = relaySystemsPoolPoints(d) + (focusOn ? cal : 0) + (relaySpec && _relay.spec ? 2 : 0), ep = eng.buildEdgePool(pts), sp = eng.buildSnagPool(info.poolSnag);
         kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginTop: "4px" } }, [
-          el("span.mono", { style: { fontSize: "12px" }, text: "Edge " + pts + " → " + ep.label + " (Tech + Systems) vs Snag " + info.poolSnag + " → " + sp.label
+          el("span.mono", { style: { fontSize: "12px" }, text: "Edge " + pts + " → " + ep.label + " (" + checkLabel + (relaySpec && _relay.spec ? " + Specialization" : "") + ") vs Snag " + info.poolSnag + " → " + sp.label
             + " (the Complexity " + cy.cx + (info.untrained ? " + 2 untrained in Systems" : "") + ")" }),
           el("button.btn.sm.relay-roll", { type: "button", onclick: function () {
             var er = eng.rollDicePool(ep), sr = eng.rollDicePool(sp);
@@ -421,7 +437,7 @@ EN.gridView = (function () {
         var nat = !pool ? +_relay.nat : null;
         var how = pool ? "Margin " + (out.margin >= 0 ? "+" : "") + out.margin + (_relay.pool ? " (" + _relay.pool.edge + " successes vs " + _relay.pool.snag + " failures)" : "")
                        : "rolled " + nat + (_relay.dice && _relay.dice.length > 1 && String(nat) === _relay.nat ? " (kept the lower of " + _relay.dice.join(" and ") + ")" : "")
-                         + (out.nat1 ? " (Natural 1)" : "") + ", total " + (nat + info.bonus) + ", Margin " + (out.margin >= 0 ? "+" : "") + out.margin;
+                         + (out.nat1 ? " (Natural 1)" : "") + ", total " + (nat + checkBonus) + ", Margin " + (out.margin >= 0 ? "+" : "") + out.margin;
         var res = out.result === "full" ? "Success: full power."
           : out.result === "reduced" ? (pool ? "Failure: the cipher runs with 2 fewer Edge Dice." : "Failure: the Relay's Save DC and Attack Bonus are each reduced by 2 for this firing.")
           : "Critical Failure: the Relay sparks and dies instantly. The cipher is lost.";

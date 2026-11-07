@@ -1298,6 +1298,8 @@ EN.combatView = (function () {
     var cleared = [], kept = [], hadFatigue = false, hadVigor = false, breakflowOn = false, strainKept = 0;
     store.update(function (c) {
       eng.mergeStrain(c);                                                   // the one Strain value (item 8)
+      // the old maximums an uninstall left behind come back now, so this rest fills to the restored ones
+      if (c.chromeHold) { delete c.chromeHold; d = eng.derive(c); }
       var s = state(c, d);
       c.wounds.current = s.woundsMax;                                       // all Wounds
       if (s.woundsMax > 0) { c.stable = false; c.deathSaves = { s: 0, f: 0 }; }
@@ -1354,6 +1356,8 @@ EN.combatView = (function () {
     var leaseDue = [], severeFatigue = 0, noNaturalHealing = false, personaExpired = 0, altitudeLocked = 0, altitudeFrom = [], unprovisioned = 0, fpBlocked = false, strainBlocked = false, strainStage = 0;
     store.update(function (c) {
       eng.mergeStrain(c);                                                   // the one Strain value (item 8)
+      // the old maximums an uninstall left behind come back now, so this rest fills to the restored ones
+      if (c.chromeHold) { delete c.chromeHold; d = eng.derive(c); }
       var s = state(c, d);
       var bodMod = d.attributes.BOD.mod;
       // Static Threshold 4 ("Maintenance Required") stops natural Wound recovery on a

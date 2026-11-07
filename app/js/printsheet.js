@@ -1011,7 +1011,7 @@ EN.printSheet = (function () {
       sect("Cybernetic Frame", "Static " + tax.total + " SP"),
       el("div.ps-statrow", null, [
         stat("STATIC", tax.total, "total SP"),
-        stat("CHROME TAX", "T" + (tax.index || 0), tax.index ? "-" + tax.resDiePenalty + " RD / FP" : "safe"),
+        stat("CHROME TAX", "T" + (tax.index || 0), tax.resDiePenalty ? "-" + tax.resDiePenalty + " RD / FP" + (tax.held ? " (restored on Long Rest)" : "") : "safe"),
         stat("INSTALLED", installed.length, "pieces")
       ])
     ];
