@@ -1,13 +1,13 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Building Encounters  (GM Toolkit)
-   A transcription of the Game Master's Toolkit, Building Encounters (PDF
-   pages 61 to 65), with the two lines it leans on from the Threats chapter
+   The Game Master's Toolkit, Building Encounters (PDF
+   pages 61 to 65), trimmed to the author's Codex style, with the two lines it leans on from the Threats chapter
    (p53 working band, p55 the XP line) and the Critical Failure trigger that
    also starts a response clock (p10). RULES ONLY: nothing here is computed.
    The budget arithmetic lives in EN.gmEngine.budget and tierFor; the threat
    numbers (array, Designations, Roles) stay in EN.threats.
 
-   Every `text` is the book's wording with PDF line breaks rejoined. Numbers the
+   Every `text` is the book's own sentences, trimmed of flavour. Numbers the
    book prints are carried as numbers beside the text they came from, so a
    screen can compute with one and show the other. Machine keys are lowercase
    and stable; difficulty keys match EN.threats.budget.difficulties.
@@ -23,7 +23,7 @@ EN.gmBook.encounters = {
   schemaVersion: 1,
 
   // GMH p61
-  intro: "An encounter is a question with dice in it. Who holds the freight elevator. Whether the witness leaves the club breathing. How much of the crew's pay is going to end up spent on the crew's knees. This chapter prices the opposition so the question stays open.",
+  intro: "An encounter is a question with dice in it. This chapter prices the opposition so the question stays open.",
 
   /* THE BUDGET. The three steps sit between the intro and the Difficulty table
      on the page. `mult` is the printed BUDGET column as a number ("half" is
@@ -58,7 +58,7 @@ EN.gmBook.encounters = {
        Solo") and carry Grade and Designation only. "riot Minions" is the app's
        reading: the Riot Trooper is the Bestiary's G2 riot Minion at 50 XP. */
     example: {
-      text: "Four Caliber 2 Freelancers. Share 150, Fair Fight budget 600. That buys four Corpsec Officers (600), or an Elite squad leader with two officers (300 + 300), or one G2 Solo (600), or two officers plus six riot Minions (300 + 300). Same money, four different nights.",
+      text: "Four Caliber 2 Freelancers. Share 150, Fair Fight budget 600. That buys four Corpsec Officers (600), or an Elite squad leader with two officers (300 + 300), or one G2 Solo (600), or two officers plus six riot Minions (300 + 300).",
       caliber: 2, freelancers: 4, difficulty: "fair", budget: 600,
       options: [
         { label: "four Corpsec Officers (600)", xp: 600, lines: [
@@ -97,19 +97,19 @@ EN.gmBook.encounters = {
     intro: "The budget says how much. Composition decides how it plays.",
     rules: [
       { key: "frontline", name: "Match the frontline to theirs",
-        text: "At least one threat per melee Freelancer that wants to be in melee, or the crew's Fury spends the night jogging.",
+        text: "At least one threat per melee Freelancer that wants to be in melee.",
         check: { counts: "threats", per: "meleefreelancer", min: 1 } },
       { key: "actors", name: "Count real actors",
         text: "More than two meaningful enemies per Freelancer and turns start to queue. Past that point, spend the budget on Minions, hazards, or a second wave instead of more Standards.",
         check: { counts: "nonminion", per: "freelancer", max: 2 } },
       { key: "minions", name: "Minions come in handfuls",
-        text: "Three per Freelancer on the field at once is the ceiling before bookkeeping outruns fear. Deeper hordes arrive as waves: same budget, spread across rounds.",
+        text: "Three per Freelancer on the field at once is the ceiling. Deeper hordes arrive as waves: same budget, spread across rounds.",
         check: { counts: "minion", per: "freelancer", max: 3, onField: true } },
       { key: "spine", name: "One threat should be the problem",
-        text: "Give every fight a spine: the Elite calling targets, the Controller reshaping the room, the Deadshot upstairs. A fight with a spine gives the crew a plan to argue about.",
+        text: "Give every fight a spine: the Elite calling targets, the Controller reshaping the room, the Deadshot upstairs.",
         check: null },
       { key: "reinforcements", name: "Reinforcements are budget",
-        text: "Anything that walks in mid-fight was part of the price. A Fair Fight that gets a second Fair Fight bolted on at round three was Red Work wearing a coat.",
+        text: "Anything that walks in mid-fight was part of the price.",
         check: null },
       // GMH p53 for the band width (within one Grade of the crew's Caliber)
       { key: "band", name: "Watch the Grade band, not just the total",
@@ -131,7 +131,7 @@ EN.gmBook.encounters = {
      so a screen can show it as a note ("one difficulty step up"). */
   // GMH p63
   objectives: {
-    intro: "An Objective is the reason the crew took the job: a location to hold, a data drive to extract, a VIP to shove into the back of an armored cab. Build fights around one and the fight acquires a clock, a geography, and a reason to end.",
+    intro: "An Objective is the reason the crew took the job. Build fights around one and the fight acquires a clock, a geography, and a reason to end.",
     types: [
       { key: "hold",    name: "Hold",    text: "until the extraction window, the purge cycle, the vote." },
       { key: "take",    name: "Take",    text: "the vault, or the console that opens it." },
@@ -141,10 +141,10 @@ EN.gmBook.encounters = {
       { key: "contain", name: "Contain", text: "the thing until the specialists arrive, or instead of the specialists arriving." },
       { key: "escape",  name: "Escape",  text: "with the proof and the working majority of the crew." }
     ],
-    payout: "An objective fight pays its XP for the objective, not the body count. A crew that extracts the VIP through a kitchen while sixteen Minions guard the wrong ballroom earned every point. Say so out loud at the table; it changes how players spend violence.",
+    payout: "An objective fight pays its XP for the objective, not the body count. Say so out loud at the table.",
     bounties: {
       name: "Bounties and the shape of the win",
-      text: "A Bounty is a Target with a price tag, and the tag has fine print: confirmed kill, or a body in zip ties. Bring-them-breathing work runs the fight backward: Nonlethal damage matters, 0 Vitality is the start of the job instead of the end, and the crew's problem is a Dying clock in a building full of the Target's friends. Price alive-only work one difficulty step up.",
+      text: "A Bounty is a Target with a price tag, and the tag has fine print: confirmed kill, or a body in zip ties. Bring-them-breathing work runs the fight backward: Nonlethal damage matters, 0 Vitality is the start of the job instead of the end, and the crew's problem is a Dying clock. Price alive-only work one difficulty step up.",
       terms: ["confirmed kill", "a body in zip ties"]
     },
     /* `steps` is difficulty columns to the right (milk, fair, hard, red). The
@@ -161,7 +161,7 @@ EN.gmBook.encounters = {
      carries the full rows; EN.gmBook.hazards.objects has the six pairs). */
   // GMH p63
   room: {
-    intro: "An empty floor plan wastes half the system. Cover, obscurement, and destructible terrain are already fully statted in Timing, Action Economy & Combat. High ground can grant Edge (see Edge and Snag). When you dress a fight:",
+    intro: "Cover, obscurement, and destructible terrain are already fully statted in Timing, Action Economy & Combat. High ground can grant Edge (see Edge and Snag). When you dress a fight:",
     rules: [
       { key: "cover", name: "Place cover in bands, not puddles",
         text: "an approach with Half Cover, positions of Three-Quarter Cover worth fighting over, and at least one line where there is nothing but the decision to run anyway." },
@@ -172,14 +172,14 @@ EN.gmBook.encounters = {
           { object: "pillar", material: "heavy", structure: 11 }
         ] },
       { key: "grid", name: "Put the #GRID in the room",
-        text: "One or two Nodes per fight is plenty: the turret's targeting Node, the mag-lock, the sprinklers, the freight lift. Statting them is one line from the Node Attributes table. A fight with a hackable Node in it gives the crew's Codebreaker a second battlefield, which is the entire promise of the class.",
+        text: "One or two Nodes per fight is plenty: the turret's targeting Node, the mag-lock, the sprinklers, the freight lift. Statting them is one line from the Node Attributes table.",
         nodesMin: 1, nodesMax: 2 },
       /* The pricing half of this rule is the hazard chapter's rule, carried as
          data in EN.gmBook.hazards.pricing. */
       { key: "fixtures", name: "Let the fixtures participate",
         text: "Steam lines, coolant baths, live rails, glass floors over long falls. Price a hazard the crew can shove enemies into as part of the fun, not the budget. Price a hazard that hunts the crew as budget (see Hazards and Set Pieces)." },
       { key: "light", name: "Light is a weapon",
-        text: "The obscurement rules are short and brutal (see Line of Sight and Obscurement). A crew that kills the lights, or a threat that does, changes the fight for free." }
+        text: "See Line of Sight and obscurement. A crew that kills the lights, or a threat that does, changes the fight for free." }
     ]
   },
 
@@ -187,8 +187,8 @@ EN.gmBook.encounters = {
   openings: {
     name: "Openings and Surprise",
     paragraphs: [
-      "Whoever starts the fight decides what the first round is about. Run the opening honestly: a crew that scouted, silenced the right sentry, and struck from Stealth gets the Surprised condition working for them, a full round of Edge and unanswered work, and frequently a Fair Fight collapses into a cleanup. Let it. That's planning getting paid.",
-      "It cuts the other way. Hostiles with intel, patience, and a Ghost of their own can open on the crew. Telegraph ambush country before it happens: the too-quiet loading dock, the vendor who suddenly remembered an appointment. The warning is what makes the trap fair, and reading warnings is what Passive Perception is for."
+      "Whoever starts the fight decides what the first round is about. Run the opening honestly: a crew that scouted, silenced the right sentry, and struck from Stealth gets the Surprised condition working for them, a full round of Edge and unanswered work, and frequently a Fair Fight collapses into a cleanup. Let it.",
+      "Hostiles with intel, patience, and a Ghost of their own can open on the crew. Telegraph ambush country before it happens. The warning is what makes the trap fair, and reading warnings is what Passive Perception is for."
     ]
   },
 
@@ -214,12 +214,12 @@ EN.gmBook.encounters = {
       { key: "soft", name: "Soft", site: "Soft (shop, hab block, dive bar)",
         examples: ["shop", "hab block", "dive bar"],
         arrives: "8 to 10 rounds", roundsMin: 8, roundsMax: 10,
-        looksLike: "A drone logging faces. G1 Minions with more nerve than training.",
+        looksLike: "A drone logging faces. G1 Minions.",
         follows: false },
       { key: "working", name: "Working", site: "Working (warehouse, clinic, mid-tier club)",
         examples: ["warehouse", "clinic", "mid-tier club"],
         arrives: "5 to 6 rounds", roundsMin: 5, roundsMax: 6,
-        looksLike: "A Standard patrol matched to the site's Grade, unhappy about it.",
+        looksLike: "A Standard patrol matched to the site's Grade.",
         follows: false },
       { key: "hardened", name: "Hardened", site: "Hardened (corp floor, depot, vault approach)",
         examples: ["corp floor", "depot", "vault approach"],
@@ -232,15 +232,14 @@ EN.gmBook.encounters = {
         looksLike: "A wetwork element at site Grade, and the response doesn't stop coming when the crew leaves. It follows. Heat follows with it.",
         follows: true }
     ],
-    closing: "The clock ends a fight without ending the crew. When the crew hears the second wave spin up, leaving becomes a decision with numbers in it, and the ones who stay for the vault deserve whatever they carry out."
+    closing: "The clock ends a fight without ending the crew. When the crew hears the second wave spin up, leaving becomes a decision with numbers in it."
   },
 
-  /* ENDING FIGHTS. Morale itself is EN.threats.morale. The Glimmer glyph is
-     printed in the book and kept. */
+  /* ENDING FIGHTS. Morale itself is EN.threats.morale. */
   // GMH p64
   ending: {
     name: "Ending Fights",
-    text: "Fights end when the question is answered, and the answer isn't always a floor full of bodies. Morale breaks (see Threat Conventions). Objectives resolve. Hostiles take the payout math personally: nobody guards a door for 𝒢400 a week after watching a Shaper fold the hallway. Offer surrenders, retreats, and deals mid-fight, and honor the XP either way. A campaign where enemies never run is a campaign where nobody ever owes the crew a favor, and favors are the better loot."
+    text: "Fights end when the question is answered, and the answer isn't always a floor full of bodies. Morale breaks (see Threat Conventions). Objectives resolve. Offer surrenders, retreats, and deals mid-fight, and honor the XP either way."
   },
 
   /* AWARDING EXPERIENCE. Read literally (and ruled so for this app): every
@@ -251,7 +250,7 @@ EN.gmBook.encounters = {
      (EN.gmBook.payroll.xp). */
   xp: {
     // GMH p55
-    defeated: "XP is the threat's price in the encounter budget and its award when defeated. Defeated includes captured, routed, hacked, bypassed, or talked down. The crew doesn't have to make a body to get paid in experience.",
+    defeated: "XP is the threat's price in the encounter budget and its award when defeated. Defeated includes captured, routed, hacked, bypassed, or talked down.",
     defeatedIncludes: ["captured", "routed", "hacked", "bypassed", "talked down"],
     // GMH p65
     text: "If your table runs XP, total the defeated threats' values and award that number to every Freelancer, per the Golden Rule: equally, whoever pulled the trigger. Add objective awards on top (50 XP for a minor goal, up to 1,000 or more for the campaign-defining ones, per Building the Sheet).",

@@ -1,6 +1,7 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Hazards and Set Pieces  (GM Toolkit)
-   A transcription of the Game Master's Toolkit, Hazards and Set Pieces (PDF
+   The Game Master's Toolkit (the strings the Codex prints trimmed to the
+   author's Codex style), Hazards and Set Pieces (PDF
    pages 101 to 102), the Stalemate Hazards by District tables from Prep
    Templates (PDF pages 18 to 20), and the room line of the GM's Card (p127).
    RULES ONLY: nothing here is computed.
@@ -9,7 +10,7 @@
    (Exposure, Vacuum, Caustic Environments, breath) stay in EN.hazards, and the
    Cover Material Table with its meanings stays in EN.combat.coverMaterials.
 
-   Every `text` is the book's wording with PDF line breaks rejoined. Numbers the
+   Every `text` is the book's own sentences. Numbers the
    book prints are carried as numbers beside the text they came from. Fields
    that break a printed sentence into parts (trigger, timing, save, bite,
    counter) quote the page's own words; where the page prints nothing for a
@@ -26,7 +27,7 @@ EN.gmBook.hazards = {
   schemaVersion: 1,
 
   // GMH p101
-  intro: "The room gets a turn. Not an initiative slot: a presence. A hazard is any part of the scene that can hurt somebody without carrying a grudge, and a set piece is a hazard with stage directions. Exposure, Vacuum, Caustic Environments, and Drowning are already fully ruled in Environmental Hazards and Conditions; Anomalies live in Flow Disturbances, and Null Scar repair under Anomalies and Null Scars. This chapter is for everything the building itself is about to do.",
+  intro: "A hazard is any part of the scene that can hurt somebody without carrying a grudge, and a set piece is a hazard with stage directions. Exposure, Vacuum, Caustic Environments, and Drowning are already fully ruled in Environmental Hazards and Conditions; Anomalies live in Flow Disturbances, and Null Scar repair under Anomalies and Null Scars.",
 
   /* HAZARD ANATOMY. The four lines a hazard is written in, in the book's order.
      The DC ladder is also carried as numbers in dcByGrade below. */
@@ -38,12 +39,12 @@ EN.gmBook.hazards = {
         text: "What sets it off: pressure, proximity, a timer, a bullet that missed.",
         examples: ["pressure", "proximity", "a timer", "a bullet that missed"] },
       { key: "save", name: "Save and DC",
-        text: "Usually Agility or Body. Set the DC by the Grade of the scene: DC 12 at G1, 13 at G2, 15 at G3, 16 at G4, 18 at G5. Hazards are allowed to be crueler than gear: a DC 20 hazard is legal, and it should look like it.",
+        text: "Usually Agility or Body. Set the DC by the Grade of the scene: DC 12 at G1, 13 at G2, 15 at G3, 16 at G4, 18 at G5 (see DC by Grade).",
         usual: ["Agility", "Body"] },
       { key: "bite", name: "Bite",
-        text: "Damage or condition. Use the bands below." },
+        text: "Damage or condition. Use the bands below (see Bite Bands)." },
       { key: "counter", name: "Counter",
-        text: "How the crew shuts it off, and it should always be possible: a valve, a breaker, a Node, a prayer with paperwork.",
+        text: "How the crew shuts it off, and it should always be possible: a valve, a breaker, a Node.",
         examples: ["a valve", "a breaker", "a Node", "a prayer with paperwork"] }
     ]
   },
@@ -67,7 +68,7 @@ EN.gmBook.hazards = {
     { key: "severe",    name: "Severe",    dice: "4d6",         count: 4, sides: 6, orMore: false,
       readsAs: "Coolant purge, transformer arc, floor giving way onto the next floor" },
     { key: "lethal",    name: "Lethal",    dice: "6d6 or more", count: 6, sides: 6, orMore: true,
-      readsAs: "Industrial press, mains junction, the thing the warning stencils were about" }
+      readsAs: "Industrial press, mains junction" }
   ],
 
   /* PRICING. Two cases: a hazard the crew can use is free, a hazard that hunts
@@ -79,7 +80,7 @@ EN.gmBook.hazards = {
      unless the GM enters XP. */
   // GMH p101
   pricing: {
-    text: "A hazard the crew can shove Hostiles into is free flavor: charge nothing, enjoy everything. A hazard that hunts the crew on a schedule is opposition: price it into the encounter budget like a threat of its Grade (a Severe recurring hazard is worth about a Standard threat; a Lethal one, an Elite).",
+    text: "A hazard the crew can shove Hostiles into is free flavor: charge nothing. A hazard that hunts the crew on a schedule is opposition: price it into the encounter budget like a threat of its Grade (a Severe recurring hazard is worth about a Standard threat; a Lethal one, an Elite).",
     cases: [
       { key: "flavor", name: "Free flavor", xp: 0,
         when: "A hazard the crew can shove Hostiles into",
@@ -107,7 +108,7 @@ EN.gmBook.hazards = {
      EN.combat.coverMaterials. */
   // GMH p101
   objects: {
-    text: "Objects break by the book. Anything the crew smashes, breaches, or drops a Warform through uses the Cover Material Table: Structure to matter, Integrity to die. A vault door is Hardened 18/40, and no, it doesn't care about the crowbar.",
+    text: "Anything the crew smashes, breaches, or drops a Warform through uses the Cover Material Table: Structure to matter, Integrity to die. A vault door is Hardened 18/40.",
     // GMH p127
     materials: [
       { key: "fragile",   name: "Fragile",   structure: 5,  integrity: 3 },
@@ -315,7 +316,7 @@ EN.gmBook.hazards = {
     ],
 
     guidance: {
-      text: "One hazard per fight is seasoning; two is a set piece; three is the fight. Past that, the Hostiles become an afterthought, which is occasionally the point: the night the crew fought the building is a story they will tell longer than most body counts.",
+      text: "One hazard per fight is seasoning; two is a set piece; three is the fight. Past that, the Hostiles become an afterthought, which is occasionally the point.",
       perFight: [
         { count: 1, reads: "seasoning" },
         { count: 2, reads: "a set piece" },

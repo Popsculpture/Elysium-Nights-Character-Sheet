@@ -52,6 +52,7 @@ window.EN = window.EN || {};
     openings: [["Edge", "rz-edge"], ["Passive Perception", "sk-skills/passive-checks"]],
     ending: [["Morale", "gmt-conventions/morale"], ["Threat Conventions", "gmt-conventions"]],
     bounties: [["Nonlethal", "ref-dmg/nonlethal"]],
+    xp: [["Building the Sheet", "sk-advance"]],
     // Hazards & Set Pieces
     hazardsIntro: [["Exposure", "ref-hazards/exposure"], ["Anomalies and Null Scars", "fl-dist-repair"]],
     objects: [["Cover Material Table", "ref-cover/cover-material-table"], ["Structure", "ref-cover/structure"],
@@ -165,7 +166,7 @@ window.EN = window.EN || {};
           kids.push(K.ruleBlock("Objective types", K.bullets(O.types.map(function (t) { return t.name + ": " + t.text; }))));
         }
         if (O.payout) kids.push(K.ruleBlock("Payout", O.payout));
-        if (O.bounties) kids.push(block(K, O.bounties.name, O.bounties.text, LINKS.bounties));
+        if (O.bounties) kids.push(block(K, O.bounties.name, O.bounties.text, LINKS.bounties, { conditions: true }));
         return kids;
       } },
 
@@ -223,7 +224,7 @@ window.EN = window.EN || {};
         var X = enc().xp;
         var kids = [];
         if (X.defeated) kids.push(K.ruleBlock("Defeated", X.defeated));
-        if (X.text) kids.push(K.ruleBlock("Awarding XP", X.text));
+        if (X.text) kids.push(block(K, "Awarding XP", X.text, LINKS.xp));
         if (X.milestones) kids.push(K.ruleBlock("Milestones", X.milestones));
         return kids;
       } }
@@ -308,11 +309,13 @@ window.EN = window.EN || {};
     { id: "gmh-count", title: "How Many Hazards", tag: "SEASONING · SET PIECE · THE FIGHT", order: 70,
       when: function () { var H = hz(); return !!(H && H.setPieces && H.setPieces.guidance); },
       build: function (ctx, K) {
-        var G = hz().setPieces.guidance;
+        var SP = hz().setPieces, G = SP.guidance;
         var kids = [K.proseBlock(G.text)];
         if (G.perFight && G.perFight.length) {
           kids.push(K.refTable(["Hazards in the fight", "Reads as"], G.perFight.map(function (x) { return [String(x.count), x.reads]; }), [0]));
         }
+        // the book's one scaling rule; the Set Pieces themselves are on the Hazards tab
+        if (SP.intro) { kids.push(K.subTitle("Set Pieces")); kids.push(K.proseBlock(SP.intro)); }
         return kids;
       } },
 
