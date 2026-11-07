@@ -71,7 +71,7 @@ EN.gmBook.payroll = {
      book's own grid. Caliber 4 skips the "about 7,500" step. */
   // GMH p109
   contract: {
-    lead: "Anchor a contract's total value to the crew's Caliber and the job's difficulty, then let negotiation, reputation, and fine print move it. The bands below track the Glimmer Rewards table (Reward Tables), with the top stretched for institutional clients.",
+    lead: "Anchor a contract's total value to the crew's Caliber and the job's difficulty, then let negotiation, reputation, and fine print move it. The bands below track the Glimmer Rewards table (Reward Tables), assigned to the work, with the top stretched for institutional clients.",
     columns: [
       { key: "milk", name: "Milk Run" },
       { key: "fair", name: "Fair Fight" },
@@ -112,7 +112,7 @@ EN.gmBook.payroll = {
         { col: "red",  text: "◎ terms, and everything that watches ◎", low: null, high: null, about: false, nexus: "only" }
       ] }
     ],
-    after: "Incursions use these bands too (see Incursion Briefings). Those are totals, before the fixer's 10 to 20 percent and the crew's own split rules (Economy and Rewards). Institutional clients at Caliber 4 and up start offering Nexus, which comes with their surveillance.",
+    after: "Incursions use these bands too (see Incursion Briefings). Those are totals, before the fixer's 10 to 20 percent and the crew's own split rules (Economy and Rewards). Institutional clients at Caliber 4 and up start offering Nexus, which is a payment and a surveillance program in the same envelope.",
     fixerPctLow: 10, fixerPctHigh: 20,
     nexusFromCaliber: 4,
 

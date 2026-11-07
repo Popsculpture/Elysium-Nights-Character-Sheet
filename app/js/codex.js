@@ -2030,6 +2030,10 @@ EN.codexView = (function () {
           // sections that left the Handbook for the Game Master's Toolkit, named on the Admin desktop only
           + (ctx.portal === "admin" && (E.notModelledToolkit || []).length
               ? "\n\nThese live in the Game Master's Toolkit now, and the sheet does not model them either:\n\n" + bullets(E.notModelledToolkit) : "")));
+        // the two Toolkit tables now print in the GM chapter Paying the Crew (Admin only, like the list above)
+        if (ctx.portal === "admin" && (E.notModelledToolkit || []).length)
+          kids.push(K.seeAlso("In the Toolkit chapter:", [["gmy-pay/regional-exchange", "Regional Exchange"],
+            ["gmy-pay/conversion-scene-complications", "Conversion Scene Complications"]]));
         return kids;
       } },
     /* Rewards, Reward Types and the GM Reward Tables moved to the Game Master's Toolkit
