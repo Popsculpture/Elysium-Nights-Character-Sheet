@@ -78,6 +78,7 @@ window.EN = window.EN || {};
     { id: "gmt-grades", title: "Grades & the Working Band", tag: "GRADE 1 TO 5", order: 10, when: hasT("grades"), build: function (ctx, K) {
       var t = T();
       return [
+        t.gradeIntro ? K.proseBlock(t.gradeIntro) : null,
         K.el("div", null, t.grades.map(function (g) { return K.ruleBlock("Grade " + g.g, g.reads, "Matched crew: " + g.crew); })),
         t.workingBand ? K.ruleBlock("Working Band", t.workingBand) : null
       ];
@@ -87,6 +88,7 @@ window.EN = window.EN || {};
     { id: "gmt-array", title: "The Standard Threat Array", tag: "BY GRADE", order: 20, when: hasT("array"), build: function (ctx, K) {
       var t = T();
       return [
+        t.arrayIntro ? K.proseBlock(t.arrayIntro) : null,
         K.entry("attack-defense-and-vitality", "Attack, Defense and Vitality", [
           K.subTitle("Attack, Defense and Vitality"),
           K.refTable(["Grade", "Attack", "Save DC", "Defense", "Vitality", "DR"], t.array.map(function (r) {
@@ -99,7 +101,7 @@ window.EN = window.EN || {};
             return ["G" + r.g, "~" + r.damage, r.attacks, fmt(r.strong), fmt(r.weak), String(r.xp)];
           }), [0])
         ]),
-        // the book's two paragraphs under the table, word for word (EN.threats.arrayNotes)
+        // the book's two paragraphs under the table, trimmed (EN.threats.arrayNotes)
         (t.arrayNotes || []).map(function (p) { return K.proseBlock(p); })
       ];
     } },
@@ -119,6 +121,7 @@ window.EN = window.EN || {};
       var solo = t.designations.filter(function (d) { return d.key === "solo"; })[0];
       var minion = t.designations.filter(function (d) { return d.key === "minion"; })[0];
       return [
+        t.designationsIntro ? K.proseBlock(t.designationsIntro) : null,
         K.el("div", null, t.designations.map(function (d) { return K.ruleBlock(d.name, d.blurb || ""); })),
         K.entry("designation-modifiers", "Designation Modifiers", [
           K.subTitle("Designation Modifiers"),
@@ -218,6 +221,7 @@ window.EN = window.EN || {};
         out.push(K.subTitle(R.title || "Running Solos"));
         if (R.intro) out.push(K.proseBlock(R.intro));
         (R.rules || []).forEach(function (r) { out.push(K.ruleBlock(r.name, r.text, r.tag ? "(" + r.tag + ")" : null, { conditions: true })); });
+        if (R.building) out.push(K.ruleBlock(R.building.name, R.building.text + (t.budget && t.budget.soloNote ? " " + t.budget.soloNote : ""), null, { conditions: true }));
       }
       return out;
     } },
@@ -280,6 +284,7 @@ window.EN = window.EN || {};
     "Standard Threat Array": "gmt-array",
     "working band": "gmt-grades/working-band",
     "Running Solos": "gmt-solos",
+    "Building a Solo": "gmt-solos/building-a-solo",
     "Designation Modifiers": "gmt-designations/designation-modifiers",
     "Ability Menu": "gmt-abilities",
     "Optional Damage Effects appendix": "gmt-damage-effects",

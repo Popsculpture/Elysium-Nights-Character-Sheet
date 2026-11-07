@@ -15,7 +15,9 @@ EN.threats = {
   schemaVersion: 1,
 
   /* The Grade, GMH p53. "Reads as" is the fiction; "matched crew" is the pricing
-     relationship that makes a budget mean anything. */
+     relationship that makes a budget mean anything. `gradeIntro` is the Codex's opening line for
+     the Grades panel, from the chapter's first sentence (GMT line 3015) and The Grade (3024 to 3036). */
+  gradeIntro: "A threat is anything you might roll Initiative for. Its Grade is a rating from 1 to 5 that measures how much trouble it is. A crew handles threats of a Grade equal to its own Caliber. One step above that is a hard night. Two steps above is a headline.",
   grades: [
     { g: 1, reads: "Street trouble. Dangerous to civilians, manageable for professionals.", crew: "Caliber 1 (Levels 1 to 2)" },
     { g: 2, reads: "Professional trouble. Somebody trained it, built it, or fed it.", crew: "Caliber 2 (Levels 3 to 4)" },
@@ -24,7 +26,7 @@ EN.threats = {
     { g: 5, reads: "City trouble. There are recordings. People argue about whether they are real.", crew: "Caliber 5 (Levels 9 to 10)" }
   ],
   // GMH p53, the working band. Two up needs ONE of three reasons, not all of them.
-  workingBand: "Build encounters from threats within one Grade of the crew's Caliber. A threat two Grades up can anchor a climax if it arrives with a plan, an escape route, or a reason not to simply execute the crew, because its math won't miss often and won't hit gently. Three Grades up isn't an encounter. It is weather. Let it be witnessed, fled, or negotiated with.",
+  workingBand: "Build encounters from threats within one Grade of the crew's Caliber. A threat two Grades up can anchor a climax if it arrives with a plan, an escape route, or a reason not to simply execute the crew. Three Grades up isn't an encounter. It is weather. Let it be witnessed, fled, or negotiated with.",
 
   /* THE STANDARD THREAT ARRAY, GMH p57. Defense and Save DC are both 11 + Grade,
      and the strong save is 3 + Grade, so those three could be computed. They are
@@ -43,11 +45,13 @@ EN.threats = {
     { g: 4, attack: 9,  dc: 15, defense: 15, vitality: 70, drLow: 3, drHigh: 4, damage: 21, attacks: "two attacks",           strong: 7, weak: 2, xp: 350 },
     { g: 5, attack: 10, dc: 16, defense: 16, vitality: 95, drLow: 4, drHigh: 5, damage: 28, attacks: "two or three attacks",  strong: 8, weak: 3, xp: 450 }
   ],
-  /* The two paragraphs the book prints under the array (GMT p24), word for word. The Codex's
-     Standard Threat Array panel prints them. Their bold run-ins are the page's. */
+  /* The two paragraphs the book prints under the array (GMT p24), trimmed to the rule. The Codex's
+     Standard Threat Array panel prints them. Their bold run-ins are the page's. `arrayIntro` is
+     Building a Threat in Two Minutes (GMT line 3139), the same way. */
+  arrayIntro: "Pick a Grade. Pick a Designation. Pick a Role. Read the row, write five lines, done.",
   arrayNotes: [
-    "**Damage a round** is the threat's whole output on a good turn, before the crew's DR. Split it across the attacks the concept wants: one heavy swing, or a pair of bursts, or an attack plus a rider. A G3 threat can be 2d8+6 once, or 1d8+3 twice, or 1d10+6 with a 1d6 Fire rider. The total is the tuning; the shape is the flavor.",
-    "**Save DC** covers everything the threat forces: its gas, its howl, its shove off the catwalk. One DC per stat block keeps the table fast."
+    "**Damage a round** is the threat's whole output on a good turn, before the crew's DR. Split it across the attacks the concept wants: one heavy swing, or a pair of bursts, or an attack plus a rider.",
+    "**Save DC** covers everything the threat forces. One DC per stat block."
   ],
 
   /* DESIGNATIONS, GMH p54 (the blurbs) and p57 (Designation Modifiers). Solo
@@ -61,18 +65,19 @@ EN.threats = {
      the array's Vitality; it gets the number in its own table, and any Role
      percentage then applies to THAT. Get this backwards and every Minion in the
      app is wrong by a different amount at every Grade. */
+  designationsIntro: "Designation measures how much of the fight a threat is. Grade and Designation together price every threat in the game.",
   designations: [
     // the last sentence is GMT p23's Minion line: "Use the flat damage number in parentheses instead of rolling to keep a horde's turn moving."
-    { key: "minion", name: "Minion", blurb: "Cheap muscle dying in droves. At 0 Vitality it is out of the fight, no lingering, no drama. Use the flat damage number in parentheses instead of rolling to keep a horde's turn moving.",
+    { key: "minion", name: "Minion", blurb: "Cheap muscle dying in droves. At 0 Vitality it is out of the fight, no lingering. Use the flat damage number in parentheses instead of rolling.",
       vitalityByGrade: { 1: 6, 2: 10, 3: 15, 4: 25, 5: 35 },
       damageMult: 0.6, noDefensiveImpulse: true,
       xpByGrade: { 1: 25, 2: 50, 3: 75, 4: 100, 5: 125 } },
     { key: "standard", name: "Standard", blurb: "The default. One Standard of matching Grade is a fair share of a fight for one Freelancer.",
       xpByGrade: null },
-    { key: "elite", name: "Elite", blurb: "A squad leader, a warform, an alpha. Counts as two Standards on the budget and plays like it.",
+    { key: "elite", name: "Elite", blurb: "A squad leader, a warform, an alpha. Counts as two Standards on the budget, with more Vitality, a nastier action, and one trick worth interrupting.",
       vitalityMult: 2, defense: 1, dc: 1, damageMultLow: 1.5, damageMultHigh: 2,
       xpByGrade: { 1: 200, 2: 300, 3: 500, 4: 700, 5: 900 } },
-    { key: "solo", name: "Solo", blurb: "A specialized killer that takes the whole crew to put down. Priced for four Freelancers by itself.",
+    { key: "solo", name: "Solo", blurb: "A specialized killer that takes the whole crew to put down. Priced for four Freelancers by itself. Cryptids are usually Solos. So is anything with its own rumor.",
       vitalityMult: 4, defense: 1, dc: 2, damageMult: 3,
       /* Building a Solo (GMT p25): "give it two to three attacks a round on its own turn, totaling
          about triple a Standard's damage." The resolver prints this where a Standard prints the
@@ -100,16 +105,16 @@ EN.threats = {
      `rolesIntro` is the Roles intro's own sentence, the one the halves-round-down
      ruling below quotes, carried as data so the Codex's Roles panel
      (js/codex_gm_threats.js) prints it instead of restating it. */
-  rolesIntro: "A Role is a behavior package: what the threat does with its numbers, plus a small adjustment to them, rounded down.",
+  rolesIntro: "A Role is a behavior package: what the threat does with its numbers, plus a small adjustment to them, rounded down. Pick one. Hybrids exist.",
   roles: [
     { key: "bruiser", name: "Bruiser", vitalityMult: 1.25, defense: -1,
-      text: "Walks in. Stands there. Makes standing there your problem. Melee, Shoves, holds doorways." },
+      text: "Walks in. Stands there. Melee, Shoves, holds doorways." },
     { key: "skirmisher", name: "Skirmisher", vitalityMult: 0.75, defense: 1, speed: 7,
-      text: "Hits and leaves. Uses Disengage, cover, and your impatience." },
+      text: "Hits and leaves. Uses Disengage and cover." },
     { key: "gunhand", name: "Gunhand",
       text: "Line infantry. Shoots from cover, falls back by numbers, respects suppression." },
     { key: "deadshot", name: "Deadshot", vitalityMult: 0.75, damageMultOneAttack: 1.5,
-      text: "One good angle, one heavy hit. Dies fast when found, which is the game." },
+      text: "One good angle, one heavy hit. Dies fast when found." },
     { key: "ghost", name: "Ghost", vitalityMult: 0.75, defense: 1,
       text: "Opens while Hidden. Relocates after." },
     /* `vitalityMult` added 2026-09-18: the Roles table gave Controller a Vitality clause to match
@@ -130,7 +135,7 @@ EN.threats = {
     { key: "controller", name: "Controller", damageMult: 0.75, vitalityMult: 0.75, saveDC: 1,
       text: "Trades damage for conditions and terrain: Restrains, Blinds, herds the crew into worse rooms." },
     { key: "support", name: "Support", damageMult: 0.75,
-      text: "Keeps the others standing: restores Vitality equal to twice its Grade as an Action, or grants an ally Edge. Kill the medic first is a proverb for a reason." }
+      text: "Keeps the others standing: restores Vitality equal to twice its Grade as an Action, or grants an ally Edge." }
   ],
 
   /* NO ROLE. The Bestiary Index says "A threat with no Role is built off the Array
@@ -165,21 +170,20 @@ EN.threats = {
       { name: "Header", text: "Grade, Designation, Role, then Size and what it is. Size runs on the standard scale (Tiny, Small, Medium, Large, Huge) and uses the height bands from Timing, Action Economy & Combat." },
       { name: "Defense", text: "Defense is the number an attack must meet or beat. Cover adds to it as normal." },
       { name: "DR", text: "DR is flat damage reduction, with its source in parentheses. If the crew takes the armor off the body afterward, the armor is what the parenthetical says it is." },
-      { name: "Vitality", text: "Vitality is the whole pool. Threats don't track Wounds or Vigor unless the entry grants them. At 0 Vitality a threat is out of the fight: dead, dying, or done, whichever the scene calls for. If you want a named threat to survive on the floor, it survives on the floor. The dice have finished their part." },
+      { name: "Vitality", text: "Vitality is the whole pool. Threats don't track Wounds or Vigor unless the entry grants them. At 0 Vitality a threat is out of the fight: dead, dying, or done, whichever the scene calls for. If you want a named threat to survive on the floor, it survives on the floor." },
       { name: "Speed", text: "How many spaces this threat can move on its turn." },
-      { name: "Initiative", text: "Initiative is its whole Initiative bonus, rolled as d20 plus the number. To build one, start at Grade + 2. Minions take 1 off, Bruisers take 1 off, Skirmishers add 1, Ghosts add 2. Nudge it a point either way for the fiction. A turret bolted to a wall can sit lower, and anything that's been waiting for you can sit higher." },
+      { name: "Initiative", text: "Initiative is its whole Initiative bonus, rolled as d20 plus the number. To build one, start at Grade + 2. Minions take 1 off, Bruisers take 1 off, Skirmishers add 1, Ghosts add 2. Nudge it a point either way for the fiction." },
       { name: "Saves", savesRule: true },
       { name: "Passive Perception", text: "Passive Perception is what Stealth is rolling against." },
       { name: "Attacks and abilities", text: "Attacks and abilities carry the standard action tags: (Action), (Move), (Swift), (Impulse), (Free), (Complex), (Special). Untagged traits are passive. The number in parentheses after damage dice is the average, for when rolling is slower than the scene deserves." },
-      { name: "XP", text: "XP is the threat's price in the encounter budget and its award when defeated. Defeated includes captured, routed, hacked, bypassed, or talked down. The crew doesn't have to make a body to get paid in experience." },
+      { name: "XP", text: "XP is the threat's price in the encounter budget and its award when defeated. Defeated includes captured, routed, hacked, bypassed, or talked down." },
       { name: "Resolve", text: "Resolve appears on threats that can be argued with, using the Opposition Tiers from Setting Resolve (The Sit-Down). No Resolve line means the conversation is over before it starts." },
-      { name: "Gear", text: "Gear is what the body is carrying when the shooting stops. Threat gear is real: catalog items at catalog stats, ready to be looted, fenced, or explained to a magistrate." }
+      { name: "Gear", text: "Gear is what the body is carrying. Threat gear is real: catalog items at catalog stats, ready to be looted or fenced." }
     ]
   },
 
   /* THE ABILITY MENU, GMH pp58 to 59. `abilityIntro` is the menu's own opening paragraph (GMT p25),
-     word for word; the Codex's Ability Menu panel prints it first. Two abilities make a threat feel
-     authored instead of extruded. Pick from the menu or write your own; the book asks that
+     trimmed; the Codex's Ability Menu panel prints it first. Give a threat two abilities. Pick from the menu or write your own; the book asks that
      riders stay keyed to the threat's single Save DC and that conditions stay
      inside the Conditions chapter, and says every menu ability is tuned for its
      listed Roles at any Grade. `anything` is the book's own group name and is
@@ -188,7 +192,7 @@ EN.threats = {
      Texts follow the Handbook. Lockdown and Static Howl name a Body Save,
      Patch In heals twice THIS threat's Grade (not the healed ally's), Wrecker
      drops a MATERIAL category, and From Nowhere is +1 damage die with no Edge. */
-  abilityIntro: "Two abilities make a threat feel authored instead of extruded. Pick from the menu or write your own; keep riders keyed to the threat's single Save DC, and keep conditions to the ones in the Conditions chapter. Every menu ability below is tuned for its listed roles at any Grade.",
+  abilityIntro: "Give a threat two abilities. Pick from the menu or write your own; keep riders keyed to the threat's single Save DC, and keep conditions to the ones in the Conditions chapter. Every menu ability below is tuned for its listed roles at any Grade.",
   abilityGroups: [
     { role: "bruiser", abilities: [
       { name: "Haymaker", cost: "Action", text: "One heavy attack at +2 damage dice. On a hit, the Target makes a Body Save or is knocked Prone." },
@@ -214,7 +218,7 @@ EN.threats = {
       { name: "Smoke Discipline", cost: "Swift", text: "Drop a smoke or flash charge: an Area 2 sphere is heavily obscured until the end of the threat's next turn." }
     ] },
     { role: "controller", abilities: [
-      { name: "Lockdown", cost: "Action", text: "One Target within 12 spaces makes a Body Save against the threat's DC or is Restrained until the end of its next turn (foam, cable, gravitic pinch, roots, as the fiction dictates)." },
+      { name: "Lockdown", cost: "Action", text: "One Target within 12 spaces makes a Body Save against the threat's DC or is Restrained until the end of its next turn." },
       { name: "Herding Field", cost: "Action", text: "Area 3 sphere within 12 spaces becomes Difficult Terrain until the start of the threat's next turn." },
       { name: "Static Howl", cost: "Action", text: "Area 3 cone. Targets make a Body Save or are Staggered until the end of their next turn." }
     ] },
@@ -224,8 +228,8 @@ EN.threats = {
       { name: "Stims", cost: "Action", text: "An allied threat immediately makes a save against one condition affecting it, with Edge." }
     ] },
     { role: "anything", abilities: [
-      { name: "Dangerous Habits", cost: null, text: "Give the threat one weapon rider from the Optional Damage Effects appendix: Ignite, Bleed, Knockback, Disrupt, and their siblings. Declare it before the attack resolves, per that appendix." },
-      { name: "Dead Man's Price", cost: "Special", text: "When reduced to 0 Vitality, the threat does one last thing: a grenade cooks off, a scream goes out on an open channel, a claw spasms shut. One attack or one complication, then it is done." }
+      { name: "Dangerous Habits", cost: null, text: "Give the threat one weapon rider from the Optional Damage Effects appendix. Declare it before the attack resolves, per that appendix." },
+      { name: "Dead Man's Price", cost: "Special", text: "When reduced to 0 Vitality, the threat does one last thing: one attack or one complication, then it is done." }
     ] }
   ],
 
@@ -235,18 +239,18 @@ EN.threats = {
      "unless an entry grants them", and the one Impulse may go to a listed
      defense OR an Opportunity Attack. */
   conventions: [
-    "Vitality only. No Wounds, no Resilience Dice, no Vigor, unless an entry grants them. A threat that needs the full Freelancer treatment (a recurring rival, a campaign villain with a name and a tailor) can be built as a Freelancer instead. Budget an afternoon.",
-    "Conditions work normally. Threats Bleed, Burn, fall Prone, and get Frightened. When a condition's save comes due, use the threat's listed save bonus.",
-    "One defensive Impulse. Minions get none. Standards and Elites get one Impulse Action per round, usable for the defensive options their entry lists or for an Opportunity Attack. Solos have their own economy.",
+    "Vitality only. No Wounds, no Resilience Dice, no Vigor, no class resources, no Loadouts, unless an entry grants them. A threat that needs the full Freelancer treatment can be built as a Freelancer instead: see Enemy Freelancers and Named Rivals.",
+    "Conditions work normally. Threats Bleed, Burn, fall Prone, and get Frightened by the book. When a condition's save comes due, use the threat's listed save bonus.",
+    "One defensive Impulse. Minions get none. Standards and Elites get one Impulse Action per round, usable for the defensive options their entry lists or for an Opportunity Attack. Solos have their own economy: see Running Solos.",
     "Threats don't roll Death Saves. 0 Vitality resolves the question. The exception is anyone the crew is paid to bring in breathing, in which case the body is Dying and the clock from Vitality & Recovery is now the crew's problem.",
     "Threats use flat bonuses. No proficiency tiers, no Caliber. The stat block's number is the whole number.",
     "A named weapon is the catalog weapon. The die and the traits belong to the gear, the flat bonus and the number of attacks belong to the threat. When the gear itself is better than the catalog, the Gear line says so."
   ],
   /* GMH p56, the run-in "Morale (optional rule)." The Codex card carries that run-in
-     as its title, so the text starts at "Most Hostiles". "Constructs ON TASK": a
+     as its title, so the text starts at the trigger. "Constructs ON TASK": a
      Construct off its task checks like anyone else, so the exemption is not every
      Construct. */
-  morale: "Most Hostiles are employees. When a side loses its leader, loses half its number, or watches something arrive that is visibly out of its Grade, have the survivors make a Presence Save DC 12. On a failure they break: retreat, surrender, or a sudden fascinating interest in guarding a different hallway. Fanatics, Constructs on task, and anything without a survival instinct don't check. Fights that end in morale collapse pay full XP. Routing people is winning.",
+  morale: "When a side loses its leader, loses half its number, or watches something arrive that is visibly out of its Grade, have the survivors make a Presence Save DC 12. On a failure they break: retreat or surrender. Fanatics, Constructs on task, and anything without a survival instinct don't check. Fights that end in morale collapse pay full XP.",
 
   /* Size is the character-side vocabulary, reused rather than restated, so a
      Large threat and a Large Freelancer mean the same thing (GMH p55 names the
@@ -351,7 +355,7 @@ EN.threats.initiative = (function () {
     base: 2,
     byDesignation: keyed({ minion: -1 }),
     byRole: keyed({ bruiser: -1, skirmisher: 1, ghost: 2 }),
-    note: "Nudge it a point either way for the fiction. A turret bolted to a wall can sit lower, and anything that's been waiting for you can sit higher."
+    note: "Nudge it a point either way for the fiction."
   };
 })();
 
@@ -365,29 +369,33 @@ EN.threats.initiative = (function () {
 // GMH p59
 EN.threats.runningSolos = {
   title: "Running Solos",
-  intro: "Four against one is a scheduling problem. A Solo solves it by cheating in the open. Every Solo carries the following, in addition to its stat block:",
+  intro: "Every Solo carries the following, in addition to its stat block:",
   rules: [
     { key: "surges", name: "Surges", tag: "Special",
-      text: "After each Freelancer's turn, the Solo may take one Surge from its list. Each Surge can be used once per round. A Solo has two Surges per round at Grade 1 and 2, three at Grade 3 and up. Surges are short moves: a half-Speed reposition, a single attack at the bottom of its damage range, a condition push, a call for reinforcements. The Solo's own turn stays its turn. The Surges are the reason the crew never gets to plan in peace." },
+      text: "After each Freelancer's turn, the Solo may take one Surge from its list. Each Surge can be used once per round. A Solo has two Surges per round at Grade 1 and 2, three at Grade 3 and up. Surges are short moves: a half-Speed reposition, a single attack at the bottom of its damage range, a condition push, a call for reinforcements. The Solo's own turn stays its turn." },
     { key: "impulses", name: "Defensive Impulses", tag: null,
       text: "A Solo gets one Impulse Action per Freelancer turn, spent on the defensive options its entry lists. It can still only use one defense against any single attack." },
     { key: "unshakable", name: "Unshakable", tag: "Special",
-      text: "A Solo makes its condition saves at the end of every turn, not only its own. Once per round, when it fails a save, it may spend one of its remaining Surges to succeed instead. Restraints work on a Solo. They just don't work for long." },
+      text: "A Solo makes its condition saves at the end of every turn, not only its own. Once per round, when it fails a save, it may spend one of its remaining Surges to succeed instead. Restraints work on a Solo." },
     { key: "breakpoint", name: "Breakpoint", tag: "Special",
-      text: "The first time a Solo drops below half Vitality, its Breakpoint fires: a new attack pattern, a shed skin, a called-in favor, a change of venue. The fight before the Breakpoint is the crew learning the rules. The fight after is the Solo breaking them." }
-  ]
+      text: "The first time a Solo drops below half Vitality, its Breakpoint fires: a new attack pattern, a shed skin, a called-in favor, a change of venue." }
+  ],
+  /* Building a Solo (GMT lines 3367 to 3383). The Codex prints it after the rules above and closes
+     it with EN.threats.budget.soloNote, the page's last clause. It is not in `rules`, which the
+     Table's Solo helper walks. */
+  building: { name: "Building a Solo",
+    text: "Take the Standard Threat Array at the Solo's Grade. Quadruple the Vitality, add 1 Defense and 2 to the Save DC, and give it two to three attacks a round on its own turn, totaling about triple a Standard's damage. Then write two to four Surges, one Breakpoint, and one weakness the crew can find by scouting. The weakness isn't optional. Solos pay 4 times Standard XP." }
 };
 
 /* ENEMY FREELANCERS AND NAMED RIVALS (GMT p25, after Running Solos): how to build the other crew.
-   Word for word. The last paragraph keeps the page's bold run-in as `name`; the Codex prints it as
+   Trimmed to the instructions. The last paragraph keeps the page's bold run-in as `name`; the Codex prints it as
    the entry's heading. The Heat tab's Bounty text ("Build a taker as a rival crew (Enemy
    Freelancers and Named Rivals)") points here, and the panel title links it. */
 EN.threats.rivals = {
   name: "Enemy Freelancers and Named Rivals",
   paragraphs: [
-    "Sometimes the opposition is just another crew, doing the same work from the other side of the invoice.",
-    "For a one-scene rival crew, build them as threats: an Elite of the matching Grade for the counterpart of each Freelancer, flavored by class. That's Red Work on the budget; build them as Standards for a Fair Fight. Give the rival Codebreaker the Gutter Hacker's Node tricks, the rival Fury a Bruiser chassis with Haymaker, the rival Stitcher a Support chassis with Patch In and Stims. They will read as colleagues without making you track seven resource pools.",
-    "For a recurring rival, someone meant to survive three arcs and one betrayal, consider building them once as a real Freelancer with class levels, and accept the prep cost. The middle path: build them as an Elite, give them Wounds equal to half their Vitality (the one threat exception that earns its bookkeeping), and let them spend the fiction's version of resources: two or three signature moves per scene, then they are out of tricks and know it. A rival who runs when the math turns is a rival the table gets to hate properly."
+    "For a one-scene rival crew, build them as threats: an Elite of the matching Grade for the counterpart of each Freelancer, flavored by class. That's Red Work on the budget; build them as Standards for a Fair Fight. Give the rival Codebreaker the Gutter Hacker's Node tricks, the rival Fury a Bruiser chassis with Haymaker, the rival Stitcher a Support chassis with Patch In and Stims.",
+    "For a recurring rival, consider building them once as a real Freelancer with class levels. The middle path: build them as an Elite, give them Wounds equal to half their Vitality (the one threat exception that earns its bookkeeping), and let them spend the fiction's version of resources: two or three signature moves per scene, then they are out of tricks."
   ],
   crewToys: {
     name: "Threats and the crew's toys.",
@@ -408,12 +416,12 @@ EN.threats.rivals = {
    once. The Ability Menu's Dangerous Habits points here. The Freelancer desktop never sees it. */
 EN.threats.optionalDamageEffects = {
   title: "Optional Damage Effects",
-  intro: "None of these Effects is the default for any damage type. Attach one when you run a specific threat, build a custom weapon, or want a wrinkle in a scene. The weapon text, the Invocation, or you call for it, never the damage type on its own. Pull from the toolbox freely, ignore it, or build your own. The PHB's Damage Types are the contract with the player. This appendix is yours.",
+  intro: "None of these Effects is the default for any damage type. Attach one when you run a specific threat, build a custom weapon, or want a wrinkle in a scene. The weapon text, the Invocation, or you call for it, never the damage type on its own. Pull from the toolbox freely, ignore it, or build your own.",
   using: {
     name: "Using Damage Effects",
     lead: "To attach an Effect to an attack, weapon, or environmental source:",
     steps: [
-      "Declare the Effect clearly before the attack resolves (\"This flamethrower has the Ignite Effect\").",
+      "Declare the Effect clearly before the attack resolves.",
       "Apply the damage normally according to the universal defense rules.",
       "If the Effect has a save or condition, resolve it after damage."
     ]

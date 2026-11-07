@@ -69,7 +69,7 @@ EN.bestiary = {
 
   // GMH p67, the chapter intro. The second paragraph is the rule for every `variant`.
   intro: [
-    "A starting roster, sorted by what the crew is actually facing: people, machines, programs, things the Flow made, things a lab made, and the things the street only half believes in. Every entry is built from the rules in Threats, some with numbers tuned by hand. To re-Grade one, use the new Grade's row of the Standard Threat Array (Designation and Role adjustments included), carry its abilities across, and review any fixed numbers or intentional departures from the row before play. The city doesn't stop at one of each, and neither should you.",
+    "A starting roster, sorted by what the crew is actually facing. Every entry is built from the rules in Threats, some with numbers tuned by hand. To re-Grade one, use the new Grade's row of the Standard Threat Array (Designation and Role adjustments included), carry its abilities across, and review any fixed numbers or intentional departures from the row before play.",
     "Where an entry lists a Variant, it is the same stat block with the listed changes, priced at the new XP."
   ],
 
@@ -78,22 +78,22 @@ EN.bestiary = {
   categories: [
     // GMH p70
     { key: "people", name: "People of the Trade", count: 23,
-      intro: "Most of what a crew fights is people: underpaid, overarmed, and convinced of something. Kill them and somebody files a report, lights a candle, or posts a bounty. The Resolve line is there because every one of them can, in principle, be talked to. Whether there is time is the crew's problem." },
+      intro: "Most of what a crew fights is people. The Resolve line is there because every one of them can, in principle, be talked to." },
     // GMH p81
     { key: "machines", name: "Machines and Proxies", count: 6,
-      intro: "Nothing personal. That is the point of them: hardware holds a position without wondering why, and a Proxy bleeds in one district while its operator finishes dinner in another. Remember the #GRID layer: most machines carry a Node, and the Node is a second way to win." },
+      intro: "Hardware and Proxies. Remember the #GRID layer: most machines carry a Node, and the Node is a second way to win." },
     // GMH p84
     { key: "grid", name: "The #GRID Side", count: 4,
-      intro: "Some threats never touch pavement. They live in Nodes, ride the city's traffic, and reach into meatspace through everything wired to listen. Digital threats use Node math (Security Rating, System Integrity, Firewall Damage Threshold) instead of Defense and Vitality; the crew fights them with ciphers and Quick Hacks. A judicious power cut works too." },
+      intro: "Some threats live in Nodes and reach into meatspace through everything wired to listen. Digital threats use Node math (Security Rating, System Integrity, Firewall Damage Threshold) instead of Defense and Vitality; the crew fights them with ciphers and Quick Hacks. A judicious power cut works too." },
     // GMH p87
     { key: "flow", name: "The Flow Side", count: 7,
-      intro: "The current leaves residue. Some of it lingers, some of it walks, and some of it hunts. Threats in this section interact with Shapers the way weather interacts with umbrellas: personally." },
+      intro: "Things the Flow made." },
     // GMH p90
     { key: "bioforms", name: "Bioforms and Subjects", count: 3,
-      intro: "Engineered meat, escaped experiments, and heavily mutated organics: the kind of Targets that bleed weird colors and refuse to stay dead. The corporate paperwork calls them Subjects while they are loose and Specimens once they are strapped down. Both words mean somebody's R&D budget is walking around unsupervised, and somebody's legal department will pay to have that stop being true." },
+      intro: "Engineered meat, escaped experiments, and heavily mutated organics. The corporate paperwork calls them Subjects while they are loose and Specimens once they are strapped down." },
     // GMH p92
     { key: "cryptids", name: "Cryptids of Elysium", count: 5,
-      intro: "The street keeps its own bestiary. No corporate taxonomy, no assay record: just the thing the night crew won't talk about sober, filed under Specimens if it is ever caged and under insurance exclusions the rest of the time. A cryptid is any creature the city half believes in: Flow-warped fauna, escaped Bioforms gone generations feral, Manifestations that found a diet, machinery that learned appetite. Cryptid hunts are real work with real postings, and the number on the posting is a Grade somebody paid blood to estimate." }
+      intro: "A cryptid is any creature the city half believes in: Flow-warped fauna, escaped Bioforms gone generations feral, Manifestations that found a diet, machinery that learned appetite. Cryptid hunts are real work with real postings, and the number on the posting is an estimated Grade." }
   ],
 
   /* Run-in subheads. `intro` is the printed run-in without its heading, which
@@ -764,11 +764,11 @@ EN.bestiary = {
     title: "Running a hunt",
     lead: "A cryptid is a Solo plus a procedure. Give every hunt three beats:",
     beats: [
-      { n: 1, name: "Signs", text: "The cheap evidence: what it leaves, what it takes, what changed in the neighborhood. Signs are how the crew confirms the Grade before betting their bodies on it." },
+      { n: 1, name: "Signs", text: "The cheap evidence: what it leaves, what it takes, what changed in the neighborhood. Signs are how the crew confirms the Grade." },
       { n: 2, name: "Territory", text: "Where it operates and why: a food source, a nest condition, a boundary it won't cross. Territory work means questioning witnesses and following leads with Dice Pools. It's where the crew finds the weakness every Solo carries." },
       { n: 3, name: "The Lair", text: "The fight, on the cryptid's terms unless the crew's preparation stole those terms. Every point of research should be worth blood saved: found weaknesses, chosen ground, an exit the thing doesn't know about." }
     ],
-    closing: "A crew that skips to beat three learns why the last crew's gear was still in the lair."
+    closing: ""
   },
 
   /* SPECIES TEMPLATES, GMH p97. Reference data, not threats: one template laid
@@ -781,7 +781,7 @@ EN.bestiary = {
   speciesTemplates: {
     title: "Species Templates",
     intro: [
-      "Most stat blocks for people read \"any species,\" and they mean it. When the species matters, lay one of these over the block: add the traits, change nothing else. The XP, the Grade, and the Resolve stay as printed. Each template draws on the species' PHB entry, adapting its traits for a fight, so a Verdine Corpsec Officer fights like a Corpsec Officer who happens to be Verdine.",
+      "Most stat blocks for people read \"any species.\" When the species matters, lay one of these over the block: add the traits, change nothing else. The XP, the Grade, and the Resolve stay as printed. Each template draws on the species' PHB entry, adapting its traits for a fight.",
       "One template per threat. Templates don't apply to machines, programs, or anything Mindless."
     ],
     columns: ["Species", "Add These Traits", "Corporate Classification"],
@@ -803,7 +803,7 @@ EN.bestiary = {
         { name: "Reality Fracture", cost: "Swift, once per scene", text: "Teleport up to 6 spaces to an unoccupied space it can see; each Target adjacent to where it left takes 1d4 Entropy damage (2)." }
       ] }
     ],
-    footer: "Humans need no template. They're the default the blocks were written for, and they'd like you to know they're special anyway."
+    footer: "Humans need no template. They're the default the blocks were written for."
   },
 
   /* HOSTILE VEHICLES, GMH pp98 to 99. Reference data, not threats: a vehicle
