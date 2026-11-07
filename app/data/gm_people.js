@@ -182,7 +182,7 @@ EN.gmBook.people = {
        themselves are the Sit-Down's (the player reference in js/face.js lists
        them; Insight deals no Pressure there). */
     weakSpots: {
-      text: "Weak spots work as Vulnerabilities and Resistances (The Sit-Down) describes: the GM may rule that a contact takes double Pressure from one Approach or none from another. Put it on the card when you decide it, so the next GM (or next month's you) remembers.",
+      text: "Weak spots work as Vulnerabilities and Resistances (The Sit-Down) describes: the GM may rule that a contact takes double Pressure from one Approach or none from another. Put it on the card when you decide it.",
       kinds: ["double", "none"]
     }
   },

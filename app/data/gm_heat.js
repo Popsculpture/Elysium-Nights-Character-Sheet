@@ -338,7 +338,7 @@ EN.gmBook.heat = {
     ],
     nexusAbove: 5000,
     whoTakesIt: { name: "Who takes it.",
-      text: "Rival crews, mostly, and some of them are people the crew has worked with. Build a taker as a rival crew (Enemy Freelancers and Named Rivals), and let the crew hear about them first. Once the Bounty is up, every Heat check against that source also brings whoever has taken it." },
+      text: "Rival crews, mostly, and some of them are people the crew has worked with. Build a taker as a rival crew (Enemy Freelancers and Named Rivals), and let the crew hear about them first: a Ringer who sold the crew's address, a fixer who won't meet their eyes, a familiar van parked across the street. Once the Bounty is up, every Heat check against that source also brings whoever has taken it." },
     takersEveryCheck: true,
     takingItDown: { name: "Taking it down.",
       text: "The posting stays up until the source pulls it, the source's Heat falls below 7, or someone pays the Exchange to cancel it. Cancelling costs the full kill price, paid by the crew or by someone who owes them a great deal. The Exchange's lawyers can also find a flaw in the posting, for a fee, which buys a week." },

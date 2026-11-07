@@ -670,7 +670,7 @@ EN.gmBook.scenes = {
       intro: "A dive profile tells the GM what drives the expedition. Profiles can overlap; use the one that best describes why this dive matters.",
       rows: [
         { key: "threshold", name: "Threshold",
-          text: "A crew's first defining dive, or the Incursion that earns it a place with a Guild, faction, or neighborhood. The crew's choices give people something to remember." },
+          text: "A crew's first defining dive, or the Incursion that earns it a place with a Guild, faction, or neighborhood." },
         { key: "contract", name: "Contract",
           text: "A dive with a stated objective: clear the site, recover property, or remove the anchor. A filed claim or private commission establishes who may work it. Payment terms and salvage rights establish what the crew takes home." },
         { key: "wildcard", name: "Wildcard",
@@ -678,7 +678,7 @@ EN.gmBook.scenes = {
         { key: "crucible", name: "Crucible",
           text: "An Incursion that puts a capability under sustained pressure. What they learn can lead to training and better postings. Advancement follows the normal rules." },
         { key: "convergence", name: "Convergence",
-          text: "Several objectives lead into the same Incursion. Residents, Entities, factions, and rival claim holders pursue their own plans while the crew explores. Removing or destroying the anchor collapses the site. The dispute over what happened there may continue after the streets return to normal." }
+          text: "Several objectives lead into the same Incursion. Residents, Entities, factions, and rival claim holders pursue their own plans while the crew explores. Removing or destroying the anchor collapses the site." }
       ]
     },
 
@@ -771,7 +771,7 @@ EN.gmBook.scenes = {
         { n: 8,  text: "...is getting smaller. Each zone cleared is one the crew can't go back through." },
         { n: 9,  text: "...keeps its own time. Set the ratio: an hour inside is a day outside, or a minute. The rent keeps counting either way." },
         { n: 10, text: "...has weather. It rains in the stairwells, or the hallways run cold enough for the Exposure rules." },
-        { n: 11, text: "...belongs to the current. Every Invocation cast inside is noticed by whatever owns the Flow here, and it keeps count." },
+        { n: 11, text: "...belongs to the current. Every Invocation shaped inside is noticed by whatever owns the Flow here, and it keeps count." },
         { n: 12, text: "...is always filming. Every camera inside streams live to somewhere outside, and someone is selling ads against the crew." }
       ]
     },
