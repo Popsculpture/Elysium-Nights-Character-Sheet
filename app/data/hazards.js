@@ -172,9 +172,9 @@ EN.hazards = {
        trait, or carries a Rebreather Liner, which makes it count as Sealed (PHB:14488). */
     { key: "sealed", name: "Sealed armor", kind: "Armor Trait",
       source: { type: "armorTrait", name: "Sealed" },
-      summary: "Turns caustic air and smoke aside. Nothing for heat or cold.",
-      note: "Sealed armor turns the bad air aside and does nothing whatsoever for cold. Smoke has no clock on the sheet.",
-      effects: { blocksCaustic: true } },
+      summary: "Turns caustic air and smoke aside. Edge on thin-air saves while the clock still runs. Nothing for heat or cold.",
+      note: "Sealed armor turns the bad air aside, giving Edge on thin-air saves while the clock still runs, and does nothing whatsoever for cold. Smoke has no clock on the sheet.",
+      effects: { blocksCaustic: true, edgeOn: ["thinair"] } },
 
     { key: "radiation-calluses", name: "Radiation Calluses", kind: "FreeBorn Trait",
       source: { type: "lineageFeature", name: "Radiation Calluses" }, lineage: "freeborn",
@@ -189,9 +189,9 @@ EN.hazards = {
 
     { key: "void-lung", name: "Void Lung", kind: "FreeBorn Trait",
       source: { type: "lineageFeature", name: "Void Lung" }, lineage: "freeborn",
-      summary: "Hold your breath for up to 15 minutes.",
-      note: "Fifteen minutes is 150 rounds, at the Handbook's flat rate of 10 rounds to the minute, and it covers both Vacuum and Drowning. The save clock starts when those run out rather than never starting, so the tracker stays live and counts down. A Vacuum's 1d6 Cold still lands every round regardless of held breath.",
-      effects: { breathMinutes: 15 } },
+      summary: "Hold your breath for up to 15 minutes, and Edge on thin-air saves while the clock still runs.",
+      note: "Void Lung holds fifteen minutes of breath, which is a long time in vacuum, and lungs built for recycled air get Edge on thin-air saves. Fifteen minutes is 150 rounds, at the Handbook's flat rate of 10 rounds to the minute, and it covers both Vacuum and Drowning. The save clock starts when those run out rather than never starting, so the tracker stays live and counts down. A Vacuum's 1d6 Cold still lands every round regardless of held breath.",
+      effects: { breathMinutes: 15, edgeOn: ["thinair"] } },
 
     { key: "hearthglow", name: "Hearthglow", kind: "Cinder-Heart Feature",
       source: { type: "lineageFeature", name: "Hearthglow" }, lineage: "cinder-heart",

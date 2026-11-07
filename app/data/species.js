@@ -41,7 +41,7 @@ EN.species = [
         name: "FreeBorn",
         description: "Resilient survivors of deep void stations and tight undercity corridors who rely on grit and mutual aid.",
         features: [
-          { name: "Void Lung", text: "Your respiratory system has brutally adapted to recycled, thin air. You can hold your breath for up to 15 minutes, and you are entirely immune to inhaled toxins, smog, and weaponized gases." },
+          { name: "Void Lung", text: "Your respiratory system has brutally adapted to recycled, thin air. You can hold your breath for up to 15 minutes, and you are entirely immune to inhaled toxins, smog, and weaponized gases. You have Edge on saves against thin air." },
           { name: "Radiation Calluses", text: "Your skin is exceptionally tough, a generational response to cosmic radiation and failing station shielding. You possess a natural Resistance to Radiation damage, and you don't suffer the usual Fatigue from exposure to freezing environments." },
           { name: "Lowlight Optics", text: "Born under flickering fluorescents and emergency bioluminescence, your eyes are hypersensitive to low light. You possess Darkvision up to 12 spaces, and your pupils adjust instantly, meaning sudden blinding flashes or strobe effects don't impose Snag on your attacks or visual checks." },
           { name: "Spinward Bones", text: "Generations of living in shifting artificial gravity have fundamentally altered your bone density and joint flexibility. You take half damage from falling or being forcefully thrown into solid objects, and you can safely operate in zero-gravity environments without suffering motion sickness or disorientation." },
