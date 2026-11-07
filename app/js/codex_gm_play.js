@@ -431,7 +431,7 @@ window.EN = window.EN || {};
           K.subTitle("Experience"),
           K.proseBlock(paras([X.milestone, X.text])),
           K.refTable(["Grade"].concat((X.columns || []).map(runIn)), (X.priceList || []).map(function (r) {
-            return ["G" + r.grade].concat((X.columns || []).map(function (c) { return String(r[c]); }));
+            return ["G" + r.grade].concat((X.columns || []).map(function (c) { return String(r[c]).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }));
           }), [0])
         ]));
       }
