@@ -31,7 +31,9 @@
    them; Not now marks them local only, so the question never repeats for them.
    Local copies are never deleted.
 
-   The sign-in button only shows on a page served over http(s): Discord sends
+   WHERE IT SHOWS. The top bar's LINK readout is the cloud indicator, and Jack in
+   and Jack out sit in Settings (// CLOUD LINK, first in the tray). Jacking in only
+   works on a page served over http(s): Discord sends
    the player back to an address on the project's allow list, and a file://
    page cannot be one. ES5 throughout, like the rest of the app; the vendored
    library (vendor/supabase.min.js) supplies window.supabase.
@@ -326,33 +328,74 @@ EN.cloud = (function () {
     paint();
   }
 
-  /* ---- the top-bar control ------------------------------------------------- */
-  var STATUS_TEXT = { ok: "CLOUD OK", syncing: "CLOUD SYNC…", error: "CLOUD OFFLINE" };
-  var STATUS_TIP = {
-    ok: "Your characters are saved to your account.",
-    syncing: "Saving to your account.",
-    error: "Could not reach your account. Your characters are still saved on this device, and will upload when the connection is back."
-  };
+  /* ---- the LINK readout ------------------------------------------------------
+     The top bar's LINK readout (and the '98 tray's ⇋, which stands in for it there) is the
+     cloud indicator (the author, 7 Nov 2026): LINK STABLE when the account is reachable and
+     saved, LINK SYNC… while an upload runs, LINK DOWN when the account cannot be reached, and
+     NO LINK while nobody is jacked in. SYNC OK beside it stays the save on this device.
+     Jack in and Jack out live in Settings (js/settings.js, // CLOUD LINK). */
+  var LINK_TEXT = { off: "NO LINK", ok: "LINK STABLE", syncing: "LINK SYNC…", error: "LINK DOWN" };
+  var LINK_COLOR = { off: "var(--text3)", ok: "var(--success)", syncing: "var(--warn)", error: "var(--danger)" };
+  function linkState() { return user ? (LINK_TEXT[status] ? status : "ok") : "off"; }
+  function linkTip() {
+    var k = linkState();
+    if (k === "off") return client
+      ? "Not jacked in: characters save to this device only. Jack in with Discord from Settings to save them to your account."
+      : "No cloud link on this copy of the app: characters save to this device only.";
+    if (k === "syncing") return "Jacked in as " + displayName() + ". Saving to your account.";
+    if (k === "error") return "Jacked in as " + displayName() + ", but your account cannot be reached. Characters are still saved on this device, and upload when the link is back.";
+    return "Jacked in as " + displayName() + ". Your characters are saved to your account.";
+  }
   function setStatus(s) { status = s; paint(); }
   function paint() {
-    var host = document.getElementById("os-cloud");
-    if (!host) return;
-    while (host.firstChild) host.removeChild(host.firstChild);
-    if (!client) { host.style.display = "none"; return; }
-    host.style.display = "";
+    var k = linkState(), tip = linkTip();
+    var span = document.getElementById("link-state");
+    if (span) {
+      var led = span.querySelector(".led");
+      span.lastChild.nodeValue = LINK_TEXT[k];
+      span.title = tip;
+      span.setAttribute("data-link", k);
+      span.style.color = k === "off" ? "" : LINK_COLOR[k];
+      if (led) led.className = "led led-" + k;
+    }
+    var g = document.getElementById("os-tray-link");
+    if (g) { g.title = LINK_TEXT[k] + ". " + tip; g.style.color = k === "ok" ? "" : LINK_COLOR[k]; }
+    // the Settings tray's // CLOUD LINK section, when it is open: its status line updates in place,
+    // and the tray is redrawn only when who is jacked in changes (not on every upload)
+    var st = document.getElementById("cloud-set-state"), hint = document.getElementById("cloud-set-hint");
+    if (st) { st.textContent = LINK_TEXT[k]; st.style.color = LINK_COLOR[k]; st.setAttribute("data-cloud-status", k); }
+    if (hint) hint.textContent = tip;
+    var who = user ? user.id : "";
+    if (who !== paintedWho) { paintedWho = who; if (EN.settings && EN.settings.refresh) EN.settings.refresh(); }
+  }
+  var paintedWho = "";
+
+  /* ---- the Settings section (js/settings.js draws it, first in the tray) ------- */
+  function settingsSection() {
+    var k = linkState();
+    var kids = [el("div.set-sectitle", { text: "// CLOUD LINK", dataset: { sum: user ? "JACKED IN" : "NOT JACKED IN" } })];
+    if (!client) {
+      kids.push(el("p.set-hint", { text: "Cloud saves work on the live site, elysiumnightsrpg.com/app. Here, characters save to this device only." }));
+      return kids;
+    }
     if (!user) {
-      host.appendChild(el("button.cloud-btn", { type: "button", "data-cloud": "in", title: "Jack in with Discord to save your characters to your account",
-        onclick: function () { jackIn(); } }, [el("span.cloud-long", { text: "JACK IN WITH DISCORD" }), el("span.cloud-short", { text: "JACK IN" })]));
-      return;
+      kids.push(el("p.set-hint", { text: "Jack in with Discord to save your characters to your account, so they follow you to any browser. Characters on this device stay where they are." }));
+      kids.push(el("button.btn.primary.cloud-in", { type: "button", "data-cloud": "in", title: "Jack in with Discord", style: { width: "100%" },
+        onclick: function () { jackIn(); } }, "JACK IN WITH DISCORD"));
+      return kids;
     }
     var pic = avatar();
-    host.appendChild(el("span.cloud-who", { title: "Jacked in as " + displayName() }, [
-      pic ? el("img.cloud-av", { src: pic, alt: "", referrerpolicy: "no-referrer" }) : null,
-      el("span.cloud-name", { text: displayName() })
-    ].filter(Boolean)));
-    host.appendChild(el("span.cloud-state.cloud-" + status, { "data-cloud-status": status, title: STATUS_TIP[status] || "", text: STATUS_TEXT[status] || "" }));
-    host.appendChild(el("button.cloud-btn", { type: "button", "data-cloud": "out", title: "Jack out. Your characters stay on this device.",
+    kids.push(el("div.cloud-who", null, [
+      pic ? el("img.cloud-av", { src: pic, alt: "", referrerpolicy: "no-referrer" }) : el("span.cloud-av.cloud-av-blank"),
+      el("div.cloud-who-text", null, [
+        el("div.cloud-name", { text: displayName() }),
+        el("div#cloud-set-state.cloud-state", { "data-cloud-status": k, style: { color: LINK_COLOR[k] }, text: LINK_TEXT[k] })
+      ])
+    ]));
+    kids.push(el("p#cloud-set-hint.set-hint", { text: linkTip() }));
+    kids.push(el("button.btn", { type: "button", "data-cloud": "out", title: "Jack out. Your characters stay on this device.", style: { width: "100%" },
       onclick: function () { jackOut(); } }, "JACK OUT"));
+    return kids;
   }
 
   /* ---- start ----------------------------------------------------------------- */
@@ -395,7 +438,7 @@ EN.cloud = (function () {
   }
 
   return {
-    start: start, jackIn: jackIn, jackOut: jackOut, sync: sync, paint: paint,
+    start: start, jackIn: jackIn, jackOut: jackOut, sync: sync, paint: paint, settingsSection: settingsSection,
     available: available,
     signedIn: function () { return !!user; },
     status: function () { return status; },

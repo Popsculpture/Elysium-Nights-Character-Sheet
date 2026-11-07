@@ -3535,37 +3535,18 @@ html.skin-98 .opt-card[data-cls] .cls-mark.on-98, html.skin-98 .feature.cls-dres
 #active-name .an-meta[data-cls]{ color:var(--cls); }
 #active-name .an-meta[data-cls] .cls-mark{ width:14px; height:14px; margin-right:4px; vertical-align:-3px; }
 
-/* ===== cloud saves: Jack in with Discord (js/cloud.js) =====
-   Its own block in the top bar, beside the LINK STABLE / SYNC OK readouts, so a skin that hides
-   those ('98) still shows it. Hidden on a file:// page, where Discord cannot send the player back. */
-.os-cloud{ display:flex; align-items:center; gap:8px; flex:none; font-family:var(--mono); font-size:11px; letter-spacing:.1em; color:var(--text3); }
-.os-cloud .cloud-btn{
-  font:inherit; letter-spacing:inherit; color:var(--accent); background:transparent; cursor:pointer;
-  border:1px solid var(--accent); padding:3px 8px; white-space:nowrap;
-}
-.os-cloud .cloud-btn:hover, .os-cloud .cloud-btn:focus-visible{ background:var(--accent); color:var(--accent-ink); }
-.os-cloud .cloud-short{ display:none; }
-.os-cloud .cloud-who{ display:inline-flex; align-items:center; gap:6px; color:var(--text2); max-width:180px; min-width:0; }
-.os-cloud .cloud-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.os-cloud .cloud-av{ width:18px; height:18px; border-radius:50%; flex:none; object-fit:cover; }
-.os-cloud .cloud-state{ white-space:nowrap; }
-.os-cloud .cloud-ok{ color:var(--success); }
-.os-cloud .cloud-syncing{ color:var(--warn); }
-.os-cloud .cloud-error{ color:var(--danger); }
-@media (max-width: 820px){
-  .os-cloud .cloud-long{ display:none; }
-  .os-cloud .cloud-short{ display:inline; }
-  .os-cloud .cloud-name{ max-width:90px; }
-}
-html.skin-droid .os-cloud{ order:4; flex-basis:100%; justify-content:flex-end; font-size:10.5px; padding:4px 0; }
-html.skin-droid .os-cloud .cloud-long{ display:none; }
-html.skin-droid .os-cloud .cloud-short{ display:inline; }
-html.skin-98 .os-cloud{ gap:6px; }
-html.skin-98 .os-cloud .cloud-btn{
-  color:var(--text); background:var(--bg2); border:1px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
-}
-html.skin-98 .os-cloud .cloud-btn:active{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); }
-html.skin-98 .os-cloud .cloud-av{ border-radius:0; }
+/* ===== cloud saves (js/cloud.js) =====
+   The LINK readout is the cloud indicator: its light goes grey with NO LINK, green and pulsing with
+   LINK STABLE, amber with LINK SYNC…, red with LINK DOWN. Jack in and Jack out sit in Settings. */
+.os-status .led.led-off{ background:var(--text3); box-shadow:none; animation:none; opacity:.6; }
+.os-status .led.led-syncing{ background:var(--warn); box-shadow:0 0 8px var(--warn); }
+.os-status .led.led-error{ background:var(--danger); box-shadow:0 0 8px var(--danger); animation:none; }
+#set-ov .cloud-who{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+#set-ov .cloud-av{ width:36px; height:36px; border-radius:50%; flex:none; object-fit:cover; }
+#set-ov .cloud-av-blank{ display:inline-block; background:var(--bg3, var(--bg2)); border:1px solid var(--border); }
+#set-ov .cloud-name{ font-weight:700; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#set-ov .cloud-state{ font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; }
+html.skin-98 #set-ov .cloud-av{ border-radius:0; }
 
 /* the one-time question after jacking in: upload the characters already on this device? */
 #cloud-offer{ position:fixed; left:0; right:0; bottom:24px; z-index:1200; display:flex; justify-content:center; padding:0 16px; pointer-events:none; }

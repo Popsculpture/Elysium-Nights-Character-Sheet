@@ -265,18 +265,19 @@ EN.app = (function () {
        is CSS only. Classic hides it; a skin with a bottom taskbar ('98) shows
        it and hides the top-bar clock instead, so there is always exactly one
        clock on screen. Both are ticked by tickClock. */
-    // ⇋ is LINK STABLE and ⬤ is SYNC OK, the two top-bar readouts the '98 title
+    // ⇋ is the LINK readout (the cloud link, js/cloud.js) and ⬤ is SYNC OK, the two top-bar readouts the '98 title
     // bar drops; the words survive as hover titles, and ⬤ flashes with the save
     // pulse exactly as SYNC OK does (see flashSave).
     /* With the list unfolded its scrim covers the page, so a tap that lands on the rail itself
        (not on a row) folds it back rather than being swallowed. Inert on the other skins. */
     nav.onclick = function (e) { if (e.target === nav) foldRail(); };
     nav.appendChild(el("div.os-tray", null, [
-      el("span.os-tray-ico", { text: "⇋", title: "LINK STABLE" }),
+      el("span.os-tray-ico", { id: "os-tray-link", text: "⇋", title: "NO LINK" }),
       el("span.os-tray-ico", { id: "os-tray-sync", text: "⬤", title: "SYNC OK" }),
       el("span.os-tray-clock", { id: "os-tray-clock", text: clockText() })
     ]));
     if (_saveKind === "fail") paintSave("fail");   // a fresh tray glyph must not read as healthy
+    if (EN.cloud && EN.cloud.paint) EN.cloud.paint();   // and the fresh ⇋ shows the cloud link as it is
     paintAddr();
   }
   /* A rail wider than its scroller (a narrow window, or '98's taskbar) is rebuilt at scroll 0 on

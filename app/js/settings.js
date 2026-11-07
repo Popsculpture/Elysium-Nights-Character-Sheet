@@ -1515,6 +1515,8 @@ EN.settings = (function () {
     var body = ov.querySelector(".set-body");
     clear(body);
     var sections = [];
+    // the cloud link first, on both desktops: Jack in with Discord, or who is jacked in (js/cloud.js)
+    if (EN.cloud && EN.cloud.settingsSection) sections.push(EN.cloud.settingsSection());
     if (EN.app.activeTab() === "combat" && EN.combatView) sections.push(freelancerLayoutSection());
     if (EN.app.activeTab() === "flow" && EN.flowView && EN.flowView.isImmersive) sections.push(flowSection());
     if (EN.app.activeTab() === "grid" && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
@@ -1627,7 +1629,8 @@ EN.settings = (function () {
     }, [el("span", { html: ICON_SETTINGS })]);
   }
 
-  return { open: open, close: close, gearTab: gearTab };
+  // refresh: js/cloud.js redraws the open tray when the cloud link changes (rebuild is inert when it is shut)
+  return { open: open, close: close, gearTab: gearTab, refresh: rebuild };
 })();
 
 EN.theme.init();
