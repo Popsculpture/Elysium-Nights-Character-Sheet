@@ -55,9 +55,9 @@ EN.gmBook.people = {
   notInInitiative: {
     title: "People Who Aren't in Initiative",
     paragraphs: [
-      "Most of the people the crew meets will never roll Initiative. The bartender who knows which booth is wired. The claims agent who loses a form for 𝒢50. The Local 9 steward who remembers your face from the memorial and hasn't decided yet whether that's good news. These people move more jobs than guns do, and they show up mid-scene, when the GM has about four seconds to make them real.",
+      "Most of the people the crew meets will never roll Initiative. They show up mid-scene, when the GM has about four seconds to make them real.",
       "Four seconds is enough for a name, a job, and a want. Everything else can wait until they matter twice.",
-      "That's the contact card. It fits on an index card, and it is built to be written in pencil."
+      "That's the contact card."
     ]
   },
 
@@ -136,14 +136,14 @@ EN.gmBook.people = {
           "A Void Port baggage handler."
         ] },
       { key: "standard", tier: "Standard", resolve: "5", value: 5, orMore: false,
-        who: "A bartender who owns the bar. A claims agent. A Guild steward. A precinct desk sergeant. A Ferryman with a full boat. A Neon Market stall boss. An appraiser at a public orb.",
+        who: "A bartender who owns the bar. A claims agent. A Guild steward. A precinct desk sergeant. A Ferryman with a full boat. A Hawkersgate stall boss. An appraiser at a public orb.",
         roles: [
           "A bartender who owns the bar.",
           "A claims agent.",
           "A Guild steward.",
           "A precinct desk sergeant.",
           "A Ferryman with a full boat.",
-          "A Neon Market stall boss.",
+          "A Hawkersgate stall boss.",
           "An appraiser at a public orb."
         ] },
       { key: "hardened", tier: "Hardened", resolve: "8", value: 8, orMore: false,
@@ -175,7 +175,7 @@ EN.gmBook.people = {
         ] }
     ],
     // Moving a contact off its role's tier: write the reason down (a "moved because" note).
-    moving: "The role is where the number starts, not where it has to stay. A desk sergeant three weeks from retirement might sit at Pushover. A clerk whose sister is in Kindred's debt might sit at Hardened, because she has more to lose than the job suggests. Write down the reason when you move someone; it's usually their Fear.",
+    moving: "The role is where the number starts, not where it has to stay. Write down the reason when you move someone; it's usually their Fear.",
     movingReason: "Write down the reason when you move someone; it's usually their Fear.",
     /* Weak spots: `kinds` are the two rulings the text allows, double
        Pressure from one Approach or none from another. The Approaches
@@ -193,7 +193,7 @@ EN.gmBook.people = {
   // GMH p45
   profiles: {
     title: "Their Profile of You",
-    intro: "Every recurring contact starts with one Profile of the crew, before the crew has done a thing in front of them. Nobody meets anyone fresh in Elysium. The claims agent has seen your name on a form. The bartender heard about the Tollgate job from someone who wasn't there. The first Profile is the rumor that got through the door ahead of you.",
+    intro: "Every recurring contact starts with one Profile of the crew, before the crew has done a thing in front of them. The first Profile is the rumor that got through the door ahead of you.",
     prompt: "Pick one, or roll a d12:",
     die: "d12",
     sides: 12,
@@ -216,7 +216,7 @@ EN.gmBook.people = {
       text: "The PHB's other examples (Owes Us, Unprofessional, Corporate Friendly, Shrine Touched) need a cause, so they're earned in play rather than rolled.",
       names: ["Owes Us", "Unprofessional", "Corporate Friendly", "Shrine Touched"]
     },
-    howItWorks: "A starting Profile works like any other: it tells the table how the room feels, gives the GM a hook, and may grant Edge or Snag in scenes with that contact. It changes when the fiction changes it. It is the contact's own, separate from whatever their faction or Guild holds, and the two are allowed to disagree. Mags thinks you're Good for It. Her supervisor has the file that says Under Watch."
+    howItWorks: "A starting Profile works like any other: it tells the table how the room feels, gives the GM a hook, and may grant Edge or Snag in scenes with that contact. It changes when the fiction changes it. It is the contact's own, separate from whatever their faction or Guild holds, and the two are allowed to disagree."
   },
 
   /* NAMES. Five species tables, each a d20 pair (see the header): `columns`
