@@ -1372,6 +1372,8 @@ EN.pdfExport = (function () {
 
   async function download(ch) {
     if (!ch) { toast("No #PRINT on file."); return; }
+    // a locked Freelancer would print wrong numbers: its pack is not loaded here (js/store.js)
+    if (ch.meta && EN.store.isLocked && EN.store.isLocked(ch.meta.id)) { toast("Print and PDF are off for this Freelancer until the Freelancer's Companion loads."); return; }
     try {
       var bytes = await build(ch);
       var blob = new Blob([bytes], { type: "application/pdf" });

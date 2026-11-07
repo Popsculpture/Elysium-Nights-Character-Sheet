@@ -1140,6 +1140,8 @@ EN.printSheet = (function () {
   function open() {
     var ch = store.active();
     if (!ch) { EN.ui.toast("No #PRINT on file."); return; }
+    // a locked Freelancer would print wrong numbers: its pack is not loaded here (js/store.js)
+    if (ch.meta && store.isLocked && store.isLocked(ch.meta.id)) { EN.ui.toast("Print and PDF are off for this Freelancer until the Freelancer's Companion loads."); return; }
     close();
     var d = eng.derive(ch);
     var pages = [frontSheet(ch, d), talentsLineage(ch, d), gearHoldings(ch, d), profile(ch, d), systems(ch, d)].filter(Boolean);

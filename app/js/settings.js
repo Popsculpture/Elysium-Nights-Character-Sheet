@@ -1264,15 +1264,47 @@ EN.settings = (function () {
     return kids;
   }
 
-  /* CONTENT. Which books the pickers offer from. Device state, like the skin: it is
-     EN.launch's (en_supplemental_v1), never on a character and never exported, and it
-     reads the same on both desktops. On by default; off is the Player's Handbook alone. It
-     only decides what is OFFERED: a Freelancer who already has Companion content keeps
-     it either way, marked COMPANION. */
+  /* CONTENT. Which books the pickers offer from. The Freelancer's Companion is a content pack
+     (js/packs.js): it downloads for a signed-in account and leaves with it, so this section
+     first says where the pack stands:
+       loaded             the ON/OFF switch below, the player's own setting (EN.launch's
+                          en_supplemental_v1, device state like the skin, never on a character and
+                          never exported; on until someone turns it off for the Handbook alone)
+       not jacked in      COMPANION: LOCKED, and the sign-in buttons (EN.cloud.signInButtons)
+       downloading        COMPANION: LOADING
+       download failed    COMPANION: LOCKED, and it tries again when the link is back
+       no cloud link      (a file:// page, or the library missing) the live site's address
+     Every state ends with the Discord invite. The switch only decides what is OFFERED: a
+     Freelancer who already has Companion content keeps it either way. */
+  var DISCORD_INVITE = "https://discord.gg/b369vdP4QW";
+  function discordLine() {
+    // the invite is case-sensitive: never let a skin's styling uppercase it
+    return el("p.set-hint.set-discord", null, [
+      "Find a table and a crew on the Elysium Nights Discord: ",
+      el("a", { href: DISCORD_INVITE, target: "_blank", rel: "noopener", "data-discord": "invite",
+        style: { textTransform: "none", color: "var(--accent)" }, text: "discord.gg/b369vdP4QW" })
+    ]);
+  }
   function supplementalSection() {
     var L = EN.launch, on = L.supplementalSetting();
+    var P = EN.packs, C = EN.cloud;
+    var pack = P ? P.status("EN1101") : "none";
+    if (pack !== "loaded") {
+      var head = function (sum) { return el("div.set-sectitle", { text: "// CONTENT", dataset: { sum: sum, content: pack } }); };
+      var label = el("label.set-label", { text: "Supplemental content" });
+      if (!C || !C.available()) return [head("COMPANION: LOCKED"), label,
+        el("p.set-hint", { "data-content-hint": "nolink", text: "The Freelancer's Companion unlocks when you jack in on the live site, elysiumnightsrpg.com/app. A Freelancer who already has Companion content keeps it." }),
+        discordLine()];
+      if (!C.signedIn()) return [head("COMPANION: LOCKED"), label,
+        el("p.set-hint", { "data-content-hint": "locked", text: "The Freelancer's Companion unlocks when you jack in: its lineages, subclasses, Backgrounds and Talents, and Culinary Tools. Jacking in is free, and your characters save to your account too. A Freelancer who already has Companion content keeps it." })]
+        .concat(C.signInButtons()).concat([discordLine()]);
+      if (pack === "loading") return [head("COMPANION: LOADING"), label,
+        el("p.set-hint", { "data-content-hint": "loading", text: "Loading the Freelancer's Companion for your account." }), discordLine()];
+      return [head("COMPANION: LOCKED"), label,
+        el("p.set-hint", { "data-content-hint": "failed", text: "Couldn't load the Freelancer's Companion. It tries again when the link is back." }), discordLine()];
+    }
     return [
-      el("div.set-sectitle", { text: "// CONTENT", dataset: { sum: "COMPANION: " + (on ? "ON" : "OFF") } }),
+      el("div.set-sectitle", { text: "// CONTENT", dataset: { sum: "COMPANION: " + (on ? "ON" : "OFF"), content: pack } }),
       el("label.set-label", { text: "Supplemental content" }),
       el("p.set-hint", { text: on
         ? "On: the pickers, the market and the Codex offer the Freelancer's Companion alongside the Player's Handbook: its lineages, subclasses, Backgrounds and Talents, and Culinary Tools. Saved on this device."
@@ -1280,7 +1312,8 @@ EN.settings = (function () {
       el("button.btn.sm" + (on ? ".primary" : ""), {
         title: "Offer the Freelancer's Companion (supplemental) in every picker",
         onclick: function () { L.setSupplemental(!on); EN.app.render(); rebuild(); }
-      }, on ? "◈ FREELANCER'S COMPANION: ON" : "◈ FREELANCER'S COMPANION: OFF")
+      }, on ? "◈ FREELANCER'S COMPANION: ON" : "◈ FREELANCER'S COMPANION: OFF"),
+      discordLine()
     ];
   }
 

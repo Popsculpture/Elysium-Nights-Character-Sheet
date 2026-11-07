@@ -178,6 +178,16 @@ EN.launch = (function () {
     // one on an ALLY, so a Handbook character can carry one of these keys too.
     bonus: ["bonus:optical-overclock", "bonus:dermal-reinforcement", "bonus:pneumatic-bypass",
             "bonus:synaptic-accelerator", "bonus:recoil-compensator", "bonus:adrenal-tuning"],
+    // where each option would sit, so a picker can say the pack adds something to it
+    lineageSpecies: {
+      "nextgen": "humans", "phasebound": "humans", "arboreal": "verdine", "mycelial": "verdine",
+      "durabodies": "clankers", "lifelikes": "clankers", "hulsk": "chimera", "skarn": "chimera",
+      "cinder-heart": "outsiders", "harbinger": "outsiders"
+    },
+    subclassClass: {
+      "rigger": "codebreaker", "arsenal": "fury", "the_fixer": "hustler", "the_headhunter": "operator",
+      "shiv": "scoundrel", "icon": "shaper", "kensei": "shaper", "the_ripper": "stitcher"
+    },
     // display names, for the locked chips
     names: {
       "nextgen": "NextGen", "phasebound": "Phasebound", "arboreal": "Arboreal", "mycelial": "Mycelial",

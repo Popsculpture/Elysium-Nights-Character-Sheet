@@ -224,9 +224,13 @@ EN.packs = (function () {
     if (!client || !uid) return Promise.resolve();
     var me = ++runId, any = false;
     function current() { return me === runId; }
+    // LOADING from the moment the check starts, so Settings never shows LOCKED right after sign-in
+    Object.keys(MANIFEST).forEach(function (sku) { if (!merged[sku]) state[sku] = "loading"; });
+    notify();
     return Promise.resolve(client.rpc("my_entitlements")).then(rows).then(function (list) {
       if (!current()) return;
       var held = (list || []).map(function (x) { return typeof x === "string" ? x : x && (x.my_entitlements || x.sku); }).filter(Boolean);
+      Object.keys(state).forEach(function (sku) { if (held.indexOf(sku) === -1) delete state[sku]; });
       // packs this account does not hold (any more): out of memory and off the device
       Object.keys(merged).concat(cachedSkus(uid)).forEach(function (sku) {
         if (held.indexOf(sku) !== -1) return;

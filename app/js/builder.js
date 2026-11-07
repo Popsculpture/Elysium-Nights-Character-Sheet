@@ -45,6 +45,27 @@ EN.builder = (function () {
      this is the listing layer only. */
   function offered(kind, key, current) { return !EN.launch || EN.launch.offer(kind, key, current); }
   function heldTag(kind, key) { return EN.ui.heldChip ? EN.ui.heldChip(kind, key) : null; }
+  /* The last line of a picker while the Freelancer's Companion pack is not loaded on this device
+     (js/packs.js): only where the pack would add options (a lineage of this species, a subclass of
+     this class, any Background or Talent), so it never points at nothing. It opens Settings, where
+     // CONTENT has the way in. */
+  function companionPointer(kind, scope) {
+    if (!EN.packs || EN.packs.loaded("EN1101")) return null;
+    var C = EN.launch && EN.launch.companion;
+    if (!C) return null;
+    function inScope(map) { return Object.keys(map || {}).some(function (k) { return map[k] === scope; }); }
+    var adds = kind === "lineage" ? inScope(C.lineageSpecies)
+             : kind === "subclass" ? inScope(C.subclassClass)
+             : (C[kind] || []).length > 0;
+    if (!adds) return null;
+    function go() { if (EN.settings && EN.settings.open) EN.settings.open(); }
+    return el("p.help.companion-pointer", {
+      role: "button", tabindex: "0", title: "Open Settings", dataset: { companionPointer: kind },
+      style: { margin: "8px 0 0", color: "var(--text4)", cursor: "pointer" },
+      onclick: go, onkeydown: function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } },
+      text: "More in the Freelancer's Companion. Jack in to unlock."
+    });
+  }
   function heldText(kind, key) { return EN.ui.heldSuffix ? EN.ui.heldSuffix(kind, key) : ""; }
 
   // Collapsible panel with optional attention dot in the header.
@@ -865,6 +886,7 @@ EN.builder = (function () {
           onclick: function () { if (speciesLocked) return; store.update(function (c) { if (isFiled(c)) return; if (c.lineage !== l.key) { c.lineage = l.key; c.lineageFeatures = []; c.size = null; c.heightFt = null; } }); }
         }, [el("span.check", { text: "◉" }), el("h4", null, [document.createTextNode(l.name), heldTag("lineage", l.key)])]);
       })));
+      if (!speciesLocked) blocks.push(companionPointer("lineage", sp.key));
     }
 
     if (lin) {
@@ -1022,6 +1044,7 @@ EN.builder = (function () {
         el("p", { text: b.blurb || "" })
       ]);
     })));
+    blocks.push(companionPointer("background"));
 
     if (bg) {
       blocks.push(el("div", { style: { height: "18px" } }));
@@ -1859,6 +1882,7 @@ EN.builder = (function () {
             el("p", { style: { color: "var(--text2)" }, text: (s.description || "").slice(0, 180) })
           ]);
         })));
+        blocks.push(companionPointer("subclass", ch.class));
         var sgPick = subclassGrantPicker(ch);
         if (sgPick) blocks.push(sgPick);
       }
@@ -3598,7 +3622,7 @@ EN.builder = (function () {
       talentSavePicker(ch, t),
       talentGearPicker(ch, t),
       renderText(t.text)]);
-    return el("div", null, [sel, info]);
+    return el("div", null, [sel, companionPointer("talent"), info]);
   }
   /* The attribute half of a Talent, which the sheet promised and never delivered: 36 of the
      63 Talents open with "Increase your <ATTR> score by 1", and until this existed not one
@@ -3923,7 +3947,9 @@ EN.builder = (function () {
     // export
     blocks.push(el("div.row.wrap", null, [
       el("button.btn", { onclick: function () { exportChar(ch); } }, "⤓ EXPORT RECORD (.JSON)"),
-      el("button.btn", { onclick: function () { EN.printSheet.open(); } }, "⎙ PRINT HARDCOPY"),
+      store.isLocked && store.isLocked(ch.meta && ch.meta.id)
+        ? el("button.btn", { disabled: true, title: "Print and PDF are off for this Freelancer until the Freelancer's Companion loads." }, "⎙ PRINT HARDCOPY")
+        : el("button.btn", { onclick: function () { EN.printSheet.open(); } }, "⎙ PRINT HARDCOPY"),
       /* REVOKE only makes sense for a record the player OWNS. An example is not in the roster,
          so store.remove(ch.meta.id) matched nothing and the button confirmed a permanent
          deletion and then silently did nothing at all, which reads as "I cannot delete my
@@ -4359,7 +4385,8 @@ EN.builder = (function () {
       })));
     }
     kids.push(el("option", { value: "__manage", text: "⚙ Manage characters..." }));
-    return el("select", { style: { width: "auto", minWidth: "160px" }, onchange: function (e) {
+    // stays live on a locked Freelancer (app.js lockedSheet), so the player can open another record
+    return el("select", { style: { width: "auto", minWidth: "160px" }, "data-ro-keep": "1", onchange: function (e) {
       var v = e.target.value;
       if (v === "__new") { newRecord(); return; }
       // the manager draws over whichever tab is open (app.js mounts it), so it no longer jumps to #PRINT

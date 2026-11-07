@@ -366,6 +366,41 @@ EN.app = (function () {
     window.scrollBy(0, moved);
   }
 
+  /* A LOCKED FREELANCER (7 Nov 2026): one that uses a content pack this device has not loaded
+     (js/store.js locks it, js/packs.js loads the pack). Every Freelancer tab opens with the banner
+     and the record's pack picks as locked chips, and the sheet is read-only: its fields are disabled
+     and its option cards inert. The store refuses any write regardless; this makes the sheet say so.
+     The character switcher ([data-ro-keep]) and Manage characters stay live, so the player can open
+     another record, export this one or delete it. The Codex edits nothing, so it stays usable. */
+  var LOCKED_TEXT = "This Freelancer uses the Freelancer's Companion. Jack in to load it. Until then the sheet is read-only, so nothing on it changes.";
+  var LOCKED_CHIP = "COMPANION: LOCKED", LOCKED_TITLE = "Freelancer's Companion content. Jack in to load it.";
+  function lockedSheet(view, tabKey) {
+    var ch = tabKey ? store.active() : null, id = ch && ch.meta && ch.meta.id;
+    var isEx = store.activeIsExample && store.activeIsExample();
+    view.classList.remove("en-ro");
+    if (!id || isEx || !store.isLocked || !store.isLocked(id)) { view.classList.remove("en-locked"); return; }
+    view.classList.add("en-locked");
+    var info = store.lockInfo(id) || { picks: [] };
+    var chips = info.picks.map(function (p) {
+      return el("span.locked-pick", { dataset: { lockedPick: p.key } }, [
+        document.createTextNode(p.name),
+        el("span.chip.locked-chip", { title: LOCKED_TITLE, text: LOCKED_CHIP })
+      ]);
+    });
+    view.insertBefore(el("div#locked-banner.locked-banner", { role: "status" }, [
+      el("p", { text: LOCKED_TEXT }),
+      chips.length ? el("div.locked-picks", null, chips) : null
+    ]), view.firstChild);
+    if (tabKey === "codex") return;
+    // everything in the view goes inert except the banner, the switcher, Manage characters, the
+    // builder rail (every step can still be read) and the scroll wells (theme.css, #view.en-ro)
+    view.classList.add("en-ro");
+    Array.prototype.forEach.call(view.querySelectorAll("input, select, textarea, .opt-card"), function (n) {
+      if (n.closest(".mgr-card, [data-ro-keep], #locked-banner")) return;
+      if (n.classList.contains("opt-card")) n.classList.add("ro"); else n.disabled = true;
+    });
+  }
+
   function render() {
     // a rebuild under a finger strands its touch (the events keep targeting the removed node),
     // so the gesture is told to snap back first; a no-op unless a drag is in flight
@@ -406,6 +441,7 @@ EN.app = (function () {
        tray or the roster select. #PRINT mounts it itself; every other tab gets it here. */
     if (portal === "freelancer" && tab.key !== "print" && EN.builder && EN.builder.managerOpen && EN.builder.managerOpen())
       view.appendChild(EN.builder.managerPanel());
+    lockedSheet(view, portal === "freelancer" ? tab.key : null);
     if (_lastTab === LAST[portal]) {                       // same view → stay put
       window.scrollTo(sx, sy);
       Array.prototype.forEach.call(document.querySelectorAll(WELLS), function (w, i) {

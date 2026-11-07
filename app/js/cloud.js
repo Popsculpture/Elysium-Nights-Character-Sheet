@@ -341,9 +341,9 @@ EN.cloud = (function () {
     // back to whichever domain and folder the player started on (both are on the allow list)
     return location.origin + location.pathname.replace(/[^\/]*$/, "");
   }
-  function jackIn() {
+  function jackIn(provider) {
     if (!client) return Promise.resolve();
-    return client.auth.signInWithOAuth({ provider: "discord", options: { redirectTo: returnUrl() } })
+    return client.auth.signInWithOAuth({ provider: provider || "discord", options: { redirectTo: returnUrl() } })
       .then(function (res) { if (res && res.error) throw res.error; })
       .catch(function (e) { console.error("Jack in failed", e); EN.ui.toast("Could not reach Discord. Try again in a moment."); });
   }
@@ -446,6 +446,20 @@ EN.cloud = (function () {
   }
   var paintedWho = "";
 
+  /* ---- the sign-in buttons ---------------------------------------------------------
+     One button per sign-in provider, drawn by // CLOUD LINK and by // CONTENT (js/settings.js) alike.
+     Adding a provider (Google is next) is one more row in PROVIDERS. Nothing anywhere checks
+     which provider a player used. */
+  var PROVIDERS = [
+    { key: "discord", label: "JACK IN WITH DISCORD", title: "Jack in with Discord" }
+  ];
+  function signInButtons() {
+    return PROVIDERS.map(function (p, i) {
+      return el("button.btn.primary.cloud-in", { type: "button", "data-cloud": "in", "data-provider": p.key, title: p.title,
+        style: { width: "100%", marginTop: i ? "8px" : "" }, onclick: function () { jackIn(p.key); } }, p.label);
+    });
+  }
+
   /* ---- the Settings section (js/settings.js draws it, first in the tray) ------- */
   function settingsSection() {
     var k = linkState();
@@ -455,10 +469,8 @@ EN.cloud = (function () {
       return kids;
     }
     if (!user) {
-      kids.push(el("p.set-hint", { text: "Jack in with Discord to save your characters to your account, so they follow you to any browser. Characters on this device stay where they are." }));
-      kids.push(el("button.btn.primary.cloud-in", { type: "button", "data-cloud": "in", title: "Jack in with Discord", style: { width: "100%" },
-        onclick: function () { jackIn(); } }, "JACK IN WITH DISCORD"));
-      return kids;
+      kids.push(el("p.set-hint", { text: "Jack in with Discord to save your characters to your account, so they follow you to any browser, and to unlock the Freelancer's Companion. Characters on this device stay where they are." }));
+      return kids.concat(signInButtons());
     }
     var pic = avatar();
     kids.push(el("div.cloud-who", null, [
@@ -552,6 +564,7 @@ EN.cloud = (function () {
 
   return {
     start: start, jackIn: jackIn, jackOut: jackOut, sync: sync, paint: paint, settingsSection: settingsSection,
+    signInButtons: signInButtons,
     available: available,
     signedIn: function () { return !!user; },
     status: function () { return status; },

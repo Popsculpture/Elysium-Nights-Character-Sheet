@@ -3557,3 +3557,20 @@ html.skin-98 #set-ov .cloud-av{ border-radius:0; }
 #cloud-offer .cloud-offer-card p{ margin:0 0 6px; }
 #cloud-offer .row{ display:flex; gap:8px; justify-content:flex-end; margin-top:10px; }
 html.skin-98 #cloud-offer{ bottom:56px; }
+
+/* ---- a locked Freelancer (app.js lockedSheet): it uses a content pack this device has not loaded ---- */
+.locked-banner{ border:1px solid var(--warn); background:color-mix(in srgb, var(--warn) 10%, transparent); color:var(--text);
+  padding:10px 14px; margin:0 0 16px; font-size:13px; line-height:1.45; }
+.locked-banner p{ margin:0; }
+.locked-picks{ display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:8px; }
+.locked-pick{ display:inline-flex; align-items:center; gap:6px; font-weight:600; }
+.locked-chip{ font-family:var(--mono); font-size:9px; letter-spacing:.08em; color:var(--warn); border-color:var(--warn); cursor:help; }
+#view.en-locked .opt-card.ro{ pointer-events:none; opacity:.6; }
+#view.en-locked input:disabled, #view.en-locked select:disabled, #view.en-locked textarea:disabled{ opacity:.7; cursor:not-allowed; }
+.companion-pointer:hover, .companion-pointer:focus-visible{ color:var(--accent) !important; text-decoration:underline; outline:none; }
+/* the read-only sheet: nothing in the view takes a click, apart from what lets the player read
+   it and leave it */
+#view.en-ro *{ pointer-events:none; }
+#view.en-ro #locked-banner, #view.en-ro #locked-banner *, #view.en-ro [data-ro-keep],
+#view.en-ro #mgr, #view.en-ro #mgr *, #view.en-ro .wizard-rail, #view.en-ro .wizard-rail *,
+#view.en-ro .feature-scroll, #view.en-ro .actions-scroll{ pointer-events:auto; }
