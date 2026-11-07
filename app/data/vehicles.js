@@ -54,7 +54,7 @@ EN.vehicles = {
   /* ---- customization ----------------------------------------------------- */
   modRules: [
     "Mod Slot Count = 1 + the vehicle's Tier. The Street Bike and Hydrofoil carry 2, the Sedan, Hauler, and Shuttle carry 3, the VTOL and Mech carry 4.",
-    "A vehicle holds at most one mod per slot.",
+    "A vehicle holds one mod per slot.",
     "Firewalls: A vehicle may mount one Firewall from the Firewall table in The #GRID by spending one Mod Slot.",
     "Fitting or pulling a mod is bench work: downtime, a garage, and Engineering Tools. Never a combat action. Where a mod's Effect carries an action type, that timing is for using the mod in play, not for fitting it.",
     "Flat bonuses of the same kind do not stack. If two mods each grant the same flat bonus, the higher applies.",

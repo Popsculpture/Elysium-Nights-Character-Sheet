@@ -177,6 +177,7 @@ window.EN = window.EN || {};
             var node = K.ruleBlock(r.name, runIn(cols[1]) + ": " + r.costs + "\n" + runIn(cols[2]) + ": " + r.does);
             // Lie low asks for the lifestyle to be paid: the player rule it means
             if (r.key === "lieLow") addLinks(node, K, "Lifestyle:", [["ref-economy/lifestyle-costs", "Lifestyle Costs"]]);
+            if (r.key === "bribe") addLinks(node, K, "The tiers:", [["ref-economy/bribe-thresholds", "Bribe Thresholds"]]);
             if (r.key === "legalScrub") addLinks(node, K, "Running it:", [["gms-sitdown", "Sit-Down Rules"]]);
             return node;
           }),

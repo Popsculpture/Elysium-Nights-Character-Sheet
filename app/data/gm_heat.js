@@ -355,9 +355,8 @@ EN.gmBook.heat = {
      low works on every source (`allSources`) and only after a month whose
      Heat check came up empty (`ifQuiet`). The bribe tiers between Petty Grease
      and Career-Ending Money, the data scrub service, and legal help are
-     priced in the PHB's Economy and Rewards, whose Services and Bribes prices
-     the app does not carry (EN.economy lists them as not modelled; the Codex's
-     Economy & Rewards, ref-economy, holds the rest of the chapter). */
+     priced in the Codex's Economy & Rewards (EN.economy, ref-economy), under
+     Bribe Thresholds and Common Service Costs. */
   // GMH p118
   cooling: {
     name: "Cooling Off",

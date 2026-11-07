@@ -213,7 +213,7 @@ EN.economy = {
   ],
 
   /* ---- splitting a payout ------------------------------------------------ */
-  splitNote: "By default a contract payout splits evenly between every Freelancer who participated. A fixer's cut, when there is one, comes off the top before the split. Typical fixer cuts run 10 to 20 percent; higher cuts mean better intelligence and more protection. A crew may also vote to dedicate 10 to 30 percent of every payout to a shared Crew Kit, held by one Character or split across multiple accounts. Anything inside the Crew Kit is also a target.",
+  splitNote: "By default a contract payout splits evenly between every Freelancer who participated. A fixer's cut, when there is one, comes off the top before the split. Each share rounds down, and the crew settles what's left over. Typical fixer cuts run 10 to 20 percent; higher cuts mean better intelligence and more protection. A crew may also vote to dedicate 10 to 30 percent of every payout to a shared Crew Kit, held by one Character or split across multiple accounts. Anything inside the Crew Kit is also a target.",
   splitNonStandard: [
     "Tagged or watched goods may go to the crew member with the best laundering connections.",
     "Narrative rewards (a favor owed, an access code, a faction patron) usually attach to the Character who earned them in fiction.",
