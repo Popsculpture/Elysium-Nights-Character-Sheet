@@ -8,13 +8,14 @@
    itself is EN.engine.splitPayout; the player-side reward tables
    (glimmerRewards, the fixer note, debts) stay in EN.economy.
 
-   Every `text` is the book's wording with PDF line breaks rejoined, and the
-   currency glyphs are the book's own: Glimmer U+1D4A2, Nexus U+25CE. Numbers
+   Every `text` is the book's wording with PDF line breaks rejoined, trimmed to the
+   Codex style on 7 Nov 2026 (flavour, mood and worked examples cut; every number,
+   condition and instruction kept), and the currency glyphs are the book's own: Glimmer U+1D4A2, Nexus U+25CE. Numbers
    the book prints are carried as numbers beside the text they came from, so a
    screen can compute with one and show the other.
 
    The October 2026 Toolkit adds four pieces of GM prose that sit beside this chapter, and they
-   are carried here word for word: `narrativePurpose` and `optionalTwist` (Rewards, the lead-in to
+   are carried here: `narrativePurpose` and `optionalTwist` (Rewards, the lead-in to
    the reward tables), `bills` (The Bills, the page after The Other Ledger: Debt, Identity Theft
    and Hypercare Response with its arrival roll), and EN.gmBook.gearCatalog at the foot of the
    file (the Gear Catalog's street-price note, its Running Gear, the ordnance price note and the
@@ -32,7 +33,7 @@ EN.gmBook.payroll = {
   schemaVersion: 1,
 
   // GMH p109
-  intro: "The work ends and the counting starts. Economy and Rewards owns the machinery of money: currencies, lifestyle, debt, fences, conversion. This chapter prices the work itself, so a posted job, a bounty, and a dead cryptid's parts all land inside the same economy the rent comes out of.",
+  intro: "Economy and Rewards owns the machinery of money: currencies, lifestyle, debt, fences, conversion. This chapter prices the work itself: posted jobs, bounties, and salvage.",
 
   /* NARRATIVE PURPOSE, under Rewards (GMT p43): two bullets, then "Use rewards to:" and four. */
   narrativePurpose: {
@@ -70,7 +71,7 @@ EN.gmBook.payroll = {
      book's own grid. Caliber 4 skips the "about 7,500" step. */
   // GMH p109
   contract: {
-    lead: "Anchor a contract's total value to the crew's Caliber and the job's difficulty, then let negotiation, reputation, and fine print move it. The bands below track the Glimmer Rewards table (Reward Tables), assigned to the work, with the top of the ladder stretched for institutional clients.",
+    lead: "Anchor a contract's total value to the crew's Caliber and the job's difficulty, then let negotiation, reputation, and fine print move it. The bands below track the Glimmer Rewards table (Reward Tables), with the top stretched for institutional clients.",
     columns: [
       { key: "milk", name: "Milk Run" },
       { key: "fair", name: "Fair Fight" },
@@ -111,7 +112,7 @@ EN.gmBook.payroll = {
         { col: "red",  text: "◎ terms, and everything that watches ◎", low: null, high: null, about: false, nexus: "only" }
       ] }
     ],
-    after: "Incursions use these bands too (see Incursion Briefings). Those are totals, before the fixer's 10 to 20 percent and the crew's own split rules (Economy and Rewards). Institutional clients at Caliber 4 and up start offering Nexus, which is a payment and a surveillance program in the same envelope.",
+    after: "Incursions use these bands too (see Incursion Briefings). Those are totals, before the fixer's 10 to 20 percent and the crew's own split rules (Economy and Rewards). Institutional clients at Caliber 4 and up start offering Nexus, which comes with their surveillance.",
     fixerPctLow: 10, fixerPctHigh: 20,
     nexusFromCaliber: 4,
 
@@ -122,7 +123,7 @@ EN.gmBook.payroll = {
        stack and clamp at the grid edges, with a note when one runs off. */
     shifts: {
       name: "What moves the number",
-      text: "Alive-only or intact-only clauses: one difficulty column to the right. Deniability requirements, no-Heat clauses, or hostile timelines: one column right. Work for neighbors, shrines, or collectives: one or two columns left, and worth it, because those clients pay in the other currencies: Cred, favors, safehouse doors that open at 4 a.m.",
+      text: "Alive-only or intact-only clauses: one difficulty column to the right. Deniability requirements, no-Heat clauses, or hostile timelines: one column right. Work for neighbors, shrines, or collectives: one or two columns left, and worth it, because those clients pay in the other currencies: Cred, favors, safehouse doors.",
       clauses: [
         { key: "alive", name: "Alive-only or intact-only clauses", steps: [1],
           text: "Alive-only or intact-only clauses: one difficulty column to the right." },
@@ -142,8 +143,8 @@ EN.gmBook.payroll = {
   // GMH p109
   bounties: {
     paragraphs: [
-      "A Bounty is a Target with a price tag, payable on a confirmed kill or a body in zip ties. Price a bounty off the Target's XP value: 𝒢3 to 𝒢5 per XP for a kill, doubled for breathing delivery. A G1 Shotcaller runs 𝒢300 to 500. A G3 Wetwork Operative runs 𝒢1,500 to 2,500, and knows it, which is why the operative moved districts. A G5 Solo's bounty crosses 𝒢5,000 into Nexus territory: still paid in Glimmer, but big enough to draw the institutional attention Nexus implies.",
-      "Zip-tie premiums exist because live delivery is miserable: Nonlethal matters, the Dying clock becomes the crew's clock, and the Target's friends get a whole transport route to express their feelings. Charge the client accordingly. So does everyone else in this business."
+      "A Bounty is a Target with a price tag, payable on a confirmed kill or a body in zip ties. Price a bounty off the Target's XP value: 𝒢3 to 𝒢5 per XP for a kill, doubled for breathing delivery. A G1 Shotcaller runs 𝒢300 to 500. A G3 Wetwork Operative runs 𝒢1,500 to 2,500. A G5 Solo's bounty crosses 𝒢5,000 into Nexus territory: still paid in Glimmer, but big enough to draw the institutional attention Nexus implies.",
+      "Live delivery costs more because Nonlethal matters, the Dying clock becomes the crew's clock, and the Target's friends get the whole transport route to come for them. Charge the client accordingly."
     ],
     perXpLow: 3, perXpHigh: 5,
     aliveMult: 2,
@@ -165,18 +166,18 @@ EN.gmBook.payroll = {
      a Nexus alternative. */
   // GMH p110
   salvage: {
-    lead: "Bodies are inventory. The fence rates in Economy and Rewards govern everything below; the lists here are what threats reliably leave.",
+    lead: "The fence rates in Economy and Rewards govern everything below; the lists here are what threats reliably leave.",
     sources: [
       { key: "people", name: "People leave gear",
-        text: "People leave gear. The Gear line in a stat block lists real catalog items at catalog stats; fence them at the Economy and Rewards rates (30 to 50 percent for street kit, less if it is hot, less again if it is branded). Pulled cyberware is its own market with its own ethics, and the good fences ask exactly one question about it.",
+        text: "People leave gear. The Gear line in a stat block lists real catalog items at catalog stats; fence them at the Economy and Rewards rates (30 to 50 percent for street kit, less if it is hot, less again if it is branded). Pulled cyberware is its own market.",
         fencePctLow: 30, fencePctHigh: 50 },
       { key: "machines", name: "Machines leave salvage",
-        text: "Machines leave salvage that shortcuts Projects: a wrecked Combat Drone zeroes the parts cost of a comparable build, per Crafting and Projects. Fire-control cores, sensor suites, and mounted weapons survive with an Engineering check and honest labor." },
+        text: "Machines leave salvage that shortcuts Projects: a wrecked Combat Drone zeroes the parts cost of a comparable build, per Crafting and Projects. Fire-control cores, sensor suites, and mounted weapons survive with an Engineering check." },
       { key: "grid", name: "#GRID kills leave code",
         text: "#GRID kills leave code: bricked hostile scripts and burned IC fragment into cipher crafting materials, typically worth the source's XP in Glimmer to the right buyer.",
         glimmerPerXp: 1 },
       { key: "flow", name: "Flow-side and cryptid kills",
-        text: "Flow-side and cryptid kills leave the parts the postings are really about. Use the bands below, and remember anything marked Flow-touched takes the 2x to 10x multipliers from Economy and Rewards, is Restricted or worse in corporate districts, and sells to shrines, labs, cults, and brokers who each remember the seller.",
+        text: "Flow-side and cryptid kills leave parts: use the bands below. Anything marked Flow-touched takes the 2x to 10x multipliers from Economy and Rewards, is Restricted or worse in corporate districts, and sells to shrines, labs, cults, and brokers who each remember the seller.",
         flowTouchedMultLow: 2, flowTouchedMultHigh: 10 }
     ],
     bands: [
@@ -192,7 +193,64 @@ EN.gmBook.payroll = {
         buyers: "Institutions, cults, and auctions with no address" }
     ],
     guidance: {
-      text: "Salvage is the loot system, so let it be one: a cryptid hunt that pays 𝒢2,000 in contract and 𝒢1,800 in parts is working as intended, and the second number is the one that creates scenes, because parts need fences, fences need trust, and trust is the most expensive thing on the invoice."
+      text: "Salvage is the loot system, so let it be one: a cryptid hunt that pays 𝒢2,000 in contract and 𝒢1,800 in parts is working as intended."
+    },
+
+    /* ADJUSTING PAYOUTS (GMT p43, after the salvage note): five things to modify a final result by,
+       and the one number, the major-negotiation shift. Added by the Codex trim of 7 Nov 2026; no
+       app code reads it. */
+    adjusting: {
+      name: "Adjusting Payouts",
+      lead: "Modify final results based on:",
+      factors: [
+        "urgency and time pressure",
+        "character reputation and faction standing",
+        "negotiation, social, or hacking Dice Pool outcomes",
+        "recent faction events or crises",
+        "local stability of Data Pillars and networks"
+      ],
+      negotiation: "For a major negotiation, the GM may shift final payout by ±𝒢100 to ±𝒢1,000 based on margin and complication.",
+      shiftLow: 100, shiftHigh: 1000
+    }
+  },
+
+  /* CASHING OUT NEXUS (GMT p43 to p44): the d12 Conversion Scene Complications table and the
+     Regional Exchange baseline payouts. Added by the Codex trim of 7 Nov 2026 for the Admin
+     chapter Paying the Crew; nothing in the app rolls the table or converts at these rates
+     (EN.economy.notModelledToolkit still names them as not modelled by the sheet). */
+  conversion: {
+    complications: {
+      name: "Conversion Scene Complications",
+      die: 12,
+      when: "Use this table when a Nexus conversion attempt is tense, suspicious, time-bound, or only partially successful.",
+      columns: ["d12", "Complication", "Effect"],
+      rows: [
+        { n: 1,  name: "Identity flag triggered",       effect: "Extra checks, references, or proof of origin. Delay 1 to 3 in-game hours." },
+        { n: 2,  name: "Unexpected processing fee",     effect: "Increase fees by 10 to 25 percent unless the crew negotiates, bypasses, or changes brokers." },
+        { n: 3,  name: "Priority override",             effect: "A VIP or faction representative jumps the queue." },
+        { n: 4,  name: "Terminal glitch or cold reboot", effect: "Delay 10 to 60 minutes, or bypass with a successful Tech or Flow Dice Pool." },
+        { n: 5,  name: "Surveillance recalibration",    effect: "The whole space tightens. Hidden items and false papers become riskier." },
+        { n: 6,  name: "Required sponsorship",          effect: "Conversion blocks without a recognized sponsor, guild, or corporate tag." },
+        { n: 7,  name: "Transaction hold",              effect: "Funds freeze pending audit." },
+        { n: 8,  name: "Rival broker contact",          effect: "Better rate, worse terms." },
+        { n: 9,  name: "Silent mark assignment",        effect: "Future conversions become slower, costlier, or more supervised." },
+        { n: 10, name: "External interference",         effect: "Riot, electrical spike, cyber alert, or Flow surge changes the scene." },
+        { n: 11, name: "Shadow buyer alert",            effect: "A faction hears about the attempt and reacts later." },
+        { n: 12, name: "Offer of immediate trade",      effect: "Higher payout, rare item, or powerful favor with a concealed catch." }
+      ]
+    },
+    regional: {
+      name: "Regional Exchange",
+      text: "On paper, ◎1 = 𝒢10,000. Across the counter, the payout depends on location, law, urgency, and reputation.",
+      columns: ["Region Type", "Baseline Payout", "Tone"],
+      rows: [
+        { region: "Corporate Districts",            payout: "𝒢7,000 to 𝒢7,500", low: 7000, high: 7500, tone: "High security, stiff rules, low risk" },
+        { region: "Financial Core Zones",           payout: "𝒢6,000 to 𝒢7,000", low: 6000, high: 7000, tone: "High traffic, moderate risk" },
+        { region: "Transit Ports and Border Gates", payout: "𝒢5,500 to 𝒢6,500", low: 5500, high: 6500, tone: "Variable scrutiny, extra fees" },
+        { region: "Street Brokers and Backrooms",   payout: "𝒢4,000 to 𝒢5,500", low: 4000, high: 5500, tone: "Fewer questions, more strings" },
+        { region: "Black-Market Laundering",        payout: "𝒢2,000 to 𝒢4,000", low: 2000, high: 4000, tone: "Heavy cuts, future leverage" },
+        { region: "Desperate Conversion Events",    payout: "𝒢1,000 to 𝒢2,500", low: 1000, high: 2500, tone: "Crisis pricing, immediate need, later consequences" }
+      ]
     }
   },
 
@@ -255,9 +313,9 @@ EN.gmBook.payroll = {
       { key: "heatCleared", kind: "minor", text: "A source of Heat cleared to 0" },
       { key: "rival",       kind: "minor", text: "A rival crew beaten, bought, or befriended" }
     ],
-    notMilestone: { text: "A Milk Run isn't a milestone. It's rent.", difficulties: ["milk"] },
+    notMilestone: { text: "A Milk Run isn't a milestone.", difficulties: ["milk"] },
     byDifficulty: { milk: null, fair: "minor", hard: "major", red: "major" },
-    pace: "This pace puts a level roughly every two or three jobs, and it fits the registry's rule of thumb (How the City Works): three to five Incursions between appraisals is a campaign arc, and a Freelancer's real Caliber rises by roughly one step in that time. When the crew's real Caliber has quietly outrun the number on their #PRINT, you have a story.",
+    pace: "This pace puts a level roughly every two or three jobs, and it fits the registry's rule of thumb (How the City Works): three to five Incursions between appraisals is a campaign arc, and a Freelancer's real Caliber rises by roughly one step in that time.",
     notesLead: "A few notes on pacing:",
     notes: [
       { key: "between", name: "Level between beats, never inside one.",
@@ -265,7 +323,7 @@ EN.gmBook.payroll = {
       { key: "awakening", name: "The Awakening Milestone lands at Level 4.", level: 4,
         text: "It's a good moment to make the Fallout scene about the Freelancer, not the job." },
       { key: "slowDown", name: "Slow down past Caliber 3.", aboveCaliber: 3,
-        text: "Above the celebrity line, consider requiring Major Milestones only. The work is bigger and the city is watching. Every level should feel like it cost something." }
+        text: "Above the celebrity line, consider requiring Major Milestones only." }
     ],
     majorOnlyAbove: 3
   },
@@ -276,7 +334,7 @@ EN.gmBook.payroll = {
   // GMH p111
   ledger: {
     name: "The Other Ledger",
-    text: "Every job pays twice, and the second currency is standing. Wins in front of witnesses move Cred. Noise, bodies, and burned promises move Heat. Both systems live in Cred and Heat (Optional Systems), and both are rewards in the strict sense: hand them out deliberately at job's end, one line each. \"The dock workers know what you did\" is payment. \"So does the precinct\" is the invoice.",
+    text: "Every job pays twice, and the second currency is standing. Wins in front of witnesses move Cred. Noise, bodies, and burned promises move Heat. Both systems live in Cred and Heat (Optional Systems), and both are rewards in the strict sense: hand them out deliberately at job's end, one line each.",
     lines: [
       { key: "cred", name: "Cred", perJob: 1,
         moves: "Wins in front of witnesses move Cred.",
@@ -302,15 +360,15 @@ EN.gmBook.payroll = {
     paragraphs: [
       "The bills should press on the crew without turning the session into bookkeeping.",
       "Charge for what matters: lifestyle, rent, vehicle use, maintenance, medical support, papers, transport, quiet fixes, bribes, legal cover, and discretion. Keep the everyday costs light enough to track in a line, and present enough that Glimmer still matters between the big upgrades.",
-      "The best bills feel like choices, not taxes. Upgrade the safehouse or stay mobile. Pay for clean identities or trust forged papers. Maintain the vehicle or risk the escape. Cash out Nexus now at a loss or hold it and attract attention.",
+      "The best bills feel like choices, not taxes: upgrade the safehouse or stay mobile, pay for clean identities or trust forged papers, maintain the vehicle or risk the escape, cash out Nexus now at a loss or hold it and attract attention.",
       "Use Nexus for story weight. Use Glimmer for the texture of survival."
     ],
     sections: [
       { key: "debt", name: "Debt", paragraphs: [
-        "Debt is a story engine, not an accounting tool. Track the holder and the clock; let the principal float a little. A Freelancer with no debt has nothing to lose. A Freelancer with too much debt has nothing to fight for. The sweet spot is between, where the rent is due, the people you owe are circling, and the cause is still real."
+        "Debt is a story engine, not an accounting tool. Track the holder and the clock; let the principal float a little. The sweet spot is between no debt (nothing to lose) and too much (nothing to fight for)."
       ] },
       { key: "identityTheft", name: "Identity Theft", paragraphs: [
-        "Identity theft lands hardest mid-campaign. It hits Freelancers in a way most threats can't: the slow dread of realizing somebody else is spending your money, signing contracts in your name, and you can't prove they aren't you. Use it sparingly. Use it well."
+        "Identity theft lands hardest mid-campaign: somebody else is spending the Freelancer's money and signing contracts in their name, and they can't prove that person isn't them. Use it sparingly."
       ] },
       { key: "hypercare", name: "Hypercare Response", paragraphs: [
         "If you want this to stay mostly narrative, treat the tier as permission: Tier 1 gets you help when it is easy, Tier 4 gets you help when it is ugly.",
@@ -360,15 +418,15 @@ EN.gmBook.payroll = {
   claims: {
     // GMH p31
     name: "Claims and Salvage",
-    intro: "An Incursion on public ground works like a gold strike. The first crew to file a claim on it owns the right to work it, and owns what they carry out. The claim is the job. Everything else is getting there before somebody else does.",
+    intro: "On public ground, the first crew to file a claim on an Incursion owns the right to work it, and owns what they carry out.",
     // GMH p32
     filing: {
       name: "Filing",
       paragraphs: [
-        "Every legal claim lands on the ledger of a district claims office. There are several, one per district, and they reconcile overnight. Nobody files at a counter. Claims go in through licensed claim agents: Guild desks, independent brokers in strip-mall storefronts, corporate legal departments, a few shrines that got licensed decades ago and never let it lapse.",
-        "The seams are where the trouble lives. Between close of business and reconciliation, two offices can record the same site to two crews. A gate that opens on a district line can be filed twice by honest people. Those seams produce claim disputes, gate crashers with paperwork, and a good share of Contested Incursions.",
+        "Every legal claim lands on the ledger of a district claims office, one per district, and the offices reconcile overnight. Claims go in through licensed claim agents: Guild desks, independent brokers, corporate legal departments, a few licensed shrines.",
+        "Between close of business and reconciliation, two offices can record the same site to two crews, and a gate that opens on a district line can be filed twice. Those seams produce claim disputes, gate crashers with paperwork, and a good share of Contested Incursions.",
         "Filing is a Bureaucracy Tools job. A clean, uncontested claim on a site nobody else has noticed is a formality. A claim in a race is a Dice Pool against the other filer, and a Flawless Success means the crew's timestamp lands first by a margin nobody can argue with.",
-        "Claims can be bought and sold. A crew can sell a claim they can't work, or buy one they can. Corporations buy a lot of them."
+        "Claims can be bought and sold. Corporations buy a lot of them."
       ],
       tool: "Bureaucracy Tools",
       uncontested: "a formality",
@@ -378,12 +436,12 @@ EN.gmBook.payroll = {
     // GMH p32
     holding: {
       name: "Holding It",
-      text: "A filed claim comes with protection liberties: the holder may defend the claim, with force, against anyone working it without their consent. That's where the two most hated jobs in the business come from.",
+      text: "A filed claim comes with protection liberties: the holder may defend the claim, with force, against anyone working it without their consent. Two jobs come from that:",
       jobs: [
         { key: "goons", name: "Goon squads",
           text: "Goon squads wait outside a claimed site to make sure nobody else goes in. It's cordon work, and it pays by the hour." },
         { key: "crashers", name: "Gate crashers",
-          text: "Gate crashers go in after a crew to challenge the claim from the inside: beat them to the anchor, take the salvage, or make them quit. Whether that's legal depends on whose claim is valid, which is usually settled afterward by whoever's still standing and has the better lawyer." }
+          text: "Gate crashers go in after a crew to challenge the claim from the inside: beat them to the anchor, take the salvage, or make them quit. Whether that's legal depends on whose claim is valid, which is usually settled afterward." }
       ]
     },
     // GMH p32
@@ -391,7 +449,7 @@ EN.gmBook.payroll = {
       name: "Private Ground",
       paragraphs: [
         "An Incursion on private property is the owner's business. There's no duty to report it. Owners hire crews quietly, through fixers or a Guild's private desk, and the job never touches the public ledger.",
-        "Off-books dives are a healthy minority of the work. Some are crimes. Some are tolerated, because an Open Incursion under a hab block can't wait for a bidding war, and the precinct is happy to look away from a crew doing public-safety work at a neighborhood collective's expense. Entering an Incursion rated above your reported Caliber is fraud only if you misrepresented your rating to get in."
+        "Off-books dives are a healthy minority of the work. Some are crimes. Some are tolerated, because an Open Incursion under a hab block can't wait for a bidding war, and the precinct is happy to look away. Entering an Incursion rated above your reported Caliber is fraud only if you misrepresented your rating to get in."
       ]
     },
     /* The salvage award: property that had an owner before the Incursion
@@ -402,7 +460,7 @@ EN.gmBook.payroll = {
       name: "Salvage",
       paragraphs: [
         "What a crew carries out is theirs, with one exception. Property that belonged to someone before the Incursion swallowed it (a cargo container, a missing person's case, a corporation's prototype) is still that owner's. Under the salvage doctrine the owner owes the recovering crew a salvage award of 10 to 30 percent of the item's value, by how dangerous the recovery was, and can't simply seize it back.",
-        "Corporations buy Incursion salvage through gray procurement desks: no logo on the door, no questions on the form, fast payment in Glimmer or, at volume, Nexus. The fence rates in Economy and Rewards still govern, and Flow-touched multipliers still apply."
+        "Corporations buy Incursion salvage through gray procurement desks, with no questions and fast payment in Glimmer or, at volume, Nexus. The fence rates in Economy and Rewards still govern, and Flow-touched multipliers still apply."
       ],
       awardPctLow: 10, awardPctHigh: 30,
       awardText: "a salvage award of 10 to 30 percent of the item's value, by how dangerous the recovery was"
@@ -410,7 +468,7 @@ EN.gmBook.payroll = {
     // GMH p33
     spectacle: {
       name: "The Spectacle",
-      text: "Incursion work is watched. Crews stream their dives, sponsors pay for logo time on armor, and a clean collapse from the right angle can make a rookie famous for a week. Footage is a salvage category of its own, and Media Tools is how a crew turns it into money. A crew that streams also streams their tactics, their faces, and the exact moment they got scared. Some sponsors pay extra for the last one."
+      text: "Crews stream their dives, and sponsors pay for logo time on armor. Footage is a salvage category of its own, and Media Tools is how a crew turns it into money. A crew that streams also streams their tactics and their faces."
     }
   }
 };
@@ -421,7 +479,7 @@ EN.gmBook.payroll = {
    the app carries as gear (Signature weapons, ordnance, Mystech, Blackware, the tools); this is the
    prose AROUND those entries that the Admin desktop had no copy of (audit A6-21, ruled carried,
    19 Oct 2026): the street-price note, Running Gear, the ordnance price note and the rookie
-   cyberware note. Word for word. The Codex's Gear Catalog chapter prints them (js/codex_gm_play.js,
+   cyberware note. The book's words, trimmed to the Codex style (7 Nov 2026). The Codex's Gear Catalog chapter prints them (js/codex_gm_play.js,
    Admin only), panel gmg-running.
 
    `streetPrice.glimmerLow` and `glimmerHigh` are the page's "2,000 to 4,000" for one Nexus
@@ -446,31 +504,27 @@ EN.gmBook.gearCatalog = {
   // GMT p47 to p48
   running: {
     name: "Running Gear",
-    lead: "A gun that answers every question turns every question into the same one. The most interesting weapons are the ones with a room they can't walk into.",
+    // the page's lead line is design advice, cut by the Codex trim of 7 Nov 2026; the key stays
+    lead: "",
     sections: [
       { key: "weaponBuilds", name: "Weapon Builds", paragraphs: [
-        "A build is a decision made in a garage three days before it matters. Accessories come and go, but a Mod takes bench work, and bench work is a commitment.",
-        "That commitment is the lever. A Longarm with a Match Barrel and Marksman Stock owns the rooftop, then becomes a liability in the stairwell. A campaign worth playing gives the player both rooms. Let the Suppressor earn its price on the night nobody hears the shot. Let it do nothing against the thing that hunts by heat."
+        "Accessories come and go, but a Mod takes bench work, and bench work is a commitment. A Longarm with a Match Barrel and Marksman Stock owns the rooftop, then becomes a liability in the stairwell; give the player both rooms. Let the Suppressor earn its price on the night nobody hears the shot, and do nothing against the thing that hunts by heat."
       ] },
       { key: "armorSlots", name: "Armor Slots", paragraphs: [
-        "Slots are a budget, and every budget forces a choice. A four-slot suit can't carry every protective and utility mod at once. That constraint is the point.",
-        "A slot holding Trauma Plates can't also hold a Threat-Detection HUD, Gecko Grips, or Faraday Lining. Extra protection against a hit leaves less room for warning of an ambush, climbing out of trouble, or resisting electronic intrusion. Make those differences matter. Give the crew problems that let different mods earn their place.",
-        "The strongest builds are usually the ones that gave something up."
+        "A four-slot suit can't carry every protective and utility mod at once: a slot holding Trauma Plates can't also hold a Threat-Detection HUD, Gecko Grips, or Faraday Lining. Give the crew problems that let different mods earn their place."
       ] },
       { key: "vehicleUpkeep", name: "Vehicle Upkeep", paragraphs: [
-        "Upkeep is a clock. Charge it once per week or once per travel leg, write down the number, and get back to the job. Nobody came to the table to audit fuel receipts.",
-        "What upkeep buys is pressure with a due date. A crew flush from a good payout barely notices 𝒢900 a week. Three weeks into a dry stretch, that same crew is choosing between the hauler and the safehouse, and the choice will tell you more about them than their sheets ever could.",
-        "Let it hurt. Then let them keep the vehicle if they are willing to go into debt for it. A car the crew fought to keep matters more than one that was simply always there."
+        "Upkeep is a clock. Charge it once per week or once per travel leg, write down the number, and get back to the job. A crew flush from a good payout barely notices 𝒢900 a week; three weeks into a dry stretch, it is choosing between the hauler and the safehouse.",
+        "Let it hurt. Then let them keep the vehicle if they are willing to go into debt for it."
       ] },
       { key: "moddedCars", name: "Modded Cars", paragraphs: [
-        "A modded car is a paper trail with wheels. Every mod on this list is something a witness can describe, a scanner can log, or a mechanic remembers installing, and the crew that bolts a Hardpoint Mount onto the only sedan they own has made that sedan findable.",
-        "Let the heat land on the vehicle and not only on the people inside it. Losing a car the crew paid for and loved is a better consequence than losing a fight."
+        "Every vehicle mod is something a witness can describe, a scanner can log, or a mechanic remembers installing: a Hardpoint Mount on the crew's only sedan makes that sedan findable. Let the heat land on the vehicle and not only on the people inside it."
       ] },
       { key: "kits", name: "Kits", paragraphs: [
-        "Let kits matter. Reward the Freelancer who invested in gear with cleaner access, better information, and safer rolls. Don't audit every screwdriver, but a crew operating without even a basic kit should feel the risk in their teeth."
+        "Reward the Freelancer who invested in gear with cleaner access, better information, and safer rolls. Don't audit every screwdriver, but a crew operating without even a basic kit should feel the risk."
       ] },
       { key: "encumbrance", name: "Encumbrance", paragraphs: [
-        "If you are counting the exact number of pistols in a backpack, you have gone deeper than this system intends. Ask what the load looks like in fiction. If the Character can still jog, climb, and fight normally, they are Unencumbered. If the load is awkward but plausible, they are Encumbered. If the load looks like a meme screenshot of someone carrying an armory, a generator, and two bodies, they are Overloaded. Load gives the table shared language, not a reason to audit socks."
+        "Counting the exact number of pistols in a backpack goes deeper than this system intends. Ask what the load looks like in fiction. If the Character can still jog, climb, and fight normally, they are Unencumbered. If the load is awkward but plausible, they are Encumbered. If the load looks like someone carrying an armory, a generator, and two bodies, they are Overloaded."
       ] }
     ]
   },
@@ -479,12 +533,12 @@ EN.gmBook.gearCatalog = {
   // column, is a note on Munitions and stays with the Signature weapons)
   ordnancePrices: {
     name: "Ordnance prices",
-    text: "Listed prices are a calm-day baseline. Small-arms ammo barely moves: there is too much of it, in too many hands, for the price to climb far. Ordnance swings hard with supply and heat. A machinegun belt under a corporate lockdown costs whatever the seller thinks your week is worth, and the price of a rocket triples the day after someone uses one downtown."
+    text: "Listed prices are a calm-day baseline. Small-arms ammo barely moves. Ordnance swings hard with supply and heat: the price of a rocket triples the day after someone uses one downtown."
   },
 
   // GMT p58, the opening of Cyberware
   rookieCyberware: {
     name: "Rookie cyberware",
-    text: "A Level 1 Freelancer has exactly 1 Resilience Die. Safe Capacity leaves room for 1 or 2 SP of utility chrome without losing it. A rookie who installs 3 SP of heavy combat gear on day one hits Threshold 1, loses the die, and lives on the \"regain 1 die on a Short Rest\" rule. Let that bite. Shortcuts cost."
+    text: "A Level 1 Freelancer has exactly 1 Resilience Die. Safe Capacity leaves room for 1 or 2 SP of utility chrome without losing it. A rookie who installs 3 SP of heavy combat gear on day one hits Threshold 1, loses the die, and lives on the \"regain 1 die on a Short Rest\" rule. Let that bite."
   }
 };

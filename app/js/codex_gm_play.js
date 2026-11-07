@@ -32,7 +32,9 @@
      gmp-profiles  Their Profile of You
      gmy-pay       Paying the Crew (narrative-purpose, optional-twist,
                    contract-pay, what-moves-the-number, bounties,
-                   salvage-and-parts, experience, milestones-and-pacing,
+                   salvage-and-parts, adjusting-payouts,
+                   conversion-scene-complications, regional-exchange,
+                   experience, milestones-and-pacing,
                    the-other-ledger, the-bills, debt, identity-theft,
                    hypercare-response, paying-for-it,
                    payday-in-the-toolkit-s-order)
@@ -286,7 +288,7 @@ window.EN = window.EN || {};
           var t = ref(p.ref);
           if (!t) return;
           var body = typeof t === "string" ? t : t.paragraphs ? paras(t.paragraphs) : (t.text || "");
-          var jobs = (t.jobs || []).map(function (j) { return j.name + ". " + j.text; });
+          var jobs = (t.jobs || []).map(function (j) { return j.text.indexOf(j.name) === 0 ? j.text : j.name + ". " + j.text; }); // "Goon squads wait..." names itself
           kids.push(K.ruleBlock(p.name, paras([body].concat(jobs))));
         });
         var pg = (I.claims.ground || []).filter(function (g) { return g.key === "private"; })[0];
@@ -398,7 +400,30 @@ window.EN = window.EN || {};
         ]));
         (Sv.sources || []).forEach(function (s) { kids.push(K.ruleBlock(s.name, s.text)); });
         if (Sv.guidance) kids.push(K.proseBlock(Sv.guidance.text));
+        kids.push(linkLine(K, "The fence rates:", [["ref-economy/typical-fence-rates", "Typical Fence Rates"]]));
         kids.push(linkLine(K, "What an Incursion's haul owes its owner:", [["gms-incursion/salvage", "Salvage"]]));
+        // Adjusting Payouts (GMT p43), after the salvage note in the book
+        var AP = Sv.adjusting;
+        if (AP) kids.push(K.ruleBlock(AP.name, AP.lead + "\n" + K.bullets(AP.factors) + "\n" + AP.negotiation));
+      }
+      /* Cashing Out Nexus (GMT p43 to p44): the d12 complications and the regional baseline payouts.
+         Reference only; nothing in the app rolls or converts with them. */
+      var CV = B.conversion;
+      if (CV && CV.complications) {
+        var CC = CV.complications;
+        kids.push(K.entry("conversion-scene-complications", CC.name, [
+          K.subTitle(CC.name),
+          K.proseBlock(CC.when),
+          K.refTable(CC.columns, (CC.rows || []).map(function (r) { return [String(r.n), r.name, r.effect]; }), [1])
+        ]));
+      }
+      if (CV && CV.regional) {
+        var RX = CV.regional;
+        kids.push(K.entry("regional-exchange", RX.name, [
+          K.subTitle(RX.name),
+          K.proseBlock(RX.text),
+          K.refTable(RX.columns, (RX.rows || []).map(function (r) { return [r.region, r.payout, r.tone]; }), [0])
+        ]));
       }
       var X = B.xp;
       if (X) {
@@ -428,7 +453,8 @@ window.EN = window.EN || {};
          1d6 arrival roll in its tag. */
       var BL = B.bills;
       if (BL) {
-        kids.push(K.entry("the-bills", BL.name, [K.subTitle(BL.name), K.proseBlock(paras(BL.paragraphs))]));
+        kids.push(K.entry("the-bills", BL.name, [K.subTitle(BL.name), K.proseBlock(paras(BL.paragraphs)),
+          linkLine(K, "The prices:", [["ref-economy/common-service-costs", "Common Service Costs"], ["ref-economy/bribe-thresholds", "Bribe Thresholds"]])]));
         (BL.sections || []).forEach(function (sc) {
           var a = sc.arrival, tag = a ? "1D" + a.die + " ARRIVAL ROLL · ON " + a.successOn + "+" : null;
           var node = K.ruleBlock(sc.name, paras(sc.paragraphs), tag, { conditions: true });
