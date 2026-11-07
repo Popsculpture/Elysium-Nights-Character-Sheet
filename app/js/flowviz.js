@@ -82,13 +82,11 @@ EN.flowViz = (function () {
   var AIMED = { cone: 1, line: 1 };                  // a heading you turn
 
   /* one colour per Resonance (a hex, because an SVG fill in a style string needs a literal) */
-  /* The Resonance colours (the author, 4 Nov 2026): each sits in a gap the interface does not use (the #GRID cyan,
-     the success and ally greens, the button gold and the warning amber, the danger red, the Flow purple), so an
-     Invocation never reads as a piece of the UI. Kinetic steel silver (mass, a shockwave), Thermal magma orange,
-     Electromagnetic lightning yellow, Visceral acid lime, Synthetica circuit azure, Spatial rift indigo, Cognitive
-     synapse magenta, Temporal antique bronze (clock brass). Both decks and the map read them through resColor. */
-  var RES = { kinetic: "#c3cedf", thermal: "#ff7b2c", electromagnetic: "#ffee3a", visceral: "#9be83a",
-              spatial: "#6670ff", cognitive: "#ff6fd8", synthetica: "#3da5ff", temporal: "#c48a4a" };
+  /* The Resonance colours (the author, 7 Nov 2026): Kinetic steel silver, Thermal magma orange, Electromagnetic
+     cyan, Visceral blood red, Synthetica neon green, Spatial deep violet, Cognitive hot pink, Temporal yellow.
+     Both decks and the map read them through resColor. */
+  var RES = { kinetic: "#c3cedf", thermal: "#ff7b2c", electromagnetic: "#00f0ff", visceral: "#ff1000",
+              spatial: "#9400ba", cognitive: "#ff05b1", synthetica: "#39ff6a", temporal: "#ffe600" };
   function resColor(key) { return RES[key] || RES.kinetic; }
 
   /* ---- grid geometry (aoegrid.js owns it: membership by centre, straight-line distance) ------- */
