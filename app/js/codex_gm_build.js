@@ -132,7 +132,7 @@ window.EN = window.EN || {};
         }
         if (B.difficulties && B.difficulties.length) {
           kids.push(K.subTitle("Scale for intent"));
-          kids.push(K.refTable(["Difficulty", "Budget", "What it costs"], B.difficulties.map(function (d) {
+          kids.push(K.refTable(["Difficulty", "Budget", "What It Costs the Crew"], B.difficulties.map(function (d) {
             return [d.name, d.budget, d.costs];
           }), [0]));
         }
@@ -196,7 +196,7 @@ window.EN = window.EN || {};
         var kids = [];
         if (S.intro) kids.push(K.proseBlock(S.intro));
         if (S.tiers && S.tiers.length) {
-          kids.push(K.refTable(["Site", "Arrives in", "What arrives"], S.tiers.map(function (t) {
+          kids.push(K.refTable(["Site", "Arrives in", "It Looks Like"], S.tiers.map(function (t) {
             return [t.site, t.arrives, t.looksLike];
           }), [0]));
         }
@@ -257,7 +257,7 @@ window.EN = window.EN || {};
     { id: "gmh-bites", title: "Bite Bands", tag: "NUISANCE TO LETHAL", order: 30,
       when: function () { return !!(hz() && hz().bites && hz().bites.length); },
       build: function (ctx, K) {
-        return [K.refTable(["Band", "Dice", "Reads as"], hz().bites.map(function (b) { return [b.name, b.dice, b.readsAs]; }), [0])];
+        return [K.refTable(["Band", "Damage", "Reads as"], hz().bites.map(function (b) { return [b.name, b.dice, b.readsAs]; }), [0])];
       } },
 
     { id: "gmh-pricing", title: "Pricing Hazards", tag: "FLAVOR OR OPPOSITION", order: 40,
@@ -311,9 +311,6 @@ window.EN = window.EN || {};
       build: function (ctx, K) {
         var SP = hz().setPieces, G = SP.guidance;
         var kids = [K.proseBlock(G.text)];
-        if (G.perFight && G.perFight.length) {
-          kids.push(K.refTable(["Hazards in the fight", "Reads as"], G.perFight.map(function (x) { return [String(x.count), x.reads]; }), [0]));
-        }
         // the book's one scaling rule; the Set Pieces themselves are on the Hazards tab
         if (SP.intro) { kids.push(K.subTitle("Set Pieces")); kids.push(K.proseBlock(SP.intro)); }
         return kids;

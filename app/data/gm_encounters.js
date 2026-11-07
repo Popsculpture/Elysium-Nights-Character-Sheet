@@ -109,7 +109,7 @@ EN.gmBook.encounters = {
         text: "Give every fight a spine: the Elite calling targets, the Controller reshaping the room, the Deadshot upstairs.",
         check: null },
       { key: "reinforcements", name: "Reinforcements are budget",
-        text: "Anything that walks in mid-fight was part of the price.",
+        text: "Anything that walks in mid-fight was part of the price. A second Fair Fight added at round three makes it Red Work.",
         check: null },
       // GMH p53 for the band width (within one Grade of the crew's Caliber)
       { key: "band", name: "Watch the Grade band, not just the total",

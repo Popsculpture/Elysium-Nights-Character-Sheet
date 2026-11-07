@@ -172,7 +172,7 @@ EN.threats = {
       { name: "DR", text: "DR is flat damage reduction, with its source in parentheses. If the crew takes the armor off the body afterward, the armor is what the parenthetical says it is." },
       { name: "Vitality", text: "Vitality is the whole pool. Threats don't track Wounds or Vigor unless the entry grants them. At 0 Vitality a threat is out of the fight: dead, dying, or done, whichever the scene calls for. If you want a named threat to survive on the floor, it survives on the floor." },
       { name: "Speed", text: "How many spaces this threat can move on its turn." },
-      { name: "Initiative", text: "Initiative is its whole Initiative bonus, rolled as d20 plus the number. To build one, start at Grade + 2. Minions take 1 off, Bruisers take 1 off, Skirmishers add 1, Ghosts add 2. Nudge it a point either way for the fiction." },
+      { name: "Initiative", text: "Initiative is its whole Initiative bonus, rolled as d20 plus the number. To build one, start at Grade + 2. Minions take 1 off, Bruisers take 1 off, Skirmishers add 1, Ghosts add 2. Nudge it a point either way for the fiction. A turret bolted to a wall can sit lower, and anything that's been waiting for you can sit higher." },
       { name: "Saves", savesRule: true },
       { name: "Passive Perception", text: "Passive Perception is what Stealth is rolling against." },
       { name: "Attacks and abilities", text: "Attacks and abilities carry the standard action tags: (Action), (Move), (Swift), (Impulse), (Free), (Complex), (Special). Untagged traits are passive. The number in parentheses after damage dice is the average, for when rolling is slower than the scene deserves." },
@@ -192,7 +192,7 @@ EN.threats = {
      Texts follow the Handbook. Lockdown and Static Howl name a Body Save,
      Patch In heals twice THIS threat's Grade (not the healed ally's), Wrecker
      drops a MATERIAL category, and From Nowhere is +1 damage die with no Edge. */
-  abilityIntro: "Give a threat two abilities. Pick from the menu or write your own; keep riders keyed to the threat's single Save DC, and keep conditions to the ones in the Conditions chapter. Every menu ability below is tuned for its listed roles at any Grade.",
+  abilityIntro: "Two abilities is the usual count. Pick from the menu or write your own; keep riders keyed to the threat's single Save DC, and keep conditions to the ones in the Conditions chapter. Every menu ability below is tuned for its listed roles at any Grade.",
   abilityGroups: [
     { role: "bruiser", abilities: [
       { name: "Haymaker", cost: "Action", text: "One heavy attack at +2 damage dice. On a hit, the Target makes a Body Save or is knocked Prone." },
@@ -355,7 +355,7 @@ EN.threats.initiative = (function () {
     base: 2,
     byDesignation: keyed({ minion: -1 }),
     byRole: keyed({ bruiser: -1, skirmisher: 1, ghost: 2 }),
-    note: "Nudge it a point either way for the fiction."
+    note: "Nudge it a point either way for the fiction. A turret bolted to a wall can sit lower, and anything that's been waiting for you can sit higher."
   };
 })();
 
@@ -376,7 +376,7 @@ EN.threats.runningSolos = {
     { key: "impulses", name: "Defensive Impulses", tag: null,
       text: "A Solo gets one Impulse Action per Freelancer turn, spent on the defensive options its entry lists. It can still only use one defense against any single attack." },
     { key: "unshakable", name: "Unshakable", tag: "Special",
-      text: "A Solo makes its condition saves at the end of every turn, not only its own. Once per round, when it fails a save, it may spend one of its remaining Surges to succeed instead. Restraints work on a Solo." },
+      text: "A Solo makes its condition saves at the end of every turn, not only its own. Once per round, when it fails a save, it may spend one of its remaining Surges to succeed instead. Restraints work on a Solo. They just don't work for long." },
     { key: "breakpoint", name: "Breakpoint", tag: "Special",
       text: "The first time a Solo drops below half Vitality, its Breakpoint fires: a new attack pattern, a shed skin, a called-in favor, a change of venue." }
   ],
@@ -384,7 +384,7 @@ EN.threats.runningSolos = {
      it with EN.threats.budget.soloNote, the page's last clause. It is not in `rules`, which the
      Table's Solo helper walks. */
   building: { name: "Building a Solo",
-    text: "Take the Standard Threat Array at the Solo's Grade. Quadruple the Vitality, add 1 Defense and 2 to the Save DC, and give it two to three attacks a round on its own turn, totaling about triple a Standard's damage. Then write two to four Surges, one Breakpoint, and one weakness the crew can find by scouting. The weakness isn't optional. Solos pay 4 times Standard XP." }
+    text: "Take the Standard Threat Array at the Solo's Grade. Quadruple the Vitality, add 1 Defense and 2 to the Save DC, and give it two to three attacks a round on its own turn, totaling about triple a Standard's damage. Then write two to four Surges, one Breakpoint, and one weakness the crew can find by scouting (a sense it trusts too much, a fuel it needs, a sound it can't ignore). The weakness isn't optional. Solos pay 4 times Standard XP." }
 };
 
 /* ENEMY FREELANCERS AND NAMED RIVALS (GMT p25, after Running Solos): how to build the other crew.

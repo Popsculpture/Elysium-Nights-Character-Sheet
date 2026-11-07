@@ -167,6 +167,8 @@ window.EN = window.EN || {};
       build: function (ctx, K) {
         var D = T().optionalDamageEffects, out = [];
         if (D.intro) out.push(K.proseBlock(D.intro));
+        // the player rule these riders sit on top of (its link left with the cut intro sentence)
+        if (D.intro && K.seeAlso) out.push(K.seeAlso("The damage types themselves:", [["ref-dmg", "Damage Types"]]));
         if (D.using) out.push(K.ruleBlock(D.using.name, D.using.lead + "\n" + K.bullets(D.using.steps), null, { conditions: true }));
         (D.groups || []).forEach(function (g) {
           var list = (D.effects || []).filter(function (e) { return e.group === g.key; });

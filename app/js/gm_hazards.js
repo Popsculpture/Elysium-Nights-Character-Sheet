@@ -1063,7 +1063,7 @@ EN.gmHazards = (function () {
     }));
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end" } }, [
       pick("Band", bandOpts, d.band, function (v) { d.band = v; d.dice = bandDice(v); }, { hook: "c-band" }),
-      textField("Dice", d.dice, bandDice(d.band) || "none", function (v) { d.dice = v; }, { hook: "c-dice", flex: "0 1 110px" }),
+      textField("Damage", d.dice, bandDice(d.band) || "none", function (v) { d.dice = v; }, { hook: "c-dice", flex: "0 1 110px" }),
       el("label", { style: { display: "flex", gap: "6px", alignItems: "center", fontSize: "12.5px", paddingBottom: "6px" } }, [
         el("input", { type: "checkbox", checked: !!d.half, "data-hook": "c-half",
           onchange: function (e) { d.half = !!e.target.checked; } }),
