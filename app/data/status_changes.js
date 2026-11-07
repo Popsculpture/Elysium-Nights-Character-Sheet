@@ -99,23 +99,25 @@ EN.statusChanges = (function () {
      consequence the engine already knows how to apply (it steps the unarmed
      strike), and that wiring lives in engine.js keyed on the option key below.
      The other five are recorded and displayed; none of them touches a number
-     this sheet computes. */
-  var tunings = (((EN.classes || {}).stitcher || {}).extra || {}).aftermarketTunings || [];
+     this sheet computes.
+
+     The Ripper is Freelancer's Companion content: its tunings arrive with the
+     EN1101 pack (js/packs.js), which may merge after this file has run, so the
+     Class Buffs are built by classBuffList() and rebuilt by rebuild(). */
+  function tuningList() { return (((EN.classes || {}).stitcher || {}).extra || {}).aftermarketTunings || []; }
 
   function slug(s) {
     return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
 
-  var classBuffs = tunings.map(function (t) {
+  function classBuffList() { return tuningList().map(function (t) {
     return {
       key: "bonus:" + slug(t.name),
       name: t.name,
       kind: "classBuff",
       source: "Ripper Hot-Wired Implants",
-      /* The Ripper is a Freelancer's Companion subclass, offered only while Supplemental content
-         is on (data/launch.js), and these come with it:
-         the Bonuses menu hides an entry while EN.launch.isHeld("subclass", heldWith) unless it
-         is already applied (the author's decision 3, 2026-10-16). The data stays. */
+      /* The Bonuses menu hides an entry while EN.launch.isHeld("subclass", heldWith) unless it
+         is already applied (the author's decision 3, 2026-10-16). */
       heldWith: "the_ripper",
       requires: t.requires || "",
       summary: t.text || "",
@@ -125,7 +127,8 @@ EN.statusChanges = (function () {
       exclusiveGroup: "hotwire",
       endsOn: "The installer's next Short or Long Rest, when it must be recalibrated or it powers down."
     };
-  });
+  }); }
+  var classBuffs = classBuffList();
 
   /* CONSUMABLES that leave a lasting state behind. A Vita-Pop is a heal and
      not a status, so it is not here; a Combat Stim Pack runs for three turns
@@ -163,16 +166,28 @@ EN.statusChanges = (function () {
   var menus = { hazard: { placeholder: "- add a Hazard -", groups: hazardGroups },
                 bonus:  { placeholder: "- add a Bonus -",  groups: bonusGroups } };
 
-  Object.keys(menus).forEach(function (menuKey) {
-    menus[menuKey].groups.forEach(function (g) {
-      (g.options || []).forEach(function (o) {
-        o.menu = menuKey;
-        o.groupKey = g.key;
-        o.groupName = g.name;
-        optionByKey[o.key] = o;
+  function index() {
+    Object.keys(optionByKey).forEach(function (k) { delete optionByKey[k]; });
+    Object.keys(menus).forEach(function (menuKey) {
+      menus[menuKey].groups.forEach(function (g) {
+        (g.options || []).forEach(function (o) {
+          o.menu = menuKey;
+          o.groupKey = g.key;
+          o.groupName = g.name;
+          optionByKey[o.key] = o;
+        });
       });
     });
-  });
+  }
+  index();
+
+  /* After a pack merges or leaves (js/packs.js): the Class Buffs are rebuilt from whatever
+     tunings are loaded now, in place, so anything holding the menu or the lookup keeps it. */
+  function rebuild() {
+    classBuffs.length = 0;
+    classBuffList().forEach(function (o) { classBuffs.push(o); });
+    index();
+  }
 
   return {
     hazard: menus.hazard,
@@ -180,6 +195,7 @@ EN.statusChanges = (function () {
     optionByKey: optionByKey,
     // every key any menu can produce, for the store's sanitizer
     isKey: function (k) { return typeof k === "string" && !!optionByKey[k]; },
-    get: function (k) { return (typeof k === "string" && optionByKey[k]) || null; }
+    get: function (k) { return (typeof k === "string" && optionByKey[k]) || null; },
+    rebuild: rebuild
   };
 })();

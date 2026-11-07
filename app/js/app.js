@@ -662,6 +662,8 @@ EN.app = (function () {
     });
     renderTabs();
     render();
+    // from here on a content pack that loads or leaves (js/packs.js) redraws the app
+    if (EN.packs && EN.packs.ready) EN.packs.ready();
     // cloud saves (js/cloud.js): the Jack in control, and the sync while a player is jacked in
     if (EN.cloud && EN.cloud.start) EN.cloud.start();
     tickClock(); setInterval(tickClock, 1000);

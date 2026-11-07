@@ -2195,6 +2195,10 @@ EN.builder = (function () {
   }
   // A1: the JSON export carries the same summary, read-only; importCharacter drops it
   function exportPayload(ch) {
+    // a locked record (it uses a pack this device has not loaded) exports exactly as it is stored:
+    // the summaries below are built from data this device does not have
+    var id = ch && ch.meta && ch.meta.id;
+    if (id && store.isLocked && store.isLocked(id)) return store.storedRecord(id);
     var extra = {};
     if (EN.theme && EN.theme.bundleFor) { var defs = EN.theme.bundleFor(ch); if (defs.length) extra.customThemes = defs; }
     var g = classGear(ch);

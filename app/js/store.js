@@ -26,6 +26,19 @@ EN.store = (function () {
      on reload, which is what "example" should mean, and makes them safe to test against
      without any risk to the roster the player actually built. */
   var state = { roster: {}, activeId: null, example: null };
+  /* LOCKED RECORDS (7 Nov 2026). A record that refers to a key in a content pack this device has
+     not loaded (js/packs.js missing(): the Freelancer's Companion, EN1101, for now) is LOCKED:
+       - its stored JSON is kept exactly as it was (locked[id].raw, never handed out, never
+         migrated), and that is what every write of the roster stores for it;
+       - state.roster holds a display copy, migrated so the sheet can draw it, and nothing that
+         copy goes through is ever saved;
+       - update() and updateById() refuse it, so it cannot be edited, and cloud sync skips it
+         (js/cloud.js). Opening, exporting (the stored JSON) and deleting it still work.
+     Without this, migrate() would drop the picks it cannot resolve (a subclass missing from the
+     live data, for one), and the next save, then cloud sync, would carry the loss to every
+     device. relock() unlocks it, untouched, once the pack loads, and locks it again if the pack
+     leaves. */
+  var locked = {};
 
   /* ---- event bus -------------------------------------------------------- */
   function on(fn) { listeners.push(fn); return function () { listeners = listeners.filter(function (l) { return l !== fn; }); }; }
@@ -2309,6 +2322,73 @@ EN.store = (function () {
     } catch (err) { console.warn("Starting class item repair skipped", err); }
   }
 
+  /* ---- locked records --------------------------------------------------- */
+  function packsMissing(rec) {
+    try { return EN.packs && EN.packs.missing ? EN.packs.missing(rec) : []; } catch (e) { return []; }
+  }
+  // the copy the sheet draws: migrated, never saved
+  function displayCopy(raw) {
+    var ch = JSON.parse(JSON.stringify(raw));
+    try { migrate(ch); } catch (e) { console.warn("A locked record could not be fully drawn; it is stored unchanged.", e); }
+    return ch;
+  }
+  function lockRecord(id, raw) { locked[id] = { raw: raw }; return displayCopy(raw); }
+  function isLocked(id) { return !!(id && locked[id]); }
+  // what the roster stores: a locked record's own JSON, everything else as it is in memory
+  function serialRoster() {
+    var out = {};
+    Object.keys(state.roster).forEach(function (id) { out[id] = locked[id] ? locked[id].raw : state.roster[id]; });
+    return out;
+  }
+  // a copy of what is stored for a record (a locked one's exact JSON), for export
+  function storedRecord(id) {
+    var r = locked[id] ? locked[id].raw : state.roster[id];
+    return r ? JSON.parse(JSON.stringify(r)) : null;
+  }
+  // which packs a locked record needs, and the picks to show as locked chips
+  function lockInfo(id) {
+    if (!locked[id]) return null;
+    var raw = locked[id].raw, skus = packsMissing(raw);
+    var picks = [];
+    skus.forEach(function (sku) { (EN.packs.picks(raw, sku) || []).forEach(function (p) { picks.push({ sku: sku, key: p.key, name: p.name }); }); });
+    return { skus: skus, picks: picks };
+  }
+  /* After a pack loads or leaves (js/packs.js): unlock what can now be read in full, lock what no
+     longer can. An unlocked record is migrated from its stored JSON exactly as a load would. A
+     record that locks is locked as it is STORED: an edit still waiting to save is written first,
+     and nothing else is written, so leaving a pack never rewrites a record. An open example the
+     data no longer offers is closed. */
+  function storedNow() {
+    try { var r = JSON.parse(localStorage.getItem(KEY_ROSTER) || "{}"); return r && typeof r === "object" ? r : {}; }
+    catch (e) { return {}; }
+  }
+  function relock() {
+    var any = false, flushed = false, stored = null;
+    Object.keys(state.roster).forEach(function (id) {
+      var L = locked[id], live = state.roster[id];
+      if (!live || typeof live !== "object") return;
+      var need = packsMissing(L ? L.raw : live).length > 0;
+      if (L && !need) {
+        var obj = JSON.parse(JSON.stringify(L.raw));
+        try { migrate(obj); } catch (e) { console.error("Character " + id + " could not be unlocked; it stays locked.", e); return; }
+        delete locked[id];
+        restoreInPlace(live, obj);
+        any = true;
+      } else if (!L && need) {
+        if (!flushed) { if (savePending) persist(true); flushed = true; stored = storedNow(); }
+        var raw = stored[id] && typeof stored[id] === "object" ? stored[id] : JSON.parse(JSON.stringify(live));
+        restoreInPlace(live, lockRecord(id, raw));
+        any = true;
+      }
+    });
+    if (state.example) {
+      var key = state.example.meta && state.example.meta.example;
+      if (!(EN.examples || []).some(function (x) { return x.key === key; })) { state.example = null; any = true; }
+    }
+    if (any) emit();
+    return any;
+  }
+
   /* ---- persistence ------------------------------------------------------ */
   function readJson(key, dflt) {
     try { var v = JSON.parse(localStorage.getItem(key) || "null"); return v && typeof v === "object" ? v : dflt; }
@@ -2343,7 +2423,11 @@ EN.store = (function () {
       /* The record is SET ASIDE, not just dropped: a copy taken before migrate() touched it goes
          under KEY_SETASIDE at once, so the persist that follows cannot take it with it. */
       var failed = [];
+      locked = {};
       Object.keys(state.roster).forEach(function (id) {
+        // a record that needs a pack this device has not loaded is locked, never migrated
+        var rec = state.roster[id];
+        if (rec && typeof rec === "object" && packsMissing(rec).length) { state.roster[id] = lockRecord(id, rec); return; }
         var before = null;
         try { before = JSON.parse(JSON.stringify(state.roster[id])); } catch (e0) { before = state.roster[id]; }
         try { migrate(state.roster[id]); }
@@ -2384,7 +2468,7 @@ EN.store = (function () {
     var bk = readJson(KEY_BACKUP, null), next = {};
     var held = (bk && bk.roster && typeof bk.roster === "object") ? bk.roster : {};
     safety.missing.forEach(function (id) { next[id] = held[id]; });
-    Object.keys(state.roster).forEach(function (id) { next[id] = state.roster[id]; });
+    Object.keys(state.roster).forEach(function (id) { next[id] = locked[id] ? locked[id].raw : state.roster[id]; });
     // never write an empty backup over one that has records; there is nothing to protect
     if (!Object.keys(next).length) return;
     try { localStorage.setItem(KEY_BACKUP, JSON.stringify({ at: Date.now(), roster: next })); }
@@ -2417,10 +2501,11 @@ EN.store = (function () {
     else { var m = missingList().filter(function (x) { return x.id === id; })[0]; if (m) { raw = m.raw; from = "missing"; } }
     if (!raw || typeof raw !== "object") return { ok: false, error: "Nothing readable to restore. Export the raw JSON instead." };
     var ch = JSON.parse(JSON.stringify(raw));
-    try { migrate(ch); } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
+    var needs = packsMissing(ch).length > 0;
+    if (!needs) { try { migrate(ch); } catch (e) { return { ok: false, error: String(e && e.message || e) }; } }
     ch.meta = ch.meta || {};
     if (!ch.meta.id || state.roster[ch.meta.id]) ch.meta.id = state.roster[id] ? uid() : id;
-    state.roster[ch.meta.id] = ch;
+    state.roster[ch.meta.id] = needs ? lockRecord(ch.meta.id, ch) : ch;
     if (from === "aside") { delete safety.setAside[id]; writeJson(KEY_SETASIDE, safety.setAside); }
     else safety.missing = safety.missing.filter(function (x) { return x !== id; });
     if (!state.activeId) state.activeId = ch.meta.id;
@@ -2440,7 +2525,7 @@ EN.store = (function () {
     var bk = readJson(KEY_BACKUP, null);
     if (bk && bk.roster && bk.roster[id]) { delete bk.roster[id]; writeJson(KEY_BACKUP, bk); }
   }
-  var saveTimer = null;
+  var saveTimer = null, savePending = false;
   /* Did the write actually land? A refused setItem (the origin's storage full, Safari in
      private browsing, a browser set to block site data) used to be a console line and nothing
      more, while the app went on reporting SYNC OK, because the readout was driven by the EDIT
@@ -2458,7 +2543,7 @@ EN.store = (function () {
     function doWrite() {
       var ok = true, err = null;
       try {
-        localStorage.setItem(KEY_ROSTER, JSON.stringify(state.roster));
+        localStorage.setItem(KEY_ROSTER, JSON.stringify(serialRoster()));
         localStorage.setItem(KEY_ACTIVE, state.activeId || "");
       } catch (e) {
         // the safety copy is the first thing to give way when the store is full, then one retry
@@ -2466,7 +2551,7 @@ EN.store = (function () {
         try {
           if (localStorage.getItem(KEY_BACKUP)) {
             localStorage.removeItem(KEY_BACKUP);
-            localStorage.setItem(KEY_ROSTER, JSON.stringify(state.roster));
+            localStorage.setItem(KEY_ROSTER, JSON.stringify(serialRoster()));
             localStorage.setItem(KEY_ACTIVE, state.activeId || "");
             retried = true;
           }
@@ -2478,9 +2563,10 @@ EN.store = (function () {
       saveWatchers.forEach(function (f) { try { f(ok, err); } catch (e2) { console.error(e2); } });
       return ok;
     }
-    if (immediate) return doWrite();
+    if (immediate) { savePending = false; clearTimeout(saveTimer); return doWrite(); }
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(doWrite, 350);
+    savePending = true;
+    saveTimer = setTimeout(function () { savePending = false; doWrite(); }, 350);
     return true;
   }
 
@@ -2567,6 +2653,7 @@ EN.store = (function () {
   function remove(id) {
     var had = Object.prototype.hasOwnProperty.call(state.roster, id);
     delete state.roster[id];
+    delete locked[id];
     dropFromBackup(id);   // deleted through the app, so it is not "missing" on the next load
     if (state.activeId === id) state.activeId = Object.keys(state.roster)[0] || null;
     persist(true); emit();
@@ -2578,6 +2665,18 @@ EN.store = (function () {
      not read as a fresh local edit. Answers whether the write landed. */
   function putRecord(id, obj) {
     if (typeof id !== "string" || !id || !obj || typeof obj !== "object") return false;
+    // a pulled record this device cannot read in full is stored exactly as it arrived (locked)
+    if (packsMissing(obj).length) {
+      if (!obj.meta || typeof obj.meta !== "object") obj.meta = {};
+      if (obj.meta.id !== id) obj.meta.id = id;
+      var shown = lockRecord(id, obj), was = state.roster[id];
+      if (was && typeof was === "object") restoreInPlace(was, shown); else state.roster[id] = shown;
+      if (!state.activeId && !state.example) state.activeId = id;
+      var okL = persist(true);
+      emit();
+      return okL;
+    }
+    delete locked[id];
     obj.meta = obj.meta && typeof obj.meta === "object" ? obj.meta : {};
     var at = obj.meta.updatedAt;
     delete obj.meta.example;
@@ -2597,6 +2696,8 @@ EN.store = (function () {
   function update(mutator, opts) {
     var ch = active();
     if (!ch) return;
+    // a locked record is read-only: nothing on it changes, and nothing is saved
+    if (!state.example && isLocked(state.activeId)) return;
     mutator(ch);
     ledgerSync(ch, opts && opts.ledger);
     ch.meta.updatedAt = Date.now();
@@ -2629,6 +2730,7 @@ EN.store = (function () {
   }
   function updateById(id, mutator, opts) {
     if (typeof id !== "string" || !Object.prototype.hasOwnProperty.call(state.roster, id)) return false;
+    if (isLocked(id)) return false;   // read-only until its pack loads
     var ch = state.roster[id];
     if (!ch || typeof ch !== "object") return false;
     var before = JSON.parse(JSON.stringify(ch));
@@ -2653,6 +2755,14 @@ EN.store = (function () {
     delete obj.customThemes;
     delete obj.classGear;   // the export's read-only class hardware summary (A1); rebuilt from the record
     delete obj.abilitiesKnown;   // the export's read-only list of a pick class's abilities by name
+    // a file that needs a pack this device has not loaded is stored as it is, locked
+    if (packsMissing(obj).length) {
+      state.roster[obj.meta.id] = lockRecord(obj.meta.id, obj);
+      state.activeId = obj.meta.id;
+      persist(true); emit();
+      return state.roster[obj.meta.id];
+    }
+    delete locked[obj.meta.id];
     migrate(obj);   // normalize an imported (possibly older) file now, not just on next load()
     state.roster[obj.meta.id] = obj;
     state.activeId = obj.meta.id;
@@ -2667,6 +2777,8 @@ EN.store = (function () {
     setActive: setActive, remove: remove, update: update,
     // the cloud saves' hooks (js/cloud.js): a deletion through the app, and a record pulled from the account
     onRemove: onRemove, putRecord: putRecord,
+    // locked records (a content pack this device has not loaded): see the note at the top
+    isLocked: isLocked, lockInfo: lockInfo, storedRecord: storedRecord, relock: relock,
     // a write to one filed record by id, for the GM side's confirmed writes; see updateById
     updateById: updateById,
     // the money ledger: totals over its lines (fwd lines carry their own), for the Bills view

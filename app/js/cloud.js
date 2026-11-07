@@ -31,6 +31,21 @@
    them; Not now marks them local only, so the question never repeats for them.
    Local copies are never deleted.
 
+   LOCKED RECORDS. A record that needs a content pack this device has not
+   loaded is locked by the store (js/store.js) and is never pushed: pushing
+   it would upload a copy drawn without its pack. Pulls still bring it down.
+
+   CONTENT PACKS. Once an account is jacked in, js/packs.js reads what it
+   holds and downloads anything newer than its cache. A REAL jack out (Jack
+   out, or Supabase rejecting the session: a SIGNED_OUT event, or the stored
+   session gone) drops the account's packs from this device.
+
+   OFFLINE AT THE TABLE. Access tokens last an hour. Offline, the refresh fails
+   for a network reason and getSession() answers with no session, although the
+   session is still stored. That is not a jack out: the player stays jacked in,
+   the LINK readout says LINK DOWN, the cached pack stays, and the link comes
+   back on its own when the network does.
+
    WHERE IT SHOWS. The top bar's LINK readout is the cloud indicator, and Jack in
    and Jack out sit in Settings (// CLOUD LINK, first in the tray). Jacking in only
    works on a page served over http(s): Discord sends
@@ -53,6 +68,7 @@ EN.cloud = (function () {
   var runP = null, again = false, pushTimer = null, lastPull = 0;
   var awaiting = null;         // local ids held back while the upload question is open
   var loggedMeta = false;
+  var offline = false;         // jacked in on a stored session the network could not refresh
 
   function el() { return EN.ui.el.apply(null, arguments); }
   function store() { return EN.store; }
@@ -103,6 +119,7 @@ EN.cloud = (function () {
   function eligible(id, b) {
     var ch = roster()[id];
     if (!ch || typeof ch !== "object" || (ch.meta && ch.meta.example)) return false;
+    if (store().isLocked && store().isLocked(id)) return false;   // drawn without its pack: never pushed
     if (b.localOnly[id]) return false;
     if (awaiting && awaiting[id]) return false;
     return true;
@@ -121,7 +138,7 @@ EN.cloud = (function () {
      One run at a time. A request for another while one is going sets `again`,
      and the run goes round once more when it finishes. */
   function sync(opts) {
-    if (!client || !user) return Promise.resolve();
+    if (!client || !user || offline) return Promise.resolve();
     if (runP) { again = (again === "pull" || (opts && opts.pull)) ? "pull" : true; return runP; }
     setStatus("syncing");
     var wantPull = !!(opts && opts.pull);
@@ -351,8 +368,40 @@ EN.cloud = (function () {
       var me = user.id;
       holdUnclaimed();
       sync({ pull: true }).then(function () { if (user && user.id === me && awaiting) offerUpload(); });
+      refreshPacks();
     }
     paint();
+  }
+  function refreshPacks() {
+    if (client && user && !offline && EN.packs && EN.packs.refresh) return EN.packs.refresh(client, user.id);
+    return Promise.resolve();
+  }
+
+  /* ---- the stored session, for the offline case ----------------------------------
+     The vendored client keeps the session in localStorage (EN.packs reads the same entry at boot).
+     A refresh that fails for a network reason leaves it there; a rejected one removes it. */
+  function storedUser() {
+    var s = EN.packs && EN.packs.storedSession ? EN.packs.storedSession() : null;
+    return s && s.user && s.user.id ? s.user : null;
+  }
+  function goOffline(u) {
+    offline = true;
+    user = u;
+    setStatus("error");
+  }
+  function backOnline(u) {
+    var was = offline;
+    offline = false;
+    user = u;
+    if (was) { sync({ pull: true }); refreshPacks(); }
+    paint();
+  }
+  // a real jack out: the account's packs leave this device
+  function signedOut() {
+    var prev = user;
+    offline = false;
+    setUser(null);
+    if (EN.packs && EN.packs.drop) EN.packs.drop(prev ? prev.id : null);
   }
 
   /* ---- the LINK readout ------------------------------------------------------
@@ -436,12 +485,34 @@ EN.cloud = (function () {
     c.auth.onAuthStateChange(function (event, session) {
       // supabase-js asks that nothing awaits inside this callback, so the work runs on the next turn
       var u = session && session.user ? session.user : null;
-      setTimeout(function () { if ((u && u.id) !== (user && user.id)) setUser(u); else if (u) { user = u; paint(); } }, 0);
+      setTimeout(function () {
+        if (u) {
+          if (offline && user && user.id === u.id) backOnline(u);
+          else if (u.id !== (user && user.id)) { offline = false; setUser(u); }
+          else { user = u; paint(); }
+          return;
+        }
+        // no session: a real sign-out, or only a refresh the network stopped
+        var kept = storedUser();
+        if (event === "SIGNED_OUT" || !kept) {
+          if (user || offline) signedOut();
+          // rejected before anyone was set here: the packs the boot merged still leave
+          else if (event === "SIGNED_OUT" && EN.packs && EN.packs.drop) EN.packs.drop(null);
+          return;
+        }
+        if (!user) goOffline(kept);
+      }, 0);
     });
     c.auth.getSession().then(function (res) {
       var s = res && res.data ? res.data.session : null;
-      if (s && s.user && (!user || user.id !== s.user.id)) setUser(s.user);
-    }).catch(function (e) { console.warn("Cloud session check failed", e); });
+      if (s && s.user) { if (offline && user && user.id === s.user.id) backOnline(s.user); else if (!user || user.id !== s.user.id) setUser(s.user); return; }
+      var kept = storedUser();
+      if (kept && !user) goOffline(kept);
+    }).catch(function (e) {
+      console.warn("Cloud session check failed", e);
+      var kept = storedUser();
+      if (kept && !user) goOffline(kept);
+    });
     paint();
   }
   function start() {
@@ -460,7 +531,17 @@ EN.cloud = (function () {
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState === "visible" && user && Date.now() - lastPull > 30000) sync({ pull: true });
     });
-    window.addEventListener("online", function () { if (user) sync({ pull: true }); });
+    window.addEventListener("online", function () {
+      if (offline && client) {
+        // the stored session gets its refresh now; onAuthStateChange brings the link back
+        client.auth.getSession().then(function (res) {
+          var s = res && res.data ? res.data.session : null;
+          if (s && s.user) backOnline(s.user);
+        }).catch(function () {});
+        return;
+      }
+      if (user) { sync({ pull: true }); refreshPacks(); }
+    });
     if (!served() || !libReady()) { paint(); return; }
     try {
       wire(window.supabase.createClient(URL_, KEY, {
@@ -480,6 +561,7 @@ EN.cloud = (function () {
     localOnly: function (id) { return localOnlyIds().indexOf(id) !== -1; },
     upload: upload,
     // the test suite swaps in a stand-in client (no network, no Discord)
-    _useClient: function (c) { start(); user = null; wire(c); }
+    _useClient: function (c) { start(); user = null; offline = false; wire(c); },
+    offline: function () { return offline; }
   };
 })();

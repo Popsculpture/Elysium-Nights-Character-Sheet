@@ -1270,7 +1270,7 @@ EN.settings = (function () {
      only decides what is OFFERED: a Freelancer who already has Companion content keeps
      it either way, marked COMPANION. */
   function supplementalSection() {
-    var L = EN.launch, on = L.supplemental();
+    var L = EN.launch, on = L.supplementalSetting();
     return [
       el("div.set-sectitle", { text: "// CONTENT", dataset: { sum: "COMPANION: " + (on ? "ON" : "OFF") } }),
       el("label.set-label", { text: "Supplemental content" }),

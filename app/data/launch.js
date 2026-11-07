@@ -8,9 +8,9 @@
                          Talents, 10 Backgrounds. Everything else is gated:
                          `companion` lists what the Freelancer's Companion
                          (EN1101, a supplemental book) prints, offered only
-                         while the device's Supplemental content setting is
-                         on (supplemental() below); `held` lists anything in
-                         neither book, which stays held.
+                         while its pack is loaded and the device's Supplemental
+                         content setting is on (supplemental() below); `held`
+                         lists anything in neither book, which stays held.
      holds.availability  rarity: the Handbook no longer prints Availability
                          (Common, Uncommon, Rare, Custom, Prototype, or the
                          Mystech tiers), so the app stops displaying it.
@@ -23,11 +23,13 @@
 
    HIDE, DON'T DELETE. Every list below names keys or catalog names; nothing
    here filters or splices EN.species, EN.classes[c].subclasses, EN.talents,
-   EN.backgrounds, the gear catalogs or the engine pools. Those arrays stay
-   whole, because the engine and the store resolve a saved character against
-   them (store.js nulls a saved subclass that is missing from the live array),
-   so a character built on a held option loads, derives and renders exactly as
-   before. Only the LISTING layer reads this file: pickers, the market, the
+   EN.backgrounds, the gear catalogs or the engine pools. Those arrays hold
+   whatever data has loaded: the Handbook's always, the Companion's while its
+   pack is merged (js/packs.js). A saved character that uses a pack this device
+   has not loaded is locked by the store, which keeps its stored JSON exactly as
+   it is (js/store.js), because the store and the engine resolve a saved
+   character against these arrays (store.js nulls a saved subclass that is
+   missing from the live array). Only the LISTING layer reads this file: pickers, the market, the
    Blueprints, the install pickers and the Codex. Each picker uses offer(),
    which keeps the character's own current pick visible (with a marker,
    EN.ui.heldChip: COMPANION for Freelancer's Companion content, HELD for
@@ -44,12 +46,17 @@ window.EN = window.EN || {};
 EN.launch = (function () {
   var holds = { lineup: true, availability: true, toolkit: true };
 
-  /* ---- Supplemental content: a device setting, like the skin ----------------
-     On by default (Handbook plus Companion); someone can turn it off for the Handbook alone. Stored per device, never on a character
-     and never in an export: it decides what the pickers OFFER, not what a saved
-     character may keep. Settings (js/settings.js) flips it. */
+  /* ---- Supplemental content: the pack, and a device setting -------------------
+     True only while the Freelancer's Companion pack (EN1101) is loaded on this
+     device (js/packs.js: it downloads for a signed-in account) AND the player's own
+     setting is not off. The setting is on until someone turns it off for the
+     Handbook alone; it is stored per device, never on a character and never in an
+     export, and Settings (js/settings.js) flips it. It decides what the pickers
+     OFFER, not what a saved character may keep. EN.packs loads after this file, so
+     it is read when this is called, never at load. */
   var SUPP_KEY = "en_supplemental_v1";
-  function supplemental() { try { return localStorage.getItem(SUPP_KEY) !== "0"; } catch (e) { return true; } }
+  function supplementalSetting() { try { return localStorage.getItem(SUPP_KEY) !== "0"; } catch (e) { return true; } }
+  function supplemental() { return !!(EN.packs && EN.packs.loaded("EN1101")) && supplementalSetting(); }
   function setSupplemental(on) { try { localStorage.setItem(SUPP_KEY, on ? "1" : "0"); } catch (e) {} }
 
   /* ---- GM controls: a device setting (29 Oct 2026) ---------------------------
@@ -117,10 +124,18 @@ EN.launch = (function () {
        dealer, ganger, gearhead, glow-idol, minimum-wage-mage, street-doc.
 
      The Freelancer's Companion prints every option the 16 October hold
-     listed: "ten new Lineages, eight new subclasses, ten Backgrounds, and
-     forty-two Talents", plus Culinary Tools, a new Tool Category (its kit is
-     the Street Kitchen Kit). So `companion` carries the whole old hold, and
-     `held` (neither book) is empty until something needs it. */
+     listed (its lineages, subclasses, Backgrounds and Talents), plus Culinary
+     Tools, a Tool Category, and its kit, the Street Kitchen Kit. So `companion`
+     carries the whole old hold, and `held` (neither book) is empty until
+     something needs it.
+
+     THE MANIFEST (7 November 2026). The Companion's content is no longer in the
+     public app: it is the EN1101 pack, downloaded for a signed-in account
+     (js/packs.js). This list stays public as the manifest of what the pack
+     owns. js/packs.js reads it to tell whether a saved character uses the pack
+     (such a record is locked, read-only and untouched, on a device that has not
+     loaded the pack), and `names` gives the locked chips something to call each
+     option. Keys and names only: no feature or rules text belongs here. */
   var companion = {
     // A held lineage takes its Lineage Evolution features with it: the
     // evolution pickers are scoped to the character's own lineage, so they
@@ -158,7 +173,42 @@ EN.launch = (function () {
                  "spacer", "spotlight-survivor", "starhuffer", "wageslave", "whitecoat"],
     // Culinary Tools: a Gear Proficiency (EN.rules.gear.tools) and its kit, a catalog row
     tool: ["Culinary Tools"],
-    item: ["Street Kitchen Kit"]
+    item: ["Street Kitchen Kit"],
+    // the Ripper's Hot-Wires as applied Bonuses (EN.statusChanges option keys). A Stitcher installs
+    // one on an ALLY, so a Handbook character can carry one of these keys too.
+    bonus: ["bonus:optical-overclock", "bonus:dermal-reinforcement", "bonus:pneumatic-bypass",
+            "bonus:synaptic-accelerator", "bonus:recoil-compensator", "bonus:adrenal-tuning"],
+    // display names, for the locked chips
+    names: {
+      "nextgen": "NextGen", "phasebound": "Phasebound", "arboreal": "Arboreal", "mycelial": "Mycelial",
+      "durabodies": "Durabodies", "lifelikes": "Lifelikes", "hulsk": "Hulsk", "skarn": "Skarn",
+      "cinder-heart": "Cinder-Heart", "harbinger": "Harbinger",
+      "rigger": "The Rigger", "arsenal": "The Arsenal", "the_fixer": "The Fixer", "the_headhunter": "The Headhunter",
+      "shiv": "The Shiv", "icon": "The Icon", "kensei": "The Kensei", "the_ripper": "The Ripper",
+      "akimbo-specialist": "Akimbo Specialist", "armor-piercing-specialist": "Armor Piercing Specialist",
+      "arsenal-adept": "Arsenal Adept", "close-quarters-brawler": "Close-Quarters Brawler",
+      "concussive-striker": "Concussive Striker", "heavy-handed": "Heavy Handed", "laceration-expert": "Laceration Expert",
+      "melee-mastery": "Melee Mastery", "ricochet-shot": "Ricochet Shot", "staff-spear-master": "Staff & Spear Master",
+      "blade-weaver": "Blade Weaver", "glitch-breaker": "Glitch Breaker", "phalanx-operator": "Phalanx Operator",
+      "signal-sniper": "Signal Sniper", "tactical-operative": "Tactical Operative", "augment-specialist": "Augment Specialist",
+      "gridrunners-reflexes": "#GRIDrunner's Reflexes", "hardware-harmonizer": "Hardware Harmonizer",
+      "neural-backup": "Neural Backup", "pain-editor": "Pain Editor", "script-archivist": "Script Archivist",
+      "script-kiddie": "Script Kiddie", "echo-sighted": "Echo Sighted", "resonance-optimizer": "Resonance Optimizer",
+      "resonant-recovery": "Resonant Recovery", "static-grounding": "Static Grounding",
+      "cyber-reinforced-vitality": "Cyber-Reinforced Vitality", "siege-plating-expert": "Siege Plating Expert",
+      "tactical-harness-expert": "Tactical Harness Expert", "unbreakable": "Unbreakable", "blitz-logic": "Blitz Logic",
+      "parkour-runner": "Parkour Runner", "speed-freak": "Speed Freak", "fate-bender": "Fate Bender",
+      "field-specialist": "Field Specialist", "hyper-aware": "Hyper-Aware", "hyper-vigilant": "Hyper-Vigilant",
+      "photographic-memory": "Photographic Memory", "ruin-crawler": "Ruin Crawler", "spatial-delivery": "Spatial Delivery",
+      "street-chef": "Street Chef", "undercity-survivor": "Undercity Survivor",
+      "click-chaser": "Click Chaser", "homesteader": "Homesteader", "hired-gun": "Hired Gun", "outrider": "Outrider",
+      "rocker": "Rocker", "spacer": "Spacer", "spotlight-survivor": "Spotlight Survivor", "starhuffer": "Starhuffer",
+      "wageslave": "Wageslave", "whitecoat": "Whitecoat",
+      "Culinary Tools": "Culinary Tools", "Street Kitchen Kit": "Street Kitchen Kit",
+      "bonus:optical-overclock": "Optical Overclock", "bonus:dermal-reinforcement": "Dermal Reinforcement",
+      "bonus:pneumatic-bypass": "Pneumatic Bypass", "bonus:synaptic-accelerator": "Synaptic Accelerator",
+      "bonus:recoil-compensator": "Recoil Compensator", "bonus:adrenal-tuning": "Adrenal Tuning"
+    }
   };
   // in neither book: held whatever the setting says (same kinds as `companion`)
   var held = { lineage: [], subclass: [], talent: [], background: [], tool: [] };
@@ -457,7 +507,7 @@ EN.launch = (function () {
   function showAvailability() { return !holds.availability; }
 
   return { holds: holds, held: held, companion: companion, toolkit: toolkit,
-           supplemental: supplemental, setSupplemental: setSupplemental,
+           supplemental: supplemental, supplementalSetting: supplementalSetting, setSupplemental: setSupplemental,
            gmControls: gmControls, setGmControls: setGmControls,
            gmControlList: GM_CONTROLS, gmItem: gmItem, setGmItem: setGmItem, gmControl: gmControl,
            optionalRules: OPTIONAL_RULES, rule: rule, setRule: setRule,
