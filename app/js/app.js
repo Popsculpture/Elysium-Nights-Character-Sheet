@@ -661,6 +661,8 @@ EN.app = (function () {
     });
     renderTabs();
     render();
+    // cloud saves (js/cloud.js): the Jack in control, and the sync while a player is jacked in
+    if (EN.cloud && EN.cloud.start) EN.cloud.start();
     tickClock(); setInterval(tickClock, 1000);
     /* Swipe between tabs, on the phone skin only: its rail is folded to the app you are in,
        so a swipe is the way between tabs there. enabled() is the SAME test that folds the

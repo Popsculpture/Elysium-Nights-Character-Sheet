@@ -3932,8 +3932,10 @@ EN.builder = (function () {
               if (made) { _step = 0; EN.ui.toast(made.name + " saved to your roster."); EN.app.render(); }
             } }, "⇒ SAVE AS MY OWN")
         : EN.ui.armButton("revoke:" + ch.meta.id, {
-            small: false, label: "✕ REVOKE #PRINT", armedLabel: "SURE? REVOKE PERMANENTLY",
-            title: "Revoke and permanently delete this record",
+            small: false, label: "✕ REVOKE #PRINT",
+            // jacked in, the record's row in the player's account goes too (js/cloud.js)
+            armedLabel: cloudLinked(ch.meta.id) ? "SURE? REVOKE HERE AND IN YOUR ACCOUNT" : "SURE? REVOKE PERMANENTLY",
+            title: "Revoke and permanently delete this record" + (cloudLinked(ch.meta.id) ? ", here and in your cloud account" : ""),
             onConfirm: function () { store.remove(ch.meta.id); toast("Record revoked."); EN.app.render(); }
           })
     ]));
@@ -3964,6 +3966,8 @@ EN.builder = (function () {
     if (!known.length) lines = ["None chosen yet. Pick them under " + res.name + " on the Class step."];
     return f.text.slice(0, cut) + "\n\n" + head + "\n\n" + lines.join("\n\n");
   }
+  // whether deleting this record also deletes its row in the player's cloud account (js/cloud.js)
+  function cloudLinked(id) { return !!(EN.cloud && EN.cloud.linked && EN.cloud.linked(id)); }
   function exportChar(ch) {
     // bundle any custom palette this Freelancer wears so the file renders on a fresh device,
     // and the class hardware summary (A1) so the file says what the record certified
@@ -4557,8 +4561,8 @@ EN.builder = (function () {
              : el("button.btn.sm", { title: "Make this the live record", onclick: function () { store.setActive(id); _step = 0; closeManager(); } }, "OPEN"),
         el("button.btn.sm", { title: "Export this record as .json", onclick: function () { exportChar(roster[id]); } }, "⤓"),
         EN.ui.armButton("del:" + id, {
-          label: "✕", armedLabel: "SURE?",
-          title: "Delete this record permanently",
+          label: "✕", armedLabel: cloudLinked(id) ? "SURE? CLOUD TOO" : "SURE?",
+          title: "Delete this record permanently" + (cloudLinked(id) ? ", here and in your cloud account" : ""),
           onConfirm: function () { store.remove(id); delete _mgrSel[id]; toast("Record deleted."); EN.app.render(); }
         })
       ]));
@@ -4598,8 +4602,8 @@ EN.builder = (function () {
           onclick: function () { exportMany(mgrSelectedIds()); } }, "⤓ EXPORT SELECTED" + (sel.length ? " (" + sel.length + ")" : "")),
         sel.length ? EN.ui.armButton("delbatch", {
           label: "✕ DELETE SELECTED (" + sel.length + ")",
-          armedLabel: "SURE? DELETE " + sel.length,
-          title: "Delete every selected record",
+          armedLabel: "SURE? DELETE " + sel.length + (sel.some(cloudLinked) ? " (CLOUD TOO)" : ""),
+          title: "Delete every selected record" + (sel.some(cloudLinked) ? ", here and in your cloud account" : ""),
           onConfirm: function () {
             var picked = mgrSelectedIds();
             picked.forEach(function (id) { store.remove(id); delete _mgrSel[id]; });

@@ -2559,11 +2559,38 @@ EN.store = (function () {
   function setActive(id) {
     if (state.roster[id]) { state.example = null; state.activeId = id; persist(true); emit(); }
   }
+  /* Watchers hear about a record the player deleted through the app (js/cloud.js deletes its
+     cloud copy). A record missing for any other reason (set aside, gone outside the app) is not
+     a deletion and does not reach them. */
+  var removeWatchers = [];
+  function onRemove(fn) { removeWatchers.push(fn); return function () { removeWatchers = removeWatchers.filter(function (f) { return f !== fn; }); }; }
   function remove(id) {
+    var had = Object.prototype.hasOwnProperty.call(state.roster, id);
     delete state.roster[id];
     dropFromBackup(id);   // deleted through the app, so it is not "missing" on the next load
     if (state.activeId === id) state.activeId = Object.keys(state.roster)[0] || null;
     persist(true); emit();
+    if (had) removeWatchers.forEach(function (f) { try { f(id); } catch (e) { console.error(e); } });
+  }
+  /* Put a whole record into the roster under a given id, replacing any record there, without
+     making it active. js/cloud.js uses it for a character pulled from the player's account. The
+     record is migrated like an import, and keeps the updatedAt it arrived with, so the pull does
+     not read as a fresh local edit. Answers whether the write landed. */
+  function putRecord(id, obj) {
+    if (typeof id !== "string" || !id || !obj || typeof obj !== "object") return false;
+    obj.meta = obj.meta && typeof obj.meta === "object" ? obj.meta : {};
+    var at = obj.meta.updatedAt;
+    delete obj.meta.example;
+    obj.meta.id = id;
+    migrate(obj);
+    if (at !== undefined) obj.meta.updatedAt = at;
+    var had = state.roster[id];
+    if (had && typeof had === "object") restoreInPlace(had, obj);   // anything holding the live record keeps it
+    else state.roster[id] = obj;
+    if (!state.activeId && !state.example) state.activeId = id;
+    var ok = persist(true);
+    emit();
+    return ok;
   }
 
   /* mutate the active character via an updater fn, then persist + notify */
@@ -2638,6 +2665,8 @@ EN.store = (function () {
     active: active, roster: roster,
     createAndActivate: createAndActivate,
     setActive: setActive, remove: remove, update: update,
+    // the cloud saves' hooks (js/cloud.js): a deletion through the app, and a record pulled from the account
+    onRemove: onRemove, putRecord: putRecord,
     // a write to one filed record by id, for the GM side's confirmed writes; see updateById
     updateById: updateById,
     // the money ledger: totals over its lines (fwd lines carry their own), for the Bills view
