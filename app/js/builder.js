@@ -3956,7 +3956,9 @@ EN.builder = (function () {
          so store.remove(ch.meta.id) matched nothing and the button confirmed a permanent
          deletion and then silently did nothing at all, which reads as "I cannot delete my
          characters". An example has nothing to revoke, so it is offered adoption instead. */
-      store.activeIsExample && store.activeIsExample()
+      // another player's sheet (View sheet) has nothing to revoke and nothing to adopt
+      (store.activeIsViewing && store.activeIsViewing()) ? null
+      : store.activeIsExample && store.activeIsExample()
         ? el("button.btn", { style: { color: "var(--accent)", borderColor: "var(--accent)" },
             title: "Copy this example into your own roster as an editable record",
             onclick: function () {
@@ -4369,16 +4371,21 @@ EN.builder = (function () {
     function labelFor(r) {
       var name = typeof r.name === "string" && r.name ? r.name : "Unnamed";
       var level = typeof r.level === "number" ? r.level : 1;
-      return name + " · L" + level;
+      // the campaign it sits in comes right after the name (js/campaigns.js)
+      var camp = EN.campaigns && r.meta && r.meta.id ? EN.campaigns.recordCampaignName(r.meta.id) : "";
+      return name + (camp ? " · " + camp : "") + " · L" + level;
     }
     /* The player's own records first, then the pre-made EXAMPLES. Examples are live but not
        owned: selecting one makes it active without touching the roster, and any edits die on
        reload. That is the point of them, and it is why they cannot be lost the way a real
        record can. */
     var exActive = store.activeIsExample && store.activeIsExample();
+    var viewing = !!(store.activeIsViewing && store.activeIsViewing());
     var kids = ids.map(function (id) {
-      return el("option", { value: id, selected: !exActive && id === ch.meta.id, text: labelFor(roster[id]) });
+      return el("option", { value: id, selected: !exActive && !viewing && id === ch.meta.id, text: labelFor(roster[id]) });
     });
+    // another player's sheet is in none of these lists, and the select must not claim a record that isn't open
+    if (viewing) kids.unshift(el("option", { value: "", selected: true, disabled: true, text: "Viewing " + (typeof ch.name === "string" && ch.name ? ch.name : "a sheet") }));
     kids.push(el("option", { value: "__new", text: "+ Register New #PRINT" }));
     if ((EN.examples || []).length) {
       kids.push(el("optgroup", { label: "EXAMPLES (not saved)" }, EN.examples.map(function (x) {
@@ -4525,9 +4532,10 @@ EN.builder = (function () {
      Examples are listed but deliberately cannot be renamed, deleted or batch-selected: they are
      not in the roster, so there is nothing to act on. They are offered adoption instead. That is
      the same distinction that made REVOKE silently do nothing before this panel existed. */
-  var _mgrOpen = false, _mgrSel = {};
-  function openManager() { _mgrOpen = true; _mgrSel = {}; EN.ui.disarm(); EN.app.render(); }
-  function closeManager() { _mgrOpen = false; _mgrSel = {}; EN.ui.disarm(); EN.app.render(); }
+  var _mgrOpen = false, _mgrSel = {}, _mgrNote = "";
+  // a note, when there is one, reads at the top of the panel (the join card's "You're in...")
+  function openManager(note) { _mgrOpen = true; _mgrSel = {}; _mgrNote = typeof note === "string" ? note : ""; EN.ui.disarm(); EN.app.render(); }
+  function closeManager() { _mgrOpen = false; _mgrSel = {}; _mgrNote = ""; EN.ui.disarm(); EN.app.render(); }
   function managerOpen() { return _mgrOpen; }
 
   function mgrSelectedIds() {
@@ -4572,9 +4580,24 @@ EN.builder = (function () {
     var liveId = store.active() && store.active().meta.id;
     var sel = mgrSelectedIds();
 
-    function metaOf(r) {
+    var camps = EN.campaigns && EN.campaigns.enabled() ? EN.campaigns : null;
+    function metaOf(r, id) {
       var lvl = typeof r.level === "number" ? r.level : 1;
-      return "L" + lvl + " · " + (r.class ? String(r.class).toUpperCase() : "NO CLASS");
+      var camp = camps ? camps.recordCampaignName(id) : "";
+      return "L" + lvl + " · " + (r.class ? String(r.class).toUpperCase() : "NO CLASS") + (camp ? " · " + camp : "");
+    }
+    /* A character sits in one campaign at a time, so its Vitality, gear and Glimmer never have to
+       agree with two tables, and picking another moves it as it is. The pick writes the row's
+       campaign_id straight away (js/campaigns.js), never through the record. */
+    function campaignPick(id) {
+      if (!camps) return null;
+      var cur = camps.recordCampaign(id) || "", lockedRec = !!(store.isLocked && store.isLocked(id));
+      return el("select.mgr-camp", { "data-campaign-row": id, disabled: lockedRec, "aria-label": "Campaign",
+        title: lockedRec ? EN.app.lockReason() : "Which campaign this Freelancer plays in",
+        onchange: function (e) { camps.setRecord(id, e.target.value || null); } },
+        [el("option", { value: "", selected: !cur, text: "No campaign" })].concat(camps.list().map(function (c) {
+          return el("option", { value: c.id, selected: c.id === cur, text: c.name });
+        })));
     }
 
     var rows = [];
@@ -4583,13 +4606,15 @@ EN.builder = (function () {
     ids.forEach(function (id) {
       var r = roster[id];
       var live = !isEx && id === liveId;
-      rows.push(el("div.mgr-row" + (live ? ".live" : ""), null, [
+      var lockWhy = camps && store.isLocked && store.isLocked(id);
+      rows.push(el("div.mgr-row" + (live ? ".live" : "") + (lockWhy ? ".mgr-wrap" : ""), null, [
         el("input", { type: "checkbox", checked: !!_mgrSel[id], title: "Select for batch actions",
           onchange: function (e) { _mgrSel[id] = e.target.checked; EN.app.render(); } }),
         el("input.mgr-name", { value: typeof r.name === "string" ? r.name : "",
           title: "Rename. The first word becomes the first name, the rest the last name.",
           onchange: function (e) { mgrRename(id, e.target.value); EN.app.render(); } }),
-        el("span.mgr-meta", EN.classIdentity.has(r.class) ? { dataset: { cls: r.class } } : null, [EN.classIdentity.mark(r.class), document.createTextNode(metaOf(r))].filter(Boolean)),
+        el("span.mgr-meta", EN.classIdentity.has(r.class) ? { dataset: { cls: r.class } } : null, [EN.classIdentity.mark(r.class), document.createTextNode(metaOf(r, id))].filter(Boolean)),
+        campaignPick(id),
         live ? el("span.chip", { style: { fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }, "LIVE")
              : el("button.btn.sm", { title: "Make this the live record", onclick: function () { store.setActive(id); _step = 0; closeManager(); } }, "OPEN"),
         el("button.btn.sm", { title: "Export this record as .json", onclick: function () { exportChar(roster[id]); } }, "⤓"),
@@ -4603,9 +4628,34 @@ EN.builder = (function () {
           label: "✕", armedLabel: cloudLinked(id) ? "SURE? CLOUD TOO" : "SURE?",
           title: "Delete this record permanently" + (cloudLinked(id) ? ", here and in your cloud account" : ""),
           onConfirm: function () { store.remove(id); delete _mgrSel[id]; toast("Record deleted."); EN.app.render(); }
-        })
+        }),
+        lockWhy ? el("p.help.mgr-why", { text: EN.app.lockReason() }) : null
       ]));
     });
+
+    /* YOUR CAMPAIGNS. Not jacked in there is nothing to pick from, so one line says what to do. */
+    if (!camps) rows.push(el("p.help.mgr-camp-off", { style: { margin: "10px 0 2px" }, text: "Jack in to join campaigns." }));
+    else {
+      var joined = camps.list();
+      rows.push(el("div.mgr-sect", null, [document.createTextNode("Your campaigns (" + joined.length + ")"), el("span.line")]));
+      if (!joined.length) rows.push(el("p.help", { style: { margin: "2px 0 6px" }, text: "No campaigns yet. Follow an Admin's invite link, or start your own." }));
+      joined.forEach(function (c) {
+        rows.push(el("div.mgr-row", { "data-my-campaign": c.id }, [
+          el("span", { style: { width: "13px", flex: "0 0 auto" } }),
+          el("span.mgr-fixed", { text: c.name }),
+          el("span.mgr-meta", { text: c.role === "admin" ? "ADMIN" : c.role === "coadmin" ? "CO-ADMIN" : "PLAYER" }),
+          c.role === "admin"
+            ? el("span.mgr-meta.mgr-nolv", { text: "Transfer leadership first" })
+            : EN.ui.armButton("leave:" + c.id, { label: "LEAVE", armedLabel: "SURE? LEAVE",
+                title: "Leave " + c.name + ". Your characters stay in your account, with no campaign.",
+                onConfirm: function () {
+                  camps.leave(c.id).then(function () { toast("You left " + c.name + "."); EN.app.render(); },
+                    function (e) { console.warn("Could not leave", e); toast(camps.errText(e)); });
+                } })
+        ]));
+      });
+      rows.push(camps.newForm());
+    }
 
     if ((EN.examples || []).length) {
       rows.push(el("div.mgr-sect", null, [document.createTextNode("Examples (not saved)"), el("span.line")]));
@@ -4654,6 +4704,7 @@ EN.builder = (function () {
           onclick: function () { var all = sel.length === ids.length; ids.forEach(function (id) { _mgrSel[id] = !all; }); EN.app.render(); } },
           sel.length === ids.length ? "CLEAR ALL" : "SELECT ALL") : null
       ]),
+      _mgrNote ? el("p.mgr-note", { role: "status", text: _mgrNote }) : null,
       el("div.mgr-list", null, rows)
     ]);
     var ov = el("div", { id: "mgr", onclick: function (e) { if (e.target === ov) closeManager(); } }, [card]);

@@ -34,6 +34,10 @@
    for a load that skips the card; through the card it is Freelancer like
    everyone else.
 
+   OTHER CARDS: panel() opens a card in this look over the app (the join card,
+   js/campaigns.js), and denied() is Gizmo's ACCESS DENIED page (the fence in
+   app.js). Both reuse the bubble and his drawing as they are.
+
    TO TURN IT OFF:       set CONFIG.enabled to false.
    TO REMOVE COMPLETELY: do not. tour.js reads Gizmo from this file, so a
                          missing gate is a tour with no Gizmo and no error.
@@ -251,8 +255,9 @@ EN.gate = (function () {
     setKey(PICK, "offline");
     closeOverlay(fade);
     if (done) done("freelancer");   // through the card is always the Freelancer desktop
-    // land() ran setPortal (a synchronous render) and revealed #os, so the gear has real layout
-    coach();
+    // land() ran setPortal (a synchronous render) and revealed #os, so the gear has real layout.
+    // On a join link the join card is up, and the note would sit on top of it.
+    if (!(EN.campaigns && EN.campaigns.pendingJoin && EN.campaigns.pendingJoin())) coach();
   }
 
   function jackIn() {
@@ -437,6 +442,119 @@ EN.gate = (function () {
     }
   }
 
+  /* ---- other cards in this look (campaigns batch 2) ------------------------------------
+     What goes on them can be someone else's words (a campaign's name, an Admin's Discord name),
+     so everything from outside is set as text, never as HTML. */
+  function mountOverlay() {
+    injectCss();
+    // the login card closes with a fade, and only one #gate belongs on the page
+    var old = document.getElementById("gate");
+    if (old && old.classList.contains("ok") && old.parentNode) old.parentNode.removeChild(old);
+    var ov = document.createElement("div");
+    ov.id = "gate";
+    document.body.appendChild(ov);
+    return ov;
+  }
+  function shutOverlay(ov) {
+    ov.classList.add("ok");
+    setTimeout(function () { if (ov.parentNode) ov.parentNode.removeChild(ov); }, 480);
+  }
+  function shell(ov, warn, label) {
+    ov.innerHTML =
+      '<div class="gate-stage">' +
+        '<div class="gate-card" role="dialog" aria-modal="true">' +
+          '<div class="gate-kick">#MINT // SECURE NODE</div>' +
+          '<div class="gate-logo">#GRID<b>OS</b></div>' +
+          '<div class="gate-warn"></div>' +
+          '<div id="gate-err" class="gate-err" aria-live="polite"></div>' +
+          '<div class="gate-foot">NODE 763 // ELYSIUM NIGHTS</div>' +
+        '</div>' +
+      '</div>';
+    var card = ov.querySelector(".gate-card");
+    card.setAttribute("aria-label", label || warn);
+    ov.querySelector(".gate-warn").textContent = "\u26A0 " + warn;
+    return card;
+  }
+  /* A card with lines and buttons. The first button is the card's main one, the rest are the
+     quieter style; all of them sit straight on the card, where '98's side margins reach them. */
+  function panel(o) {
+    var ov = mountOverlay();
+    var api = {
+      show: function (next) {
+        var card = shell(ov, next.warn, o.label), err = card.querySelector("#gate-err");
+        (next.lines || []).forEach(function (t) {
+          var p = document.createElement("p");
+          p.className = "gate-body";
+          p.textContent = t;
+          card.insertBefore(p, err);
+        });
+        var first = null;
+        (next.actions || []).forEach(function (a, i) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = i ? "gate-alt" : "gate-go";
+          b.textContent = a.label;
+          b.setAttribute("data-gate-act", a.key || "");
+          b.addEventListener("click", function () { a.onClick(); });
+          card.insertBefore(b, err);
+          if (!first) first = b;
+        });
+        if (first) setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
+      },
+      busy: function (text) {
+        Array.prototype.forEach.call(ov.querySelectorAll("button"), function (b) { b.disabled = true; });
+        var err = ov.querySelector("#gate-err");
+        if (err) { err.style.color = "var(--success)"; err.textContent = text; }
+      },
+      close: function () { shutOverlay(ov); }
+    };
+    api.show(o);
+    return api;
+  }
+
+  /* ACCESS DENIED, Gizmo's polite no. app.js decides who gets it (see EN.campaigns.crewOn): this
+     only draws it, once, however many times it is asked. */
+  var NO = {
+    first: function (campaign) { return "It looks like you're trying to open the Admin console! You're crew on " + campaign + ", so that's a no from me."; },
+    second: "Let's get you back to your Freelancer.",
+    back: "Take me back"
+  };
+  var _no = null, _noKey = null;
+  function closeDenied() {
+    var ov = _no;
+    _no = null;
+    if (_noKey) { document.removeEventListener("keydown", _noKey, true); _noKey = null; }
+    if (ov) shutOverlay(ov);
+  }
+  function denied(campaign) {
+    if (_no) return;
+    if (EN.settings && EN.settings.close) { try { EN.settings.close(); } catch (e) {} }
+    var ov = _no = mountOverlay();
+    shell(ov, "ACCESS DENIED", "Access denied");
+    var clip = document.createElement("div");
+    clip.className = "gate-clip";
+    clip.innerHTML = '<div class="gate-bubble"><span class="k">Gizmo // assistive override</span><span class="t" id="gate-bubble" aria-live="polite"></span>' +
+      '<div class="gate-acts gate-hide"><button type="button" class="gate-act yes"></button></div></div>' + clipSvg();
+    ov.querySelector(".gate-stage").appendChild(clip);
+    var bubble = clip.querySelector("#gate-bubble"), acts = clip.querySelector(".gate-acts"), back = clip.querySelector(".gate-act");
+    back.textContent = NO.back;
+    back.addEventListener("click", closeDenied);
+    _noKey = function (e) { if (e.key === "Escape") { e.preventDefault(); closeDenied(); } };
+    document.addEventListener("keydown", _noKey, true);
+    setTimeout(function () {
+      if (_no !== ov) return;
+      typeInto(bubble, NO.first(campaign), function () {
+        setTimeout(function () {
+          if (_no !== ov) return;
+          typeInto(bubble, NO.second, function () {
+            acts.classList.remove("gate-hide");
+            try { back.focus(); } catch (e) {}
+          });
+        }, 1400);
+      });
+    }, 350);
+  }
+
   /* Points at the settings cog once, right after Run offline, and only then: a silent resume
      never opens the card, so it never reaches here. Dismisses on its button, on Escape, and on
      clicking the cog itself, since at that point the user has done the thing it points at. */
@@ -510,5 +628,6 @@ EN.gate = (function () {
     open(onUnlock);
   }
 
-  return { require: require, coach: coach, gizmoSvg: clipSvg };
+  return { require: require, coach: coach, gizmoSvg: clipSvg, panel: panel, denied: denied, closeDenied: closeDenied,
+           deniedOpen: function () { return !!_no; } };
 })();

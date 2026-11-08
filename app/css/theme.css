@@ -3569,3 +3569,46 @@ html.skin-98 #cloud-offer{ bottom:56px; }
 #view.en-ro #locked-banner, #view.en-ro #locked-banner *, #view.en-ro [data-ro-keep],
 #view.en-ro #mgr, #view.en-ro #mgr *, #view.en-ro .wizard-rail, #view.en-ro .wizard-rail *,
 #view.en-ro .feature-scroll, #view.en-ro .actions-scroll{ pointer-events:auto; }
+
+/* ---- campaigns (js/campaigns.js, js/gm_campaign.js) ---- */
+/* Manage characters: the dropdown on a record's row, the line the join card leaves, and a locked row's reason */
+.mgr-row .mgr-camp{ flex:0 1 150px; min-width:96px; max-width:170px; font-size:11px; padding:3px 4px; }
+.mgr-row .mgr-camp:disabled{ opacity:.5; cursor:not-allowed; }
+.mgr-row.mgr-wrap{ flex-wrap:wrap; }
+.mgr-row .mgr-why{ flex:1 1 100%; margin:0 0 0 22px; font-size:11px; }
+.mgr-row .mgr-nolv{ color:var(--text3); }
+.mgr-note{ margin:0; padding:9px 16px; border-bottom:1px solid var(--border2); color:var(--accent); font-size:13px; }
+.camp-new{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:8px; }
+.camp-input{ flex:1 1 160px; min-width:0; font-size:13px; padding:5px 8px; }
+html.skin-droid .mgr-row .mgr-camp{ flex:1 1 100%; max-width:none; min-height:40px; font-size:13px; }
+html.skin-droid .mgr-row .mgr-why{ margin-left:0; }
+html.skin-droid .camp-input{ flex-basis:100%; min-height:40px; }
+/* the Campaign tab */
+.camp-sections{ display:grid; gap:14px; }
+.camp-line{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.camp-pick{ margin-bottom:12px; }
+.camp-title{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0 0 12px; font-size:15px; color:var(--text); }
+.camp-title .btn{ margin-left:auto; }
+.camp-role{ font-family:var(--mono); font-size:9px; letter-spacing:.08em; }
+.camp-member{ padding:9px 0; border-bottom:1px solid var(--border2); }
+.camp-member:first-child{ padding-top:0; }
+.camp-member:last-child{ border-bottom:0; padding-bottom:0; }
+.camp-who{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; color:var(--text); }
+.camp-who + .camp-who{ margin-top:8px; }
+.camp-acts{ display:flex; flex-wrap:wrap; gap:6px; }
+.camp-chars{ margin-top:6px; display:grid; gap:4px; }
+.camp-char{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding-left:12px; }
+.camp-char-name{ flex:1 1 auto; min-width:0; color:var(--text2); font-size:13px; }
+.camp-char .mgr-meta{ font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:.06em; }
+.camp-confirm{ margin-top:10px; padding:10px 12px; border:1px solid var(--warn); background:color-mix(in srgb, var(--warn) 8%, transparent); font-size:13px; color:var(--text); }
+.camp-confirm p{ margin:0 0 8px; }
+.camp-check{ display:flex; align-items:center; gap:6px; margin:0 0 10px; cursor:pointer; }
+.camp-jack{ max-width:320px; margin:0 auto; }
+/* View sheet: the same read-only sheet as a locked Freelancer, with the sub-tabs still working so the
+   whole sheet can be read. The store refuses every write regardless. */
+.view-banner .view-when{ margin-top:2px; font-size:12px; color:var(--text2); }
+.view-banner .view-acts{ gap:8px; margin-top:8px; }
+#view.en-ro.en-viewing .inv-bar, #view.en-ro.en-viewing .inv-bar *,
+#view.en-ro.en-viewing .face-bar, #view.en-ro.en-viewing .face-bar *,
+#view.en-ro.en-viewing .grid-bar, #view.en-ro.en-viewing .grid-bar *{ pointer-events:auto; }
+html.skin-98 .camp-confirm{ border-radius:0; }

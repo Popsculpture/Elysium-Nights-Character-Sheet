@@ -25,7 +25,7 @@ EN.store = (function () {
      drift, and survive clearing site data. Editing one works normally and the edits evaporate
      on reload, which is what "example" should mean, and makes them safe to test against
      without any risk to the roster the player actually built. */
-  var state = { roster: {}, activeId: null, example: null };
+  var state = { roster: {}, activeId: null, example: null, viewing: null };
   /* LOCKED RECORDS (7 Nov 2026). A record that refers to a key in a content pack this device has
      not loaded (js/packs.js missing(): the Freelancer's Companion, EN1101, for now) is LOCKED:
        - its stored JSON is kept exactly as it was (locked[id].raw, never handed out, never
@@ -2572,6 +2572,7 @@ EN.store = (function () {
 
   /* ---- accessors -------------------------------------------------------- */
   function active() {
+    if (state.viewing) return state.viewing;
     if (state.example) return state.example;
     return state.activeId ? state.roster[state.activeId] : null;
   }
@@ -2602,6 +2603,7 @@ EN.store = (function () {
     ch.meta.example = key;
     try { migrate(ch); } catch (e) { console.error("Example " + key + " failed to migrate", e); return null; }
     state.example = ch;
+    clearViewing();
     persist(true);   // records only that no roster character is active; the example itself is never written
     emit();
     return ch;
@@ -2628,6 +2630,43 @@ EN.store = (function () {
     persist(true); emit();
     return copy;
   }
+  /* VIEW SHEET (campaigns batch 2). Another player's Freelancer, read through the campaign read
+     policy and loaded the way an example is: in memory, never in the roster, never saved, never
+     pushed. It carries its own flag, meta.viewing, so this file and js/cloud.js can tell it from
+     an example as well as from a record. update() refuses every write while one is open.
+     It sits above whatever was active without touching it, so clearViewing is the whole way back,
+     to the same record or the same open example.
+
+     This is the first time one person's record is drawn in somebody else's browser, and some of
+     the sheet's views build HTML from record fields (fine while the only reader was the record's
+     owner). So the copy loses every < and >, in its values and its keys, before anything can draw
+     it: no field can open a tag in the Admin's page, where a signed-in session is sitting. */
+  var viewInfo = null;
+  function neuter(v) {
+    if (typeof v === "string") return v.replace(/[<>]/g, "");
+    if (Array.isArray(v)) return v.map(neuter);
+    if (v && typeof v === "object") {
+      var o = {};
+      Object.keys(v).forEach(function (k) { if (k !== "__proto__") o[neuter(k)] = neuter(v[k]); });
+      return o;
+    }
+    return v;
+  }
+  function setViewing(raw, info, silent) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    var ch = displayCopy(neuter(raw));
+    if (!ch.meta || typeof ch.meta !== "object") ch.meta = {};
+    delete ch.meta.example;
+    ch.meta.id = "view_" + ((info && info.rowId) || "row");
+    ch.meta.viewing = true;
+    viewInfo = { rowId: info && info.rowId, player: info && info.player, campaign: info && info.campaign, at: info && info.at, packs: packsMissing(raw) };
+    state.viewing = ch;
+    if (!silent) emit();
+    return ch;
+  }
+  function clearViewing() { state.viewing = null; viewInfo = null; }
+  function activeIsViewing() { return !!state.viewing; }
+  function viewingInfo() { return viewInfo; }
   function roster() { return state.roster; }
 
   function createAndActivate(name) {
@@ -2637,13 +2676,14 @@ EN.store = (function () {
     // then leave the player looking at the example, with nothing on screen having changed.
     // setActive and adoptExample both clear it for the same reason.
     state.example = null;
+    clearViewing();
     state.roster[ch.meta.id] = ch;
     state.activeId = ch.meta.id;
     persist(true); emit();
     return ch;
   }
   function setActive(id) {
-    if (state.roster[id]) { state.example = null; state.activeId = id; persist(true); emit(); }
+    if (state.roster[id]) { state.example = null; clearViewing(); state.activeId = id; persist(true); emit(); }
   }
   /* Watchers hear about a record the player deleted through the app (js/cloud.js deletes its
      cloud copy). A record missing for any other reason (set aside, gone outside the app) is not
@@ -2694,6 +2734,7 @@ EN.store = (function () {
 
   /* mutate the active character via an updater fn, then persist + notify */
   function update(mutator, opts) {
+    if (state.viewing) return;   // another player's sheet: nothing on it changes, and nothing is saved
     var ch = active();
     if (!ch) return;
     // a locked record is read-only: nothing on it changes, and nothing is saved
@@ -2755,6 +2796,7 @@ EN.store = (function () {
     delete obj.customThemes;
     delete obj.classGear;   // the export's read-only class hardware summary (A1); rebuilt from the record
     delete obj.abilitiesKnown;   // the export's read-only list of a pick class's abilities by name
+    clearViewing();              // the import becomes the active record, as with setActive
     // a file that needs a pack this device has not loaded is stored as it is, locked
     if (packsMissing(obj).length) {
       state.roster[obj.meta.id] = lockRecord(obj.meta.id, obj);
@@ -2787,6 +2829,8 @@ EN.store = (function () {
     // records that could not be loaded, or went missing outside the app (A4)
     setAsideList: setAsideList, missingList: missingList, restoreRecord: restoreRecord, discardRecord: discardRecord,
     // pre-made examples: live, editable, never persisted
-    setExample: setExample, clearExample: clearExample, activeIsExample: activeIsExample, adoptExample: adoptExample
+    setExample: setExample, clearExample: clearExample, activeIsExample: activeIsExample, adoptExample: adoptExample,
+    // another player's sheet, read-only, from the Campaign tab: see VIEW SHEET above
+    setViewing: setViewing, clearViewing: clearViewing, activeIsViewing: activeIsViewing, viewingInfo: viewingInfo
   };
 })();

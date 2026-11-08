@@ -33,6 +33,7 @@ EN.app = (function () {
     var ch = EN.store.active();
     if (!ch) return false;
     if (EN.store.activeIsExample && EN.store.activeIsExample()) return true;
+    if (EN.store.activeIsViewing && EN.store.activeIsViewing()) return true;   // another player's sheet, whatever state it is in
     return !!(ch.meta && ch.meta.filedAt);
   }
 
@@ -82,6 +83,10 @@ EN.app = (function () {
        all. The module tabs from Encounters on each live in their own file
        (js/gm_*.js); one of those missing degrades only its own tab to the
        MODULE PENDING page below, which is what `stub` is still kept for. */
+    { key: "campaign",   label: "Campaign",   glyph: "◫", sub: "players, invites, sheets", portal: "admin", gated: adminReady,
+      view: gmModule("campaign", "gmCampaign"),
+      onSelect: function () { if (EN.gmCampaign && EN.gmCampaign.stale) EN.gmCampaign.stale(); },
+      stub: "Campaigns: the invite link, the roster, and each player's sheet, read-only." },
     { key: "table",      label: "Table",      glyph: "◆", sub: "initiative and the crew", portal: "admin", gated: adminReady,
       view: function (m) { EN.gmView.renderTable(m); } },
     { key: "threats",    label: "Threats",    glyph: "✦", sub: "build a threat", portal: "admin", gated: adminReady,
@@ -192,11 +197,29 @@ EN.app = (function () {
      tab (a portal flip, a gotoTab from a card, a skin change in settings.js) used to leave the
      class set, so the list came back unfolded later, sometimes on a rail with no rows to tap. */
   function foldRail() { try { document.documentElement.classList.remove("rail-open"); } catch (e) {} }
+  /* GIZMO SAYS NO (campaigns batch 2). An account that is crew in at least one campaign and runs
+     none gets his ACCESS DENIED page instead of the Admin desktop, every time it tries: the
+     // WORKSPACE button, a reload onto a remembered Admin desktop, ?portal=admin. Every way onto
+     the desktop comes through this function, so this is the one place that says no. It is a polite
+     fence, like the old passphrase, and nothing more: jacking out, or creating a campaign of their
+     own, gets past it. The database is what guards a campaign. Roles are read on jack-in and after
+     any roster change (js/campaigns.js), and an attempt asks again, so someone just made co-Admin
+     gets in. */
   function usePortal(p) {
-    portal = (p === "admin" && hasAdmin()) ? "admin" : "freelancer";
+    var want = (p === "admin" && hasAdmin()) ? "admin" : "freelancer";
+    var C = EN.campaigns;
+    var crew = want === "admin" && C && C.crewOn ? C.crewOn() : null;
+    if (crew) want = "freelancer";
+    // a sheet being viewed belongs to the Freelancer desktop, and leaving for Admin ends the visit
+    if (want === "admin" && store.activeIsViewing && store.activeIsViewing()) store.clearViewing();
+    portal = want;
     try { localStorage.setItem(PORTAL_KEY, portal); } catch (e) {}
     EN.ui.disarm();
     foldRail();
+    if (crew) {
+      if (EN.gate && EN.gate.denied) EN.gate.denied(crew);
+      C.refresh();
+    } else if (want === "admin" && C && C.refreshSoon) C.refreshSoon();
   }
   function setPortal(p) { usePortal(p); render(); }
 
@@ -377,10 +400,46 @@ EN.app = (function () {
   // jacked in without the Play tester role (js/packs.js: unheld): jacking in again is not the answer
   var LOCKED_TEXT_UNHELD = "This Freelancer uses the Freelancer's Companion, which is in playtest for the Play tester role on the Elysium Nights Discord. Until then the sheet is read-only, so nothing on it changes.";
   var LOCKED_TITLE_UNHELD = "Freelancer's Companion content, in playtest. See Settings, // CONTENT.";
+  function lockReason() {
+    return EN.packs && EN.packs.status && EN.packs.status("EN1101") === "unheld" ? LOCKED_TEXT_UNHELD : LOCKED_TEXT;
+  }
+  /* VIEW SHEET (campaigns batch 2): another player's Freelancer, from the Campaign tab, in the same
+     read-only mode. Fields disabled, option cards inert, and the store refusing writes regardless.
+     This view can never be saved, so its Refresh and Back are the only things on it that do anything. */
+  function viewBanner() {
+    var info = store.viewingInfo() || {}, when = "";
+    try { when = info.at ? new Date(info.at).toLocaleString() : ""; } catch (e) {}
+    return el("div#locked-banner.locked-banner.view-banner", { role: "status" }, [
+      el("p", { text: "Viewing " + (info.player || "a player") + "'s Freelancer. Read-only." }),
+      when ? el("p.view-when", { text: "Last saved " + when + "." }) : null,
+      info.packs && info.packs.length ? el("p.view-when", { text: "This Freelancer uses the Freelancer's Companion, which this account has not loaded, so those picks may not show." }) : null,
+      el("div.row.wrap.view-acts", null, [
+        el("button.btn.sm", { type: "button", "data-view": "refresh", onclick: function () { EN.campaigns.refreshView(); } }, "↻ REFRESH"),
+        el("button.btn.sm.primary", { type: "button", "data-view": "back", onclick: function () { EN.campaigns.backToCampaign(); } }, "← BACK TO CAMPAIGN")
+      ])
+    ]);
+  }
+  function freezeView(view) {
+    // everything in the view goes inert except the banner, the switcher, Manage characters, the
+    // builder rail (every step can still be read) and the scroll wells (theme.css, #view.en-ro)
+    view.classList.add("en-ro");
+    Array.prototype.forEach.call(view.querySelectorAll("input, select, textarea, .opt-card"), function (n) {
+      if (n.closest(".mgr-card, [data-ro-keep], #locked-banner")) return;
+      if (n.classList.contains("opt-card")) n.classList.add("ro"); else n.disabled = true;
+    });
+  }
   function lockedSheet(view, tabKey) {
+    var viewing = !!(tabKey && store.activeIsViewing && store.activeIsViewing());
     var ch = tabKey ? store.active() : null, id = ch && ch.meta && ch.meta.id;
     var isEx = store.activeIsExample && store.activeIsExample();
     view.classList.remove("en-ro");
+    view.classList.toggle("en-viewing", viewing);
+    if (viewing) {
+      view.classList.add("en-locked");
+      view.insertBefore(viewBanner(), view.firstChild);
+      if (tabKey !== "codex") freezeView(view);   // the Codex edits nothing, as below
+      return;
+    }
     if (!id || isEx || !store.isLocked || !store.isLocked(id)) { view.classList.remove("en-locked"); return; }
     view.classList.add("en-locked");
     var info = store.lockInfo(id) || { picks: [] };
@@ -396,13 +455,7 @@ EN.app = (function () {
       chips.length ? el("div.locked-picks", null, chips) : null
     ]), view.firstChild);
     if (tabKey === "codex") return;
-    // everything in the view goes inert except the banner, the switcher, Manage characters, the
-    // builder rail (every step can still be read) and the scroll wells (theme.css, #view.en-ro)
-    view.classList.add("en-ro");
-    Array.prototype.forEach.call(view.querySelectorAll("input, select, textarea, .opt-card"), function (n) {
-      if (n.closest(".mgr-card, [data-ro-keep], #locked-banner")) return;
-      if (n.classList.contains("opt-card")) n.classList.add("ro"); else n.disabled = true;
-    });
+    freezeView(view);
   }
 
   function render() {
@@ -434,7 +487,13 @@ EN.app = (function () {
        it was simply unreachable until a tab could disappear. */
     var tab = vis.filter(function (t) { return t.key === LAST[portal]; })[0];
     if (!tab) { tab = vis[0]; LAST[portal] = tab.key; }
-    if (tab.view) { tab.view(view); }
+    if (tab.view) {
+      // another player's sheet is not a record this device vouched for: a bad one costs the view, not the app
+      if (store.activeIsViewing && store.activeIsViewing() && portal === "freelancer") {
+        try { tab.view(view); }
+        catch (e) { console.error("This sheet could not be drawn", e); EN.ui.clear(view); view.appendChild(el("div.muted-box", { style: { padding: "40px" }, text: "This sheet could not be drawn." })); }
+      } else tab.view(view);
+    }
     else {
       view.appendChild(el("div", null, [
         el("h1", { style: { fontSize: "22px", marginBottom: "6px" }, text: tab.label.toUpperCase() }),
@@ -605,7 +664,7 @@ EN.app = (function () {
          testing switch, names one). Set the portal FIRST, then reveal, so the render inside setPortal happens
          while #os is still display:none and any repaint is invisible. The
          settings tray's // WORKSPACE buttons are the way across. */
-      var land = function (p) { setPortal(p || portal); reveal(); recoveryNotice(); };
+      var land = function (p) { setPortal(p || portal); reveal(); recoveryNotice(); if (EN.campaigns && EN.campaigns.landed) EN.campaigns.landed(); };
       if (EN.gate && EN.gate.require) EN.gate.require(land); else land(portal);
     }
     step();
@@ -703,6 +762,8 @@ EN.app = (function () {
     render();
     // from here on a content pack that loads or leaves (js/packs.js) redraws the app
     if (EN.packs && EN.packs.ready) EN.packs.ready();
+    // campaigns (js/campaigns.js) listen for who is jacked in, so they start first
+    if (EN.campaigns && EN.campaigns.start) EN.campaigns.start();
     // cloud saves (js/cloud.js): the Jack in control, and the sync while a player is jacked in
     if (EN.cloud && EN.cloud.start) EN.cloud.start();
     tickClock(); setInterval(tickClock, 1000);
@@ -750,12 +811,14 @@ EN.app = (function () {
       var t = TABS.filter(function (x) { return x.key === k; })[0];
       if (!t) return;
       usePortal(t.portal);
-      LAST[portal] = k;
+      // the fence said no: stay on this desktop rather than file an Admin tab under Freelancer
+      if (portal === t.portal) LAST[portal] = k;
       render();
     },
     portal: function () { return portal; },
     setPortal: setPortal,
-    hasAdmin: hasAdmin
+    hasAdmin: hasAdmin,
+    lockReason: lockReason
   };
 })();
 

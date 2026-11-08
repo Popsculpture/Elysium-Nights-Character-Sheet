@@ -84,6 +84,9 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ===== campaigns: first on the page, because it stashes a ?join= invite before anything else runs ===== -->
+<script src="js/campaigns.js?v=20261108.2"></script>
+
 <!-- ===== data layer ===== -->
 <script src="data/rules.js?v=20261108.2"></script>
 <!-- the launch holds (lineup, Availability, Toolkit gear): read by the pickers, lists and Codex only, never by the data files -->
@@ -195,6 +198,7 @@
   <script src="js/gm_heat.js?v=20261108.2"></script>
   <script src="js/gm_people.js?v=20261108.2"></script>
   <script src="js/gm_scenes.js?v=20261108.2"></script>
+  <script src="js/gm_campaign.js?v=20261108.2"></script>
 <script src="js/printsheet.js?v=20261108.2"></script>
 <script src="js/pdfexport.js?v=20261108.2"></script>
 

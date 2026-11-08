@@ -1108,7 +1108,8 @@ EN.settings = (function () {
     kids.push(el("div.set-chars", null, [
       el("button.btn.sm" + (ch ? "" : ".set-wide"), { type: "button", title: "Import a record, or a bundle of them (.json)",
         onclick: function () { close(); B.importPrompt(); } }, "⤒ IMPORT"),
-      ch ? el("button.btn.sm", { type: "button", title: "Save " + (ch.name || "this Freelancer") + " as a .json file" + (isEx ? " (an example: it exports like any record)" : ""),
+      // another player's sheet (View sheet) is read in place and never saved, here or to a file
+      ch && !(EN.store.activeIsViewing && EN.store.activeIsViewing()) ? el("button.btn.sm", { type: "button", title: "Save " + (ch.name || "this Freelancer") + " as a .json file" + (isEx ? " (an example: it exports like any record)" : ""),
         onclick: function () { B.exportChar(ch); close(); } }, "⤓ EXPORT") : null,
       el("button.btn.sm.set-wide", { type: "button", title: "Rename, open, export or delete your records, one or many at a time",
         onclick: function () { close(); B.openManager(); } }, "⚙ MANAGE CHARACTERS"),

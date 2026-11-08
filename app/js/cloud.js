@@ -46,6 +46,12 @@
    the LINK readout says LINK DOWN, the cached pack stays, and the link comes
    back on its own when the network does.
 
+   CAMPAIGNS. characters.campaign_id is account state, like this link book. It is
+   not in `data`, so nothing here sends it and an export never carries it. js/campaigns.js
+   reads and writes that column itself, through rowOf and ensureRow below. Whoever runs
+   a campaign can read its members' rows, so a pull asks for this account's rows by name:
+   anything else would pull other players' characters into the Admin's roster.
+
    WHERE IT SHOWS. The top bar's LINK readout is the cloud indicator, and Jack in
    and Jack out sit in Settings (// CLOUD LINK, first in the tray). Jacking in only
    works on a page served over http(s): Discord sends
@@ -118,7 +124,7 @@ EN.cloud = (function () {
   function stamp(ch) { return ch && ch.meta ? ch.meta.updatedAt : undefined; }
   function eligible(id, b) {
     var ch = roster()[id];
-    if (!ch || typeof ch !== "object" || (ch.meta && ch.meta.example)) return false;
+    if (!ch || typeof ch !== "object" || (ch.meta && (ch.meta.example || ch.meta.viewing))) return false;
     if (store().isLocked && store().isLocked(id)) return false;   // drawn without its pack: never pushed
     if (b.localOnly[id]) return false;
     if (awaiting && awaiting[id]) return false;
@@ -147,6 +153,8 @@ EN.cloud = (function () {
       .then(push)
       .then(function () { setStatus("ok"); },
             function (e) { console.warn("Cloud sync failed", e); setStatus("error"); })
+      // beside the sync, never inside it: a failure over there costs the campaign list and nothing else
+      .then(function () { if (wantPull && EN.campaigns && EN.campaigns.refresh) EN.campaigns.refresh(); })
       .then(function () {
         runP = null;
         if (again) { var p = again === "pull"; again = false; return sync({ pull: p }); }
@@ -162,7 +170,8 @@ EN.cloud = (function () {
   function pull() {
     var b = book(), uid = user.id;
     lastPull = Date.now();
-    return client.from("characters").select("id, name, updated_at").order("updated_at", { ascending: false })
+    // this account's own rows, by name: the Admin of a campaign can read its members' rows too (see the note above)
+    return client.from("characters").select("id, name, updated_at").eq("owner_id", uid).order("updated_at", { ascending: false })
       .then(check)
       .then(function (rows) {
         if (!user || user.id !== uid) return;
@@ -290,7 +299,8 @@ EN.cloud = (function () {
       var box = document.getElementById("cloud-offer");
       if (box) box.parentNode.removeChild(box);
       var b = book();
-      if (!yes) ids.forEach(function (id) { b.localOnly[id] = 1; });
+      // not one already linked: a campaign pick can upload a record while this question is up
+      if (!yes) ids.forEach(function (id) { if (!b.links[id]) b.localOnly[id] = 1; });
       saveBook(b);
       awaiting = null;
       if (yes) sync().then(function () { if (status === "ok") EN.ui.toast(n === 1 ? "1 character uploaded to your account." : n + " characters uploaded to your account."); });
@@ -336,6 +346,27 @@ EN.cloud = (function () {
     });
   }
 
+  /* ---- a record's row, for js/campaigns.js ------------------------------------------
+     rowOf answers the row a local record is linked to, if any. ensureRow makes sure it has one: a
+     record kept local uploads itself, one still waiting on the upload question stops waiting (the
+     pick answered it for this record), and anything else goes up with an ordinary sync. */
+  function rowOf(id) {
+    if (!user) return null;
+    var L = book().links[id];
+    return L ? L.cid : null;
+  }
+  function ensureRow(id) {
+    if (!client || !user) return Promise.reject(new Error("Not jacked in."));
+    var b = book();
+    if (b.links[id]) return Promise.resolve(b.links[id].cid);
+    if (awaiting && awaiting[id]) delete awaiting[id];
+    return (b.localOnly[id] ? upload([id]) : sync()).then(function () {
+      var L = book().links[id];
+      if (!L) throw new Error("The record did not upload.");
+      return L.cid;
+    });
+  }
+
   /* ---- sign in, sign out ---------------------------------------------------- */
   function returnUrl() {
     // back to whichever domain and folder the player started on (both are on the allow list)
@@ -365,16 +396,21 @@ EN.cloud = (function () {
     awaiting = null;
     var box = document.getElementById("cloud-offer");
     if (box && (!user || user.id !== prev)) box.parentNode.removeChild(box);
-    if (!user) { setStatus("off"); return; }
+    if (!user) { setStatus("off"); tellUser(); return; }
     if (!loggedMeta) { loggedMeta = true; try { console.info("Discord profile fields", Object.keys(meta())); } catch (e) {} }
     if (user.id !== prev) {
       var me = user.id;
       holdUnclaimed();
       sync({ pull: true }).then(function () { if (user && user.id === me && awaiting) offerUpload(); });
       refreshPacks();
+      tellUser();
     }
     paint();
   }
+  // who is jacked in changed, or the link came back: js/campaigns.js reads the account again
+  var userWatchers = [];
+  function onUser(fn) { userWatchers.push(fn); }
+  function tellUser() { userWatchers.forEach(function (f) { try { f(user); } catch (e) { console.error(e); } }); }
   /* ---- the playtest gate ------------------------------------------------------
      During the playtest the Freelancer's Companion (EN1101) is granted, not open to every account.
      Right after a Discord sign-in the session carries Discord's access token (provider_token, for
@@ -409,12 +445,13 @@ EN.cloud = (function () {
     offline = true;
     user = u;
     setStatus("error");
+    tellUser();
   }
   function backOnline(u) {
     var was = offline;
     offline = false;
     user = u;
-    if (was) { sync({ pull: true }); refreshPacks(); }
+    if (was) { sync({ pull: true }); refreshPacks(); tellUser(); }
     paint();
   }
   // a real jack out: the account's packs leave this device
@@ -595,6 +632,10 @@ EN.cloud = (function () {
     // characters kept on this device only while jacked in, and the upload that sends them up
     localOnly: function (id) { return localOnlyIds().indexOf(id) !== -1; },
     upload: upload,
+    // for js/campaigns.js: the client, whose account it is, and a record's row
+    client: function () { return client; },
+    userId: function () { return user ? user.id : null; },
+    onUser: onUser, rowOf: rowOf, ensureRow: ensureRow, appUrl: returnUrl,
     // the test suite swaps in a stand-in client (no network, no Discord)
     _useClient: function (c) { start(); user = null; offline = false; wire(c); },
     offline: function () { return offline; }
