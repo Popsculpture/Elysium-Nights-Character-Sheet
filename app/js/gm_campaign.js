@@ -55,6 +55,7 @@ EN.gmCampaign = (function () {
       if (_d[id] !== slot) return;
       _d[id] = { roster: all[0] || [], token: all[1] || "", blocked: all[2] || [], sends: all[3] };
       repaint();
+      if (slot.again) sendsChanged(id);
     }, function (e) {
       if (_d[id] !== slot) return;
       console.warn("Could not read the campaign", e);
@@ -136,12 +137,12 @@ EN.gmCampaign = (function () {
       el("div.camp-char", null, [
         el("span.camp-char-name", { text: charName(sheet) }),
         el("span.mgr-meta", { text: "L" + lvl + " · " + classLabel(sheet.class) }),
-        el("button.btn.sm", { type: "button", "data-camp": "send", "data-char": sheet.id,
-          title: "Send #POST mail to this character, signed as anyone you like.",
-          onclick: function () { openSend(c, sheet.id); } }, "SEND"),
         el("button.btn.sm", { type: "button", "data-camp": "view", "data-char": sheet.id,
           title: "Read this sheet. Nothing on it can change from here.",
-          onclick: function () { C().viewSheet(sheet.id, m.discord_name, c.id); } }, "VIEW SHEET")
+          onclick: function () { C().viewSheet(sheet.id, m.discord_name, c.id); } }, "VIEW SHEET"),
+        el("button.btn.sm", { type: "button", "data-camp": "send", "data-char": sheet.id,
+          title: "Send #POST mail to this character, signed as anyone you like.",
+          onclick: function () { openSend(c, sheet.id); } }, "SEND")
       ]),
       writing ? composer(c, "To " + charName(sheet)) : null
     ]);
@@ -310,14 +311,22 @@ EN.gmCampaign = (function () {
     drawSends(_sendsHost, c, d);
     return EN.ui.panel("#POST sends", d.sends ? String(d.sends.length) : null, [_sendsHost]);
   }
-  // a player's app moved a row along (js/cloud.js hears it): the list, and nothing else, reads again
+  /* A player's app moved a row along (js/cloud.js hears it): the list, and nothing else, reads again.
+     A read already under way may have asked before the row moved, so it goes round again when it
+     lands, and only the newest of these answers is drawn. */
+  var _sendsAsk = 0;
   function sendsChanged(id) {
     var d = _d[id];
-    if (!d || !d.roster || EN.app.activeTab() !== "campaign" || EN.app.portal() !== "admin") return;
+    if (!d || EN.app.activeTab() !== "campaign" || EN.app.portal() !== "admin") return;
+    if (d.loading) { d.again = true; return; }
+    var ask = ++_sendsAsk;
     C().sends(id).then(function (rows) {
-      if (_d[id] !== d) return;
-      d.sends = rows || [];
-      if (_sendsHost && _sendsHost.isConnected) drawSends(_sendsHost, { id: id }, d);
+      if (ask !== _sendsAsk) return;
+      var now = _d[id];
+      if (!now) return;
+      if (now.loading) { now.again = true; return; }
+      now.sends = rows || [];
+      if (_sendsHost && _sendsHost.isConnected) drawSends(_sendsHost, { id: id }, now);
     }, function (e) { console.warn("Could not read your sends", e); });
   }
   function memberRow(c, m, isAdmin) {
