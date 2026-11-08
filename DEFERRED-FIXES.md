@@ -12559,3 +12559,93 @@ plain FREELANCER and ADMIN buttons for everyone. Gizmo greets a device once and 
 **Tests.** A new chain in the suite, `campaigns_login` (three steps, run with no `?dev`). The harness
 seeds a stored session unless a test says `@no-pack`, and the first run of the chain proved the
 card steps aside for a jacked-in device before the marker was added.
+
+### Batch 2, campaigns, built 2026-11-08 on `campaigns-batch-2`
+
+**What changed.** A migration and its checks (not applied), `app/js/campaigns.js` (the player's side,
+first script on the page), `app/js/gm_campaign.js` (the Admin tab), Gizmo's ACCESS DENIED page and the
+join card in `gate.js`, a View sheet mode in `store.js` and `app.js`, and a dropdown per record in
+Manage characters. The build report has the full list and the commands.
+
+**Three things the spec did not say, that would have been bugs. Do not relitigate them:**
+
+- **A pull has to ask for the account's own rows by name.** The new read policy lets an Admin read
+  their members' rows. `cloud.js`'s `pull()` used to select every row RLS answered with, because until
+  now that meant the player's own. Left alone, opening the app as an Admin would have copied every
+  member's character into the Admin's roster and then pushed them back as the Admin's. It now filters
+  on `owner_id`. Any new read of `characters` has to do the same, or say why not.
+- **A campaign move must not touch `updated_at`.** The sync treats `updated_at` as "the sheet was saved
+  somewhere". A trigger that fired on any update meant an Admin's Remove bumped the row, and the
+  player's next pull could overwrite unsaved edits with the older copy in the account. It would also have
+  made "the time of the player's last save" a lie. The trigger now fires only when `name` or `data`
+  changes. The shared `set_updated_at()` is untouched; content packs still use it as before.
+- **A viewed sheet loses every `<` and `>`.** This is the first time one person's record is drawn in
+  somebody else's browser. Some views build HTML from record fields (`inventory.js`'s armor line writes
+  `it.name` into `html:`, for one, and a hand-edited record can put a string in a numeric field). That
+  was harmless while the only reader was the owner. A signed-in session sits in the Admin's localStorage, so
+  `store.setViewing` strips angle brackets from every value and key of the in-memory copy before
+  anything can draw it. Everything else from other people (campaign names, Discord names) goes in as
+  text.
+
+**Readings taken where the spec left room, smallest first:**
+
+- **"A removed member who returns gets their old row back."** The table the spec lists has no column
+  for an ended membership, so ending one deletes the row, and a return is a fresh `player` row on the
+  same key. A row kept and handed back would have returned a removed co-Admin's role by clicking a link.
+  Their characters were already cleared on removal, so nothing else differs.
+- **One function the spec does not list: `campaign_blocked(campaign)`.** A blocked account is not a
+  member, so the roster cannot name them, and a client cannot read `auth.users`. Without it the Blocked
+  section would list user ids. Same gate as `campaign_blocks`: those who run it.
+- **The insert policy gains the check too.** The spec names the update check. An insert carrying
+  `campaign_id` would otherwise walk a row into a stranger's roster.
+- **`invite_preview` needs a session,** because the spec has every function check `auth.uid()`. So the
+  Run offline card cannot name the campaign; it says what the invite is and offers Jack in.
+- **A blocked account sees the card and is told at Join.** `invite_preview` is "nothing else", so it does
+  not say whether the viewer is blocked.
+- **Not now clears the stash.** Otherwise the card comes back on every load until they join. The link
+  still works if they click it again. A dead token and a block clear it too. A network failure keeps it
+  and offers Try again.
+- **The `?join=` comes off the address** once stashed, so a reload does not re-stash a token the player
+  answered Not now to. `file://` can refuse that; the stash is what counts.
+- **Crew on several campaigns:** Gizmo names the one joined first.
+- **The fence writes Freelancer as the remembered desktop.** So a reload onto a remembered Admin desktop
+  gets him once, and the next reload is quiet. Pressing ADMIN or `?portal=admin` gets him every time.
+- **Roles live in `en_campaigns_v1`,** per account, so the fence can answer at boot. A device that has
+  never read them lets the account in until the first read comes back, then Gizmo comes up. It is a
+  polite fence. An attempt on the Admin desktop re-reads, so someone just made co-Admin gets in without
+  reloading.
+- **The Admin desktop still lands on Table.** Campaign is first on the rail but not the default, because
+  the spec only asks for the order and most of the suite expects Table.
+- **Sub-tabs and collapsing headers stay live on a viewed sheet, and only there.** The read-only mode
+  blocks every click, which is right for a locked Freelancer. But the Actions panel's Notes tab is where
+  the notes are, and the spec says the Admin reads "notes included". Those controls only change what is
+  showing; the store refuses writes regardless. `.view-nav` marks the Actions tabs; `.inv-bar` and
+  `.face-bar` already existed.
+- **A pack the Admin does not hold:** the sheet is drawn from the same display copy a locked record uses,
+  and the banner says those picks may not show. It is not treated as locked, since it can never be written.
+- **The Admin rail is twelve tabs now, and that overrules an earlier pin.** The suite held "the Admin tabs
+  keep the full 16px padding at 1366", from when there were eleven. Twelve do not fit at 16px until about
+  1430px, so a rail of eleven or more takes 12px sides below 1430px and 8px below 1330px, which fits all
+  twelve beside the gear down to a 1264 window. The Freelancer's seven keep 16px. `rv2fix.js`, `rv2v_ui.js`
+  and `integ_cross.js` were updated to say twelve.
+- **Copy tries `execCommand` first.** It answers at once, where `navigator.clipboard` can sit on a
+  permission forever with nothing on screen.
+
+**Still open, deliberately:**
+
+- **Deleting an account leaves its campaign with no Admin.** `campaign_members.user_id` cascades from
+  `auth.users`, matching `characters`, so deleting an Admin's auth user leaves the campaign leaderless:
+  nobody can rename, delete or transfer it. Nothing in the app deletes accounts today. Wants a ruling
+  when something does.
+- **A player's device learns of a removal on its next read** (jack-in, or the tab coming back into view
+  after 30 s). Until then its dropdown shows the old campaign. A pick made in that window is refused by
+  the database and reverts.
+- **The tour is not told about a viewed sheet.** `tour.js` is off limits, and it treats a viewed sheet
+  as a real record. It only runs when started by hand, and every write it could make is refused.
+
+**Tests.** New chains in the suite: `campaigns_b2` (the whole batch through the real UI against a
+stand-in client that models the tables, RLS and every refusal), `campaigns_fence` (reloads and
+`?portal=admin`), `campaigns_joinlink` (a fresh device on a join link). `campaigns_b2_shot.js` is a stage
+for screenshots, not a check. `cloud_sync.js`'s stand-in now reads a column it has no value for as null,
+and `campaigns_login_2.js` pins the gate's new exports. The stand-in proves the app's half only; the SQL's
+half is `supabase/tests/campaign_checks.sql`, which waits for the author's go.

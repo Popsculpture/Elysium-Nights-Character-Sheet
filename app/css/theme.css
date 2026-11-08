@@ -125,12 +125,17 @@ a{ color:var(--accent); text-decoration:none; }
 .os-tab.active{ color:var(--accent); border-bottom-color:var(--accent); text-shadow:var(--glow-cyan); }
 .os-tab.locked{ color:var(--text4); cursor:not-allowed; }
 .os-tab .tk{ font-family:var(--mono); font-size:10px; color:var(--text4); }
-/* A rail of eleven tabs or more (the Admin desktop's) takes 12px sides below 1340px, so all of
-   them fit beside the gear on a 1280 laptop. Classic only: '98 draws a taskbar and #GRIDroid a
-   list. A shorter rail, the Freelancer's, keeps 16px. */
-@media (max-width:1340px){
+/* A rail of eleven tabs or more (the Admin desktop's, twelve since the Campaign tab) tightens its
+   sides in two steps, so all of them fit beside the gear down to a 1264 window: 12px below 1430px,
+   and 8px below 1330px. Classic only: '98 draws a taskbar and #GRIDroid a list. A shorter rail, the
+   Freelancer's, keeps 16px. */
+@media (max-width:1430px){
   html:not(.skin-98):not(.skin-droid) .os-tabs-scroll > .os-tab:first-child:nth-last-child(n+11),
   html:not(.skin-98):not(.skin-droid) .os-tabs-scroll > .os-tab:first-child:nth-last-child(n+11) ~ .os-tab{ padding-left:12px; padding-right:12px; }
+}
+@media (max-width:1330px){
+  html:not(.skin-98):not(.skin-droid) .os-tabs-scroll > .os-tab:first-child:nth-last-child(n+11),
+  html:not(.skin-98):not(.skin-droid) .os-tabs-scroll > .os-tab:first-child:nth-last-child(n+11) ~ .os-tab{ padding-left:8px; padding-right:8px; }
 }
 /* Classic's top bar on a phone, 2026-10-07. The bar is one flex row that never wraps, and none of
    its items will shrink below its own longest word: the wordmark is nowrap (124px), LINK STABLE
@@ -3604,11 +3609,14 @@ html.skin-droid .camp-input{ flex-basis:100%; min-height:40px; }
 .camp-confirm p{ margin:0 0 8px; }
 .camp-check{ display:flex; align-items:center; gap:6px; margin:0 0 10px; cursor:pointer; }
 .camp-jack{ max-width:320px; margin:0 auto; }
-/* View sheet: the same read-only sheet as a locked Freelancer, with the sub-tabs still working so the
-   whole sheet can be read. The store refuses every write regardless. */
+/* View sheet: the same read-only sheet as a locked Freelancer, except that what only changes what is
+   showing still works (sub-tabs, collapsing headers), because the Notes tab is part of what the Admin
+   came to read. The store refuses every write regardless. */
 .view-banner .view-when{ margin-top:2px; font-size:12px; color:var(--text2); }
 .view-banner .view-acts{ gap:8px; margin-top:8px; }
+#view.en-ro.en-viewing .view-nav, #view.en-ro.en-viewing .view-nav *,
 #view.en-ro.en-viewing .inv-bar, #view.en-ro.en-viewing .inv-bar *,
 #view.en-ro.en-viewing .face-bar, #view.en-ro.en-viewing .face-bar *,
-#view.en-ro.en-viewing .grid-bar, #view.en-ro.en-viewing .grid-bar *{ pointer-events:auto; }
+#view.en-ro.en-viewing .panel-h.clickable, #view.en-ro.en-viewing .panel-h.clickable *,
+#view.en-ro.en-viewing .section-title.clickable, #view.en-ro.en-viewing .section-title.clickable *{ pointer-events:auto; }
 html.skin-98 .camp-confirm{ border-radius:0; }

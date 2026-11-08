@@ -250,7 +250,7 @@ EN.campaigns = (function () {
       if (!name) { EN.ui.toast(WORDS.EN_BAD_NAME); return; }
       create(name).then(function () {
         shut();
-        EN.ui.toast("Campaign created. Your invite link is on the Admin desktop's Campaign tab.");
+        EN.ui.toast(EN.app && EN.app.portal() === "admin" ? "Campaign created." : "Campaign created. Your invite link is on the Admin desktop's Campaign tab.");
         if (EN.app) EN.app.render();
       }, function (e) { console.warn("Could not create the campaign", e); EN.ui.toast(errText(e)); });
     }

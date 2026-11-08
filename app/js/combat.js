@@ -6727,7 +6727,7 @@ EN.combatView = (function () {
       { key: "loadout", label: "Loadout", count: loadoutCount() },
       { key: "notes", label: "Notes", count: null }
     ];
-    var navRow = el("div.row.wrap", { style: { gap: "6px", marginBottom: "10px" } }, TAB_DEFS.map(function (t) {
+    var navRow = el("div.row.wrap.view-nav", { style: { gap: "6px", marginBottom: "10px" } }, TAB_DEFS.map(function (t) {
       return el("button.btn.sm" + (_panelTab === t.key ? ".primary" : ""), { onclick: function () { _panelTab = t.key; EN.app.render(); } },
         t.label + (t.count != null ? " (" + t.count + ")" : ""));
     }));

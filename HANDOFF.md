@@ -114,6 +114,13 @@ card.
   `.inv-bar` in inventory.js, `.panel-hr` on the panel header-right wrapper in ui.js, and
   `.row-label` on the fixed-width label spans in flow.js, grid.js, inventory.js and builder.js.
   Nothing reads any of them; they exist so a stylesheet can reach an inline-styled element.
+- Campaigns (batch 2, `app/js/campaigns.js`, `app/js/gm_campaign.js`) keep three device keys:
+  `en_join_v1` (an invite token waiting for an answer), `en_campaigns_v1` (per account: its campaigns,
+  roles, and which row sits in which) and `en_campaign_pick_v1` (the Campaign tab's picker). A record's
+  campaign is the `characters.campaign_id` column, never in the record. Whoever runs a campaign can read
+  its members' rows, so any read of `characters` for "my characters" must filter on `owner_id`, as
+  `pull()` in cloud.js does. `store.setViewing` holds another player's sheet in memory with
+  `meta.viewing` set; `store.update` refuses every write while one is open.
 - Held content lives in ONE place: `app/data/launch.js` (`EN.launch`, since 2026-10-16). It
   has three switches, `holds.lineup` (held lineages, subclasses, Talents, Backgrounds),
   `holds.availability` (rarity) and `holds.toolkit` (gear the Player's Handbook doesn't print:

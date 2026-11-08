@@ -148,6 +148,23 @@ Setup, once:
 At launch, set `products.rule` for `EN1101` back to `signed_in`. The grants can stay; they do
 nothing for a `signed_in` product.
 
+## Campaigns
+
+An Admin starts a campaign and shares its invite link. A player clicks the link once (the join card,
+over the app), then moves characters in and out from a dropdown in Manage characters. A character sits
+in one campaign at a time. The Admin runs it all from the Campaign tab, first on the Admin rail: the
+link, the roster, who is blocked, and each player's sheet, read-only.
+
+- The Admin does everything. A co-Admin can view sheets, copy or reset the link, remove players, and
+  block or unblock. Only the Admin removes co-Admins, makes or unmakes them, transfers leadership,
+  renames or deletes. `supabase/migrations/20261108120000_campaigns.sql` enforces all of it; the app's
+  hidden buttons are for clarity.
+- An account that is crew in at least one campaign and runs none gets Gizmo's ACCESS DENIED instead of
+  the Admin desktop. That is a polite fence: jacking out, or creating a campaign, gets past it.
+- A record's campaign is `characters.campaign_id`, account state like the link book. It is not in the
+  record, so it never rides an export.
+- `supabase/tests/campaign_checks.sql` is the check, run the way `entitlements_checks.sql` is.
+
 ## Install it on a phone
 
 The app ships a web app manifest, so a phone browser offers **Add to Home screen** (Chrome on

@@ -100,7 +100,7 @@ EN.gmCampaign = (function () {
 
   function classLabel(key) {
     var k = typeof key === "string" ? key : "", info = EN.classes && EN.classes[k];
-    return info && info.name ? info.name : (k ? k.toUpperCase() : "No class");
+    return info && info.name ? String(info.name).replace(/^The\s+/i, "") : (k ? k.toUpperCase() : "No class");
   }
   function charLine(c, m, sheet) {
     var lvl = typeof sheet.level === "number" ? sheet.level : 1;
