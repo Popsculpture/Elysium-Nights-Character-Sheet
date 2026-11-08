@@ -1135,34 +1135,16 @@ EN.settings = (function () {
       kids.push(el("p.set-hint", { style: { color: "var(--text3)" }, text: "The GM toolkit is not installed on this device, so only the Freelancer desktop is available." }));
       return kids;
     }
-    /* The bare desktop buttons only exist for a build with gate.js deleted,
-       where nothing else could cross. With the gate present, Switch user is
-       the one control: it flips straight to the other profile when that one
-       is already unlocked, and to its login card when it is not. */
-    if (!(EN.gate && EN.gate.switchUser)) {
-      kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
-        el("button.btn.sm" + (!admin ? ".primary" : ""), {
-          title: "Switch to the Freelancer desktop", onclick: function () { EN.app.setPortal("freelancer"); rebuild(); }
-        }, "✦ FREELANCER"),
-        el("button.btn.sm" + (admin ? ".primary" : ""), {
-          title: "Switch to the Admin desktop", onclick: function () { EN.app.setPortal("admin"); rebuild(); }
-        }, "◆ ADMIN")
-      ]));
-      return kids;
-    }
+    /* The two desktop buttons, for everyone and with no code (campaigns batch 1, the author,
+       7 Nov 2026). The login card no longer chooses a desktop, and Jack out lives in // CLOUD
+       LINK, so there is no Switch user and no Sign out any more. */
     kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
-      el("button.btn.sm", {
-        title: admin ? "Switch to the Freelancer profile" : "Switch to the Admin profile",
-        onclick: function () { close(); EN.gate.switchUser(EN.app.setPortal); }
-      }, "⇄ SWITCH USER"),
-      /* Forgets BOTH profiles' unlocks and returns to this profile's login
-         card, so the gate asks again on every side and on the next reload.
-         Useful for handing the device over, and for testing the login screens
-         (so is ?login). */
-      el("button.btn.sm", {
-        title: "Lock both profiles and return to the login",
-        onclick: function () { close(); EN.gate.signOut(EN.app.setPortal); }
-      }, "⊘ SIGN OUT")
+      el("button.btn.sm" + (!admin ? ".primary" : ""), {
+        title: "Switch to the Freelancer desktop", onclick: function () { EN.app.setPortal("freelancer"); rebuild(); }
+      }, "✦ FREELANCER"),
+      el("button.btn.sm" + (admin ? ".primary" : ""), {
+        title: "Switch to the Admin desktop", onclick: function () { EN.app.setPortal("admin"); rebuild(); }
+      }, "◆ ADMIN")
     ]));
     return kids;
   }
@@ -1629,12 +1611,8 @@ EN.settings = (function () {
           el("button.set-close", { type: "button", title: "Close (Esc)", onclick: close }, "✕")
         ]),
         el("div.set-body"),
-        // phones and touch screens: close (and switch user) from the bottom, under the thumb
+        // phones and touch screens: close from the bottom, under the thumb
         el("div.set-foot", null, [
-          (EN.app.hasAdmin() && EN.gate && EN.gate.switchUser)
-            ? el("button.btn.sm.set-foot-switch", { type: "button", title: EN.app.portal() === "admin" ? "Switch to the Freelancer profile" : "Switch to the Admin profile",
-                onclick: function () { close(); EN.gate.switchUser(EN.app.setPortal); } }, "⇄ SWITCH USER")
-            : null,
           el("button.btn.primary.set-done", { type: "button", title: "Close Settings", onclick: close }, "DONE")
         ])
       ])

@@ -465,7 +465,13 @@ EN.tour = (function () {
       // the spotlight breathes, so the eye finds it
       "@keyframes tourPulse{0%,100%{outline:2px solid transparent;outline-offset:2px;}50%{outline:2px solid var(--accent);outline-offset:5px;}}",
       "#tour-spot{animation:tourPulse 1.8s ease-in-out infinite;}",
-      "@media (prefers-reduced-motion:reduce){#tour-spot{transition:none;animation:none;}#tour-card .tour-gizmosvg,#tour-gizmo.tour-gz-in,#tour-gizmo .tour-gizmosvg,#tour-gizmo .tour-bubble.typing .tour-typed::after{animation:none;}}"
+      "@media (prefers-reduced-motion:reduce){#tour-spot{transition:none;animation:none;}#tour-card .tour-gizmosvg,#tour-gizmo.tour-gz-in,#tour-gizmo .tour-gizmosvg,#tour-gizmo .tour-bubble.typing .tour-typed::after{animation:none;}}",
+      /* he blinks (campaigns batch 1): gate.js holds the one keyframe set; at rest he keeps his -3px look at the card,
+         which the running animation carries (it replaces the static rule above while it runs). Not on the small icon. */
+      "#tour-gizmo .tour-gizmosvg{--gz-rest:-3px;}",
+      "#tour-gizmo .tour-gizmosvg circle{transform-box:fill-box;transform-origin:center;animation:gizmoBlinkEye 10s linear infinite;}",
+      "#tour-gizmo .tour-gizmosvg circle:nth-of-type(n+3){animation-name:gizmoBlinkPupil;}",
+      "@media (prefers-reduced-motion:reduce){#tour-gizmo .tour-gizmosvg circle{animation:none;}}"
     ];
     var st = document.createElement("style"); st.id = "tour-css"; st.textContent = css.join("\n"); document.head.appendChild(st);
   }

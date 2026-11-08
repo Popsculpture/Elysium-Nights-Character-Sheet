@@ -599,13 +599,13 @@ EN.app = (function () {
         document.getElementById("os").style.display = "flex";
         setTimeout(function () { b.style.display = "none"; }, 520);
       };
-      /* After the gate: which desktop. The gate answers with the profile the
-         player entered as (or resumed as, silently), and that profile IS the
-         desktop. Set the portal FIRST, then reveal, so the render inside
-         setPortal happens while #os is still display:none and any repaint is
-         invisible. With gate.js deleted the app boots straight into the
-         remembered desktop, and the settings tray's desktop buttons are the
-         only way across. */
+      /* After the login card: which desktop. The gate no longer chooses one
+         (campaigns batch 1): it answers with no profile, so this falls back to
+         the remembered desktop, which is Freelancer on a device's first
+         landing (only ?portal=admin, a testing switch, names one). Set the
+         portal FIRST, then reveal, so the render inside setPortal happens
+         while #os is still display:none and any repaint is invisible. The
+         settings tray's // WORKSPACE buttons are the way across. */
       var land = function (p) { setPortal(p || portal); reveal(); recoveryNotice(); };
       if (EN.gate && EN.gate.require) EN.gate.require(land); else land(portal);
     }
