@@ -247,9 +247,17 @@ begin
   get diagnostics n = row_count;
   out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' another player cannot change the row (' || n || E')\n';
 
+  -- e rejoined above, so they leave first: from here they are truly outside this campaign
   perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  perform public.leave_campaign(camp);
   select count(*) into n from public.characters where id = ch_c;
   out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a non-member cannot read the row (' || n || E')\n';
+  select (select count(*) from public.campaigns where id = camp)
+       + (select count(*) from public.campaign_members where campaign_id = camp)
+       + (select count(*) from public.campaign_invites where campaign_id = camp)
+       + (select count(*) from public.campaign_blocks where campaign_id = camp)
+       + (select count(*) from public.characters where campaign_id = camp) into n;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a non-member cannot read anything of the campaign (' || n || E')\n';
 
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   select data ->> 'notes' into v from public.characters where id = ch_c;
