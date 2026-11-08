@@ -43,6 +43,9 @@ EN.gmCampaign = (function () {
       console.warn("Could not read the campaign", e);
       _d[id] = { error: runs.errText(e) };
       repaint();
+      // refused, most likely because the role on this device is out of date: Try again would never
+      // work, so read the role now. A change comes back through EN.campaigns' repaint.
+      runs.refresh();
     });
     return slot;
   }
@@ -70,14 +73,20 @@ EN.gmCampaign = (function () {
   }
 
   function copyLink(url, field) {
-    function done() { toast("Invite link copied."); }
-    function failed() { toast("Could not copy it. The link is in the box."); }
+    var answered = false;
+    function say(text) { if (!answered) { answered = true; toast(text); } }
+    function done() { say("Invite link copied."); }
+    function failed() { say("Could not copy it. The link is in the box."); }
     // the old way first: it answers at once, where the newer one can sit waiting on a permission
     var copied = false;
     try { field.select(); copied = document.execCommand("copy"); } catch (e) {}
     if (copied) { done(); return; }
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done, failed); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(done, failed);
+        setTimeout(failed, 1500);   // still waiting on that permission: the button has to say something
+        return;
+      }
     } catch (e) {}
     failed();
   }
