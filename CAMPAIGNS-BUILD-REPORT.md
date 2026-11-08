@@ -624,7 +624,7 @@ There has been no second review of these fixes. The tests below cover each one.
 
 # Campaigns build report: two tabs work together
 
-Built 8 Nov 2026 on `campaigns-tabs`, cut from `main` at `0fcae4a`. No SQL and no migration. **Not merged yet:** that's yours to say.
+Built 8 Nov 2026 on `campaigns-tabs`, cut from `main` at `0fcae4a`. No SQL and no migration. **Merged to `main` on your word, 8 Nov 2026.**
 
 ## Why
 
