@@ -12562,7 +12562,7 @@ card steps aside for a jacked-in device before the marker was added.
 
 ### Batch 2, campaigns, built 2026-11-08 on `campaigns-batch-2`
 
-**What changed.** A migration and its checks (not applied), `app/js/campaigns.js` (the player's side,
+**What changed.** A migration and its checks (applied to the live project the same day, below), `app/js/campaigns.js` (the player's side,
 first script on the page), `app/js/gm_campaign.js` (the Admin tab), Gizmo's ACCESS DENIED page and the
 join card in `gate.js`, a View sheet mode in `store.js` and `app.js`, and a dropdown per record in
 Manage characters. The build report has the full list and the commands.
@@ -12648,7 +12648,7 @@ stand-in client that models the tables, RLS and every refusal), `campaigns_fence
 `?portal=admin`), `campaigns_joinlink` (a fresh device on a join link). `campaigns_b2_shot.js` is a stage
 for screenshots, not a check. `cloud_sync.js`'s stand-in now reads a column it has no value for as null,
 and `campaigns_login_2.js` pins the gate's new exports. The stand-in proves the app's half only; the SQL's
-half is `supabase/tests/campaign_checks.sql`, whose run on the live project waits for the author's go.
+half is `supabase/tests/campaign_checks.sql`, which passes on the live project.
 
 **Run on a local Postgres, the same day.** The author agreed to PGlite, real PostgreSQL in Node, in memory, no
 way to the live project. The tools are in the test suite's `pg/` folder (`pg/README.txt`): the migrations and
@@ -12665,5 +12665,17 @@ reported. What it changed:
 - **Copy always answers.** `navigator.clipboard` can wait on a permission with nothing on screen, so after 1.5 s
   the button says it could not copy and the link is in the box. That wait is the likely reason `campaigns_b2` got
   no answer from the button in one of four runs on its own.
-- **Not proved by any of it:** the real PostgREST and Auth, two sessions at once (one connection, so the row locks
-  never contend), Postgres 17 (PGlite is 18.6), and whatever is already on the live project.
+- **Not proved by any of it:** the app talking to the real PostgREST and Auth, and two sessions at once (one
+  connection, so the row locks never contend).
+
+**Applied to the live project, the same day, on the author's go.** `campaign_checks.sql` says 102 PASS, 0 FAIL on
+its Postgres 17.11, and the rollback left nothing behind.
+
+- **The migration history is behind, so do not `db push` yet.** It records only the first two migrations. The
+  playtest gate went in outside it, and campaigns went in by `db query`, which records nothing, because a push would
+  have run the gate again. A push now would try both and fail at `create table campaigns`. The repair command is in
+  the build report.
+- **A worktree has no `supabase link`.** `--linked` alone fails there; name the project with `--project-ref`.
+- **The real round needs a way to reach sign-in.** Localhost is not on the redirect list and the live site is `main`,
+  so running the branch against real Discord before merging takes one temporary entry on that list. The author's call;
+  the build report has both ways.

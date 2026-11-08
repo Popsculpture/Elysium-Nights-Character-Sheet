@@ -129,43 +129,54 @@ headless Chrome on `file://`.
 # Campaigns build report: batch 2, campaigns
 
 Built 8 Nov 2026 on `campaigns-batch-2`, cut from `main` at `21004f4` (batch 1 was already merged). Not
-merged. **The migration has not been applied to the live project**, and Discord and the Supabase settings
-were not touched. Both SQL files have run on a local Postgres with the real app driven against them, which
-is a long way short of the live project but no longer nothing: see "Run on a local Postgres".
+merged. **The migration is applied to the live project**, on your go, and its checks pass there. Discord and
+the Supabase settings were not touched. The live site does not offer campaigns until this branch is merged.
 
 Every decision is also logged under "Campaigns" in `DEFERRED-FIXES.md`.
 
-## To apply it, when you say go
+## Applied to the live project
 
-Nothing in Supabase settings or Discord needs changing. An invite link is the app's address plus
-`?join=`, and the sign-in itself still goes back to the bare address already on the redirect list.
+Applied 8 Nov 2026. What the project answered:
 
-Apply the migration before merging to `main`. Without it the app still runs, but every campaign button
-fails with a toast. The character sync does not depend on it, and that was tested.
+| What | Result |
+| --- | --- |
+| `campaign_checks.sql`, on Postgres 17.11 | **102 PASS, 0 FAIL** |
+| Left behind by the rollback | Nothing: no test users, campaigns or characters. The one real account, the gate and its one grant are as they were |
+| The real PostgREST, asked as anon | All 11 as expected: each new function it was asked for is seen and refused (`42501`), a wrong argument name is not found, `discord_name` stays private, and the new column is in its schema cache |
+| What changed | The four tables, `characters.campaign_id`, the functions and policies, and the trigger, which now fires only when the sheet changes |
 
-1. See how earlier migrations were recorded (read-only):
+The commands, from a worktree, which has no `supabase link` of its own, so each one names the project:
 
-   ```bash
-   npx supabase@2 migration list --linked
-   ```
+```bash
+npx supabase@2 migration list --project-ref ggjgkcnhfpjwyrhakqun
+```
 
-2. If the three earlier migrations show under Remote, apply with:
+```bash
+npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/migrations/20261108120000_campaigns.sql
+```
 
-   ```bash
-   npx supabase@2 db push --linked
-   ```
+```bash
+npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/campaign_checks.sql
+```
 
-   If they do not (they were applied another way), `db push` would try to run them again, so use this instead:
+**The migration history is behind, and it needs a decision.** `migration list` showed the first two migrations
+recorded but not the playtest gate (`20261108000000`), though its rule is in effect, so it went in outside the
+history. `db push` would have run the gate again along with campaigns, so I took the route this report gave for
+that case, `db query`, which applies the one file and records nothing. Both are now missing from the history, so
+the next `db push` would try to run both: the gate's update would run again, and it would fail at
+`create table campaigns`. This records them without running anything. I have not run it, since it is a write
+your go did not cover:
 
-   ```bash
-   npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/migrations/20261108120000_campaigns.sql
-   ```
+```bash
+npx supabase@2 migration repair --status applied 20261108000000 20261108120000 --project-ref ggjgkcnhfpjwyrhakqun
+```
 
-3. Run the checks. They always roll back and end in an error whose text should say `102 PASS, 0 FAIL`:
+**Until the branch is merged,** the live site's code has no campaign buttons. A signed-in account could still call
+the functions directly, and reach only what the rules allow.
 
-   ```bash
-   npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/campaign_checks.sql
-   ```
+**No setting is needed to ship this.** An invite link is the app's address plus `?join=`, and the sign-in still
+goes back to the bare address already on the redirect list. **One is needed to run the branch against real
+Discord before merging:** see the two-account round under "Waiting for the author".
 
 ## What is built
 
@@ -212,8 +223,10 @@ asset stamp is `?v=20261108.5`. README and HANDOFF describe campaigns.
 - `24a64aa` sub-tabs on a viewed sheet, twelve tabs on the Admin rail, the docs
 - `4740bd2` the non-member check uses a real non-member
 - `ff1f3a7` this report
-- the three commits after it: the stronger checks, the two app fixes the local Postgres run led to, and this
-  report brought up to date
+- `5ca076f` the stronger checks
+- `f4197d2` the two app fixes the local Postgres run led to
+- `bdeb860` this report brought up to date
+- the commit after it: the run on the live project, written up
 
 ## Three traps the spec did not mention
 
@@ -276,16 +289,14 @@ members' rows, and the pull brings down none of them. A save goes through the ne
 is in a campaign. `level` and `class` are where a real sheet keeps them. A character moved between campaigns
 keeps `data` and `updated_at` exactly, and a sync afterwards changes nothing on either side.
 
-**What this cannot prove,** and why your run still matters:
+**What this could not prove.** The run on the live project has since answered two of the four: the migration and
+checks ran on its Postgres 17.11 (PGlite is 18.6), and the policy names it drops were there. Two remain:
 
-- **The server in the middle is my imitation of PostgREST.** It is strict on purpose (a wrong name is an error,
-  as it would be there), but it is not the real one, and sign-in is still a stand-in.
-- **Two sessions at once.** PGlite has one connection, so the row locks that keep role changes from
-  interleaving have never contended.
-- **The Postgres version.** PGlite is 18.6 and the project's config says 17. I know of nothing in the migration
-  that is new in 18, but it has not run on 17.
-- **What is already on the live project:** existing rows, anything changed by hand, and whether the policy names
-  the migration drops match, if the earlier migrations were applied another way.
+- **The app has not talked to the real server as a signed-in account.** The app's calls went through my strict
+  imitation of PostgREST, with sign-in a stand-in. The real PostgREST has only been asked as anon, and only for
+  refusals.
+- **Two sessions at once.** PGlite has one connection and the live checks run in one transaction, so the row locks
+  that keep role changes from interleaving have never contended.
 
 ## Checked, and how
 
@@ -293,8 +304,9 @@ keeps `data` and `updated_at` exactly, and a sync afterwards changes nothing on 
 | --- | --- | --- |
 | `EN.gate.gizmoSvg()` fingerprint before and after | Pass | SHA-256 of all three forms, plus `clipSvg`'s source text and the bubble's CSS lines, in Node before any edit and after the last: identical. `git diff main` on `tour.js` is empty. |
 | Tour step 1: Gizmo, his bubble, eyes on the card, his blink | Pass | Browser pane, Classic, '98 and #GRIDroid: he shows with his typed bubble and a `-3px` rest, and the blink animations run. Sampled every 20 ms for a whole cycle in Classic: pupils only at -3 and -1, never between. |
-| Join, drop two characters in, roster, read-only sheets, Gizmo's no, co-Admin gets in, remove with block, old link fails, reset, transfer | Pass on a local Postgres, **not yet on the live project** | `pg/campaigns_realdb.js`, 144 checks through the real UI on the real SQL, with the database's own rows checked after each step. The suite's `campaigns_b2` chain, 163 checks, plays the same round on a stand-in, as part of every regular run. |
-| A character moved between campaigns keeps everything | Pass on a local Postgres, **not yet on live rows** | `pg/campaigns_realdb.js`: `data` and `updated_at` identical in the database after a move, after No campaign, and after a sync. `campaign_checks.sql` checks the trigger directly. |
+| `campaign_checks.sql`: every line PASS | **Pass on the live project** | 102 PASS, 0 FAIL, on Postgres 17.11, and the rollback left nothing behind. |
+| Join, drop two characters in, roster, read-only sheets, Gizmo's no, co-Admin gets in, remove with block, old link fails, reset, transfer | Pass on a local Postgres, **not yet with real Discord** | `pg/campaigns_realdb.js`, 144 checks through the real UI on the real SQL, with the database's own rows checked after each step. The suite's `campaigns_b2` chain, 163 checks, plays the same round on a stand-in, as part of every regular run. The same rules pass on the live project in `campaign_checks.sql`, at the database, in one rolled-back transaction. |
+| A character moved between campaigns keeps everything | Pass on a local Postgres, **and at the database on the live project**, not yet by hand | `pg/campaigns_realdb.js`: `data` and `updated_at` identical in the database after a move, after No campaign, and after a sync. `campaign_checks.sql` checks the trigger directly, on the live project too. |
 | Reload onto a remembered Admin desktop, and `?portal=admin` | Pass | `campaigns_fence`, three reloads on one profile. Also: an account running a campaign, one in none, and one jacked out all get in. |
 | Fresh device on a join link | Pass | `campaigns_joinlink`: stash first, login card, Gizmo, then the join card. Jack in keeps the token, and the sign-in brings the card up. A campaign name holding HTML shows as text. |
 | Nothing from a viewed sheet saves | Pass | The chain: writes refused, the rows byte for byte the same after a push window, the stored roster identical after Back. A record full of `<img onerror>` ran nothing. |
@@ -313,13 +325,18 @@ The dash and syntax sweeps are clean.
 
 ## Waiting for the author
 
-- **`campaign_checks.sql` on the live project: every line PASS.** It says 102 PASS, 0 FAIL on a local Postgres.
-  The run that counts is the one on the project, and it needs your go.
-- **The two-account round on the live project**: create, copy the link, fresh device with the second
-  account, join, two characters in, both on the roster, each sheet read-only, Gizmo's no, make co-Admin
-  and they get in, remove with Also block and their link fails, reset, transfer. All of it has passed
-  locally. What only you can add is the migration on the real project and a real Discord round trip.
-- **A character moved between campaigns**, on the project's real rows.
+- **The two-account round with real Discord**: create, copy the link, fresh device with the second account, join,
+  two characters in, both on the roster, each sheet read-only, Gizmo's no, make co-Admin and they get in, remove
+  with Also block and their link fails, reset, transfer. All of it has passed locally, and the database half has
+  passed on the live project. **It needs a way for the branch to reach sign-in**, because localhost is not on the
+  redirect list and the live site is `main`. Two ways, both yours to choose:
+  - **Before merging (my pick):** add `http://localhost:8777/**` to Supabase's Auth redirect URLs, run the branch
+    locally on the `gridos` server (port 8777 unless it is taken), use a private window for the second account,
+    then take the entry out. Discord itself needs no change. The live site stays as it is until the round passes.
+  - **After merging,** on the live site, the way batch 1's Jack in round trip was done. No setting, but players
+    could reach campaigns before you have seen them work.
+- **A character moved between campaigns**, by hand, during that round.
+- **The migration history**, above: repair it, or say not to.
 - **Gizmo's two lines** read as the spec has them; they are `NO` in `gate.js` if you want to change them.
 
 ## Decisions
@@ -350,6 +367,8 @@ The dash and syntax sweeps are clean.
 17. **The real-database chain lives in `pg/`, not `tests/`.** The regular runner takes everything in `tests/`, and
     this one needs the bridge up, so it runs by hand. The stuck co-Admin is also guarded in `campaigns_b2`, so a
     regular run still catches it.
+18. **Applied with `db query`, not `db push`.** The history did not show the playtest gate, so a push would have run
+    it again. The gate's rule was read first and is in effect, so it did not need running, and `db query` left it alone.
 
 ## Still open
 
