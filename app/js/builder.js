@@ -63,7 +63,9 @@ EN.builder = (function () {
       role: "button", tabindex: "0", title: "Open Settings", dataset: { companionPointer: kind },
       style: { margin: "8px 0 0", color: "var(--text4)", cursor: "pointer" },
       onclick: go, onkeydown: function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } },
-      text: "More in the Freelancer's Companion. Jack in to unlock."
+      text: EN.packs && EN.packs.status && EN.packs.status("EN1101") === "unheld"
+        ? "More in the Freelancer's Companion, in playtest for the Play tester role."
+        : "More in the Freelancer's Companion. Jack in to unlock."
     });
   }
   function heldText(kind, key) { return EN.ui.heldSuffix ? EN.ui.heldSuffix(kind, key) : ""; }

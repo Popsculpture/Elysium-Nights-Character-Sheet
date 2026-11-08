@@ -374,6 +374,9 @@ EN.app = (function () {
      another record, export this one or delete it. The Codex edits nothing, so it stays usable. */
   var LOCKED_TEXT = "This Freelancer uses the Freelancer's Companion. Jack in to load it. Until then the sheet is read-only, so nothing on it changes.";
   var LOCKED_CHIP = "COMPANION: LOCKED", LOCKED_TITLE = "Freelancer's Companion content. Jack in to load it.";
+  // jacked in without the Play tester role (js/packs.js: unheld): jacking in again is not the answer
+  var LOCKED_TEXT_UNHELD = "This Freelancer uses the Freelancer's Companion, which is in playtest for the Play tester role on the Elysium Nights Discord. Until then the sheet is read-only, so nothing on it changes.";
+  var LOCKED_TITLE_UNHELD = "Freelancer's Companion content, in playtest. See Settings, // CONTENT.";
   function lockedSheet(view, tabKey) {
     var ch = tabKey ? store.active() : null, id = ch && ch.meta && ch.meta.id;
     var isEx = store.activeIsExample && store.activeIsExample();
@@ -381,14 +384,15 @@ EN.app = (function () {
     if (!id || isEx || !store.isLocked || !store.isLocked(id)) { view.classList.remove("en-locked"); return; }
     view.classList.add("en-locked");
     var info = store.lockInfo(id) || { picks: [] };
+    var unheld = !!(EN.packs && EN.packs.status && EN.packs.status("EN1101") === "unheld");
     var chips = info.picks.map(function (p) {
       return el("span.locked-pick", { dataset: { lockedPick: p.key } }, [
         document.createTextNode(p.name),
-        el("span.chip.locked-chip", { title: LOCKED_TITLE, text: LOCKED_CHIP })
+        el("span.chip.locked-chip", { title: unheld ? LOCKED_TITLE_UNHELD : LOCKED_TITLE, text: LOCKED_CHIP })
       ]);
     });
     view.insertBefore(el("div#locked-banner.locked-banner", { role: "status" }, [
-      el("p", { text: LOCKED_TEXT }),
+      el("p", { text: unheld ? LOCKED_TEXT_UNHELD : LOCKED_TEXT }),
       chips.length ? el("div.locked-picks", null, chips) : null
     ]), view.firstChild);
     if (tabKey === "codex") return;

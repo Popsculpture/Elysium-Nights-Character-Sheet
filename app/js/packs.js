@@ -231,7 +231,9 @@ EN.packs = (function () {
     return Promise.resolve().then(function () { return client.rpc("my_entitlements"); }).then(rows).then(function (list) {
       if (!current()) return;
       var held = (list || []).map(function (x) { return typeof x === "string" ? x : x && (x.my_entitlements || x.sku); }).filter(Boolean);
+      // a pack this account does not hold reads as unheld (during the playtest: no Play tester role)
       Object.keys(state).forEach(function (sku) { if (held.indexOf(sku) === -1) delete state[sku]; });
+      Object.keys(MANIFEST).forEach(function (sku) { if (held.indexOf(sku) === -1) state[sku] = "unheld"; });
       // packs this account does not hold (any more): out of memory and off the device
       Object.keys(merged).concat(cachedSkus(uid)).forEach(function (sku) {
         if (held.indexOf(sku) !== -1) return;
@@ -345,7 +347,7 @@ EN.packs = (function () {
 
   function loaded(sku) { return !!merged[sku]; }
   function version(sku) { return merged[sku] ? merged[sku].version : null; }
-  // "loaded", "loading", "failed" or "none"
+  // "loaded", "loading", "failed", "unheld" (signed in, not held) or "none"
   function status(sku) { return merged[sku] ? "loaded" : state[sku] || "none"; }
 
   boot();

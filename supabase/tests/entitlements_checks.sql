@@ -2,7 +2,7 @@
 --   npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/entitlements_checks.sql
 -- Everything runs inside one DO block that ALWAYS ends by raising EN_CHECKS with the results,
 -- so the whole block rolls back: the test users, the temporary 'granted' product, its pack and
--- its entitlement never ship. Read the result from the error text: every line should say PASS.
+-- its entitlement never ship. Read the result from the error text: it should say 0 FAIL.
 do $$
 declare
   a uuid := '00000000-0000-4000-8000-0000000000a1';
@@ -10,7 +10,11 @@ declare
   n int;
   out text := '';
   denied boolean;
+  npass int; nfail int; fails text;
+  open1 int;   -- 1 while EN1101 is open to every signed-in account, 0 while it is granted (the playtest)
 begin
+  select case when rule = 'signed_in' then 1 else 0 end into open1 from public.products where sku = 'EN1101';
+  out := 'EN1101 rule: ' || case when open1 = 1 then 'signed_in' else 'granted (playtest)' end || E'\n';
   -- fixtures, as the database owner
   insert into auth.users (id, instance_id, aud, role, email)
   values (a, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'en-check-a@example.invalid'),
@@ -38,13 +42,13 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   perform set_config('role', 'authenticated', true);
   select count(*) into n from public.content_packs where sku = 'EN1101';
-  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a signed-in player reads the EN1101 pack (' || n || E')\n';
+  out := out || case when n = open1 then 'PASS' else 'FAIL' end || ' a signed-in player without a grant reads the EN1101 pack only when it is open (' || n || E')\n';
   select count(*) into n from public.content_packs where sku = 'ENCHECK';
   out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' without a grant, the granted pack is hidden (' || n || E')\n';
   select count(*) into n from public.entitlements;
   out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a player sees no other player''s entitlements (' || n || E')\n';
   select count(*) into n from public.my_entitlements() s where s = 'EN1101';
-  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' my_entitlements lists EN1101 (' || n || E')\n';
+  out := out || case when n = open1 then 'PASS' else 'FAIL' end || ' my_entitlements lists EN1101 only when it is open (' || n || E')\n';
 
   denied := false;
   begin insert into public.entitlements (user_id, sku, source) values (a, 'ENCHECK', 'self');
@@ -84,9 +88,35 @@ begin
   select count(*) into n from public.content_packs where sku = 'ENCHECK';
   out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a second player still cannot read the granted pack (' || n || E')\n';
   select count(*) into n from public.content_packs where sku = 'EN1101';
-  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the second player reads the EN1101 pack (' || n || E')\n';
+  out := out || case when n = open1 then 'PASS' else 'FAIL' end || ' the second player reads the EN1101 pack only when it is open (' || n || E')\n';
   perform set_config('role', 'postgres', true);
 
-  raise exception E'EN_CHECKS (rolled back)\n%', out;
+  -- the playtest gate: the discord-role Edge Function writes and removes grants as the service role
+  perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
+  perform set_config('role', 'service_role', true);
+  denied := false;
+  begin insert into public.entitlements (user_id, sku, source) values (b, 'EN1101', 'discord_role') on conflict (user_id, sku) do nothing;
+  exception when others then denied := true; end;
+  out := out || case when not denied then 'PASS' else 'FAIL' end || E' the service role can write a discord_role grant\n';
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+  select count(*) into n from public.content_packs where sku = 'EN1101';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' with the Play tester grant, the player reads the EN1101 pack (' || n || E')\n';
+  select count(*) into n from public.my_entitlements() s where s = 'EN1101';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' my_entitlements lists EN1101 with the grant (' || n || E')\n';
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims', json_build_object('role', 'service_role')::text, true);
+  perform set_config('role', 'service_role', true);
+  delete from public.entitlements where user_id = b and sku = 'EN1101' and source = 'discord_role';
+  get diagnostics n = row_count;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the service role can remove a discord_role grant (' || n || E')\n';
+  perform set_config('role', 'postgres', true);
+
+  -- the error text is cut off after about 1 KB, so the result is the count and any failures in full
+  select count(*) filter (where l like 'PASS%'), count(*) filter (where l like 'FAIL%'),
+         coalesce(string_agg(l, E'\n') filter (where l like 'FAIL%'), '')
+    into npass, nfail, fails from unnest(string_to_array(out, E'\n')) l;
+  raise exception E'EN_CHECKS (rolled back) %\n% PASS, % FAIL\n%', split_part(out, E'\n', 1), npass, nfail, fails;
 end
 $$;

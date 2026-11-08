@@ -343,7 +343,10 @@ EN.cloud = (function () {
   }
   function jackIn(provider) {
     if (!client) return Promise.resolve();
-    return client.auth.signInWithOAuth({ provider: provider || "discord", options: { redirectTo: returnUrl() } })
+    // guilds.members.read: the playtest gate reads the Play tester role in the Elysium Nights server
+    var opts = { redirectTo: returnUrl() };
+    if ((provider || "discord") === "discord") opts.scopes = "guilds.members.read";
+    return client.auth.signInWithOAuth({ provider: provider || "discord", options: opts })
       .then(function (res) { if (res && res.error) throw res.error; })
       .catch(function (e) { console.error("Jack in failed", e); EN.ui.toast("Could not reach Discord. Try again in a moment."); });
   }
@@ -372,9 +375,27 @@ EN.cloud = (function () {
     }
     paint();
   }
+  /* ---- the playtest gate ------------------------------------------------------
+     During the playtest the Freelancer's Companion (EN1101) is granted, not open to every account.
+     Right after a Discord sign-in the session carries Discord's access token (provider_token, for
+     that sign-in only); the discord-role Edge Function (supabase/functions/discord-role) reads the
+     Play tester role with it and writes or removes the grant before the packs are asked for. A
+     session restored from storage has no token, so the grant from the last sign-in stands. */
+  var roleToken = null, checkedTokens = {};
+  function noteToken(s) { var t = s && s.provider_token; if (t && !checkedTokens[t]) roleToken = t; }
+  function checkRole() {
+    var t = roleToken;
+    roleToken = null;
+    if (!t || !client || !client.functions) return Promise.resolve();
+    checkedTokens[t] = true;
+    return Promise.resolve().then(function () { return client.functions.invoke("discord-role", { body: { token: t } }); })
+      .then(function (res) { if (res && res.error) console.warn("Play tester check failed", res.error); })
+      .catch(function (e) { console.warn("Play tester check failed", e); });
+  }
   function refreshPacks() {
-    if (client && user && !offline && EN.packs && EN.packs.refresh) return EN.packs.refresh(client, user.id);
-    return Promise.resolve();
+    if (!(client && user && !offline && EN.packs && EN.packs.refresh)) return Promise.resolve();
+    var c = client, id = user.id;
+    return checkRole().then(function () { if (user && user.id === id && !offline) return EN.packs.refresh(c, id); });
   }
 
   /* ---- the stored session, for the offline case ----------------------------------
@@ -469,7 +490,7 @@ EN.cloud = (function () {
       return kids;
     }
     if (!user) {
-      kids.push(el("p.set-hint", { text: "Jack in with Discord to save your characters to your account, so they follow you to any browser, and to unlock the Freelancer's Companion. Characters on this device stay where they are." }));
+      kids.push(el("p.set-hint", { text: "Jack in with Discord to save your characters to your account, so they follow you to any browser. Play-testers with the Play tester role on the Elysium Nights Discord also unlock the Freelancer's Companion. Characters on this device stay where they are." }));
       return kids.concat(signInButtons());
     }
     var pic = avatar();
@@ -499,9 +520,10 @@ EN.cloud = (function () {
       var u = session && session.user ? session.user : null;
       setTimeout(function () {
         if (u) {
+          noteToken(session);
           if (offline && user && user.id === u.id) backOnline(u);
           else if (u.id !== (user && user.id)) { offline = false; setUser(u); }
-          else { user = u; paint(); }
+          else { user = u; paint(); if (roleToken) refreshPacks(); }   // jacked in again: check the role again
           return;
         }
         // no session: a real sign-out, or only a refresh the network stopped
@@ -517,7 +539,7 @@ EN.cloud = (function () {
     });
     c.auth.getSession().then(function (res) {
       var s = res && res.data ? res.data.session : null;
-      if (s && s.user) { if (offline && user && user.id === s.user.id) backOnline(s.user); else if (!user || user.id !== s.user.id) setUser(s.user); return; }
+      if (s && s.user) { noteToken(s); if (offline && user && user.id === s.user.id) backOnline(s.user); else if (!user || user.id !== s.user.id) setUser(s.user); return; }
       var kept = storedUser();
       if (kept && !user) goOffline(kept);
     }).catch(function (e) {
@@ -564,7 +586,7 @@ EN.cloud = (function () {
 
   return {
     start: start, jackIn: jackIn, jackOut: jackOut, sync: sync, paint: paint, settingsSection: settingsSection,
-    signInButtons: signInButtons,
+    signInButtons: signInButtons, recheck: function () { return jackIn("discord"); },
     available: available,
     signedIn: function () { return !!user; },
     status: function () { return status; },

@@ -1271,6 +1271,7 @@ EN.settings = (function () {
                           en_supplemental_v1, device state like the skin, never on a character and
                           never exported; on until someone turns it off for the Handbook alone)
        not jacked in      COMPANION: LOCKED, and the sign-in buttons (EN.cloud.signInButtons)
+       not held           COMPANION: PLAYTEST (jacked in, no Play tester role), and CHECK MY ROLE AGAIN
        downloading        COMPANION: LOADING
        download failed    COMPANION: LOCKED, and it tries again when the link is back
        no cloud link      (a file:// page, or the library missing) the live site's address
@@ -1296,8 +1297,13 @@ EN.settings = (function () {
         el("p.set-hint", { "data-content-hint": "nolink", text: "The Freelancer's Companion unlocks when you jack in on the live site, elysiumnightsrpg.com/app. A Freelancer who already has Companion content keeps it." }),
         discordLine()];
       if (!C.signedIn()) return [head("COMPANION: LOCKED"), label,
-        el("p.set-hint", { "data-content-hint": "locked", text: "The Freelancer's Companion unlocks when you jack in: its lineages, subclasses, Backgrounds and Talents, and Culinary Tools. Jacking in is free, and your characters save to your account too. A Freelancer who already has Companion content keeps it." })]
+        el("p.set-hint", { "data-content-hint": "locked", text: "The Freelancer's Companion (its lineages, subclasses, Backgrounds and Talents, and Culinary Tools) is in playtest: it unlocks when you jack in with the Play tester role on the Elysium Nights Discord. Jacking in is free, and your characters save to your account too. A Freelancer who already has Companion content keeps it." })]
         .concat(C.signInButtons()).concat([discordLine()]);
+      if (pack === "unheld") return [head("COMPANION: PLAYTEST"), label,
+        el("p.set-hint", { "data-content-hint": "unheld", text: "The Freelancer's Companion is in playtest, open to members of the Elysium Nights Discord with the Play tester role. Join the server and pick up the role, then check again. A Freelancer who already has Companion content keeps it." }),
+        el("button.btn.primary", { type: "button", "data-cloud": "recheck", style: { width: "100%" },
+          title: "Jack in with Discord again, so the Play tester role is checked again", onclick: function () { C.recheck(); } }, "CHECK MY ROLE AGAIN"),
+        discordLine()];
       if (pack === "loading") return [head("COMPANION: LOADING"), label,
         el("p.set-hint", { "data-content-hint": "loading", text: "Loading the Freelancer's Companion for your account." }), discordLine()];
       return [head("COMPANION: LOCKED"), label,

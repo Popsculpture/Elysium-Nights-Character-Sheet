@@ -77,7 +77,8 @@ pack loads.
 
 Who holds a pack is decided in the database, never in the app. `products.rule` is `signed_in` (any
 account that has jacked in, whatever the sign-in provider) or `granted` (only accounts with a row in
-`entitlements`). The Companion is `signed_in`.
+`entitlements`). During the playtest the Companion is `granted`, and the Play tester role grants it
+(below). At launch it goes back to `signed_in`.
 
 ### Publish a pack
 
@@ -113,6 +114,37 @@ To take a grant back, delete the row; the pack leaves that player's device the n
 checks. Players can read their own rows and nothing else, and no player can write to `entitlements`
 or `content_packs` (`supabase/tests/entitlements_checks.sql` proves both against the live project).
 A `signed_in` product needs no rows at all.
+
+### The playtest gate
+
+While the Companion is in playtest, an account holds it when its Discord member has the **Play
+tester** role in the Elysium Nights server. Jacking in asks Discord for one extra permission
+(`guilds.members.read`, reading the player's own membership in a server). Right after the sign-in
+the app sends Discord's token for that sign-in to the `discord-role` Edge Function
+(`supabase/functions/discord-role`). The function checks that the token belongs to that account's
+Discord, reads the player's roles in the server, and writes the grant (`source` = `discord_role`) or
+removes it. Grants from any other source are never touched, so a backer or comp grant stays
+whatever the roles say.
+
+The check runs only at sign-in: a player who gains the role (or loses it) is updated the next time
+they jack in. Jacked in without the role, Settings, // CONTENT reads COMPANION: PLAYTEST and offers
+**CHECK MY ROLE AGAIN**, which jacks in again. Players who sign in some other way than Discord have
+no role to check; grant them by hand as above.
+
+Setup, once:
+
+1. Discord, with Developer Mode on (User Settings, Advanced): right-click the server, **Copy Server
+   ID**; Server Settings, Roles, right-click Play tester, **Copy Role ID**.
+2. Supabase dashboard, **Edge Functions**, **Secrets**: add `DISCORD_GUILD_ID` and
+   `DISCORD_ROLE_ID`. They are IDs, not secrets, but they live there so they never ship in the app.
+   Until both are set the function decides nothing and changes no grants.
+3. Deploy the function: `npx supabase@2 functions deploy discord-role --project-ref
+   ggjgkcnhfpjwyrhakqun --use-api`.
+4. Switch the Companion to `granted`: apply `supabase/migrations/20261108000000_playtest_gate.sql`
+   (or, in the Table Editor, set `products.rule` for `EN1101` to `granted`).
+
+At launch, set `products.rule` for `EN1101` back to `signed_in`. The grants can stay; they do
+nothing for a `signed_in` product.
 
 ## Install it on a phone
 
