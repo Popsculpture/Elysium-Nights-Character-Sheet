@@ -128,9 +128,9 @@ headless Chrome on `file://`.
 
 # Campaigns build report: batch 2, campaigns
 
-Built 8 Nov 2026 on `campaigns-batch-2`, cut from `main` at `21004f4` (batch 1 was already merged). Not
-merged. **The migration is applied to the live project**, on your go, and its checks pass there. Discord and
-the Supabase settings were not touched. The live site does not offer campaigns until this branch is merged.
+Built 8 Nov 2026 on `campaigns-batch-2`, cut from `main` at `21004f4` (batch 1 was already merged). **Merged to
+`main` with batch 3, on your word, 8 Nov 2026, at `66696b1`.** The migration is applied to the live project, on your
+go, and its checks pass there. Discord and the Supabase settings were not touched.
 
 Every decision is also logged under "Campaigns" in `DEFERRED-FIXES.md`.
 
@@ -384,12 +384,11 @@ The dash and syntax sweeps are clean.
 
 # Campaigns build report: batch 3, #POST from the Admin
 
-Built 8 Nov 2026 on `campaigns-batch-3`. Not merged. **The migration is applied to the live project,** on your go, and its checks pass there.
-The live site does not offer any of this until the branch is merged.
+Built 8 Nov 2026 on `campaigns-batch-3`. **Merged to `main` on your word, 8 Nov 2026, at `66696b1`.** The migration is applied to the live
+project, on your go, and its checks pass there.
 
-**Read this first: batch 2 is not merged.** The spec says to cut from `main` once it is. Its migration is live, but its branch isn't on
-`main`, and merging is yours to sign off. So this branch is cut from the tip of `campaigns-batch-2` (`e852599`), and **merging it merges
-both batches.**
+Batch 2 went live in the same merge. The spec says to cut from `main` once batch 2 is on it, and it wasn't, so this branch was cut from the tip of
+`campaigns-batch-2` (`e852599`).
 
 Every decision is also logged under "Campaigns" in `DEFERRED-FIXES.md`.
 
@@ -515,9 +514,7 @@ the row locks never contend). **The slide and the box-opening moment have not be
 
 ## Waiting for the author
 
-- **Merge batch 2, or merge this branch, which includes it.** Your call, and it needs the two-account round from batch 2 as well.
-- **The round with real Discord,** on real Realtime, which this migration has now turned on: send from a card to one character and the crew, with a second account online and then offline, Take it on two real devices, Recall before and after. It needs a way for the
-  branch to reach sign-in, the same two ways as batch 2: a temporary `http://localhost:8777/**` on Supabase's redirect list (my pick), or after merging.
+- **The round with real Discord,** on real Realtime, which this migration has now turned on: send from a card to one character and the crew, with a second account online and then offline, Take it on two real devices, Recall before and after. It runs on the live site now. So far two real accounts have signed in, made a campaign, joined it and moved characters in. No mail has been sent yet.
 - **Watch the slide and the box-opening moment,** and tune by feel. `postBoxHop`, `postBoxFlap` and `postBoxRise` in `theme.css`.
 - **The package glyph is my drawing,** `ICON_PKG` in `face.js`, because the app has no art for a package. Swap in your own if you like; the moment wants its two flaps as separate paths.
 - **A ruling on a hidden tab,** item 5 above.
@@ -543,11 +540,6 @@ the row locks never contend). **The slide and the box-opening moment have not be
 
 ## Still open
 
-- **Until this branch is merged, an account running a campaign must stay off the live site.** The live site is `main`, whose `pull()` has no
-  owner filter, and batch 2's read policy is already live. Open it as an Admin or co-Admin of a campaign with someone else's character in it, and
-  those characters come down into that account's roster. The next save can't update them, so it uploads them as that account's own. The other player's rows are
-  untouched. Nothing has happened: the live project had no campaigns at all when this was found. **It starts mattering with the first real campaign,**
-  so during the two-account round, close any live-site tab signed in as those accounts, and either merge or delete the test campaign when the round ends.
 - **A stale device with newer offline edits can overwrite a delivered message,** the way it overwrites any edit. The row says delivered, so nobody files it again. A read of delivered rows that a record doesn't hold could heal it, at the cost of a growing read after every sync. **The package goes with it,** so it wants a ruling if it ever happens to someone.
 - **Two devices both on screen:** an edit inside the push delay can lose to the other device's filing.
 - **Opening a message is an edit,** so on a stale device it makes that copy the newest. The items still land once.
@@ -555,3 +547,78 @@ the row locks never contend). **The slide and the box-opening moment have not be
 - **Two tabs in one browser** can overwrite each other's records in storage. Older than this batch, but a background event can now set it off.
 - **A removed player's waiting mail still reaches them,** and the sender can still recall it. The spec doesn't mention membership.
 - **'98's #POST Express shows a strip reading "es Help" across the top of the list.** It is on `main` too, so it isn't this batch's. Not touched.
+
+# Campaigns build report: the Admin's Table reads the campaign
+
+Built 8 Nov 2026 on `campaigns-table`, cut from `main` at `66696b1`, after you looked at the live Table. No SQL and no migration. **Not merged yet:**
+that's yours to say.
+
+What you saw: Pull in the crew listed every record in the browser, your own bank of characters, not the campaign's. Two characters with one name
+looked the same, and nothing said whose they were. Your own characters should only show up once you've added them to the campaign.
+
+## What is built
+
+- **While an account runs a campaign, the Admin desktop's crew is that campaign's characters.** Pull in the crew lists them and nobody else. A bank on
+  the browser stays out, and so do the Admin's own characters until they go in from Manage characters, like anyone's.
+- **Every row and every button names the player:** `Nessa Vale · MyGalFRIDAY`.
+- **Another player's character is a read-only copy.** It is read the way View sheet reads it, it is stripped of markup the same way, and it never enters
+  the roster, so nothing can write to it or push it. Its row offers VIEW SHEET where a local row offers SET ACTIVE. The Admin's own character is the live
+  record on this device, so Set active and Vigor still work on it.
+- **One campaign at a time on the desktop,** the one picked on the Campaign tab. With more than one to run, the Table has the same picker.
+- **A row is never quietly deleted.** A row can say NOT IN THIS CAMPAIGN (a character pulled before this change, or from the bank), NO LONGER IN THIS CAMPAIGN (it
+  moved out), OTHER CAMPAIGN (after switching the picker) or NO SHEET ON THIS DEVICE (signed out). Each one comes off with ✕. **Your live Table will show NOT IN THIS
+  CAMPAIGN on the rows it has now.** That's expected, and they aren't being counted.
+- **Jacked out, offline, or running no campaign:** the Table lists the browser's records, as it always did.
+
+## What the other tabs do
+
+Encounters, People, Scenes and Hazards read the campaign's crew. Their reads are just Grades, Calibers and Heat to show.
+
+**Payroll, Heat, the Job Board and the XP award write to sheets,** and a sheet can only be written on the device that holds it until those writes go through the inbox.
+So while a campaign runs they count the whole crew and write only to what's here:
+
+- Headcount and Caliber are the whole crew's, so a share and a Grade come out right.
+- They list only the campaign's characters that are on this device, which for most Admins is none, or their own.
+- A line says how many they can't reach. **You read the shares out, or send them as #POST mail, until the inbox carries them.**
+- **A bank character can't be paid, posted to or awarded XP while a campaign runs.** This is a change from what I told you before I built it: I said these tabs would go on
+  listing the browser's records. The review showed why that was wrong, below. If you want to run a table from a bank, jack out.
+
+## How it was reviewed
+
+One independent read of the diff, with the code and not my conclusions. It found real trouble, all fixed:
+
+1. **The Job Board fell back to every record on the browser, all ticked,** when the Table's crew was out of reach.
+2. **Payroll counted only who it could reach.** Three players plus the Admin's own character read as one Freelancer, and CREDIT THE CREW wrote the whole pot to that one sheet.
+   The same low Caliber fed the Job Board's Grade and Heat's bounties. A bank row left on the Table could take the pot too.
+3. **A hand-made sheet could stall the read for good.** A player who writes their own row with names that aren't text made the read throw, and the Table sat on "Reading" until a reload,
+   and then again. Names are text now, a row that won't read costs that row, and a failed read always ends.
+4. **Signed out with a campaign's rows on the Table,** the Table claimed a crew of Caliber 1.
+5. **Your own character pulled before its sheet reached this device** stayed a copy. It takes its live id at the next draw now.
+6. **A change during a read** could be counted as fresh for 30 seconds.
+
+There has been no second review of these fixes. The tests below cover each one.
+
+## Checked, and how
+
+- **The whole suite:** 489 chains, 513 runs, 0 bad, on the final commit (round 215). The new chain is one of them.
+- **The story through the real UI, twice from one script:** 145 checks against the stand-in (`tests/campaigns_table_1.js`, now a regular chain), and 150 against the real migration in PGlite
+  through the real supabase-js (`pg/table_realdb.js`), where the read policy really answers. A player asking for the campaign's characters gets only their own, and an outsider gets none.
+- **Batches 2 and 3 on the real database again, on the final commit:** 144 and 61, all passing.
+- **Breaking the new code on purpose:** 36 lines of the new code broken one at a time, and the chain caught all 36. The first honest pass caught 32, and those four misses closed two gaps in the tests, tightened one check and removed some dead code (`pg/table_mutants.py`).
+- **Three skins, desktop and 375 px:** drawn and measured with `tests/campaigns_table_shot.js`. No sideways scroll, and the player's name fits on every row.
+- `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
+
+**Not checked:** the live site, real Discord and real latency. Your round is the first time a real read happens through the real policy with real accounts.
+
+## Decisions
+
+1. **The Table's rows stay in the one GM document.** A Table per campaign is the bigger change we talked about. Switching the picker marks the other campaign's rows; it doesn't swap the Table.
+2. **The lists read when drawn,** at most every 30 seconds, plus ↻ and any change to who is in a campaign. There's no live feed of who joined.
+3. **A sheet that can't be read** is left off the picker, with a console warning. The Campaign tab's roster still lists it.
+
+## Still open
+
+- **The writing tabs through the inbox.** Payroll, the XP award, Heat and the Job Board can't reach another player's sheet. It's the planned next step, and the reason for the line those tabs show.
+- **A Table per campaign.** The GM document is one per browser, so Encounters, Payroll history and so on are shared across campaigns too.
+- **The next account on the same browser** sees the last account's Table rows, as it always has. A campaign's row carries a character name, a Discord name and a campaign id, no sheet, and is marked. The Table is one per browser, not per account.
+- **VIEW SHEET from the Table** comes back to the Campaign tab, not the Table.

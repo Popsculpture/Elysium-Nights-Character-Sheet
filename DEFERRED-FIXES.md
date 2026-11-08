@@ -12821,3 +12821,20 @@ snapshots, so a worktree can't be previewed there.
 nothing behind. The history had all four earlier migrations, so `db query` and a `migration repair` for this one kept it level, and all five now
 show under Remote. The real REST API, asked signed out, refused the table and every function, and the real Realtime service took the app's exact
 binding from the vendored client. That proves the handshake only: no signed-in account has heard a real row yet.
+
+### The Admin's Table reads the campaign, built 2026-11-08 on `campaigns-table`
+
+**What changed, and why.** The author, looking at the live Table: Pull in the crew listed the browser's whole roster, duplicates and all, with nothing saying whose a character was, and "even the admin should have to
+add their characters to their own campaign". `EN.campaigns.current()` and `EN.campaigns.crew(id)` read the campaign's characters, `EN.store.sheetCopy` strips them the way View sheet does, and `EN.gmEngine.crew()`, the one reader, answers from them.
+The build report has the rest.
+
+**Decisions, none of them in a spec.**
+
+1. A Table row for another player's character has the `charId` `row:<row id>`. `pruneCrew` keeps it, `writeCrew` refuses it, and it remembers `{campaign, name, player}` as text.
+2. The Admin's own character uses the local id when the sheet is on this device, so its writes still land. A row pulled under its row id takes the live id at the next draw.
+3. Rows are marked, never removed, when they aren't in the campaign. Deleting a row the Admin put there would look like the fix ate it.
+4. Headcount and Caliber are always the whole crew's. `crew({device:true})` narrows only `members`, to the sheets on this device. `far` counts the rest and `inCampaign` says the list came from a campaign. Neither Heat nor the Job Board widens an empty list to the roster when either is set.
+   **This reverses what the author was told before the build,** that these tabs would go on listing the browser's records. An independent review showed that paid the wrong people. The report says so.
+5. With no campaign (jacked out, offline, running none), everything is as it was, except that a `row:` row left on the Table stops the filed roster standing in for it.
+
+**Left open:** the writing tabs through the inbox, a Table per campaign, and the Table being per browser and not per account. VIEW SHEET from the Table comes back to the Campaign tab.

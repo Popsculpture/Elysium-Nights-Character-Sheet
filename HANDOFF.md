@@ -121,6 +121,10 @@ card.
   its members' rows, so any read of `characters` for "my characters" must filter on `owner_id`, as
   `pull()` in cloud.js does. `store.setViewing` holds another player's sheet in memory with
   `meta.viewing` set; `store.update` refuses every write while one is open.
+- The Admin's Table: `EN.campaigns.current()` is the campaign the desktop works on, `EN.campaigns.crew(id)` its characters (a 30 second cache, never in
+  the roster). A Table row with the `charId` `row:<row id>` is another player's character: `pruneCrew` keeps it, `writeCrew` refuses it, and anything reading
+  crew rows has to expect it. `EN.gmEngine.crew()` is still the one reader. Pass `{device:true}` from anything that writes to sheets: the numbers stay the whole
+  crew's and `members` holds only sheets on this device. Don't widen an empty list to the roster when `far` or `inCampaign` is set: that pays somebody's bank.
 - #POST from the Admin (batch 3) adds `character_inbox`, the courier. The same warning applies: a sender can
   read what they sent, so any read of it for "my mail" must ask by the account's own character ids, as
   `readRows()` in cloud.js does. A row becomes a message only through `EN.gmStore.deliverMail`, which writes

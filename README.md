@@ -168,6 +168,12 @@ link, the roster, who is blocked, and each player's sheet, read-only.
 
 ### #POST from the Admin
 
+While an account runs a campaign, the Admin desktop's crew is that campaign's characters. The Table's Pull in the crew and the crew reader
+list them, each with its player's name, and a bank of characters on the browser stays out, the Admin's own included until they go in from
+Manage characters. With more than one campaign to run, the Table has the Campaign tab's picker. Payroll, Heat, the Job Board and the XP award
+count the whole crew but can only write to sheets on this device, and say who they can't reach. Jacked out or offline, the desktop uses the
+browser's records as it always did.
+
 The Admin and co-Admins can send in-game mail from the Campaign tab, to one character or the whole crew,
 signed as an NPC card from the People tab or any typed name, with items from the gear catalog attached.
 A message can go alone, and so can a package. The list under the roster shows each of their sends as
