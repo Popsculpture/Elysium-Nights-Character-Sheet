@@ -354,9 +354,9 @@ EN.gmView = (function () {
      to change, so it offers View sheet where a local row offers Set active. If the sheet can't be read,
      the row still says who it remembers being, and can be taken off. */
   function campaignOf() { return EN.campaigns && EN.campaigns.current ? EN.campaigns.current() : null; }
-  function crewNote(row) {
+  function crewNote(row, known) {
     var C = campaignOf();
-    if (!C) return null;
+    if (!C) return gm.isCampaignRow && gm.isCampaignRow(row.charId) && !known ? "NO SHEET ON THIS DEVICE" : null;
     if (row.campaign && row.campaign !== C.id) return "OTHER CAMPAIGN";
     var state = EN.campaigns.crew(C.id);
     if (!state.rows || state.error) return null;     // can't say yet
@@ -375,7 +375,7 @@ EN.gmView = (function () {
     if (!d && !far) return null;
     var name = ch ? (ch.firstName || "") + " " + (ch.lastName || "") : (row.name || "");
     var player = (known && known.player) || row.player || "";
-    var note = crewNote(row);
+    var note = crewNote(row, known);
     return el("div.feature", { dataset: { gmRow: row.id }, style: { borderLeftColor: isNow ? "var(--accent)" : "var(--border2)",
                                         background: isNow ? "var(--sunk, rgba(255,255,255,.03))" : "transparent" } }, [
       el("div.row.between.wrap", { style: { alignItems: "center", gap: "8px" } }, [
@@ -386,7 +386,7 @@ EN.gmView = (function () {
           // who it belongs to: two players can both hire the same pre-made
           player ? el("span.gm-crew-player", { dataset: { gm: "player" }, text: player }) : null,
           el("span.chip", { style: { fontSize: "9.5px" }, text: "CREW" }),
-          note ? el("span.chip", { dataset: { gm: "crew-note" }, style: { fontSize: "9.5px", color: "var(--warn)", borderColor: "var(--warn)" }, text: note }) : null,
+          note ? el("span.chip.gm-crew-note", { dataset: { gm: "crew-note" }, text: note }) : null,
           actedChip(row),
           // a record with no class yet derives no Vitality, and "null Vitality" is worse than nothing
           d ? el("span.help", { text: "Caliber " + d.caliber + (typeof d.vitalityMax === "number" ? " · " + d.vitalityMax + " Vitality" : "") }) : null
@@ -2307,12 +2307,30 @@ EN.gmView = (function () {
     return out;
   }
 
+  /* A character pulled before its sheet reached this device has its row id. Once the sheet is here the
+     row is the live record, like any other of this account's, so Vigor and Set active work on it. */
+  function healCrew() {
+    if (!EN.campaigns || !EN.campaigns.crewRow || !gm.isCampaignRow) return;
+    var moves = [];
+    gm.get().encounter.entries.forEach(function (r) {
+      if (!r || r.kind !== "crew" || !gm.isCampaignRow(r.charId)) return;
+      var k = EN.campaigns.crewRow(r.charId);
+      if (k && k.charId !== r.charId) moves.push({ id: r.id, to: k.charId });
+    });
+    if (!moves.length) return;
+    gm.update(function (s) {
+      s.encounter.entries.forEach(function (r) {
+        moves.forEach(function (m) { if (r.id === m.id) r.charId = m.to; });
+      });
+    }, { silent: true });
+  }
   function renderTable(mount) {
     EN.ui.clear(mount);
     // the tracker is the only surface that draws a crew row, so it is the
     // only place a ghost from a character deleted since the last render
     // can appear
     gm.pruneCrew();
+    healCrew();
     // two rows sharing a name are numbered however they arrived (addThreat
     // numbers on the way in; this catches a row written by any other path)
     if (gm.numberThreats) gm.numberThreats();

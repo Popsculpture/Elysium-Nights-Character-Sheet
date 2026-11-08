@@ -126,9 +126,10 @@ EN.gmEngine = (function () {
        caliber    an override, used when it is a number; clamped to 1 to 5
 
      Returns { members: [{charId, name, caliber}], headcount, caliber, source, far,
-     overridden: {headcount, caliber} }. `source` is "table", "campaign", "roster" or
-     "none". `far` counts the rows on the Table this list can't reach: a campaign's
-     characters whose sheets aren't on this device (crewFarNote says so in words).
+     inCampaign, overridden: {headcount, caliber} }. `source` is "table", "campaign",
+     "roster" or "none". `far` counts the crew `members` leaves out because their
+     sheets aren't on this device (crewFarNote says so in words). `inCampaign` says
+     the list came from a campaign, so nothing may widen it to this browser's records.
      Caliber is ALWAYS a number from 1 to 5 so a budget never multiplies by
      nothing; with nobody found and no override it is 1 and source is "none",
      which a view should read as "no crew yet, ask the GM". A member whose
@@ -145,17 +146,22 @@ EN.gmEngine = (function () {
     if (!enc) { try { enc = EN.gmStore && EN.gmStore.get && EN.gmStore.get().encounter; } catch (e) { enc = null; } }
 
     /* A CAMPAIGN'S CREW. While this account runs a campaign, the crew is that campaign's characters
-       (js/campaigns.js), so a bank of characters on this browser stops counting. opts.device asks
-       for this browser's records regardless: Payroll, Heat and the XP award write to the sheets they
-       list, and they can only reach a sheet on this device until those writes go through the inbox. */
-    var C = !opts.device && EN.campaigns && EN.campaigns.current ? EN.campaigns.current() : null;
+       (js/campaigns.js), so a bank of characters on this browser stops counting anywhere, including
+       as somebody to pay. opts.device is for the tabs that write to sheets (Payroll, Heat, the Job
+       Board, the XP award): headcount and Caliber stay the whole crew's, so a share and a Grade come
+       out right, and members holds only the ones with a sheet on this device, the only ones a write
+       can reach until those writes go through the inbox. */
+    var local = roster, known = [], alias = Object.create(null);
+    var C = EN.campaigns && EN.campaigns.current ? EN.campaigns.current() : null;
     if (C) {
-      var known = EN.campaigns.crew(C.id).rows || [], pool = {};
-      known.forEach(function (r) { pool[r.charId] = r.ch; pool["row:" + r.rowId] = r.ch; });
+      var pool = {};
+      known = EN.campaigns.crew(C.id).rows || [];
+      known.forEach(function (r) { pool[r.charId] = r.ch; alias["row:" + r.rowId] = r.charId; });
       roster = pool;
     }
     var ids = [], seen = Object.create(null);
     function take(id) {
+      if (typeof id === "string" && alias[id]) id = alias[id];   // pulled before its sheet reached this device
       if (typeof id !== "string" || seen[id] || !own(roster, id)) return;
       seen[id] = true;
       ids.push(id);
@@ -167,9 +173,10 @@ EN.gmEngine = (function () {
       // still who is at the Table, so the records on this browser don't stand in for it: nothing gets
       // paid to or written on a character from somebody's bank because the real crew is out of reach.
       // Reading a campaign (C) is different: a row it can't find has left it, or is another campaign's.
+      // No campaign means offline or signed out: the row is still crew, with no sheet to read here.
       if (!C && typeof r.charId === "string" && r.charId.indexOf("row:") === 0 && !own(roster, r.charId)) far++;
     });
-    var source = (ids.length || far) ? "table" : "none";
+    var source = ids.length ? "table" : "none";
     if (!ids.length && !far) {
       if (C) known.forEach(function (r) { take(r.charId); });   // in a campaign is as good as filed: the player put it there
       else Object.keys(roster).forEach(function (k) {
@@ -186,6 +193,11 @@ EN.gmEngine = (function () {
     });
     var cals = members.filter(function (m) { return m.caliber !== null; }).map(function (m) { return m.caliber; });
     var avg = cals.length ? Math.round(cals.reduce(function (a, b) { return a + b; }, 0) / cals.length) : 1;
+    var everyone = members.length + far;
+    if (opts.device && C) {
+      members = members.filter(function (m) { return own(local, m.charId); });
+      far = everyone - members.length;
+    }
 
     var hcOver = Math.floor(Number(opts.headcount));
     var useHc = opts.headcount !== null && opts.headcount !== undefined && opts.headcount !== "" && isFinite(hcOver) && hcOver >= 1;
@@ -194,10 +206,11 @@ EN.gmEngine = (function () {
 
     return {
       members: members,
-      headcount: useHc ? hcOver : members.length,
+      headcount: useHc ? hcOver : everyone,
       caliber: Math.max(1, Math.min(5, useCal ? calOver : avg)),
       source: source,
       far: far,
+      inCampaign: !!C,
       overridden: { headcount: useHc, caliber: useCal }
     };
   }
@@ -205,8 +218,8 @@ EN.gmEngine = (function () {
   function crewFarNote(c) {
     var n = (c && c.far) | 0;
     if (!n) return "";
-    return n === 1 ? "1 of the crew on the Table has no sheet on this device, so nothing here reaches them yet."
-                   : n + " of the crew on the Table have no sheet on this device, so nothing here reaches them yet.";
+    return n === 1 ? "1 of the crew has no sheet on this device, so nothing here reaches them yet. The numbers count them."
+                   : n + " of the crew have no sheet on this device, so nothing here reaches them yet. The numbers count them.";
   }
 
   /* ---- THE BUDGET ----------------------------------------------------------

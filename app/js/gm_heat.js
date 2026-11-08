@@ -287,7 +287,7 @@ EN.gmHeat = (function () {
     var c = null;
     try { c = EN.gmEngine.crew({ device: true }); } catch (e) { c = null; }   // it writes to these sheets
     if (!c) c = { members: [], headcount: 0, caliber: 1, source: "none" };
-    if (!c.members.length && !c.far) {
+    if (!c.members.length && !c.far && !c.inCampaign) {
       var roster = rosterNow(), ms = [];
       Object.keys(roster).forEach(function (k) {
         var ch = roster[k];
@@ -307,6 +307,7 @@ EN.gmHeat = (function () {
   }
   function crewSays(c) {
     if (c.source === "table") return "the crew on the Table";
+    if (c.source === "campaign") return "the campaign's crew";
     if (c.source === "roster") return "the filed crew";
     if (c.source === "device") return "every record on this device (none is filed yet)";
     return "nobody yet";

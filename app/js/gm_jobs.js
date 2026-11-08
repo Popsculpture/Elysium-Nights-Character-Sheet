@@ -456,10 +456,11 @@ EN.gmJobs = (function () {
 
   /* ---- #POST ----------------------------------------------------------------
      The recipients are the crew (ruling D4). With no crew found, every record
-     on this device is offered, since a posting can go to anyone with an inbox. */
+     on this device is offered, since a posting can go to anyone with an inbox,
+     unless a campaign or the Table says who the crew is and they're out of reach. */
   function recipients() {
-    var m = crewNow().members || [];
-    if (m.length) return m;
+    var c = crewNow(), m = c.members || [];
+    if (m.length || c.far || c.inCampaign) return m;
     var roster = (EN.store.roster && EN.store.roster()) || {};
     return Object.keys(roster).map(function (k) {
       var ch = roster[k];

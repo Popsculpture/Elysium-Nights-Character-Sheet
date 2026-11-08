@@ -463,23 +463,26 @@ EN.campaigns = (function () {
       var who = {};
       (all[0] || []).forEach(function (m) { who[m.user_id] = m.discord_name || "Freelancer"; });
       var rows = (all[1] || []).map(function (r) {
-        var lid = r.owner_id === uid ? localFor(r.id) : null;
-        var ch = lid ? EN.store.roster()[lid] : EN.store.sheetCopy(r.data, r.id);
-        if (!ch) return null;
-        return { charId: lid || "row:" + r.id, rowId: r.id, ch: ch, name: sheetName(ch), player: who[r.owner_id] || "Freelancer" };
+        // somebody else's row: one that won't read costs that row, not the whole list
+        try {
+          var lid = r.owner_id === uid ? localFor(r.id) : null;
+          var ch = lid ? EN.store.roster()[lid] : EN.store.sheetCopy(r.data, r.id);
+          if (!ch) return null;
+          return { charId: lid || "row:" + r.id, rowId: r.id, ch: ch, name: sheetName(ch), player: who[r.owner_id] || "Freelancer" };
+        } catch (e) { console.warn("A campaign's sheet could not be read", r.id, e); return null; }
       }).filter(Boolean).sort(function (a, b) {
         return a.player < b.player ? -1 : a.player > b.player ? 1 : a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
       });
       // redraw for what a row or the picker shows, not for every save a player makes
       var sig = JSON.stringify(rows.map(function (r) { return [r.charId, r.name, r.player, shownOf(r.ch)]; }));
       var moved = !slot.rows || slot.error || slot.sig !== sig;
-      slot.loading = false; slot.error = false; slot.rows = rows; slot.sig = sig; slot.at = Date.now();
+      slot.loading = false; slot.error = false; slot.rows = rows; slot.sig = sig; slot.at = slot.stale ? 0 : Date.now();
       if (moved) repaintCrew();
-    }, function (e) {
+    }).catch(function (e) {
       if (crewCache[id] !== slot) return;
       console.warn("Could not read the campaign's crew", e);
       var first = !slot.error;
-      slot.loading = false; slot.error = true; slot.at = Date.now();
+      slot.loading = false; slot.error = true; slot.at = slot.stale ? 0 : Date.now();
       if (first) repaintCrew();
     });
     return slot;
@@ -508,7 +511,7 @@ EN.campaigns = (function () {
   }
   // something changed who is in a campaign: read again at the next draw, showing the old list until then
   function crewStale() {
-    Object.keys(crewCache).forEach(function (id) { crewCache[id].at = 0; });
+    Object.keys(crewCache).forEach(function (id) { crewCache[id].at = 0; crewCache[id].stale = true; });   // a read under way started too soon to count
   }
 
   /* ---- start ------------------------------------------------------------------- */

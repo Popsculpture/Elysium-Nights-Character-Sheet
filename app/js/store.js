@@ -2687,6 +2687,8 @@ EN.store = (function () {
   function sheetCopy(raw, rowId) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
     var ch = displayCopy(neuter(raw));
+    // displayCopy keeps what it couldn't migrate, and every reader joins these into a line
+    ["firstName", "lastName", "name"].forEach(function (k) { if (typeof ch[k] !== "string") ch[k] = ""; });
     if (!ch.meta || typeof ch.meta !== "object") ch.meta = {};
     delete ch.meta.example;
     ch.meta.id = "view_" + (rowId || "row");

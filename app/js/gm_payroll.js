@@ -695,6 +695,7 @@ EN.gmPayroll = (function () {
     // the crew
     var src = c.fromEncounter ? "the crew rows of the encounter being paid"
       : c.source === "table" ? "the crew on the Table"
+      : c.source === "campaign" ? "the campaign's crew"
       : c.source === "roster" ? "the filed roster" : null;
     kids.push(el("div", { style: { height: "10px" } }));
     kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "baseline" } }, [
