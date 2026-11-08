@@ -74,20 +74,20 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
 - Also check for stray control characters: `grep -rlP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]"`,
   same exclusions. A literal backspace once hid inside a regex for a whole session and
   silently disabled the `?dev` bypass; `cat -A` is the only thing that finds it.
-- Load the app with `?dev` to skip the sign-on gate, and add a cache-buster
+- Load the app with `?dev` to skip the login card, and add a cache-buster
   (`?dev&cb=x`). Open `app/index.html` directly, not the repo-root `index.html`, which is
-  a redirect stub that races a meta refresh against a JS redirect. Gate password is in
-  `app/js/gate.js` if you need it.
-- The gate has two profiles, and the one you enter as is the desktop you land on.
-  `?dev` skips the Freelancer login; `?dev&portal=admin` skips the Admin one and lands on
-  Admin/Table. Each profile keeps its own unlock flag (`en_gate_ok_v1`, `en_gate_admin_ok_v1`)
-  and the desktop is remembered in `en_portal_v1`, so the gate only paints for a profile that
-  has not been unlocked on this device, or from the settings tray's "SWITCH USER". The Admin
-  passphrase is `CONFIG.adminPassword` in `app/js/gate.js`, beside the Freelancer code.
-- To get the login screen back for testing: `?login` forces the gate to paint even though the
-  profile is unlocked (`?login&portal=admin` for the Admin card), and clears nothing. The
-  settings tray's "SIGN OUT" is the in-app route: it forgets BOTH profiles' unlocks and reopens
-  the current profile's login card.
+  a redirect stub that races a meta refresh against a JS redirect. There are no codes any more
+  (campaigns batch 1, 8 Nov 2- The login card (`app/js/gate.js`, since campaigns batch 1 on 8 Nov 2026) offers Jack in with
+  Discord and Run offline, and does not choose the desktop: `require(land)` answers with no profile,
+  so the app opens on the remembered desktop (`en_portal_v1`, Freelancer on a first landing). The
+  card shows until the device has a stored Discord session or picked Run offline (`en_login_v1`);
+  the old `en_gate_ok_v1` and `en_gate_admin_ok_v1` are ignored. `?dev` skips it (and records the
+  offline pick), `?dev&portal=admin` lands on Admin, `?login` forces the card and clears nothing.
+  Gizmo greets a device once (`en_gizmo_hello_v1`). gate.js must stay: `js/tour.js` draws Gizmo
+  from `EN.gate.gizmoSvg`, and `clipSvg()` is finished art that comes through byte for byte. The
+  test suite's harness seeds a stored session unless a test says `@no-pack`, so a test of the card
+  needs that marker.
+card.
 - Each skin remembers the palette it last wore, in `en_skin_theme_v1`, a map keyed
   `<desktop>:<skin>` (`freelancer:98`, `admin:classic`, ...). Switching skins applies that skin's
   palette THROUGH `set()`, so it lands on the active Freelancer's record and rides their export,

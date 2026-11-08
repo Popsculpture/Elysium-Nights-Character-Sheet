@@ -12476,3 +12476,82 @@ theme, headers otherwise unchanged. Fresh tab, no console errors.
   `docs.google.com`, so only Part 1 is on disk (`ms/part1.md`). Targeted extracts of
   the changed passages are at `ms/targeted-2026-08-04.md`. Unblock by allowing
   automatic downloads for that origin.
+
+## Campaigns
+
+The author's spec comes in three batches (plan: "Elysium Nights: Campaigns and Characters Plan",
+https://claude.ai/artifact/TK9NmqNegwkVcJgCyZXorq). Each batch is built on its own branch and merged
+only on the author's sign-off. `CAMPAIGNS-BUILD-REPORT.md` on each branch is the build report.
+
+### Batch 1, one login and Gizmo, built 2026-11-08 on `campaigns-batch-1`
+
+**What changed.** `app/js/gate.js` keeps its name, its place in `index.html`, `clipSvg()` and the
+`gizmoSvg` export, and everything else in it was rebuilt. The Freelancer and Admin code cards, both
+codes, the `// maintenance` bypass, the profile picker, Switch user, Sign out, the Codebreaker
+hijack and the #GRID Guardian lockdown are gone. One card offers JACK IN WITH DISCORD and a quieter
+RUN OFFLINE. `settings.js` lost its Switch user and Sign out buttons, so `// WORKSPACE` shows the
+plain FREELANCER and ADMIN buttons for everyone. Gizmo greets a device once and blinks.
+
+**Readings taken where the spec left room, smallest first:**
+
+- **Run offline opens the remembered desktop, not always Freelancer.** Section 3 says Run offline
+  goes to "the Freelancer desktop"; section 2 says the gate answers with no profile and `land()`
+  falls back to the remembered portal. On a fresh device those agree (Freelancer). On a device that
+  last used Admin (the author's), Run offline opens Admin. Section 2 is the rule; section 3 describes
+  the fresh device. Saying `"freelancer"` there instead is one word in `runOffline()`.
+- **`?portal=admin` still lands on Admin for one load.** The spec drops the gate's choice of desktop,
+  but this query is a testing switch and the suite's default query is `?dev&portal=admin`: dropping it
+  would quietly move most of ~500 runs onto the Freelancer desktop.
+- **`?dev` keeps its habits.** It lands on Freelancer on #PRINT unless `?portal=admin`, as before, and
+  it writes `en_login_v1 = "offline"` the way the old bypass wrote its unlock flag, so a reload
+  without the query stays open.
+- **"Already jacked in" is read synchronously.** `getSession()` is asynchronous and the boot should
+  not wait on the network, so the card asks for the vendored client's stored session the way
+  `js/packs.js` does (`EN.packs.storedSession()`). A stored session counts even when the network
+  cannot refresh it. A load carrying `?code=` is the redirect back from Discord, whose code exchange
+  can still be in flight when the boot ends, so it skips the card too.
+- **Jacking out brings the card back without cloud.js knowing about the gate.** A boot that finds a
+  stored session clears `en_login_v1`, so a device that picked Run offline, later jacked in from
+  Settings (which always reloads through Discord) and then jacked out, sees the card again.
+- **The greeting is recorded as Gizmo arrives**, not when he finishes, so a reload mid-greeting does
+  not repeat him. His two answers advance the scene; any other click, or Escape, skips to the action.
+- **Where he stands.** Beside the card at 900 px and wider, under it below that and always on
+  #GRIDroid. Both '98 (`overflow:hidden`) and #GRIDroid (`clip-path`) clip the card, so he lives in a
+  new `.gate-stage` wrapper beside it, not inside it.
+- **What was reused and what is new.** The bubble's markup and CSS (`.gate-clip`, `.gate-bubble` and
+  its `::after`, `.k`, `.t`, the typing cursor, `.gate-clipsvg`, `gate-clipwob`) are byte for byte.
+  New: his two answer buttons, a "click anywhere to skip" line, the stage, and Run offline's style.
+  The patch log and bar reuse the old hijack's terminal styles, recoloured from the Codebreaker's pink
+  to Gizmo's green. `scramble()` went with the Guardian.
+- **The blink keyframes live in gate.js**, injected when the file loads rather than with the card's
+  styles, so the tour has them on a device that never sees the card. tour.js only gained rules: its
+  existing reduced-motion line gained a trailing comma because a line now follows it in the array,
+  and its content is unchanged.
+- **Blink numbers.** A 10 s cycle: the first blink at 6.0 s and the second at 7.62 s, each 120 ms (60 ms
+  shut, 60 ms open), the glance held 1.5 s between them. The gaze swaps in 0.01% of the cycle (1 ms) at
+  the bottom of the blink. Measured in the browser: the pupils only ever sit at rest or at the
+  glance, never in between.
+- **A Jack in that never leaves the page.** If the page is still there 4 s after the sign-in request
+  settles, Discord could not be reached (cloud.js toasts it); Gizmo steps away and the buttons come back
+  with COULD NOT REACH DISCORD.
+- **The cog note** now fires only after Run offline (Jack in leaves the page) and says Running offline.
+- **'98's full-width buttons ran into the card's right edge**: that skin gives every card child 22 px
+  side margins, and `width:100%` overflowed by 44 px. It was true of the old AUTHENTICATE button too.
+  Fixed for the new buttons. theme.css rules for the retired classes (code field, switch row, picker,
+  maintenance link, the Admin card's title bar, the hijack background) were removed with them.
+- **The old flags** `en_gate_ok_v1` and `en_gate_admin_ok_v1` are never read or written, and never
+  deleted.
+
+**Still open, deliberately:**
+
+- **Gizmo's sway on the login card ignores reduced motion**, as it always has (`gate-clipwob` has no
+  reduced-motion rule; the tour's sway does). The spec asked only for the blink there; one line fixes it.
+- **The real Discord round trip** (card, Gizmo, Discord, back to the app with no card) needs the
+  hosted app: localhost is not on the redirect allow list. Waiting for the author on the live site.
+- **The lines are a draft** and the author may rewrite them (`LINES` and `PATCH` in gate.js).
+- **On '98 the startup screen briefly overlays the card** while it fades out. Seen once while testing
+  and not investigated; the card's timing is the old gate's.
+
+**Tests.** A new chain in the suite, `campaigns_login` (three steps, run with no `?dev`). The harness
+seeds a stored session unless a test says `@no-pack`, and the first run of the chain proved the
+card steps aside for a jacked-in device before the marker was added.
