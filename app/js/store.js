@@ -9,6 +9,7 @@ EN.store = (function () {
   var KEY_ROSTER = "en_roster_v1";       // {id: character}
   var KEY_ACTIVE = "en_active_id_v1";   // the character last used anywhere: where a new tab opens
   var KEY_TAB_ACTIVE = "en_active_id_tab_v1";   // sessionStorage: the character this tab is on, across a reload
+  var KEY_GONE = "en_roster_gone_v1";   // {id: when}: characters deleted through the app, so another tab can tell a delete from a miss
   /* RECORD SAFETY (A4, 28 October 2026 handoff: two filed records vanished between sessions).
      KEY_SETASIDE holds any record that could not be loaded, exactly as it was stored, so a
      failed load never costs the record: it is no longer in the roster, so the next persist used
@@ -2441,6 +2442,9 @@ EN.store = (function () {
          under KEY_SETASIDE at once, so the persist that follows cannot take it with it. */
       var failed = [];
       locked = {};
+      // deleted, then written back by a tab that hadn't heard, and the tabs closed before anyone wrote again
+      var goneNow = readGone();
+      Object.keys(goneNow).forEach(function (id) { delete state.roster[id]; });
       Object.keys(state.roster).forEach(function (id) {
         // a record that needs a pack this device has not loaded is locked, never migrated
         var rec = state.roster[id];
@@ -2470,6 +2474,7 @@ EN.store = (function () {
       seen = {}; lastText = rawText;
     }
     firstLoad = false;
+    noteTabActive();   // a tab that never saves still has a character of its own
     checkBackup();
     return state;
   }
@@ -2525,6 +2530,7 @@ EN.store = (function () {
     if (!needs) { try { migrate(ch); } catch (e) { return { ok: false, error: String(e && e.message || e) }; } }
     ch.meta = ch.meta || {};
     if (!ch.meta.id || state.roster[ch.meta.id]) ch.meta.id = state.roster[id] ? uid() : id;
+    clearGone(ch.meta.id);
     state.roster[ch.meta.id] = needs ? lockRecord(ch.meta.id, ch) : ch;
     if (from === "aside") { delete safety.setAside[id]; writeJson(KEY_SETASIDE, safety.setAside); }
     else safety.missing = safety.missing.filter(function (x) { return x !== id; });
@@ -2558,13 +2564,21 @@ EN.store = (function () {
        changed only here         keep it
        changed on both           merge key by key; where both changed the same thing, the newer save wins
        deleted elsewhere         gone here too, even over an edit: deleting is the more deliberate act
-     Clocks only settle that one tie. Taking a record in writes nothing, so two tabs can't set each other off.
-     An array counts as one thing: two tabs on ONE character changing the same list inside a moment of each
-     other still lose one change. Two tabs on two characters never touch each other.
+     Taking a record in writes nothing, so two tabs can't set each other off.
+
+     STORAGE ISN'T ATOMIC ACROSS TABS. Reading it and writing it are two steps, and a change takes a moment to reach
+     another process, so a tab can write a roster it read just before someone else's save. What that write says about
+     the other tab's records is old news, not a change, and two rules keep it from counting as one:
+       missing isn't deleted     a delete is written down first (KEY_GONE). Missing with no note means this tab's
+                                 copy goes back in. Taking "missing" at its word would lose a character just made.
+       older isn't changed       a stamp only ever moves forward on this device (nextStamp, pulledStamp), so a copy
+                                 older than the one last seen in storage is old news, and this tab's goes back in.
+     What's left is two tabs on ONE character, editing inside the same few milliseconds, or changing the same list
+     (an array counts as one thing) inside a moment: one change loses. Two tabs on two characters can't touch each other.
 
      Each tab keeps its own character too (KEY_TAB_ACTIVE), across a reload. Otherwise a reload
      would come back on whichever character the other tab saved last. */
-  var seen = {};          // id -> { stored: its JSON in storage, mine: its JSON in this tab }, at the last look
+  var seen = {};          // id -> { stored: its JSON in storage, at: that copy's stamp, mine: its JSON in this tab }, at the last look
   var lastText = null;    // the roster's text in storage at the last look
   var firstLoad = true;
   function tabActive() { try { return sessionStorage.getItem(KEY_TAB_ACTIVE) || null; } catch (e) { return null; } }
@@ -2573,12 +2587,25 @@ EN.store = (function () {
   function tabPlain(v) { return !!v && typeof v === "object" && !Array.isArray(v); }
   function tabSame(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
   function serialOf(id) { return locked[id] ? locked[id].raw : state.roster[id]; }
+  function stampOf(rec) { return tabPlain(rec) && tabPlain(rec.meta) ? (Number(rec.meta.updatedAt) || 0) : 0; }
+  var GONE_KEEP = 7 * 86400000;
+  function readGone() {
+    var g = readJson(KEY_GONE, {}), out = {}, now = Date.now();
+    Object.keys(g).forEach(function (id) { if (now - Number(g[id]) < GONE_KEEP) out[id] = g[id]; });
+    return out;
+  }
+  function noteGone(id) { var g = readGone(); g[id] = Date.now(); writeJson(KEY_GONE, g); }
+  // the same id is back on purpose: pulled, restored
+  function clearGone(id) {
+    var g = readJson(KEY_GONE, {});
+    if (tabHas(g, id)) { delete g[id]; writeJson(KEY_GONE, g); }
+  }
   function noteLoaded(text) {
     var raw = {};
     try { raw = JSON.parse(text || "{}") || {}; } catch (e) { raw = {}; }
     seen = {};
     Object.keys(raw).forEach(function (id) {
-      seen[id] = { stored: JSON.stringify(raw[id]), mine: tabHas(state.roster, id) ? JSON.stringify(serialOf(id)) : null };
+      seen[id] = { stored: JSON.stringify(raw[id]), at: stampOf(raw[id]), mine: tabHas(state.roster, id) ? JSON.stringify(serialOf(id)) : null };
     });
     lastText = text;
   }
@@ -2631,15 +2658,15 @@ EN.store = (function () {
     var theirs;
     try { theirs = JSON.parse(text || "{}"); } catch (e) { return null; }   // unreadable: the next load sets it aside whole
     if (!tabPlain(theirs)) return null;
-    var res = { active: false, members: false, merged: false }, ids = {};
+    var res = { active: false, members: false, merged: false }, ids = {}, goneNow = readGone();
     [state.roster, theirs, seen].forEach(function (o) { Object.keys(o).forEach(function (k) { ids[k] = 1; }); });
     Object.keys(ids).forEach(function (id) {
       var was = tabHas(seen, id) ? seen[id] : null;
       var theirText = tabHas(theirs, id) ? JSON.stringify(theirs[id]) : null;
-      if (theirText === (was ? was.stored : null)) return;   // nothing new from elsewhere
       var live = tabHas(state.roster, id) ? state.roster[id] : null;
-      if (theirText === null) {
+      if (tabHas(goneNow, id)) {
         delete seen[id];
+        if (theirText !== null && !live) res.merged = true;   // still in storage: a slow tab wrote it back, and this write takes it out
         if (!live) return;
         delete state.roster[id];
         delete locked[id];
@@ -2647,7 +2674,21 @@ EN.store = (function () {
         if (state.activeId === id) { state.activeId = Object.keys(state.roster)[0] || null; res.active = true; }
         return;
       }
-      if (was && !live) { seen[id] = { stored: theirText, mine: null }; return; }   // gone from this tab already: it stays gone
+      if (theirText === (was ? was.stored : null)) return;   // nothing new from elsewhere
+      if (theirText === null) {
+        // missing, and nobody deleted it: a tab that hadn't heard of it wrote over it, and this tab's copy goes back in
+        if (!live) { delete seen[id]; return; }
+        seen[id] = { stored: null, at: 0, mine: was ? was.mine : null };
+        res.merged = true;
+        return;
+      }
+      if (was && !live) { seen[id] = { stored: theirText, at: stampOf(theirs[id]), mine: null }; return; }   // gone from this tab already: it stays gone
+      // older than what storage last held: old news from a tab that hadn't heard, not a change. This tab's goes back in
+      if (live && was && !locked[id] && stampOf(theirs[id]) < was.at) {
+        seen[id] = { stored: theirText, at: stampOf(theirs[id]), mine: was.mine };
+        res.merged = true;
+        return;
+      }
       var mineText = live ? JSON.stringify(serialOf(id)) : null;
       var hereMoved = !!live && !locked[id] && (!was || mineText !== was.mine);
       if (hereMoved && tabPlain(theirs[id])) {
@@ -2656,12 +2697,12 @@ EN.store = (function () {
         if (!merged.meta || typeof merged.meta !== "object") merged.meta = {};
         merged.meta.updatedAt = Math.max(sm, st) + 1;   // neither copy holds this: it has to read as new, here, there and to the account
         restoreInPlace(live, merged);
-        seen[id] = { stored: theirText, mine: theirText };   // the last thing the two tabs agreed on
+        seen[id] = { stored: theirText, at: st, mine: theirText };   // the last thing the two tabs agreed on
         res.merged = true;
       } else {
         if (!live) res.members = true;
         takeStored(id, theirs[id]);
-        seen[id] = { stored: theirText, mine: tabHas(state.roster, id) ? JSON.stringify(serialOf(id)) : null };
+        seen[id] = { stored: theirText, at: stampOf(theirs[id]), mine: tabHas(state.roster, id) ? JSON.stringify(serialOf(id)) : null };
       }
       if (id === state.activeId) res.active = true;
     });
@@ -2674,7 +2715,8 @@ EN.store = (function () {
     if (res.merged && !savePending) persist(false);
     if (res.active || res.members) emit();
   }
-  function syncTabs() { tabsMoved(tabSync()); }
+  // the look js/cloud.js takes before it trusts the book. An edit still in the debounce goes first, so a save is always in storage before the note of it
+  function syncTabs() { if (savePending) persist(true); else tabsMoved(tabSync()); }
   try {
     window.addEventListener("storage", function (e) {
       if (!firstLoad && (e.key === KEY_ROSTER || e.key === null)) syncTabs();
@@ -2719,7 +2761,7 @@ EN.store = (function () {
       }
       if (ok) {
         seen = {};
-        Object.keys(parts).forEach(function (id) { seen[id] = { stored: parts[id], mine: parts[id] }; });
+        Object.keys(parts).forEach(function (id) { seen[id] = { stored: parts[id], at: stampOf(serial[id]), mine: parts[id] }; });
         lastText = text;
       }
       noteTabActive();
@@ -2884,6 +2926,7 @@ EN.store = (function () {
   function onRemove(fn) { removeWatchers.push(fn); return function () { removeWatchers = removeWatchers.filter(function (f) { return f !== fn; }); }; }
   function remove(id) {
     var had = Object.prototype.hasOwnProperty.call(state.roster, id);
+    if (had) noteGone(id);   // ahead of the roster's write, so a tab that sees the record missing can see why
     delete state.roster[id];
     delete locked[id];
     dropFromBackup(id);   // deleted through the app, so it is not "missing" on the next load
@@ -2895,8 +2938,15 @@ EN.store = (function () {
      making it active. js/cloud.js uses it for a character pulled from the player's account. The
      record is migrated like an import, and keeps the updatedAt it arrived with, so the pull does
      not read as a fresh local edit. Answers whether the write landed. */
+  /* A pulled copy's stamp. Not ahead of this device's clock, or a device whose clock runs fast would leave a stamp here
+     that every edit keeps climbing from, and never behind the copy it replaces, or another tab would read it as old news. */
+  function pulledStamp(at, had) {
+    var s = Math.min(Number(at) || 0, Date.now()), prev = had && typeof had === "object" ? stampOf(had) : 0;
+    return prev >= s ? prev + 1 : s;
+  }
   function putRecord(id, obj) {
     if (typeof id !== "string" || !id || !obj || typeof obj !== "object") return false;
+    clearGone(id);
     // a pulled record this device cannot read in full is stored exactly as it arrived (locked)
     if (packsMissing(obj).length) {
       if (!obj.meta || typeof obj.meta !== "object") obj.meta = {};
@@ -2914,8 +2964,8 @@ EN.store = (function () {
     delete obj.meta.example;
     obj.meta.id = id;
     migrate(obj);
-    if (at !== undefined) obj.meta.updatedAt = at;
     var had = state.roster[id];
+    if (at !== undefined) obj.meta.updatedAt = pulledStamp(at, had);
     if (had && typeof had === "object") restoreInPlace(had, obj);   // anything holding the live record keeps it
     else state.roster[id] = obj;
     if (!state.activeId && !state.example) state.activeId = id;
@@ -2965,6 +3015,8 @@ EN.store = (function () {
     Object.keys(snap).forEach(function (k) { target[k] = snap[k]; });
   }
   function updateById(id, mutator, opts) {
+    // first, so a refused write rolls back to the record with other tabs' saves in it, not to before them
+    tabsMoved(tabSync());
     if (typeof id !== "string" || !Object.prototype.hasOwnProperty.call(state.roster, id)) return false;
     if (isLocked(id)) return false;   // read-only until its pack loads
     var ch = state.roster[id];

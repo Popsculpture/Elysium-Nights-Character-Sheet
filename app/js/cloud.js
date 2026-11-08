@@ -133,6 +133,28 @@ EN.cloud = (function () {
   function hearTabs() { var s = store(); if (s && s.syncTabs) s.syncTabs(); }
   /* Behind what this browser last synced: a copy no tab should keep or send. An edit always moves a stamp forward. */
   function behind(ch, L) { return Number(stamp(ch)) < Number(L.lat); }
+  /* ONE RUN AT A TIME, ACROSS TABS. Tabs share one link book, and a run reads it, waits on the network, and acts on what it
+     read. Side by side, two runs both pull a new row and make two characters of it, both see a new record as unlinked and
+     insert two rows, or one takes the other's new row for deleted elsewhere. The browser's lock makes them take turns.
+     A tab that can't have the lock (file://, an old browser), or has waited too long for a stuck one, runs anyway,
+     as every tab did before. */
+  var LOCK_WAIT = 20000;
+  function oneAtATime(fn) {
+    var L = null;
+    try { L = navigator.locks; } catch (e) {}
+    if (!L || typeof L.request !== "function") return Promise.resolve().then(fn);
+    var started = false, ctl = typeof AbortController === "function" ? new AbortController() : null, t = null;
+    if (ctl) t = setTimeout(function () { ctl.abort(); }, LOCK_WAIT);
+    return L.request("en_cloud_sync", ctl ? { signal: ctl.signal } : {}, function () {
+      started = true;
+      clearTimeout(t);
+      return fn();
+    }).then(null, function (e) {
+      clearTimeout(t);
+      if (started) throw e;
+      return fn();
+    });
+  }
   function eligible(id, b) {
     var ch = roster()[id];
     if (!ch || typeof ch !== "object" || (ch.meta && (ch.meta.example || ch.meta.viewing))) return false;
@@ -157,22 +179,26 @@ EN.cloud = (function () {
   function sync(opts) {
     if (!client || !user || offline) return Promise.resolve();
     if (runP) { again = (again === "pull" || (opts && opts.pull)) ? "pull" : true; return runP; }
-    hearTabs();
     setStatus("syncing");
     var wantPull = !!(opts && opts.pull), pulled = false;
-    runP = (wantPull ? pull().then(function () { pulled = true; }) : Promise.resolve())
-      .then(deletes)
-      .then(push)
-      .then(function () { setStatus("ok"); },
-            function (e) { console.warn("Cloud sync failed", e); setStatus("error"); })
-      // beside the sync, never inside it: a failure over there costs the campaign list and nothing else
-      .then(function () { if (wantPull && EN.campaigns && EN.campaigns.refresh) EN.campaigns.refresh(); })
-      // after it, inside the run: a pull landing halfway through filing a message would lose the message
-      .then(function () { return inbox(pulled, wantPull); })
-      .then(function () {
-        runP = null;
-        if (again) { var p = again === "pull"; again = false; return sync({ pull: p }); }
-      });
+    function finish() {
+      runP = null;
+      if (again) { var p = again === "pull"; again = false; return sync({ pull: p }); }
+    }
+    runP = oneAtATime(function () {
+      // the wait for the lock can outlast the session
+      if (!client || !user || offline) return;
+      hearTabs();
+      return (wantPull ? pull().then(function () { pulled = true; }) : Promise.resolve())
+        .then(deletes)
+        .then(push)
+        .then(function () { setStatus("ok"); },
+              function (e) { console.warn("Cloud sync failed", e); setStatus("error"); })
+        // beside the sync, never inside it: a failure over there costs the campaign list and nothing else
+        .then(function () { if (wantPull && EN.campaigns && EN.campaigns.refresh) EN.campaigns.refresh(); })
+        // after it, inside the run: a pull landing halfway through filing a message would lose the message
+        .then(function () { return inbox(pulled, wantPull); });
+    }).then(finish, function (e) { console.warn("Cloud sync failed", e); setStatus("error"); return finish(); });
     return runP;
   }
   function check(res) {
@@ -182,7 +208,7 @@ EN.cloud = (function () {
 
   // bring down what this browser has not seen, and what changed elsewhere
   function pull() {
-    var uid = user.id;
+    var uid = user.id, linksBefore = book().links;
     lastPull = Date.now();
     // this account's own rows, by name: the Admin of a campaign can read its members' rows too (see the note above)
     return client.from("characters").select("id, name, updated_at").eq("owner_id", uid).order("updated_at", { ascending: false })
@@ -198,7 +224,8 @@ EN.cloud = (function () {
         // a row gone from the account (deleted on another device): the local copy stays, local only
         Object.keys(b.links).forEach(function (lid) {
           var L = b.links[lid];
-          if (!seen[L.cid] && b.pendingDel.indexOf(L.cid) === -1) { delete b.links[lid]; delete b.filing[lid]; b.localOnly[lid] = 1; }
+          // only a link older than this list can be missing from it: a tab may have just made one
+          if (linksBefore[lid] && linksBefore[lid].cid === L.cid && !seen[L.cid] && b.pendingDel.indexOf(L.cid) === -1) { delete b.links[lid]; delete b.filing[lid]; b.localOnly[lid] = 1; }
         });
         var wanted = [];
         rows.forEach(function (r) {
@@ -211,7 +238,7 @@ EN.cloud = (function () {
           if (r.updated_at === L.at && !old) return;
           var dirty = stamp(ch) !== L.lat;
           // ahead by mail alone, the row always wins: see THE COPY MAY ONLY BE AHEAD BY THE MAIL
-          if (old || !dirty || aheadByMail(lid, b) || Date.parse(r.updated_at) > Number(stamp(ch) || 0)) wanted.push({ row: r, lid: lid });
+          if (old || !dirty || aheadByMail(lid, b) || Date.parse(r.updated_at) > Number(stamp(ch) || 0)) wanted.push({ row: r, lid: lid, at: stamp(ch) });
         });
         saveBook(b);
         // fetch the wanted rows one by one, so one bad row cannot stop the rest
@@ -223,8 +250,15 @@ EN.cloud = (function () {
                 var data = full.data && typeof full.data === "object" ? full.data : null;
                 if (!data) return;
                 var b2 = book();
+                hearTabs();
                 var lid = w.lid;
+                if (lid) {
+                  // it moved during the fetch: an edit or a delete, in this tab or another. That's newer than this decision
+                  var nowCh = roster()[lid];
+                  if (!nowCh || stamp(nowCh) !== w.at) return;
+                }
                 if (!lid) {
+                  if (linkedTo(b2, full.id)) return;   // another tab took this new row while it was fetched
                   var want = data.meta && typeof data.meta.id === "string" ? data.meta.id : "";
                   lid = want && !roster()[want] && !b2.links[want] ? want : freshId();
                 }
@@ -378,6 +412,8 @@ EN.cloud = (function () {
      which of this account's delivered rows its records don't list, and files those the ordinary way, safe behind the
      rules above. A message the player deleted is still listed in meta.inboxApplied, so it stays deleted, unless the
      copy that was saved over the sheet predates it. A package taken is `taken`, not delivered, so it can't come twice.
+     It looks at the newest LOST_LOOK rows only, and files LOST_FILE a run: a message with no package stays delivered
+     for good, and one read shouldn't grow with them.
 
      IT FAILS QUIETLY. No table, no Realtime, no network: the mail waits, the character sync never
      hears about it, and one warning goes to the console. */
@@ -406,6 +442,7 @@ EN.cloud = (function () {
     return isNaN(t.getTime()) ? "" : pad2(t.getHours()) + ":" + pad2(t.getMinutes()) + ", " + DAYS[t.getDay()];
   }
   var SELECT_ROW = "id, character_id, mail, status, created_at";
+  var LOST_LOOK = 100, LOST_FILE = 20;
   function unmarked(b) { return Array.isArray(b.unmarked) ? b.unmarked : []; }
   function setUnmarked(rowId, on) {
     var b = book(), list = unmarked(b).filter(function (x) { return x !== rowId; });
@@ -424,7 +461,7 @@ EN.cloud = (function () {
         ask.length ? client.from("character_inbox").select(SELECT_ROW).in("id", ask).in("character_id", cids).neq("status", "recalled").then(check) : [],
         open.length ? client.from("character_inbox").select(SELECT_ROW).in("id", open).then(check) : [],
         // LOST MAIL COMES BACK. Its own failure costs only this: the rest of the read still stands
-        pulled ? client.from("character_inbox").select("id, character_id").eq("status", "delivered").in("character_id", cids).then(check).then(null, function (e) { inboxWarn(e); return []; }) : []
+        pulled ? client.from("character_inbox").select("id, character_id").eq("status", "delivered").in("character_id", cids).order("created_at", { ascending: false }).limit(LOST_LOOK).then(check).then(null, function (e) { inboxWarn(e); return []; }) : []
       ]);
     }).then(function (all) {
       // a row this device was still waiting to hear about that is simply gone went with its campaign
@@ -432,10 +469,11 @@ EN.cloud = (function () {
       open.forEach(function (id) { if (there.indexOf(id) === -1) setUnmarked(id, false); });
       var seen = {}, rows = [];
       (all[0] || []).concat(all[1] || [], all[2] || []).forEach(function (r) { if (!seen[r.id]) { seen[r.id] = 1; rows.push(r); } });
+      var bookNow = book();
       var lost = (all[3] || []).filter(function (r) {
-        var lid = linkedTo(book(), r.character_id), ch = lid ? roster()[lid] : null;
+        var lid = linkedTo(bookNow, r.character_id), ch = lid ? roster()[lid] : null;
         return !seen[r.id] && !!ch && !filed(ch, r.id);
-      }).map(function (r) { return r.id; });
+      }).map(function (r) { return r.id; }).slice(0, LOST_FILE);
       if (!lost.length) return rows;
       return client.from("character_inbox").select(SELECT_ROW).in("id", lost).then(check).then(function (more) {
         return rows.concat(more || []);
@@ -457,7 +495,9 @@ EN.cloud = (function () {
   }
   // a write only the courier made: a copy that was ahead by mail alone, or level, still is afterwards
   function courierWrite(lid, write) {
-    var b = book(), quiet = isClean(lid, b) || aheadByMail(lid, b);
+    var b = book();
+    hearTabs();
+    var quiet = isClean(lid, b) || aheadByMail(lid, b);
     var done = write();
     if (done && quiet) { b = book(); b.filing[lid] = stamp(roster()[lid]); saveBook(b); }
     return done;
@@ -474,8 +514,9 @@ EN.cloud = (function () {
         return;
       }
       var mail = r.mail || {};
+      var b = book();
+      hearTabs();
       if (!filed(roster()[lid], r.id)) {
-        var b = book();
         if (!isClean(lid, b) && !aheadByMail(lid, b)) return;   // real edits have not gone up: this row waits for them
         var landed = courierWrite(lid, function () {
           return EN.gmStore && EN.gmStore.deliverMail(lid, r.id, { from: mail.from, subj: mail.subj, body: mail.body, package: mail.package, when: whenOf(r.created_at) });
