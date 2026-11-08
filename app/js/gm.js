@@ -360,7 +360,7 @@ EN.gmView = (function () {
     if (row.campaign && row.campaign !== C.id) return "OTHER CAMPAIGN";
     var state = EN.campaigns.crew(C.id);
     if (!state.rows || state.error) return null;     // can't say yet
-    var here = state.rows.some(function (r) { return r.charId === row.charId || "row:" + r.rowId === row.charId; });
+    var here = state.rows.some(function (r) { return r.charId === row.charId; });
     if (here) return null;
     return row.campaign ? "NO LONGER IN THIS CAMPAIGN" : "NOT IN THIS CAMPAIGN";
   }
@@ -1171,7 +1171,7 @@ EN.gmView = (function () {
       out.push(el("p.help", { dataset: { gm: "crew-state" }, text: "Nobody has a character in " + c.name + " yet. Players pick it in Manage characters, and your own characters go in the same way." }));
       return out;
     }
-    var open = state.rows.filter(function (r) { return !already[r.charId] && !already["row:" + r.rowId]; });
+    var open = state.rows.filter(function (r) { return !already[r.charId]; });
     if (open.length) out.push(el("div.row.wrap", { style: { gap: "6px" } }, open.map(function (r) {
       var d;
       try { d = eng.derive(r.ch); } catch (e) { return null; }
