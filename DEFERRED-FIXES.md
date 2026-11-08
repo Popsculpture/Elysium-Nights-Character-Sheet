@@ -12683,7 +12683,7 @@ its Postgres 17.11, and the rollback left nothing behind.
 
 ### Batch 3, #POST from the Admin, built 2026-11-08 on `campaigns-batch-3`
 
-**What changed.** A migration and its checks, not applied to the live project. Send and the list of sends on the
+**What changed.** A migration and its checks (applied to the live project the same day, below). Send and the list of sends on the
 Campaign tab (`app/js/gm_campaign.js`). The courier in `app/js/cloud.js`. A new toast and the package box in
 `app/js/face.js`. `EN.gmStore.deliverMail` as the one way a row becomes a message. `EN.inventoryView.takePackage`
 for Take it. `store.js` cleans a package on load. `gate.js` and `tour.js` are untouched. The build report has the
@@ -12811,3 +12811,8 @@ real realtime-js to subscribe, and `pg/mutants.mjs` breaks either migration. `ru
 run out while a real frame is still on the wire, and anything waiting on a socket has to poll over real requests (`realUntil`). And
 the browser pane's `gridos` server serves the session's starting folder, not a worktree, and shows `file://` pages as static
 snapshots, so a worktree can't be previewed there.
+
+**Applied to the live project, the same day, on the author's go.** `campaign_checks.sql` says 168 PASS, 0 FAIL there, and the rollback left
+nothing behind. The history had all four earlier migrations, so `db query` and a `migration repair` for this one kept it level, and all five now
+show under Remote. The real REST API, asked signed out, refused the table and every function, and the real Realtime service took the app's exact
+binding from the vendored client. That proves the handshake only: no signed-in account has heard a real row yet.

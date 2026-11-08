@@ -384,8 +384,8 @@ The dash and syntax sweeps are clean.
 
 # Campaigns build report: batch 3, #POST from the Admin
 
-Built 8 Nov 2026 on `campaigns-batch-3`. **Nothing is applied to the live project and nothing is merged.** The migration, Realtime and
-the live site are all waiting for your go.
+Built 8 Nov 2026 on `campaigns-batch-3`. Not merged. **The migration is applied to the live project,** on your go, and its checks pass there.
+The live site does not offer any of this until the branch is merged.
 
 **Read this first: batch 2 is not merged.** The spec says to cut from `main` once it is. Its migration is live, but its branch isn't on
 `main`, and merging is yours to sign off. So this branch is cut from the tip of `campaigns-batch-2` (`e852599`), and **merging it merges
@@ -415,37 +415,44 @@ read-only record can't take it. The `face.js` comment now says the record is whe
 
 Also: the asset stamp is `?v=20261108.6`. README and HANDOFF describe the inbox.
 
-## Applying it
+## Applied to the live project
 
-From a worktree, as batch 2's run found, each command has to name the project. First, what the project has:
+Applied 8 Nov 2026. What the project answered:
+
+| What | Result |
+| --- | --- |
+| The history beforehand | The four earlier migrations recorded, and only this one pending |
+| `campaign_checks.sql`, on the live project | **168 PASS, 0 FAIL** |
+| Left behind by the rollback | Nothing: no inbox rows, test users, campaigns or characters |
+| The table | Row security on. Signed-in accounts can read and not write. Signed-out callers can do neither |
+| The Realtime publication | `character_inbox` is in `supabase_realtime`. No dashboard change was needed: the migration did it |
+| The real REST API, asked signed out | All 11 as expected: the table and each function are seen and refused (`42501`), `clean_mail` stays private, and a wrong argument name is not found (`PGRST202`) |
+| The real Realtime service, asked signed out by the vendored client | It took the app's exact binding for the table: joined, "Subscribed to PostgreSQL" |
+| The history afterwards | All five migrations recorded |
+
+That last Realtime line only proves the handshake. No signed-in account has heard a real row yet.
+
+The commands, from a worktree, which has no `supabase link` of its own, so each one names the project:
 
 ```bash
 npx supabase@2 migration list --project-ref ggjgkcnhfpjwyrhakqun
 ```
 
-All four earlier migrations should show under Remote. Then the migration, which also puts the table in the Realtime publication:
-
 ```bash
 npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/migrations/20261108180000_campaign_inbox.sql
 ```
-
-The checks, which roll themselves back and should end in `168 PASS, 0 FAIL`. One of them asks whether the table is in the publication:
 
 ```bash
 npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/campaign_checks.sql
 ```
 
-Then record it in the history, because `db query` doesn't:
-
 ```bash
 npx supabase@2 migration repair --status applied 20261108180000 --project-ref ggjgkcnhfpjwyrhakqun
 ```
 
-**No dashboard change is needed.** The migration is what turns Realtime on for this table. To see it for yourself: Database, then Publications, then
-`supabase_realtime`, where `character_inbox` should be on.
+The repair is there because `db query` applies a file and records nothing.
 
-**Applying it before merging is safe.** The live site's code doesn't know the table is there. **Merging before applying is also safe:** with no table, the
-mail just waits, the Campaign tab says your sends can't be read, and everything else works. The suite plays that.
+**Until the branch is merged,** the live site's code has no Send button and does not listen. A signed-in account could still call the functions directly, and reach only what the rules allow. **If it were merged with the migration missing,** the mail would just wait and the Campaign tab would say your sends can't be read. The suite plays that.
 
 ## Commits
 
@@ -492,9 +499,9 @@ The first full build passed every check. Then:
 | --- | --- | --- |
 | Gizmo: `EN.gate.gizmoSvg()` fingerprint before and after | Pass | SHA-256 of all three forms, `clipSvg`'s source and the bubble's CSS lines, in Node, before any edit and after the last: identical. `git diff` on both files is empty. |
 | Gizmo: tour step 1, his bubble, eyes on the card, his blink | Pass | Headless Chrome, all three skins. He shows with his typed bubble and a `-3px` rest. Stepping his running animations through a whole 10 s cycle in 20 ms steps: pupils only at -3 and -1, eyes squashing at the blink. Not watched by eye, because the browser pane couldn't reach this branch. |
-| `campaign_checks.sql`: every line PASS | Pass on a local Postgres, **waiting for you on the live project** | 168 PASS, 0 FAIL, nothing left behind. `entitlements_checks.sql` 21 PASS before and after. |
+| `campaign_checks.sql`: every line PASS | **Pass on the live project** | 168 PASS, 0 FAIL, nothing left behind. Locally too, where `entitlements_checks.sql` is 21 PASS before and after. |
 | The checks have teeth | Pass | 157 deliberately broken copies of the migrations, 88 of them new: all 157 caught. One survived at first (a quantity stored as `1.0`), so a check was added. |
-| Send from an NPC card with a package, to one character and the crew. Online toast within seconds, offline summary on next load | Pass locally, **waiting for you with real Discord and real Realtime** | `pg/inbox_realdb.js`: the real app, the real supabase-js and the real realtime-js on the real SQL, 61 checks, three runs in a row. 15 ms or so from send to delivered on the bridge's clock, which says nothing about the real service. |
+| Send from an NPC card with a package, to one character and the crew. Online toast within seconds, offline summary on next load | Pass locally, **waiting for you with real Discord**. The real Realtime has only taken the subscription | `pg/inbox_realdb.js`: the real app, the real supabase-js and the real realtime-js on the real SQL, 61 checks, three runs in a row. 15 ms or so from send to delivered on the bridge's clock, which says nothing about the real service. |
 | Take it adds the items once, with the record on two devices | Pass locally, **waiting for you** | Both chains. The second device is the account's own calls made while the page sits there, including its save landing in the gap between this device's pull and push. Not two real browsers. |
 | Recall works while waiting and fails after delivery. The Admin sees Taken | Pass locally, **waiting for you** | The real round, with the database's own rows checked after each step. |
 | Checked in all three skins | Pass | Screenshots of the composer, the list, the inbox, the box and the toast on Classic, '98 and #GRIDroid. A true 375 px through an iframe, on all three: nothing overflows. |
@@ -503,14 +510,13 @@ The first full build passed every check. Then:
 The stand-in chain `campaigns_b3` is 226 checks. Batch 2's `campaigns_b2` stays at 163 and `pg/campaigns_realdb.js` at 144, with their pinned lists of panels updated for the new one.
 The full suite on the final code: **488 chains, 512 runs, 0 bad (round 211)**. Syntax and dash sweeps are clean.
 
-**What none of this can reach:** Discord, Supabase's own Auth, PostgREST and Realtime (the bridge imitates them), and two sessions at once (PGlite has one connection, so
+**What this still can't reach:** the app talking to the real server as a signed-in account, a real row arriving over real Realtime, Discord, and two sessions at once (the checks run in one transaction, and PGlite has one connection, so
 the row locks never contend). **The slide and the box-opening moment have not been watched.** Headless Chrome doesn't paint frames in virtual time, so I checked that the animations are set, not how they look.
 
 ## Waiting for the author
 
 - **Merge batch 2, or merge this branch, which includes it.** Your call, and it needs the two-account round from batch 2 as well.
-- **Apply the migration,** with the commands above.
-- **The round with real Discord,** on real Realtime: send from a card to one character and the crew, with a second account online and then offline, Take it on two real devices, Recall before and after. It needs a way for the
+- **The round with real Discord,** on real Realtime, which this migration has now turned on: send from a card to one character and the crew, with a second account online and then offline, Take it on two real devices, Recall before and after. It needs a way for the
   branch to reach sign-in, the same two ways as batch 2: a temporary `http://localhost:8777/**` on Supabase's redirect list (my pick), or after merging.
 - **Watch the slide and the box-opening moment,** and tune by feel. `postBoxHop`, `postBoxFlap` and `postBoxRise` in `theme.css`.
 - **The package glyph is my drawing,** `ICON_PKG` in `face.js`, because the app has no art for a package. Swap in your own if you like; the moment wants its two flaps as separate paths.
