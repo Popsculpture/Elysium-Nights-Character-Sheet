@@ -2678,14 +2678,14 @@ EN.store = (function () {
       if (theirText === null) {
         // missing, and nobody deleted it: a tab that hadn't heard of it wrote over it, and this tab's copy goes back in
         if (!live) { delete seen[id]; return; }
-        seen[id] = { stored: null, at: 0, mine: was ? was.mine : null };
+        seen[id] = { stored: null, at: was ? was.at : 0, mine: was ? was.mine : null };
         res.merged = true;
         return;
       }
       if (was && !live) { seen[id] = { stored: theirText, at: stampOf(theirs[id]), mine: null }; return; }   // gone from this tab already: it stays gone
       // older than what storage last held: old news from a tab that hadn't heard, not a change. This tab's goes back in
       if (live && was && !locked[id] && stampOf(theirs[id]) < was.at) {
-        seen[id] = { stored: theirText, at: stampOf(theirs[id]), mine: was.mine };
+        seen[id] = { stored: theirText, at: was.at, mine: was.mine };
         res.merged = true;
         return;
       }
@@ -2709,10 +2709,11 @@ EN.store = (function () {
     lastText = text;
     return res;
   }
-  // what moved reaches the screen, and a merge reaches the other tab. Not a repaint for a character this tab isn't on
+  // what moved reaches the screen, and a merge reaches the other tab, at once: it may be the only copy of a save that was just
+  // written over. Not a repaint for a character this tab isn't on
   function tabsMoved(res) {
     if (!res) return;
-    if (res.merged && !savePending) persist(false);
+    if (res.merged) persist(true);
     if (res.active || res.members) emit();
   }
   // the look js/cloud.js takes before it trusts the book. An edit still in the debounce goes first, so a save is always in storage before the note of it
@@ -2723,6 +2724,8 @@ EN.store = (function () {
     });
   } catch (e) {}
   var saveTimer = null, savePending = false;
+  // closing a tab inside the debounce used to lose the last edit: the same thing gmStore's flush is there for
+  try { window.addEventListener("pagehide", function () { if (savePending) persist(true); }); } catch (e) {}
   /* Did the write actually land? A refused setItem (the origin's storage full, Safari in
      private browsing, a browser set to block site data) used to be a console line and nothing
      more, while the app went on reporting SYNC OK, because the readout was driven by the EDIT
@@ -3038,6 +3041,7 @@ EN.store = (function () {
   function importCharacter(obj) {
     if (!obj || !obj.meta) throw new Error("Invalid character file.");
     if (!obj.meta.id || state.roster[obj.meta.id]) obj.meta.id = uid();
+    clearGone(obj.meta.id);   // a character deleted and imported back keeps its id, and it's here on purpose
     // fold any custom palette bundled with the file into the device library, then drop the carrier field
     if (obj.customThemes && EN.theme && EN.theme.mergeCustom) { EN.theme.mergeCustom(obj.customThemes); }
     delete obj.customThemes;
