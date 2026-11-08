@@ -14,9 +14,10 @@ declare
   e uuid := '00000000-0000-4000-8000-00000000c0e5';   -- not in the campaign
   camp uuid; camp2 uuid;
   t1 text; t2 text; t3 text;
-  ch_a uuid; ch_c uuid; ch_c2 uuid; ch_d uuid;
+  ch_a uuid; ch_c uuid; ch_c2 uuid; ch_d uuid; ch_e uuid;
   n int;
   v text;
+  f text;
   j jsonb;
   err text;
   out text := '';
@@ -44,6 +45,12 @@ begin
   err := null;
   begin perform public.create_campaign('   '); exception when others then err := sqlerrm; end;
   out := out || case when err = 'EN_BAD_NAME' then 'PASS' else 'FAIL' end || ' a blank campaign name is refused (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.create_campaign(repeat('x', 81)); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_NAME' then 'PASS' else 'FAIL' end || ' an 81-character campaign name is refused (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.create_campaign(repeat('x', 80)); exception when others then err := sqlerrm; end;
+  out := out || case when err is null then 'PASS' else 'FAIL' end || ' an 80-character campaign name is fine (' || coalesce(err, 'no error') || E')\n';
 
   -- the preview, before anyone joins
   perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
@@ -84,8 +91,6 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
   select count(*) into n from public.campaign_invites;
   out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a player cannot read the invite token (' || n || E')\n';
-  select count(*) into n from public.campaign_blocks;
-  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a player cannot read the blocks (' || n || E')\n';
   err := null;
   begin perform public.campaign_blocked(camp); exception when others then err := sqlerrm; end;
   out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot list who is blocked (' || coalesce(err, 'no error') || E')\n';
@@ -148,6 +153,16 @@ begin
   perform public.remove_member(camp, e, true);
   select count(*) into n from public.campaign_blocks where campaign_id = camp and user_id = e and blocked_by = a;
   out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' Also block writes the block (' || n || E')\n';
+  -- these need a block to exist: asked of an empty table they pass with row security off
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.campaign_blocks;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a player cannot read a block that exists (' || n || E')\n';
+  err := null;
+  begin perform public.unblock_member(camp, e); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot unblock (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.campaign_blocks where campaign_id = camp and user_id = e;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a co-Admin reads the block (' || n || E')\n';
   perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
   err := null;
   begin perform public.join_campaign(t2); exception when others then err := sqlerrm; end;
@@ -187,6 +202,17 @@ begin
   err := null;
   begin perform public.set_role(camp, c, 'admin'); exception when others then err := sqlerrm; end;
   out := out || case when err = 'EN_BAD_ROLE' then 'PASS' else 'FAIL' end || ' set_role cannot make a second Admin (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'postgres', true);
+  err := null;
+  begin update public.campaign_members set role = 'admin' where campaign_id = camp and user_id = c; exception when others then err := sqlstate; end;
+  out := out || case when err = '23505' then 'PASS' else 'FAIL' end || ' the database itself refuses a second Admin (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'authenticated', true);
+  perform public.set_role(camp, b, 'player');
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.campaign_invites where campaign_id = camp;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a co-Admin made a player again loses the invite (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.set_role(camp, b, 'coadmin');
   perform public.set_role(camp, d, 'coadmin');
 
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
@@ -279,6 +305,10 @@ begin
   select count(*) into n from public.campaign_roster(camp) r, jsonb_array_elements(r.characters) x
     where x ->> 'name' = 'Cee One' and (x -> 'level')::text = '3' and x ->> 'class' = 'shaper' and not (x ? 'data') and not (x ? 'notes');
   out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the roster gives name, level and class, and no sheet (' || n || E')\n';
+  select count(*) into n from public.campaign_roster(camp) r, jsonb_array_elements(r.characters) x where x ->> 'name' = 'Cee Two';
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a character outside the campaign stays off the roster (' || n || E')\n';
+  select count(*) into n from public.campaign_roster(camp) r, jsonb_array_elements(r.characters) x where x ->> 'name' = 'Dee' and r.user_id = c;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' the roster lists a character under its own player only (' || n || E')\n';
   select count(*) into n from public.campaign_roster(camp) r where r.user_id = a and r.discord_name = 'Night Admin' and r.role = 'admin';
   out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the roster reads Discord names live (' || n || E')\n';
 
@@ -298,6 +328,13 @@ begin
   perform set_config('role', 'postgres', true);
   update public.characters set updated_at = '2020-01-01T00:00:00Z' where id = ch_c;
   perform set_config('role', 'authenticated', true);
+  update public.characters set name = 'Cee Renamed' where id = ch_c;
+  select count(*) into n from public.characters where id = ch_c and updated_at > '2020-01-01T00:00:00Z';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a rename still moves updated_at (' || n || E')\n';
+  update public.characters set name = 'Cee One' where id = ch_c;
+  perform set_config('role', 'postgres', true);
+  update public.characters set updated_at = '2020-01-01T00:00:00Z' where id = ch_c;
+  perform set_config('role', 'authenticated', true);
 
   -- removal and leaving clear the campaign from the player's characters
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
@@ -308,11 +345,15 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
   select count(*) into n from public.characters where id = ch_c;
   out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' after removal a co-Admin cannot read the row (' || n || E')\n';
+  select count(*) into n from public.characters where id = ch_d and campaign_id = camp;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' removing one player leaves the other players'' characters in (' || n || E')\n';
   perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
   err := null;
   begin update public.characters set campaign_id = camp where id = ch_c; exception when others then err := sqlstate; end;
   out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a removed player cannot put a character back (' || coalesce(err, 'no error') || E')\n';
 
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  update public.characters set campaign_id = camp where id = ch_a;
   perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
   perform public.leave_campaign(camp);
   select count(*) into n from public.characters where id = ch_d and campaign_id is null;
@@ -325,9 +366,23 @@ begin
 
   -- transfer
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.characters where id = ch_a and campaign_id = camp;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' one player leaving leaves the other characters in (' || n || E')\n';
+  err := null;
+  begin perform public.remove_member(camp, d, false); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_MEMBER' then 'PASS' else 'FAIL' end || ' removing someone not in the campaign is refused (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.set_role(camp, d, 'player'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_MEMBER' then 'PASS' else 'FAIL' end || ' setting the role of someone not in the campaign is refused (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.transfer_leadership(camp, a); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_MEMBER' then 'PASS' else 'FAIL' end || ' the Admin cannot transfer to themselves (' || coalesce(err, 'no error') || E')\n';
   err := null;
   begin perform public.transfer_leadership(camp, c); exception when others then err := sqlerrm; end;
   out := out || case when err = 'EN_NOT_MEMBER' then 'PASS' else 'FAIL' end || ' leadership only goes to a current member (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.rename_campaign(camp, '   '); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_NAME' then 'PASS' else 'FAIL' end || ' a blank rename is refused (' || coalesce(err, 'no error') || E')\n';
   perform public.rename_campaign(camp, 'Renamed Table');
   select name into v from public.campaigns where id = camp;
   out := out || case when v = 'Renamed Table' then 'PASS' else 'FAIL' end || E' the Admin can rename\n';
@@ -345,7 +400,6 @@ begin
   out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the old Admin still runs it as a co-Admin (' || n || E')\n';
 
   -- delete
-  update public.characters set campaign_id = camp where id = ch_a;
   perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
   perform public.delete_campaign(camp);
   select count(*) into n from public.campaigns where id = camp;
@@ -360,9 +414,33 @@ begin
   begin perform public.join_campaign(t3); exception when others then err := sqlerrm; end;
   out := out || case when err = 'EN_DEAD_INVITE' then 'PASS' else 'FAIL' end || ' a deleted campaign''s link is dead (' || coalesce(err, 'no error') || E')\n';
 
+  -- a campaign deleted at the database, not through the function, leaves nothing pointing at it
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  insert into public.characters (name, data, campaign_id) values ('Eee', '{"name": "Eee"}', camp2) returning id into ch_e;
+  out := out || case when ch_e is not null then 'PASS' else 'FAIL' end || E' a member can insert a character into their own campaign\n';
+  perform set_config('role', 'postgres', true);
+  delete from public.campaigns where id = camp2;
+  select count(*) into n from public.characters where id = ch_e and campaign_id is null;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' deleting a campaign row clears it from its characters (' || n || E')\n';
+
+  -- a session with no user, for every function a client can call
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('role', 'authenticated', true);
+  v := '';
+  foreach f in array array[
+    'create_campaign(''x'')', 'invite_preview(''x'')', 'join_campaign(''x'')',
+    'reset_invite(%1$L)', 'leave_campaign(%1$L)', 'campaign_roster(%1$L)', 'campaign_blocked(%1$L)',
+    'remove_member(%1$L, %1$L)', 'unblock_member(%1$L, %1$L)', 'set_role(%1$L, %1$L, ''player'')',
+    'transfer_leadership(%1$L, %1$L)', 'rename_campaign(%1$L, ''x'')', 'delete_campaign(%1$L)'
+  ] loop
+    err := null;
+    begin execute 'select * from public.' || format(f, a); exception when others then err := sqlerrm; end;
+    if err is distinct from 'EN_SIGNED_OUT' then v := v || f || '=' || coalesce(err, 'no error') || ' '; end if;
+  end loop;
+  out := out || case when v = '' then 'PASS' else 'FAIL' end || ' every function refuses a session with no user (' || v || E')\n';
+
   -- anon
   perform set_config('role', 'postgres', true);
-  perform set_config('request.jwt.claims', '', true);
   perform set_config('role', 'anon', true);
   err := null;
   begin perform public.create_campaign('Anon'); exception when others then err := sqlstate; end;
