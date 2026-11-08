@@ -229,6 +229,7 @@ EN.gmStore = (function () {
     if (row.kind !== "crew" && row.kind !== "threat") return null;
     if (row.kind === "threat" && (!row.block || typeof row.block !== "object")) return null;
     if (row.kind === "crew" && typeof row.charId !== "string") return null;
+    if (row.kind === "crew") ["campaign", "name", "player"].forEach(function (k) { if (row[k] !== undefined && typeof row[k] !== "string") delete row[k]; });
     if (row.kind === "threat") { gradeKey(row.block); reachNotation(row.block); presenceThreat(row.block, row.inputs); }
     return row;
   }
@@ -355,6 +356,7 @@ EN.gmStore = (function () {
      Also runs from the view's render, because store.remove() does not notify us
      and a ghost row should not survive until the next reload. Idempotent, and it
      does not persist unless something actually changed. */
+  function isCampaignRow(charId) { return typeof charId === "string" && charId.indexOf("row:") === 0; }
   function pruneCrew() {
     if (!state) return 0;
     var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
@@ -362,6 +364,8 @@ EN.gmStore = (function () {
     var dropped = [];
     state.encounter.entries = state.encounter.entries.filter(function (row) {
       if (row.kind !== "crew") return true;
+      // another player's character in a campaign (js/campaigns.js) was never going to be in this roster
+      if (isCampaignRow(row.charId)) return true;
       var live = Object.prototype.hasOwnProperty.call(roster, row.charId);
       if (!live) dropped.push(row.charId);
       return live;
@@ -435,11 +439,19 @@ EN.gmStore = (function () {
   }
 
   // ---- entries -------------------------------------------------------------
-  function addCrew(charId, init, initMod) {
+  /* `from` (optional) is what a row from a campaign remembers: { name, player, campaign }, so it can
+     still say who it is on a device or a day the sheet can't be read. */
+  function addCrew(charId, init, initMod, from) {
     var id = uid();
     update(function (s) {
-      s.encounter.entries.push({ id: id, kind: "crew", charId: charId,
-                                 init: init | 0, initMod: initMod | 0, acted: false });
+      var row = { id: id, kind: "crew", charId: charId,
+                  init: init | 0, initMod: initMod | 0, acted: false };
+      if (isObj(from) && typeof from.campaign === "string" && from.campaign) {
+        row.campaign = from.campaign;
+        row.name = String(from.name == null ? "" : from.name);
+        row.player = String(from.player == null ? "" : from.player);
+      }
+      s.encounter.entries.push(row);
     });
     return id;
   }
@@ -1258,7 +1270,7 @@ EN.gmStore = (function () {
 
   return {
     load: load, get: get, update: update, on: on, uid: uid,
-    addCrew: addCrew, addThreat: addThreat, removeEntry: removeEntry, entry: entry,
+    addCrew: addCrew, isCampaignRow: isCampaignRow, addThreat: addThreat, removeEntry: removeEntry, entry: entry,
     clearEncounter: clearEncounter, scrapPlan: scrapPlan, pruneCrew: pruneCrew,
     // one name per threat row: the numbering addThreat applies, for rows from any other path
     numberThreats: numberThreats, freeName: freeName,

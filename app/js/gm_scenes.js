@@ -499,7 +499,10 @@ EN.gmScenes = (function () {
   }
   function rosterRec(id) {
     var r = (EN.store && EN.store.roster && EN.store.roster()) || {};
-    return own(r, id) ? r[id] : null;
+    if (own(r, id)) return r[id];
+    // a campaign's character: the copy the Table reads
+    var hit = EN.campaigns && EN.campaigns.crewRow ? EN.campaigns.crewRow(id) : null;
+    return hit ? hit.ch : null;
   }
   /* The crew's Heat, one line per source: the highest value anyone on the
      crew holds with it (Heat is per Freelancer, and the book's checks run

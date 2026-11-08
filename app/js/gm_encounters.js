@@ -821,13 +821,13 @@ EN.gmEncounters = (function () {
     var vigorNote = "";
     if (mode === "replace") {
       var keep = gm.get().encounter.entries.filter(function (r) { return r.kind === "crew"; })
-        .map(function (r) { return { charId: r.charId, init: r.init, initMod: r.initMod }; });
+        .map(function (r) { return { charId: r.charId, init: r.init, initMod: r.initMod, campaign: r.campaign, name: r.name, player: r.player }; });
       // replacing the Table ends the old fight, so its unspent crew Vigor goes as END clears it
       if (EN.gmView && typeof EN.gmView.clearCrewVigor === "function") {
         try { vigorNote = EN.gmView.crewVigorNote(EN.gmView.clearCrewVigor()); } catch (e) { vigorNote = ""; }
       }
       gm.clearEncounter();
-      keep.forEach(function (r) { gm.addCrew(r.charId, r.init, r.initMod); });
+      keep.forEach(function (r) { gm.addCrew(r.charId, r.init, r.initMod, r); });
     }
     // a new plan starts clean: nothing left on the Table from the last one comes with it
     if (mode === "new") gm.scrapPlan();
@@ -1026,7 +1026,7 @@ EN.gmEncounters = (function () {
       kids.push(el("div.row.wrap", { style: { gap: "6px" } }, crew.members.map(function (m) {
         return chip(m.name + " · " + (m.caliber ? "CALIBER " + m.caliber : "NO CALIBER"));
       })));
-      kids.push(help(crew.source === "table" ? "The crew on the Table." : "The filed roster. Nobody from it is on the Table yet."));
+      kids.push(help(crew.source === "table" ? "The crew on the Table." : crew.source === "campaign" ? "Everyone in the campaign. Nobody from it is on the Table yet." : "The filed roster. Nobody from it is on the Table yet."));
     } else {
       kids.push(muted("No crew yet. File Freelancers, pull them onto the Table, or set the headcount and Caliber below."));
     }
@@ -2172,7 +2172,7 @@ EN.gmEncounters = (function () {
       return rows.reduce(function (a, r) { return a + (own(_s.award.skip, r.id) ? 0 : r.xp); }, 0) + objNow();
     }
     var crew = { members: [] };
-    try { crew = EN.gmEngine.crew({ encounter: last }); } catch (e) { crew = { members: [] }; }
+    try { crew = EN.gmEngine.crew({ encounter: last, device: true }); } catch (e) { crew = { members: [] }; }   // the award writes to these sheets
     var roster = (EN.store.roster && EN.store.roster()) || {};
     var members = crew.members.map(function (m) {
       var ch = own(roster, m.charId) ? roster[m.charId] : null;
@@ -2240,9 +2240,11 @@ EN.gmEncounters = (function () {
       var ms = members.filter(function (m) { return !m.useXp; });
       if (ms.length) kids.push(help(ms.map(function (m) { return m.name; }).join(", ") + (ms.length === 1 ? " runs" : " run") +
         " milestones, so no XP is written to " + (ms.length === 1 ? "that record." : "those records.") + (X && X.milestones ? " " + X.milestones : "")));
-    } else {
+    } else if (!crew.far) {
       kids.push(help("No crew found: file Freelancers or pull them onto the Table to award XP."));
     }
+    var farNote = EN.gmEngine.crewFarNote(crew);
+    if (farNote) kids.push(help(farNote, { color: "var(--warn)" }));
 
     var paidXp = done ? null : payrollXpFor(last);
     if (done) {

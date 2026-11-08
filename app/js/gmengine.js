@@ -125,8 +125,10 @@ EN.gmEngine = (function () {
        headcount  an override, used when it is a whole number of 1 or more
        caliber    an override, used when it is a number; clamped to 1 to 5
 
-     Returns { members: [{charId, name, caliber}], headcount, caliber, source,
-     overridden: {headcount, caliber} }. `source` is "table", "roster" or "none".
+     Returns { members: [{charId, name, caliber}], headcount, caliber, source, far,
+     overridden: {headcount, caliber} }. `source` is "table", "campaign", "roster" or
+     "none". `far` counts the rows on the Table this list can't reach: a campaign's
+     characters whose sheets aren't on this device (crewFarNote says so in words).
      Caliber is ALWAYS a number from 1 to 5 so a budget never multiplies by
      nothing; with nobody found and no override it is 1 and source is "none",
      which a view should read as "no crew yet, ask the GM". A member whose
@@ -142,20 +144,39 @@ EN.gmEngine = (function () {
     var enc = opts.encounter;
     if (!enc) { try { enc = EN.gmStore && EN.gmStore.get && EN.gmStore.get().encounter; } catch (e) { enc = null; } }
 
+    /* A CAMPAIGN'S CREW. While this account runs a campaign, the crew is that campaign's characters
+       (js/campaigns.js), so a bank of characters on this browser stops counting. opts.device asks
+       for this browser's records regardless: Payroll, Heat and the XP award write to the sheets they
+       list, and they can only reach a sheet on this device until those writes go through the inbox. */
+    var C = !opts.device && EN.campaigns && EN.campaigns.current ? EN.campaigns.current() : null;
+    if (C) {
+      var known = EN.campaigns.crew(C.id).rows || [], pool = {};
+      known.forEach(function (r) { pool[r.charId] = r.ch; pool["row:" + r.rowId] = r.ch; });
+      roster = pool;
+    }
     var ids = [], seen = Object.create(null);
     function take(id) {
       if (typeof id !== "string" || seen[id] || !own(roster, id)) return;
       seen[id] = true;
       ids.push(id);
     }
-    ((enc && enc.entries) || []).forEach(function (r) { if (r && r.kind === "crew") take(r.charId); });
-    var source = ids.length ? "table" : "none";
-    if (!ids.length) {
-      Object.keys(roster).forEach(function (k) {
+    var far = 0;
+    ((enc && enc.entries) || []).forEach(function (r) {
+      if (!r || r.kind !== "crew") return;
+      take(r.charId);
+      // still who is at the Table, so the records on this browser don't stand in for it: nothing gets
+      // paid to or written on a character from somebody's bank because the real crew is out of reach.
+      // Reading a campaign (C) is different: a row it can't find has left it, or is another campaign's.
+      if (!C && typeof r.charId === "string" && r.charId.indexOf("row:") === 0 && !own(roster, r.charId)) far++;
+    });
+    var source = (ids.length || far) ? "table" : "none";
+    if (!ids.length && !far) {
+      if (C) known.forEach(function (r) { take(r.charId); });   // in a campaign is as good as filed: the player put it there
+      else Object.keys(roster).forEach(function (k) {
         var ch = roster[k];
         if (ch && ch.meta && ch.meta.filedAt) take(k);
       });
-      if (ids.length) source = "roster";
+      if (ids.length) source = C ? "campaign" : "roster";
     }
 
     var members = ids.map(function (id) {
@@ -176,8 +197,16 @@ EN.gmEngine = (function () {
       headcount: useHc ? hcOver : members.length,
       caliber: Math.max(1, Math.min(5, useCal ? calOver : avg)),
       source: source,
+      far: far,
       overridden: { headcount: useHc, caliber: useCal }
     };
+  }
+  // the line a tab that writes to sheets shows when some of the Table is out of its reach
+  function crewFarNote(c) {
+    var n = (c && c.far) | 0;
+    if (!n) return "";
+    return n === 1 ? "1 of the crew on the Table has no sheet on this device, so nothing here reaches them yet."
+                   : n + " of the crew on the Table have no sheet on this device, so nothing here reaches them yet.";
   }
 
   /* ---- THE BUDGET ----------------------------------------------------------
@@ -595,6 +624,6 @@ EN.gmEngine = (function () {
     // threat initiative from the book's formula, and the one roll for it
     threatInit: threatInit, rollInit: rollInit,
     // XP, the crew, and the encounter budget
-    xpOf: xpOf, crew: crew, share: share, budget: budget, tierFor: tierFor
+    xpOf: xpOf, crew: crew, crewFarNote: crewFarNote, share: share, budget: budget, tierFor: tierFor
   };
 })();

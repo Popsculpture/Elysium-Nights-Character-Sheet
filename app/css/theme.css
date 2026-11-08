@@ -3702,3 +3702,7 @@ html.skin-98 .post-box-list, html.skin-98 .post-box-qty{ font-family:Arial, Helv
 html.skin-droid .post-toast{ left:12px; right:12px; bottom:150px; width:auto; max-width:calc(var(--dr-w) - 24px); margin:0 auto; }
 html.skin-droid .post-toast-btn{ border:1px solid var(--accent); box-shadow:0 0 18px var(--accent-dim); min-height:44px; }
 html.skin-droid .post-take{ min-height:40px; }
+/* the Table: whose character a campaign's crew row is */
+.gm-crew-player{ font-size:12px; color:var(--text2); }
+.gm-crew-player::before{ content:"\00b7\00a0"; color:var(--text4); }
+.gm-crew-pick{ flex:0 1 240px; }

@@ -285,9 +285,9 @@ EN.gmHeat = (function () {
   function crewNow() {
     if (_crew) return _crew;
     var c = null;
-    try { c = EN.gmEngine.crew(); } catch (e) { c = null; }
+    try { c = EN.gmEngine.crew({ device: true }); } catch (e) { c = null; }   // it writes to these sheets
     if (!c) c = { members: [], headcount: 0, caliber: 1, source: "none" };
-    if (!c.members.length) {
+    if (!c.members.length && !c.far) {
       var roster = rosterNow(), ms = [];
       Object.keys(roster).forEach(function (k) {
         var ch = roster[k];
@@ -651,6 +651,8 @@ EN.gmHeat = (function () {
     kids.push(help(crew.members.length
       ? "Read from " + crewSays(crew) + ": " + cals.join(", ") + ". Caliber " + crew.caliber + ", " + plural(crew.headcount, "Freelancer") + "."
       : "No crew yet. File a Freelancer, or pull one onto the Table, and their Heat shows here.", { margin: "0 0 10px" }));
+    var farNote = EN.gmEngine.crewFarNote(crew);
+    if (farNote) kids.push(help(farNote, { margin: "0 0 10px", color: "var(--warn)" }));
     if (!b.sources.length) {
       kids.push(muted("No Heat on the crew's records. Each Freelancer keeps it on the Social tab, one row per source, and ADD HEAT below writes it there."));
     }

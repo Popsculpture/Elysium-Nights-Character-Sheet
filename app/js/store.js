@@ -2683,13 +2683,19 @@ EN.store = (function () {
     }
     return v;
   }
-  function setViewing(raw, info, silent) {
+  // another player's sheet as this browser may hold it: stripped, migrated, flagged, never in the roster
+  function sheetCopy(raw, rowId) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
     var ch = displayCopy(neuter(raw));
     if (!ch.meta || typeof ch.meta !== "object") ch.meta = {};
     delete ch.meta.example;
-    ch.meta.id = "view_" + ((info && info.rowId) || "row");
+    ch.meta.id = "view_" + (rowId || "row");
     ch.meta.viewing = true;
+    return ch;
+  }
+  function setViewing(raw, info, silent) {
+    var ch = sheetCopy(raw, info && info.rowId);
+    if (!ch) return null;
     viewInfo = { rowId: info && info.rowId, player: info && info.player, campaign: info && info.campaign, at: info && info.at, packs: packsMissing(raw) };
     state.viewing = ch;
     if (!silent) emit();
@@ -2863,6 +2869,8 @@ EN.store = (function () {
     setExample: setExample, clearExample: clearExample, activeIsExample: activeIsExample, adoptExample: adoptExample,
     // another player's sheet, read-only, from the Campaign tab: see VIEW SHEET above
     setViewing: setViewing, clearViewing: clearViewing, activeIsViewing: activeIsViewing, viewingInfo: viewingInfo,
+    // the same copy for the Table's crew rows (js/campaigns.js), which are never the active record
+    sheetCopy: sheetCopy,
     // a #POST package's shape, shared with EN.gmStore's cleanOps
     cleanPackage: cleanPackage
   };

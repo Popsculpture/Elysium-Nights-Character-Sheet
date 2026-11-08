@@ -447,7 +447,7 @@ EN.gmPayroll = (function () {
      Otherwise crew() answers as it does everywhere (the Table, then the filed
      roster). The overrides apply either way. */
   function crewNow() {
-    var opts = { headcount: _p.hc, caliber: _p.cal };
+    var opts = { headcount: _p.hc, caliber: _p.cal, device: true };   // it writes to these sheets
     var fromEnc = encCrew(_p.enc).length > 0;
     if (fromEnc) opts.encounter = _p.enc;
     var c = null;
@@ -1109,6 +1109,8 @@ EN.gmPayroll = (function () {
                                             borderTop: "1px solid var(--border2)" } }, per));
     if (sp.clamped) kids.push(help("A percentage past 0 to 100 was held at the edge, so no share can go below nothing.", { color: "var(--warn)" }));
     if (!m.crew.headcount) kids.push(help("No crew yet, so the split is for one. Set a headcount above.", { color: "var(--warn)" }));
+    var farNote = EN.gmEngine.crewFarNote(m.crew);
+    if (farNote) kids.push(help(farNote, { color: "var(--warn)" }));
     if (sp.over) kids.push(help(fmtG(sp.over) + " does not divide evenly.", { color: "var(--gold)" }));
     kids.push(help("The fixer's cut comes off the client's money, the contract and any bounties. Salvage is the crew's own sale and splits without it; the Crew Kit's percent applies to both."));
     // the split rule itself is the player chapter's, not reprinted here

@@ -131,6 +131,7 @@ EN.campaigns = (function () {
           var d = data();
           if (to) d.rows[row] = to; else delete d.rows[row];
           save();
+          crewStale();
           if (EN.app) EN.app.render();
         });
     }).catch(function (e) {
@@ -179,6 +180,7 @@ EN.campaigns = (function () {
   function repaint() {
     if (!EN.app) return;
     if (EN.gmCampaign && EN.gmCampaign.invalidate) EN.gmCampaign.invalidate();   // a change was seen: the tab reads again
+    crewStale();
     if (EN.gate && EN.gate.deniedOpen && EN.gate.deniedOpen() && !crewOn()) {
       EN.gate.closeDenied();   // made co-Admin since the last read: they get in
       EN.app.setPortal("admin");
@@ -412,11 +414,109 @@ EN.campaigns = (function () {
     EN.app.gotoTab("campaign");
   }
 
+  /* ---- THE CREW, for the Admin desktop ---------------------------------------------
+     While an account runs a campaign, the Admin desktop's crew is that campaign's characters and
+     nobody else (js/gmengine.js crew(), the Table's Pull in the crew). A bank of characters on this
+     browser stays out of it, and so do the Admin's own until they are put in the campaign like
+     anybody's. With no campaign to run, not jacked in or offline, current() answers null and the
+     desktop goes on using this browser's records, so a table run on one device works as it always did.
+
+     Other players' sheets come through the read policy, the same read as View sheet, as copies that
+     are stripped and flagged (store.sheetCopy) and never enter the roster, so nothing can write to
+     them or push them. This read has no owner filter on purpose: it asks by campaign, and those rows
+     are the point. Any read of characters for "my characters" still has to filter on owner_id.
+     The account's own character is the live record on this device when there is one, so Vigor can
+     still clear on it. Another player's row has the id "row:<row id>", which is what tells
+     js/gmstore.js not to prune it for being missing from the roster. */
+  var crewCache = {};       // campaign id -> { at, loading, error, rows, sig }
+  var CREW_STALE = 30000;
+  function current() {
+    var c = cloud();
+    if (!enabled() || (c && c.offline && c.offline())) return null;
+    var mine = running();
+    if (!mine.length) return null;
+    var want = pick();
+    return mine.filter(function (x) { return x.id === want; })[0] || mine[0];
+  }
+  function localFor(rowId) {
+    var c = cloud(), r = EN.store.roster() || {}, hit = null;
+    Object.keys(r).forEach(function (k) { if (c.rowOf(k) === rowId) hit = k; });
+    return hit;
+  }
+  function sheetName(ch) {
+    var n = ((ch.firstName || "") + " " + (ch.lastName || "")).trim();
+    return n || (typeof ch.name === "string" && ch.name.trim()) || "Freelancer";
+  }
+  function shownOf(ch) {
+    try { var d = EN.engine.derive(ch); return [d.caliber, d.vitalityMax]; } catch (e) { return null; }
+  }
+  function readCrew(id) {
+    var old = crewCache[id], slot = crewCache[id] = { at: Date.now(), loading: true, error: !!(old && old.error), rows: old ? old.rows : null, sig: old ? old.sig : "" };
+    var uid = me();
+    Promise.resolve().then(function () {
+      return Promise.all([
+        rpc("campaign_roster", { p_campaign: id }),
+        client().from("characters").select("id, owner_id, data, updated_at").eq("campaign_id", id).then(check)
+      ]);
+    }).then(function (all) {
+      if (crewCache[id] !== slot) return;
+      var who = {};
+      (all[0] || []).forEach(function (m) { who[m.user_id] = m.discord_name || "Freelancer"; });
+      var rows = (all[1] || []).map(function (r) {
+        var lid = r.owner_id === uid ? localFor(r.id) : null;
+        var ch = lid ? EN.store.roster()[lid] : EN.store.sheetCopy(r.data, r.id);
+        if (!ch) return null;
+        return { charId: lid || "row:" + r.id, rowId: r.id, ch: ch, name: sheetName(ch), player: who[r.owner_id] || "Freelancer" };
+      }).filter(Boolean).sort(function (a, b) {
+        return a.player < b.player ? -1 : a.player > b.player ? 1 : a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+      });
+      // redraw for what a row or the picker shows, not for every save a player makes
+      var sig = JSON.stringify(rows.map(function (r) { return [r.charId, r.name, r.player, shownOf(r.ch)]; }));
+      var moved = !slot.rows || slot.error || slot.sig !== sig;
+      slot.loading = false; slot.error = false; slot.rows = rows; slot.sig = sig; slot.at = Date.now();
+      if (moved) repaintCrew();
+    }, function (e) {
+      if (crewCache[id] !== slot) return;
+      console.warn("Could not read the campaign's crew", e);
+      var first = !slot.error;
+      slot.loading = false; slot.error = true; slot.at = Date.now();
+      if (first) repaintCrew();
+    });
+    return slot;
+  }
+  function repaintCrew() {
+    if (EN.app && EN.app.portal && EN.app.portal() === "admin" && EN.app.activeTab() !== "campaign") EN.app.render();
+  }
+  // what is known of a campaign's crew: asking starts a read if there is none, or the last is old
+  function crew(id, force) {
+    var slot = crewCache[id];
+    if (!slot || force || (!slot.loading && Date.now() - slot.at > CREW_STALE)) slot = readCrew(id);
+    return slot;
+  }
+  // one Table row's sheet and player, from whichever campaign it was read in
+  function crewRow(charId) {
+    var C = current(), hit = null;
+    function look(id) {
+      ((crewCache[id] && crewCache[id].rows) || []).forEach(function (r) {
+        // a row pulled before its sheet reached this device keeps the id it was pulled with
+        if (!hit && (r.charId === charId || "row:" + r.rowId === charId)) hit = r;
+      });
+    }
+    if (C) look(C.id);
+    Object.keys(crewCache).forEach(look);
+    return hit;
+  }
+  // something changed who is in a campaign: read again at the next draw, showing the old list until then
+  function crewStale() {
+    Object.keys(crewCache).forEach(function (id) { crewCache[id].at = 0; });
+  }
+
   /* ---- start ------------------------------------------------------------------- */
   function start() {
     var c = cloud();
     if (c && c.onUser) c.onUser(function () {
       mem = null;
+      crewCache = {};
       if (EN.gmCampaign && EN.gmCampaign.stale) EN.gmCampaign.stale();   // another account's roster does not stay on the page
       refresh();
       checkJoin();
@@ -438,6 +538,7 @@ EN.campaigns = (function () {
     create: create, leave: leave, roster: roster, blocked: blocked, invite: invite, resetInvite: resetInvite,
     removeMember: removeMember, unblock: unblock, setRole: setRole, transfer: transfer, rename: rename, remove: remove,
     inviteUrl: inviteUrl, viewSheet: viewSheet, refreshView: refreshView, backToCampaign: backToCampaign,
-    sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sends: sends
+    sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sends: sends,
+    current: current, crew: crew, crewRow: crewRow
   };
 })();

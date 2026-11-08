@@ -153,7 +153,7 @@ EN.gmJobs = (function () {
      follows the crew's Caliber. */
   function crewNow() {
     if (!_crew) {
-      try { _crew = EN.gmEngine.crew(); }
+      try { _crew = EN.gmEngine.crew({ device: true }); }   // it writes to these sheets
       catch (e) { _crew = { members: [], headcount: 0, caliber: 1, source: "none" }; }
     }
     return _crew;
@@ -1101,6 +1101,8 @@ EN.gmJobs = (function () {
     kids.push(EN.ui.sectionTitle("Send to #POST"));
     kids.push(el("p.help", { style: { margin: "0 0 8px" },
       text: "Files the crew's text in each record's #POST inbox, unread, from this device. The opposition and the complication stay here. For a crew on other devices, COPY FOR THE CREW and paste it." }));
+    var farNote = EN.gmEngine.crewFarNote(crewNow());
+    if (farNote) kids.push(el("p.help", { dataset: { gm: "crew-far" }, style: { margin: "0 0 8px", color: "var(--warn)" }, text: farNote }));
     var list = recipients();
     if (!list.length) {
       kids.push(el("p.help", { style: { color: "var(--text4)" }, text: "No records on this device to post to." }));

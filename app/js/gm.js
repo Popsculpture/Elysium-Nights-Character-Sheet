@@ -228,7 +228,7 @@ EN.gmView = (function () {
     if (!c || c.source === "none") return null;
     var d = g - c.caliber;
     if (d <= 1 && d >= -1) return null;
-    var whose = (c.source === "table" ? "the crew on the Table" : "the filed crew") + " (Caliber " + c.caliber + ")";
+    var whose = (c.source === "table" ? "the crew on the Table" : c.source === "campaign" ? "the campaign's crew" : "the filed crew") + " (Caliber " + c.caliber + ")";
     var lead = d >= 3 ? "Three or more Grades above " + whose + "."
       : d === 2 ? "Two Grades above " + whose + "."
       : "Two or more Grades below " + whose + ".";
@@ -349,13 +349,33 @@ EN.gmView = (function () {
       onclick: function () { editRow(row.id, function (r) { r.acted = false; }); EN.app.render(); } }, "✓ ACTED");
   }
 
+  /* A campaign's row (js/campaigns.js) when this account runs one. The one that belongs to another player
+     has no record on this device: its sheet is a read-only copy from the campaign, and it is the player's
+     to change, so it offers View sheet where a local row offers Set active. If the sheet can't be read,
+     the row still says who it remembers being, and can be taken off. */
+  function campaignOf() { return EN.campaigns && EN.campaigns.current ? EN.campaigns.current() : null; }
+  function crewNote(row) {
+    var C = campaignOf();
+    if (!C) return null;
+    if (row.campaign && row.campaign !== C.id) return "OTHER CAMPAIGN";
+    var state = EN.campaigns.crew(C.id);
+    if (!state.rows || state.error) return null;     // can't say yet
+    var here = state.rows.some(function (r) { return r.charId === row.charId || "row:" + r.rowId === row.charId; });
+    if (here) return null;
+    return row.campaign ? "NO LONGER IN THIS CAMPAIGN" : "NOT IN THIS CAMPAIGN";
+  }
   function crewRow(row, isNow) {
     var roster = EN.store.roster() || {};
-    var ch = roster[row.charId];
-    if (!ch) return null;                       // pruned on render; belt and braces
-    var d;
-    try { d = eng.derive(ch); } catch (e) { return null; }
-    var name = (ch.firstName || "") + " " + (ch.lastName || "");
+    var known = EN.campaigns && EN.campaigns.crewRow ? EN.campaigns.crewRow(row.charId) : null;
+    var ch = roster[row.charId] || (known && known.ch) || null;
+    var far = !!(gm.isCampaignRow && gm.isCampaignRow(row.charId));
+    if (!ch && !far) return null;               // pruned on render; belt and braces
+    var d = null;
+    if (ch) { try { d = eng.derive(ch); } catch (e) { d = null; } }
+    if (!d && !far) return null;
+    var name = ch ? (ch.firstName || "") + " " + (ch.lastName || "") : (row.name || "");
+    var player = (known && known.player) || row.player || "";
+    var note = crewNote(row);
     return el("div.feature", { dataset: { gmRow: row.id }, style: { borderLeftColor: isNow ? "var(--accent)" : "var(--border2)",
                                         background: isNow ? "var(--sunk, rgba(255,255,255,.03))" : "transparent" } }, [
       el("div.row.between.wrap", { style: { alignItems: "center", gap: "8px" } }, [
@@ -363,10 +383,13 @@ EN.gmView = (function () {
           el("span.mono", { style: { fontSize: "17px", minWidth: "34px", color: isNow ? "var(--accent)" : "var(--text)" },
             text: String(row.init) }),
           el("span", { style: { fontWeight: 600 }, text: name.trim() || "Freelancer" }),
+          // who it belongs to: two players can both hire the same pre-made
+          player ? el("span.gm-crew-player", { dataset: { gm: "player" }, text: player }) : null,
           el("span.chip", { style: { fontSize: "9.5px" }, text: "CREW" }),
+          note ? el("span.chip", { dataset: { gm: "crew-note" }, style: { fontSize: "9.5px", color: "var(--warn)", borderColor: "var(--warn)" }, text: note }) : null,
           actedChip(row),
           // a record with no class yet derives no Vitality, and "null Vitality" is worse than nothing
-          el("span.help", { text: "Caliber " + d.caliber + (typeof d.vitalityMax === "number" ? " · " + d.vitalityMax + " Vitality" : "") })
+          d ? el("span.help", { text: "Caliber " + d.caliber + (typeof d.vitalityMax === "number" ? " · " + d.vitalityMax + " Vitality" : "") }) : null
         ]),
         el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
           el("input", { type: "number", value: row.init, style: { width: "58px" },
@@ -380,7 +403,10 @@ EN.gmView = (function () {
              so "combat" lives on the Freelancer side) and pull the GM off the
              Admin desktop mid-fight, which is the thing the two-desktop split
              exists to stop happening. */
-          el("button.btn.sm", { title: "Make this the active Freelancer",
+          far
+            ? (known ? el("button.btn.sm", { dataset: { gm: "crew-view" }, title: "Read this sheet. Nothing on it can change from here.",
+                onclick: function () { EN.campaigns.viewSheet(known.rowId, player, row.campaign); } }, "VIEW SHEET") : null)
+            : el("button.btn.sm", { title: "Make this the active Freelancer",
             onclick: function () {
               EN.store.setActive(row.charId);
               toast((name.trim() || "Freelancer") + " is now the active Freelancer. Open the Freelancer portal to see the sheet.");
@@ -1120,6 +1146,46 @@ EN.gmView = (function () {
       (res.refused.length ? " Vigor NOT cleared on " + res.refused.join(", ") + ": this device did not save the write, so clear it on the sheet." : "");
   }
 
+  /* Pull in the crew while this account runs a campaign: that campaign's characters and nobody else's,
+     each with its player's name. The campaign is named here, with the picker from the Campaign tab when
+     there is more than one to run, because it decides who is on this list. */
+  function crewPicker(c, already) {
+    var C = EN.campaigns, state = C.crew(c.id), mine = C.running();
+    var out = [el("div.section-title", null, [document.createTextNode("Pull in the crew"), el("span.line")])];
+    out.push(el("div.row.wrap", { dataset: { gm: "crew-campaign" }, style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, [
+      mine.length > 1
+        ? el("select.camp-input.gm-crew-pick", { "aria-label": "Campaign", dataset: { gm: "crew-pick" }, onchange: function (e) { C.setPick(e.target.value); EN.app.render(); } },
+            mine.map(function (x) { return el("option", { value: x.id, selected: x.id === c.id, text: x.name }); }))
+        : el("span.help", { style: { margin: 0 }, text: "From " + c.name }),
+      el("button.btn.sm", { type: "button", dataset: { gm: "crew-refresh" }, title: "Read the campaign's characters again", onclick: function () { C.crew(c.id, true); EN.app.render(); } }, "↻")
+    ]));
+    if (state.error && !state.rows) {
+      out.push(el("p.help", { dataset: { gm: "crew-state" }, text: "Could not read this campaign's characters. Try ↻ in a moment." }));
+      return out;
+    }
+    if (!state.rows) {
+      out.push(el("p.help", { dataset: { gm: "crew-state" }, text: "Reading this campaign's characters…" }));
+      return out;
+    }
+    if (!state.rows.length) {
+      out.push(el("p.help", { dataset: { gm: "crew-state" }, text: "Nobody has a character in " + c.name + " yet. Players pick it in Manage characters, and your own characters go in the same way." }));
+      return out;
+    }
+    var open = state.rows.filter(function (r) { return !already[r.charId] && !already["row:" + r.rowId]; });
+    if (open.length) out.push(el("div.row.wrap", { style: { gap: "6px" } }, open.map(function (r) {
+      var d;
+      try { d = eng.derive(r.ch); } catch (e) { return null; }
+      var i = eng.initiative(d, 0);
+      return el("button.btn.sm", { dataset: { gm: "pull-crew", char: r.charId }, title: r.name + ", played by " + r.player + ". Initiative: Caliber + Agility or Wits Modifier = " + i.label, onclick: function () {
+        var roll = eng.rollD20({ mods: [{ label: "Caliber", value: i.caliber }, { label: i.attrName, value: i.total - i.caliber }] });
+        gm.addCrew(r.charId, roll.total, i.total, { campaign: c.id, name: r.name, player: r.player });
+        toast(r.name + " rolls " + roll.total + " for initiative.");
+        EN.app.render();
+      } }, "+ " + r.name + " · " + r.player + " (" + eng.fmtMod(i.total) + " " + i.attrName + ")");
+    }).filter(Boolean)));
+    return out;
+  }
+
   function endEncounter() {
     var res = clearCrewVigor();
     gm.clearEncounter();
@@ -1210,7 +1276,10 @@ EN.gmView = (function () {
     var already = {};
     enc.entries.forEach(function (r) { if (r.kind === "crew") already[r.charId] = true; });
     var addable = Object.keys(roster).filter(function (k) { return !already[k]; });
-    if (addable.length) {
+    var theCampaign = campaignOf();
+    if (theCampaign) {
+      crewPicker(theCampaign, already).forEach(function (n) { kids.push(n); });
+    } else if (addable.length) {
       kids.push(el("div.section-title", null,
         [document.createTextNode("Pull in the crew"), el("span.line")]));
       kids.push(el("div.row.wrap", { style: { gap: "6px" } }, addable.map(function (k) {
