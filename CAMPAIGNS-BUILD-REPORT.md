@@ -550,8 +550,7 @@ the row locks never contend). **The slide and the box-opening moment have not be
 
 # Campaigns build report: the Admin's Table reads the campaign
 
-Built 8 Nov 2026 on `campaigns-table`, cut from `main` at `66696b1`, after you looked at the live Table. No SQL and no migration. **Not merged yet:**
-that's yours to say.
+Built 8 Nov 2026 on `campaigns-table`, cut from `main` at `66696b1`, after you looked at the live Table. No SQL and no migration. **Merged to `main` on your word, 8 Nov 2026.**
 
 What you saw: Pull in the crew listed every record in the browser, your own bank of characters, not the campaign's. Two characters with one name
 looked the same, and nothing said whose they were. Your own characters should only show up once you've added them to the campaign.
