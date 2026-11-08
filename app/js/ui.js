@@ -9,6 +9,10 @@ EN.ui = (function () {
     var m = tag.match(/^([a-z0-9]+)?(.*)$/i);
     var name = m[1] || "div";
     var node = document.createElement(name);
+    /* Coming back to a page through history, Chrome restores the fields a script drew while it loaded, over the values the
+       script just set, and fires nothing. With the active character changed in between, the Identity step
+       shows one character's words on another's sheet, and the next keystroke in that field saves them. */
+    if (name === "input" || name === "textarea" || name === "select") node.setAttribute("autocomplete", "off");
     var rest = m[2] || "";
     var idm = rest.match(/#([\w-]+)/); if (idm) node.id = idm[1];
     var classes = (rest.match(/\.([\w-]+)/g) || []).map(function (c) { return c.slice(1); });

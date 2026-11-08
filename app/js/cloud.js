@@ -127,6 +127,12 @@ EN.cloud = (function () {
   }
   function payload(ch) { return { name: rowName(ch), data: JSON.parse(JSON.stringify(ch)) }; }
   function stamp(ch) { return ch && ch.meta ? ch.meta.updatedAt : undefined; }
+  /* The link book is one per browser and shared between tabs, so before this trusts it about a record, the record
+     has to be the newest this browser has. Read the book FIRST, then this: writes reach another tab in order, and a
+     save goes in before the note about it, so a tab that can see the note can see the save. */
+  function hearTabs() { var s = store(); if (s && s.syncTabs) s.syncTabs(); }
+  /* Behind what this browser last synced: a copy no tab should keep or send. An edit always moves a stamp forward. */
+  function behind(ch, L) { return Number(stamp(ch)) < Number(L.lat); }
   function eligible(id, b) {
     var ch = roster()[id];
     if (!ch || typeof ch !== "object" || (ch.meta && (ch.meta.example || ch.meta.viewing))) return false;
@@ -151,6 +157,7 @@ EN.cloud = (function () {
   function sync(opts) {
     if (!client || !user || offline) return Promise.resolve();
     if (runP) { again = (again === "pull" || (opts && opts.pull)) ? "pull" : true; return runP; }
+    hearTabs();
     setStatus("syncing");
     var wantPull = !!(opts && opts.pull), pulled = false;
     runP = (wantPull ? pull().then(function () { pulled = true; }) : Promise.resolve())
@@ -175,13 +182,16 @@ EN.cloud = (function () {
 
   // bring down what this browser has not seen, and what changed elsewhere
   function pull() {
-    var b = book(), uid = user.id;
+    var uid = user.id;
     lastPull = Date.now();
     // this account's own rows, by name: the Admin of a campaign can read its members' rows too (see the note above)
     return client.from("characters").select("id, name, updated_at").eq("owner_id", uid).order("updated_at", { ascending: false })
       .then(check)
       .then(function (rows) {
         if (!user || user.id !== uid) return;
+        // read after the wait, not before it: another tab may have written the book meanwhile, and this one writes it back whole
+        var b = book();
+        hearTabs();
         rows = rows || [];
         var seen = {};
         rows.forEach(function (r) { seen[r.id] = r; });
@@ -197,11 +207,11 @@ EN.cloud = (function () {
           if (!lid) { wanted.push({ row: r, lid: null }); return; }
           var ch = roster()[lid];
           if (!ch) return;   // set aside or missing on this device: leave both alone
-          var L = b.links[lid];
-          if (r.updated_at === L.at) return;
+          var L = b.links[lid], old = behind(ch, L);
+          if (r.updated_at === L.at && !old) return;
           var dirty = stamp(ch) !== L.lat;
           // ahead by mail alone, the row always wins: see THE COPY MAY ONLY BE AHEAD BY THE MAIL
-          if (!dirty || aheadByMail(lid, b) || Date.parse(r.updated_at) > Number(stamp(ch) || 0)) wanted.push({ row: r, lid: lid });
+          if (old || !dirty || aheadByMail(lid, b) || Date.parse(r.updated_at) > Number(stamp(ch) || 0)) wanted.push({ row: r, lid: lid });
         });
         saveBook(b);
         // fetch the wanted rows one by one, so one bad row cannot stop the rest
@@ -246,10 +256,13 @@ EN.cloud = (function () {
   // upload new records and local edits
   function push() {
     var b = book();
+    hearTabs();
     var jobs = Object.keys(roster()).filter(function (id) {
       if (!eligible(id, b)) return false;
       var L = b.links[id];
-      return !L || stamp(roster()[id]) !== L.lat;
+      if (!L) return true;
+      // different from what the book says isn't the same as newer: an old copy is never something to send
+      return stamp(roster()[id]) !== L.lat && !behind(roster()[id], L);
     });
     return jobs.reduce(function (p, lid) {
       return p.then(function () { return aheadByMail(lid, book()) ? pushFiled(lid) : pushOne(lid); });
@@ -360,6 +373,12 @@ EN.cloud = (function () {
      in when it is written. A refusal drops it: another account on this device would be refused too,
      and all that costs is the word Taken on somebody's list.
 
+     LOST MAIL COMES BACK. Delivered is a promise that a copy exists, and a copy can still be saved over: by another
+     device, under last write wins. Nobody would ever file that row again. So a run with a pull behind it also asks
+     which of this account's delivered rows its records don't list, and files those the ordinary way, safe behind the
+     rules above. A message the player deleted is still listed in meta.inboxApplied, so it stays deleted, unless the
+     copy that was saved over the sheet predates it. A package taken is `taken`, not delivered, so it can't come twice.
+
      IT FAILS QUIETLY. No table, no Realtime, no network: the mail waits, the character sync never
      hears about it, and one warning goes to the console. */
   var TAKEN_KEY = "en_inbox_taken_v1";
@@ -394,7 +413,7 @@ EN.cloud = (function () {
     if (list.length) b.unmarked = list; else delete b.unmarked;
     saveBook(b);
   }
-  function readRows() {
+  function readRows(pulled) {
     var b = book(), cids = Object.keys(b.links).map(function (k) { return b.links[k].cid; });
     if (!cids.length) return Promise.resolve([]);
     var ask = Object.keys(wanted).filter(function (id) { return wanted[id]; }), open = unmarked(b);
@@ -403,7 +422,9 @@ EN.cloud = (function () {
       return Promise.all([
         client.from("character_inbox").select(SELECT_ROW).eq("status", "waiting").in("character_id", cids).order("created_at", { ascending: true }).then(check),
         ask.length ? client.from("character_inbox").select(SELECT_ROW).in("id", ask).in("character_id", cids).neq("status", "recalled").then(check) : [],
-        open.length ? client.from("character_inbox").select(SELECT_ROW).in("id", open).then(check) : []
+        open.length ? client.from("character_inbox").select(SELECT_ROW).in("id", open).then(check) : [],
+        // LOST MAIL COMES BACK. Its own failure costs only this: the rest of the read still stands
+        pulled ? client.from("character_inbox").select("id, character_id").eq("status", "delivered").in("character_id", cids).then(check).then(null, function (e) { inboxWarn(e); return []; }) : []
       ]);
     }).then(function (all) {
       // a row this device was still waiting to hear about that is simply gone went with its campaign
@@ -411,7 +432,14 @@ EN.cloud = (function () {
       open.forEach(function (id) { if (there.indexOf(id) === -1) setUnmarked(id, false); });
       var seen = {}, rows = [];
       (all[0] || []).concat(all[1] || [], all[2] || []).forEach(function (r) { if (!seen[r.id]) { seen[r.id] = 1; rows.push(r); } });
-      return rows;
+      var lost = (all[3] || []).filter(function (r) {
+        var lid = linkedTo(book(), r.character_id), ch = lid ? roster()[lid] : null;
+        return !seen[r.id] && !!ch && !filed(ch, r.id);
+      }).map(function (r) { return r.id; });
+      if (!lost.length) return rows;
+      return client.from("character_inbox").select(SELECT_ROW).in("id", lost).then(check).then(function (more) {
+        return rows.concat(more || []);
+      }, function (e) { inboxWarn(e); return rows; });
     }, function (e) {
       ask.forEach(function (id) { wanted[id] = 1; });
       throw e;
@@ -493,7 +521,7 @@ EN.cloud = (function () {
   function inbox(pulled, tried) {
     if (!client || !user || offline) return Promise.resolve();
     var uid = user.id, came = [];
-    return readRows().then(function (rows) {
+    return readRows(pulled).then(function (rows) {
       if (!user || user.id !== uid) return;
       var fresh = rows.some(function (r) { var lid = writable(r); return lid && r.status !== "recalled" && !filed(roster()[lid], r.id); });
       if (fresh && (tabHidden() || !pulled)) {
@@ -573,6 +601,7 @@ EN.cloud = (function () {
     if (!user || !row) return;
     var mine = linkedTo(book(), row.character_id);
     if (mine && (row.status === "waiting" || row.status === "delivered")) {
+      hearTabs();   // the tab that filed this may have said so already
       var ch = roster()[mine];
       if (!filed(ch, row.id)) {
         wanted[row.id] = 1;
