@@ -548,6 +548,38 @@ EN.inventoryView = (function () {
          el("button.btn.sm.put-back", { type: "button", title: "Put it back in the " + racked.name + ". Its Load doesn't change.",
            onclick: function () { store.update(function (c) { EN.engine.setInHand(c, key, false); }); } }, "PUT BACK")]);
   }
+  // what a new piece carries the moment it lands in the Stash, however it got there.
+  // signing a lease starts the 7-day installment clock (one day per Long Rest);
+  // leased gear is never pooled, so each contract is its own instance and
+  // re-leasing an item already in arrears never clears another one's debt.
+  function arrivalExtra(it) {
+    if (it.relayTier) return { relayCipher: relayLoadPick(it) };   // a Relay comes loaded with the picked cipher
+    return it.upkeep ? { leaseDays: 7, leaseDue: false, leaseOwned: false } : null;
+  }
+  /* A #POST PACKAGE (campaigns batch 3). Take it, for one record inside a store.update: each item
+     goes through addToStash the way a purchase does, so stackables merge, at no price. The names are
+     the sender's words, and the database could only check their shape, so a name the catalog does
+     not know is refused here and never reaches the record's equipment. It stays on the package with
+     `refused` set, so the box can say what did not come. Answers the refused names. */
+  function takePackage(c, rows) {
+    var refused = [];
+    (rows || []).forEach(function (r) {
+      var it = findItem(r.name);
+      if (!it) { r.refused = true; refused.push(r.name); return; }
+      delete r.refused;   // refused on another device, or before a pack loaded
+      for (var i = 0; i < r.qty; i++) addToStash(c, it.name, arrivalExtra(it));
+    });
+    return refused;
+  }
+  // what the Admin's Attach items search can offer: the catalog, gated like every other listing
+  function sendable() {
+    var seen = {};
+    return catalog().filter(function (it) {
+      if (!it || !it.name || seen[it.name] || toolkitListing(it)) return false;
+      seen[it.name] = true;
+      return true;
+    });
+  }
   function buy(it, premium) {
     if (it.vendor === false && _mode !== "fivefinger") { toast(it.name + " isn't vendor stock; it's found, not bought. (" + (it.nexus || "rarely sold") + ")"); return; }
     var sp = streetPrice(it);
@@ -561,12 +593,8 @@ EN.inventoryView = (function () {
     }
     store.update(function (c) {
       c.glimmer = (c.glimmer || 0) - (sp + planFee);
-      // signing a lease starts the 7-day installment clock (one day per Long Rest);
-      // leased gear is never pooled, so each contract is its own instance and
-      // re-leasing an item already in arrears never clears another one's debt.
-      var extra = it.upkeep ? { leaseDays: 7, leaseDue: false, leaseOwned: false } : null;
-      if (extra && planFee) extra.premium = true;
-      if (it.relayTier) extra = { relayCipher: relayLoadPick(it) };   // a Relay comes loaded with the picked cipher
+      var extra = arrivalExtra(it);
+      if (extra && planFee && !it.relayTier) extra.premium = true;
       addToStash(c, it.name, extra);
     }, { ledger: "Bought " + it.name + (it.relayTier ? " loaded with " + relayLoadPick(it) : "") + (it.upkeep ? " (lease buy-in" + (planFee ? " and first Premium installment" : "") + ")" : "") });
     toast(_mode === "register" ? it.name + " purchased for " + fmtG(sp) + ". Compliance fees included. All sales final." :
@@ -4865,5 +4893,7 @@ EN.inventoryView = (function () {
 
   return { render: render, leaseTick: leaseTick, householdTick: householdTick, hypercareTick: hypercareTick,
            openBench: openBench, openStash: openStash, openBills: openBills, closePops: closePops,
-           pickUpDropped: pickUpDropped, installFromStash: installFromStash, cyberAnatomyPlan: cyberAnatomyPlan, sell: sell };
+           pickUpDropped: pickUpDropped, installFromStash: installFromStash, cyberAnatomyPlan: cyberAnatomyPlan, sell: sell,
+           // #POST packages: Take it (js/face.js) and the Admin's Attach items search (js/gm_campaign.js)
+           takePackage: takePackage, sendable: sendable };
 })();

@@ -575,7 +575,21 @@ EN.store = (function () {
         // the id is what keeps a message's open state pinned to the message rather than
         // to its position, and a hand-written or hand-edited file will not have one
         if (typeof m.id !== "string" || !m.id) m.id = "pm_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
+        // what the Admin's mail can carry (campaigns batch 3): a package, whether it has been taken,
+        // and the inbox row it came from. Touched only when a message carries one of them.
+        if (m.package != null || m.taken != null) {
+          var pkg = cleanPackage(m.package);
+          if (pkg) { m.package = pkg; m.taken = !!m.taken; }
+          else { delete m.package; delete m.taken; }
+        }
+        if (m.inboxId != null && typeof m.inboxId !== "string") delete m.inboxId;
       });
+    }
+    // the inbox rows this record has filed as mail (js/gmstore.js deliverMail). Never pruned: a row it
+    // forgot would come back as a second copy of the message.
+    if (ch.meta && ch.meta.inboxApplied != null) {
+      if (Array.isArray(ch.meta.inboxApplied)) ch.meta.inboxApplied = ch.meta.inboxApplied.filter(function (x) { return typeof x === "string" && x; });
+      else delete ch.meta.inboxApplied;
     }
     /* The player's Contacts (ch.face.contacts), the Social tab's third sub-tab. NOT the GM's
        People cards, which live in EN.gmStore's own "contacts" bag on the Admin desktop; the two
@@ -2630,6 +2644,23 @@ EN.store = (function () {
     persist(true); emit();
     return copy;
   }
+  /* A #POST package as the record keeps it: [{ name, qty }], whole quantities from 1 to 99, and
+     `refused` on a row the catalog did not know at Take it. Answers null when nothing in it is usable.
+     The database checks the same shape on the way in; this is for what arrives as a file. */
+  function cleanPackage(v) {
+    if (!Array.isArray(v)) return null;
+    var out = [];
+    v.forEach(function (r) {
+      if (!r || typeof r !== "object" || Array.isArray(r) || typeof r.name !== "string") return;
+      var name = r.name.trim(), q = Number(r.qty);
+      if (!name || !isFinite(q) || q !== Math.floor(q) || q < 1 || q > 99) return;
+      var row = { name: name, qty: q };
+      if (r.refused) row.refused = true;
+      out.push(row);
+    });
+    return out.length ? out : null;
+  }
+
   /* VIEW SHEET (campaigns batch 2). Another player's Freelancer, read through the campaign read
      policy and loaded the way an example is: in memory, never in the roster, never saved, never
      pushed. It carries its own flag, meta.viewing, so this file and js/cloud.js can tell it from
@@ -2831,6 +2862,8 @@ EN.store = (function () {
     // pre-made examples: live, editable, never persisted
     setExample: setExample, clearExample: clearExample, activeIsExample: activeIsExample, adoptExample: adoptExample,
     // another player's sheet, read-only, from the Campaign tab: see VIEW SHEET above
-    setViewing: setViewing, clearViewing: clearViewing, activeIsViewing: activeIsViewing, viewingInfo: viewingInfo
+    setViewing: setViewing, clearViewing: clearViewing, activeIsViewing: activeIsViewing, viewingInfo: viewingInfo,
+    // a #POST package's shape, shared with EN.gmStore's cleanOps
+    cleanPackage: cleanPackage
   };
 })();

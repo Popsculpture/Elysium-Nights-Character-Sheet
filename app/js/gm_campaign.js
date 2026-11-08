@@ -14,6 +14,12 @@
 
    A campaign the account only plays in is not listed: this tab is for tables it runs.
    Names here are other people's words, so they reach the page as text, never as HTML.
+
+   #POST from the Admin (batch 3). The Admin and co-Admins can send in-game mail to one character
+   or the whole crew, signed as an NPC card from the People tab or any typed name, with items from
+   the gear catalog attached. A message can go alone, and so can a package. The list below it shows
+   this account's own sends: the read policy gives them to the sender and the character's owner,
+   and nobody else. It is the player's app that files a message on the record (js/cloud.js).
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -27,6 +33,14 @@ EN.gmCampaign = (function () {
   var _typed = null;      // { kind: "delete" | "transfer", to, toName }: the typed confirm that is open
   var _renameDraft = null, _transferTo = "";
 
+  /* The message being written: { uid, campaign, to, from, subj, body, pkg: [{ name, qty }], search }.
+     `to` is a character's row id or "crew". It lasts until it is sent or cancelled, the way a People
+     card lasts in its editor, so a look at a sheet in the middle of writing costs nothing. Only
+     another account, or another campaign, ends it. */
+  var _send = null;
+  var _sendsHost = null;  // the Sends list's own node, so a status change never redraws what is being typed
+  var MAX_ITEMS = 20, MAX_QTY = 99, RESULTS = 12;
+
   function stale() { _d = {}; _remove = null; _typed = null; _renameDraft = null; _transferTo = ""; }
   // what the campaign holds is out of date, but a confirm that is open stays open
   function invalidate() { _d = {}; }
@@ -34,9 +48,12 @@ EN.gmCampaign = (function () {
   function load(id) {
     var slot = _d[id] = { loading: true };
     var runs = C();
-    Promise.all([runs.roster(id), runs.invite(id), runs.blocked(id)]).then(function (all) {
+    // the sends are beside the rest: a failure there costs that list and nothing else
+    var sends = Promise.resolve().then(function () { return runs.sends(id); })
+      .then(function (rows) { return rows || []; }, function (e) { console.warn("Could not read your sends", e); return null; });
+    Promise.all([runs.roster(id), runs.invite(id), runs.blocked(id), sends]).then(function (all) {
       if (_d[id] !== slot) return;
-      _d[id] = { roster: all[0] || [], token: all[1] || "", blocked: all[2] || [] };
+      _d[id] = { roster: all[0] || [], token: all[1] || "", blocked: all[2] || [], sends: all[3] };
       repaint();
     }, function (e) {
       if (_d[id] !== slot) return;
@@ -111,15 +128,197 @@ EN.gmCampaign = (function () {
     var k = typeof key === "string" ? key : "", info = EN.classes && EN.classes[k];
     return info && info.name ? String(info.name).replace(/^The\s+/i, "") : (k ? k.toUpperCase() : "No class");
   }
+  function charName(sheet) { return typeof sheet.name === "string" && sheet.name ? sheet.name : "Unnamed Freelancer"; }
   function charLine(c, m, sheet) {
     var lvl = typeof sheet.level === "number" ? sheet.level : 1;
-    return el("div.camp-char", null, [
-      el("span.camp-char-name", { text: typeof sheet.name === "string" && sheet.name ? sheet.name : "Unnamed Freelancer" }),
-      el("span.mgr-meta", { text: "L" + lvl + " · " + classLabel(sheet.class) }),
-      el("button.btn.sm", { type: "button", "data-camp": "view", "data-char": sheet.id,
-        title: "Read this sheet. Nothing on it can change from here.",
-        onclick: function () { C().viewSheet(sheet.id, m.discord_name, c.id); } }, "VIEW SHEET")
+    var writing = sendingTo(c, sheet.id);
+    return el("div.camp-char-wrap", null, [
+      el("div.camp-char", null, [
+        el("span.camp-char-name", { text: charName(sheet) }),
+        el("span.mgr-meta", { text: "L" + lvl + " · " + classLabel(sheet.class) }),
+        el("button.btn.sm", { type: "button", "data-camp": "send", "data-char": sheet.id,
+          title: "Send #POST mail to this character, signed as anyone you like.",
+          onclick: function () { openSend(c, sheet.id); } }, "SEND"),
+        el("button.btn.sm", { type: "button", "data-camp": "view", "data-char": sheet.id,
+          title: "Read this sheet. Nothing on it can change from here.",
+          onclick: function () { C().viewSheet(sheet.id, m.discord_name, c.id); } }, "VIEW SHEET")
+      ]),
+      writing ? composer(c, "To " + charName(sheet)) : null
     ]);
+  }
+
+  /* ---- #POST from the Admin: writing one -----------------------------------------
+     Nothing here redraws the page while it is being typed in: each field writes to _send, and only
+     the search's results and the attached list redraw, in place, inside their own nodes. */
+  function sendingTo(c, to) { return !!_send && _send.campaign === c.id && _send.to === to; }
+  function openSend(c, to) {
+    var same = sendingTo(c, to);
+    if (same) { _send = null; EN.app.render(); return; }
+    var was = _send && _send.campaign === c.id && _send.uid === me() ? _send : null;
+    // a message half written keeps its words when it is pointed at someone else
+    _send = { uid: me(), campaign: c.id, to: to, from: was ? was.from : "", subj: was ? was.subj : "", body: was ? was.body : "",
+              pkg: was ? was.pkg : [], search: "" };
+    EN.app.render();
+  }
+  function me() { return EN.cloud && EN.cloud.userId ? EN.cloud.userId() : null; }
+  function npcCards() {
+    var list = EN.gmStore && EN.gmStore.list ? EN.gmStore.list("contacts") : [];
+    return list.map(function (k) { return k && typeof k.name === "string" ? k.name.trim() : ""; })
+      .filter(function (n, i, all) { return n && all.indexOf(n) === i; })
+      .sort(function (a, b) { return a.localeCompare(b); });
+  }
+  function catalogHits(words) {
+    var inv = EN.inventoryView, q = String(words || "").trim().toLowerCase();
+    if (!q || !inv || !inv.sendable) return [];
+    return inv.sendable().filter(function (it) { return it.name.toLowerCase().indexOf(q) !== -1; }).slice(0, RESULTS);
+  }
+  function drawHits(host, listHost) {
+    EN.ui.clear(host);
+    var words = _send.search, hits = catalogHits(words);
+    if (!String(words || "").trim()) return;
+    if (!hits.length) { host.appendChild(el("p.help", { style: { margin: "4px 0 0" }, text: "Nothing in the catalog goes by that." })); return; }
+    hits.forEach(function (it) {
+      host.appendChild(el("div.camp-hit", { "data-camp": "send-hit" }, [
+        el("span.camp-hit-name", { text: it.name }),
+        el("span.mgr-meta", { text: it.group || it.kind || "" }),
+        el("button.btn.sm", { type: "button", "data-camp": "send-add", onclick: function () {
+          var row = _send.pkg.filter(function (r) { return r.name === it.name; })[0];
+          if (row) row.qty = Math.min(MAX_QTY, row.qty + 1);
+          else if (_send.pkg.length >= MAX_ITEMS) { toast("A package holds " + MAX_ITEMS + " different items."); return; }
+          else _send.pkg.push({ name: it.name, qty: 1 });
+          drawAttached(listHost);
+        } }, "+ ADD")
+      ]));
+    });
+  }
+  function drawAttached(host) {
+    EN.ui.clear(host);
+    _send.pkg.forEach(function (r) {
+      host.appendChild(el("div.camp-hit", { "data-camp": "send-item" }, [
+        el("span.camp-hit-name", { text: r.name }),
+        el("label.camp-qty", null, [
+          document.createTextNode("Qty "),
+          el("input.camp-input.camp-qty-in", { type: "number", min: "1", max: String(MAX_QTY), step: "1", value: String(r.qty), "data-camp": "send-qty", "aria-label": "Quantity of " + r.name,
+            onchange: function (e) {
+              var n = Math.floor(Number(e.target.value));
+              r.qty = isFinite(n) ? Math.max(1, Math.min(MAX_QTY, n)) : 1;
+              e.target.value = String(r.qty);
+            } })
+        ]),
+        el("button.btn.sm", { type: "button", "data-camp": "send-drop", title: "Take this out of the package", onclick: function () {
+          _send.pkg = _send.pkg.filter(function (x) { return x !== r; });
+          drawAttached(host);
+        } }, "✕")
+      ]));
+    });
+  }
+  function sendNow(c, btn) {
+    var s = _send, mail = { from: s.from.trim(), subj: s.subj.trim(), body: s.body.trim() };
+    if (s.pkg.length) mail.package = s.pkg.map(function (r) { return { name: r.name, qty: r.qty }; });
+    if (!mail.from) { toast("Who is it from? Pick a card or type a name."); return; }
+    if (!mail.subj && !mail.body && !s.pkg.length) { toast("Add a subject, a message or a package."); return; }
+    var crew = s.to === "crew", to = s.to;
+    btn.disabled = true;
+    (crew ? C().sendToCrew(c.id, mail) : C().sendToCharacter(to, mail)).then(function (n) {
+      _send = null;
+      if (crew && !n) toast("Nobody has a character in this campaign yet.");
+      else toast(crew ? (n === 1 ? "Sent to 1 character." : "Sent to " + n + " characters.") : "Sent. It waits until their app picks it up.");
+      delete _d[c.id];
+      repaint();
+    }, function (e) {
+      console.warn("Could not send", e);
+      btn.disabled = false;
+      toast(C().errText(e));
+      // the character may have left: what the page shows is out of date, and the words are still in _send
+      delete _d[c.id];
+      repaint();
+    });
+  }
+  function composer(c, title) {
+    var s = _send;
+    var attached = el("div.camp-hits", { "data-camp": "send-items" });
+    var hits = el("div.camp-hits", { "data-camp": "send-hits" });
+    var fromIn = el("input.camp-input", { type: "text", maxlength: "80", value: s.from, placeholder: "Any name", "aria-label": "From", "data-camp": "send-from",
+      oninput: function (e) { s.from = e.target.value; } });
+    var cards = npcCards();
+    var box = el("div.camp-compose", { "data-camp": "composer" }, [
+      el("div.camp-compose-to", { text: title }),
+      el("label.fl", { text: "From" }),
+      el("div.camp-line", null, [
+        fromIn,
+        cards.length ? el("select.camp-input.camp-npc", { "aria-label": "Sign as one of your People cards", "data-camp": "send-npc",
+          onchange: function (e) { if (e.target.value) { s.from = e.target.value; fromIn.value = e.target.value; } e.target.value = ""; } },
+          [el("option", { value: "", text: "A People card…" })].concat(cards.map(function (n) { return el("option", { value: n, text: n }); }))) : null
+      ]),
+      el("label.fl", { text: "Subject" }),
+      el("input.camp-input.camp-wide", { type: "text", maxlength: "140", value: s.subj, "aria-label": "Subject", "data-camp": "send-subj",
+        oninput: function (e) { s.subj = e.target.value; } }),
+      el("label.fl", { text: "Message" }),
+      el("textarea.camp-input.camp-wide.camp-body", { maxlength: "4000", value: s.body, "aria-label": "Message", "data-camp": "send-body",
+        oninput: function (e) { s.body = e.target.value; } }),
+      el("label.fl", { text: "Attach items" }),
+      el("input.camp-input.camp-wide", { type: "search", value: s.search, placeholder: "Search the gear catalog", "aria-label": "Search the gear catalog", "data-camp": "send-search", "data-no-swipe": "1",
+        oninput: function (e) { s.search = e.target.value; drawHits(hits, attached); } }),
+      hits,
+      attached,
+      (function () {
+        var go = el("button.btn.sm.primary", { type: "button", "data-camp": "send-go", onclick: function () { sendNow(c, go); } }, "SEND");
+        return el("div.camp-line", { style: { marginTop: "10px" } }, [
+          go,
+          el("button.btn.sm", { type: "button", "data-camp": "send-cancel", onclick: function () { _send = null; EN.app.render(); } }, "CANCEL")
+        ]);
+      })()
+    ]);
+    drawHits(hits, attached);
+    drawAttached(attached);
+    return box;
+  }
+
+  /* ---- #POST from the Admin: the list of sends --------------------------------------
+     Their own sends only: that is what the read policy gives them, and js/campaigns.js asks for. A
+     row whose character has left the campaign is off the roster, so it has no name to show. */
+  var STATUS = { waiting: "WAITING", delivered: "DELIVERED", taken: "TAKEN", recalled: "RECALLED" };
+  function nameOfRow(d, rowId) {
+    var found = "";
+    d.roster.forEach(function (m) {
+      (Array.isArray(m.characters) ? m.characters : []).forEach(function (sheet) { if (sheet.id === rowId) found = charName(sheet); });
+    });
+    return found || "A character no longer here";
+  }
+  function sendRow(c, d, r) {
+    var mail = r.mail || {}, pkg = Array.isArray(mail.package) ? mail.package : [];
+    return el("div.camp-send", { "data-send": r.id, "data-status": r.status }, [
+      el("div.camp-send-head", null, [
+        el("b", { text: nameOfRow(d, r.character_id) }),
+        el("span.chip.camp-role.camp-send-status", { text: STATUS[r.status] || String(r.status || "").toUpperCase() }),
+        el("span", { style: { flex: "1 1 auto" } }),
+        r.status === "waiting" ? el("button.btn.sm", { type: "button", "data-camp": "recall", title: "Take it back. It hasn't reached them yet.",
+          onclick: function () { act(c.id, C().recallSend(r.id), "Recalled."); } }, "RECALL") : null
+      ]),
+      el("div.camp-send-line", { text: "From " + (mail.from || "") + (mail.subj ? " · " + mail.subj : "") }),
+      pkg.length ? el("div.camp-send-line.camp-send-pkg", { text: pkg.map(function (x) { return x.name + " × " + x.qty; }).join(", ") }) : null
+    ]);
+  }
+  function drawSends(host, c, d) {
+    EN.ui.clear(host);
+    if (d.sends === null) { host.appendChild(el("p.help", { style: { margin: 0 }, text: "Your sends could not be read just now." })); return; }
+    if (!d.sends.length) { host.appendChild(el("p.help", { style: { margin: 0 }, text: "Nothing sent yet. Each send shows here until the player's app picks it up, and after." })); return; }
+    d.sends.forEach(function (r) { host.appendChild(sendRow(c, d, r)); });
+  }
+  function sendsSection(c, d) {
+    _sendsHost = el("div", { "data-camp": "sends" });
+    drawSends(_sendsHost, c, d);
+    return EN.ui.panel("#POST sends", d.sends ? String(d.sends.length) : null, [_sendsHost]);
+  }
+  // a player's app moved a row along (js/cloud.js hears it): the list, and nothing else, reads again
+  function sendsChanged(id) {
+    var d = _d[id];
+    if (!d || !d.roster || EN.app.activeTab() !== "campaign" || EN.app.portal() !== "admin") return;
+    C().sends(id).then(function (rows) {
+      if (_d[id] !== d) return;
+      d.sends = rows || [];
+      if (_sendsHost && _sendsHost.isConnected) drawSends(_sendsHost, { id: id }, d);
+    }, function (e) { console.warn("Could not read your sends", e); });
   }
   function memberRow(c, m, isAdmin) {
     var chars = Array.isArray(m.characters) ? m.characters : [];
@@ -165,7 +364,17 @@ EN.gmCampaign = (function () {
     ]);
   }
   function rosterSection(c, d, isAdmin) {
-    return EN.ui.panel("Roster", String(d.roster.length), d.roster.map(function (m) { return memberRow(c, m, isAdmin); }));
+    var crew = 0;
+    d.roster.forEach(function (m) { crew += Array.isArray(m.characters) ? m.characters.length : 0; });
+    var writing = sendingTo(c, "crew");
+    return EN.ui.panel("Roster", String(d.roster.length), [
+      el("div.camp-line.camp-crew", null, [
+        el("button.btn.sm", { type: "button", "data-camp": "send-crew", disabled: !crew,
+          title: crew ? "Send the same #POST mail to every character in this campaign." : "Nobody has a character in this campaign yet.",
+          onclick: function () { openSend(c, "crew"); } }, "SEND TO THE CREW")
+      ]),
+      writing ? composer(c, crew === 1 ? "To the crew: 1 character" : "To the crew: " + crew + " characters") : null
+    ].concat(d.roster.map(function (m) { return memberRow(c, m, isAdmin); })));
   }
   function blockedSection(c, d) {
     var kids = d.blocked.length
@@ -280,13 +489,16 @@ EN.gmCampaign = (function () {
       return;
     }
     var isAdmin = c.role === "admin";
+    // a message being written belongs to one account and one campaign
+    if (_send && (_send.uid !== me() || _send.campaign !== c.id)) _send = null;
     mount.appendChild(el("div.camp-sections", null, [
       inviteSection(c, d),
       rosterSection(c, d, isAdmin),
+      sendsSection(c, d),
       blockedSection(c, d),
       isAdmin ? settingsSection(c, d) : null
     ]));
   }
 
-  return { render: render, stale: stale, invalidate: invalidate };
+  return { render: render, stale: stale, invalidate: invalidate, sendsChanged: sendsChanged };
 })();

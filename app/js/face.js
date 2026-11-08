@@ -273,12 +273,18 @@ EN.faceView = (function () {
   /* ---- #POST (the mail service) --------------------------------------------
      #POST is the civic mail utility, sibling to #PRINT, #MINT and #FLAG: a
      delivery service with a compliance department and no interest in privacy.
-     Messages live on ch.face.post, which means they ride the RECORD. There is no
-     network in this app and there never will be, so the record is the transport:
-     mail exports with a Freelancer, imports with them, and a GM sitting at the
-     same device can open a player's record and leave one there.
+     Messages live on ch.face.post, which means they ride the RECORD, and the record is
+     still where mail lives: it exports with a Freelancer, imports with them, and a GM
+     sitting at the same device can open a player's record and leave one there. An Admin
+     on another device reaches it through the character_inbox table. The inbox is the
+     courier, not the mailbox: js/cloud.js files each row here and marks it delivered,
+     and from then on the message is the player's, on the record like any other.
      A message arrives unread, because the common case is that one arrived.
-     Opening it marks it read, and that is what feeds the rail's badge. */
+     Opening it marks it read, and that is what feeds the rail's badge.
+     A message from the inbox can carry a package (rec.package, rec.taken: see PACKAGES
+     below). The toast at the end of this block is what says one came. */
+  // the author's envelope: the #POST sub-tab and the toast
+  var ICON_POST = '<svg viewBox="0 0 122.88 88.86" fill="currentColor" aria-hidden="true"><path d="M7.05,0H115.83a7.07,7.07,0,0,1,7,7.05V81.81a7,7,0,0,1-1.22,4,2.78,2.78,0,0,1-.66,1,2.62,2.62,0,0,1-.66.46,7,7,0,0,1-4.51,1.65H7.05a7.07,7.07,0,0,1-7-7V7.05A7.07,7.07,0,0,1,7.05,0Zm-.3,78.84L43.53,40.62,6.75,9.54v69.3ZM49.07,45.39,9.77,83.45h103L75.22,45.39l-11,9.21h0a2.7,2.7,0,0,1-3.45,0L49.07,45.39Zm31.6-4.84,35.46,38.6V9.2L80.67,40.55ZM10.21,5.41,62.39,47.7,112.27,5.41Z"/></svg>';
   var POST_HELP = "Routed to your registered deck. #POST guarantees delivery. It has never guaranteed privacy.";
   function pid() { return "pm_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36); }
   /* Read by the rail (see the TABS entry in app.js), so it has to tolerate a
@@ -287,9 +293,95 @@ EN.faceView = (function () {
     var list = (ch && ch.face && ch.face.post) || [];
     return list.filter(function (m) { return !m.read; }).length;
   }
+
+  /* ---- PACKAGES (campaigns batch 3) -----------------------------------------
+     A message from the Admin can carry items: rec.package, a list of { name, qty }, and
+     rec.taken. Until it is taken the row keeps a glyph and the opened message shows a box
+     with Take it, which puts each item in the Stash the way a purchase does
+     (EN.inventoryView.takePackage) and reports back (EN.cloud.markTaken), so the Admin sees
+     Taken. The items and rec.taken land in one write, so this record can't take it twice.
+
+     Two devices. A record open on two devices is two copies, and the sync keeps one of them
+     whole, so a second Take it can't double anything: whichever copy wins holds the items
+     once. It could still overwrite what the first device did since, though, so Take it asks
+     the inbox first. If the row already says taken and a pull brings that copy here, nothing
+     more happens. If it does not (that copy never reached the account, or this one is newer),
+     this is the copy that will win, and it takes the items after all.
+
+     A read-only record (a viewed sheet, a locked record, an example) can't take it. */
+  var _taking = {};    // message id -> a Take it is asking the inbox
+  var _opening = {};   // message id -> play the box-opening moment on the next draw, once
+  // no art for this yet, so it is drawn here: a carton with its flaps up. The flaps are their own paths for the moment.
+  var ICON_PKG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="pkg-flap pkg-flap-l" d="M2.5 8.5 5.4 3.2c.2-.4.6-.7 1.1-.7h4.9v6z"/><path class="pkg-flap pkg-flap-r" d="M21.5 8.5l-2.9-5.3c-.2-.4-.6-.7-1.1-.7h-4.9v6z"/><path fill-rule="evenodd" d="M2.5 9.8h19v10.4c0 .7-.6 1.3-1.3 1.3H3.8c-.7 0-1.3-.6-1.3-1.3zM10 9.8v4.4l2-1 2 1V9.8z"/></svg>';
+  function hasPackage(rec) { return Array.isArray(rec.package) && rec.package.length > 0; }
+  function msgOf(ch, id) { return faceRead(ch).post.filter(function (m) { return m && m.id === id; })[0] || null; }
+  function readOnlyRecord() {
+    if (store.activeIsViewing && store.activeIsViewing()) return true;
+    if (store.activeIsExample && store.activeIsExample()) return true;
+    var ch = store.active(), id = ch && ch.meta && ch.meta.id;
+    return !!(id && store.isLocked && store.isLocked(id));
+  }
+  function takeNow(lid, id) {
+    var refused = [], went = 0, inbox = null;
+    _opening[id] = true;
+    var ok = store.updateById(lid, function (c) {
+      var m = msgOf(c, id);
+      if (!m || !hasPackage(m) || m.taken) return;
+      refused = EN.inventoryView.takePackage(c, m.package);
+      went = m.package.length - refused.length;
+      if (went) { m.taken = true; inbox = m.inboxId || null; }
+    });
+    if (!went) delete _opening[id];
+    if (!ok) { EN.ui.toast("Could not save that. The package is still here."); EN.app.render(); return; }
+    if (refused.length) EN.ui.toast("Not in the catalog: " + refused.join(", ") + (went ? ". The rest went to your Stash." : ". Nothing went to your Stash."));
+    if (inbox && EN.cloud && EN.cloud.markTaken) EN.cloud.markTaken(inbox);
+  }
+  function takeIt(id) {
+    if (_taking[id]) return;
+    if (readOnlyRecord()) { EN.ui.toast("This record is read-only, so the package stays where it is."); return; }
+    var ch = store.active(), lid = ch && ch.meta && ch.meta.id, m = ch ? msgOf(ch, id) : null;
+    if (!m || !hasPackage(m) || m.taken) return;
+    var cloud = EN.cloud;
+    _taking[id] = true;
+    (m.inboxId && cloud && cloud.inboxStatus ? cloud.inboxStatus(m.inboxId) : Promise.resolve(null)).then(function (status) {
+      if (status !== "taken") return false;
+      return cloud.sync({ pull: true }).then(function () {
+        var rec = store.roster()[lid], now = rec ? msgOf(rec, id) : null;
+        return !now || !!now.taken;
+      });
+    }).catch(function (e) {
+      console.warn("Could not ask about the package", e);
+      return false;
+    }).then(function (settled) {
+      delete _taking[id];
+      if (settled) { EN.ui.toast("Already taken on another device."); EN.app.render(); return; }
+      takeNow(lid, id);
+    });
+  }
+  function pkgBox(rec) {
+    var opening = !!_opening[rec.id], ro = readOnlyRecord();
+    delete _opening[rec.id];
+    var names = el("ul.post-box-list", null, rec.package.map(function (r) {
+      return el("li" + (r.refused ? ".post-box-refused" : ""), { title: r.refused ? "Not in the catalog, so it never reached your Stash." : "" }, [
+        el("span.post-box-name", { text: r.name }),
+        el("span.mono.post-box-qty", { text: "× " + r.qty })
+      ]);
+    }));
+    return el("div.post-box" + (opening ? ".post-box-opening" : ""), { "data-post": "box" }, [
+      el("span.post-box-glyph", { html: ICON_PKG }),
+      names,
+      rec.taken
+        ? el("button.btn.sm.post-take", { type: "button", disabled: true, "data-post": "taken" }, "Taken, in your Stash.")
+        : el("button.btn.sm.primary.post-take", { type: "button", disabled: ro, "data-post": "take",
+            title: ro ? "This record is read-only." : "Move these into your Stash.",
+            onclick: function () { takeIt(rec.id); } }, "Take it")
+    ]);
+  }
+
   function postRow(rec, i) {
     var key = rec.id || String(i);
     var open = !!_open["post-" + key];
+    var parcel = hasPackage(rec), waiting = parcel && !rec.taken;
     /* The row's geometry lives in theme.css off .post-row and .post-cell, not inline. Two reasons.
        A skin can then restate it without fighting an inline style, and #GRIDroid's tracker-cell
        rule keys off an inline min-width:0, which would otherwise claim these cells and stack the
@@ -305,8 +397,15 @@ EN.faceView = (function () {
        editor still reading UNKNOWN NODE and (no subject) while you fill them in. */
     var fromEl = el("span.mono.post-cell.post-from", { style: { color: rec.read ? "var(--text3)" : "var(--accent)" },
       text: rec.from || "UNKNOWN NODE" });
-    var subjEl = el("span.post-cell.post-subj", { style: { color: rec.read ? "var(--text3)" : "var(--text)" },
-      text: rec.subj || "(no subject)" });
+    var subjStyle = { color: rec.read ? "var(--text3)" : "var(--text)" };
+    /* The package glyph goes inside the subject cell, not beside it: '98 and #GRIDroid lay these
+       cells out as a grid, and a fifth child would slide into the wrong column. Its text keeps a
+       span of its own, because a keystroke in the editor below replaces that text by hand. */
+    var subjEl = waiting ? el("span", { text: rec.subj || "(no subject)" })
+                         : el("span.post-cell.post-subj", { style: subjStyle, text: rec.subj || "(no subject)" });
+    var subjCell = waiting ? el("span.post-cell.post-subj", { style: subjStyle }, [
+      el("span.post-pkg", { html: ICON_PKG, title: "A package is waiting in this message", "data-post": "pkg" }), subjEl
+    ]) : subjEl;
     var whenEl = el("span.mono.post-cell.post-when", { text: rec.when || "" });
     var head = el("div.row.post-row", {
       onclick: function () {
@@ -315,7 +414,7 @@ EN.faceView = (function () {
         // and an already-read message still needs a render to expand
         if (!open && !rec.read) fset(function (f) { if (f.post[i]) f.post[i].read = true; });
         else EN.app.render();
-      } }, [dot, fromEl, subjEl, whenEl, el("span.post-caret", { text: open ? "▾" : "▸" })]);
+      } }, [dot, fromEl, subjCell, whenEl, el("span.post-caret", { text: open ? "▾" : "▸" })]);
     function fld(k, label, ph, flex) {
       var inp = el("input", { type: "text", value: rec[k] || "", placeholder: ph,
         oninput: function () {
@@ -338,6 +437,7 @@ EN.faceView = (function () {
       el("textarea", { value: rec.body || "", placeholder: "The message…",
         oninput: function (e) { var v = e.target.value; fset(function (f) { if (f.post[i]) f.post[i].body = v; }, true); },
         style: { width: "100%", minHeight: "96px", fontSize: "12px" } }),
+      parcel ? pkgBox(rec) : null,
       el("div.row.wrap", { style: { gap: "6px", marginTop: "7px" } }, [
         /* A toggle, not a one-way trip. Opening a message is what normally marks it read,
            but a message you WROTE opens straight into its editor and so is still sitting
@@ -346,9 +446,14 @@ EN.faceView = (function () {
         el("button.btn.sm", { title: rec.read ? "Put it back in the unread pile." : "Clear it off the rail's badge without closing it.",
           onclick: function () { var to = !rec.read; fset(function (f) { if (f.post[i]) f.post[i].read = to; }); } },
           rec.read ? "● MARK UNREAD" : "○ MARK READ"),
-        el("button.btn.sm.ghost", { title: "Delete this message. It is not kept anywhere else.",
-          style: { color: "var(--danger)", borderColor: "var(--danger)" },
-          onclick: function () { delete _open["post-" + key]; fset(function (f) { f.post.splice(i, 1); }); } }, "✕ DELETE")
+        // a package nobody has taken goes with the message, so that one asks first
+        waiting
+          ? EN.ui.armButton("postdel:" + key, { label: "✕ DELETE", armedLabel: "SURE? THE PACKAGE GOES TOO",
+              title: "Delete this message and the package in it. Neither is kept anywhere else.",
+              onConfirm: function () { delete _open["post-" + key]; fset(function (f) { f.post.splice(i, 1); }); } })
+          : el("button.btn.sm.ghost", { title: "Delete this message. It is not kept anywhere else.",
+              style: { color: "var(--danger)", borderColor: "var(--danger)" },
+              onclick: function () { delete _open["post-" + key]; fset(function (f) { f.post.splice(i, 1); }); } }, "✕ DELETE")
       ])
     ]) : null;
     // .post-unread and .post-open are skin hooks (the '98 mail client bolds the one and paints
@@ -378,6 +483,79 @@ EN.faceView = (function () {
     // skin hooks: the '98 mail client reads its folder pane and status bar off these
     p.dataset.count = String(list.length); p.dataset.unread = String(n);
     return p;
+  }
+
+  /* ---- the toast (campaigns batch 3) -----------------------------------------
+     EN.ui.toast is text only and lasts under two seconds, and this one is a button that has to
+     stay long enough to press. The envelope, what came, and a bubble with the unread count. No
+     sound. Mail that comes while one is still up joins it, so several at once, or a stack that
+     came while the player was away, is one toast. It stands for each piece of mail as
+     { lid, from, pkg }, and js/cloud.js holds it back until the desktop is up. */
+  var TOAST_MS = 6000;
+  var _toast = null;   // { items, timer }
+  function dropToast() {
+    if (_toast) clearTimeout(_toast.timer);
+    _toast = null;
+    var box = document.getElementById("post-toast");
+    if (box) box.parentNode.removeChild(box);
+  }
+  function hideToast() {
+    var box = document.getElementById("post-toast");
+    if (box) box.classList.remove("show");
+    if (_toast) clearTimeout(_toast.timer);
+    _toast = null;
+    // long enough for the slide; under reduced motion there is no slide to wait for, and this is still harmless
+    setTimeout(function () { if (!_toast) dropToast(); }, 260);
+  }
+  function openPost(lid) {
+    var ch = store.active(), cur = ch && ch.meta ? ch.meta.id : null;
+    if (lid && lid !== cur && store.roster()[lid]) store.setActive(lid);
+    _sub = "post";
+    EN.app.gotoTab("face");
+  }
+  function recordName(lid) {
+    var rec = store.roster()[lid], n = rec && typeof rec.name === "string" ? rec.name.trim() : "";
+    return n || "Unnamed Freelancer";
+  }
+  function toastCopy(items) {
+    if (items.length > 1) return items.length + " new on #POST.";
+    return (items[0].pkg ? "Package from " : "New on #POST from ") + (items[0].from || "UNKNOWN NODE");
+  }
+  // mail for a character who isn't open names them, and the press opens them
+  function toastFor(items, cur) {
+    var seen = {}, lids = [];
+    items.forEach(function (x) { if (!seen[x.lid]) { seen[x.lid] = 1; lids.push(x.lid); } });
+    if (seen[cur] && lids.length === 1) return "";
+    if (lids.length === 1) return "For " + recordName(lids[0]);
+    return lids.length === 2 ? "For " + recordName(lids[0]) + " and " + recordName(lids[1]) : "For " + lids.length + " characters";
+  }
+  function postToast(items) {
+    if (!items || !items.length) return;
+    var all = (_toast ? _toast.items : []).concat(items);
+    if (_toast) clearTimeout(_toast.timer);
+    var ch = store.active(), cur = ch && ch.meta ? ch.meta.id : null;
+    var seen = {}, count = 0, target = null;
+    all.forEach(function (x) {
+      if (x.lid === cur) target = cur;
+      if (!seen[x.lid]) { seen[x.lid] = 1; count += unread(store.roster()[x.lid]); }
+    });
+    if (!target) target = all[0].lid;
+    var box = document.getElementById("post-toast"), fresh = !box;
+    if (fresh) { box = el("div#post-toast.post-toast", { "aria-live": "polite" }); document.body.appendChild(box); }
+    EN.ui.clear(box);
+    var under = toastFor(all, cur);
+    box.appendChild(el("button.post-toast-btn", { type: "button", title: "Open #POST",
+      onclick: function () { dropToast(); openPost(target); } }, [
+      el("span.post-toast-ico", { html: ICON_POST }),
+      el("span.post-toast-text", null, [
+        el("b.post-toast-line", { text: toastCopy(all) }),
+        under ? el("span.post-toast-sub", { text: under }) : null
+      ]),
+      el("span.post-toast-count", { text: String(count), title: count === 1 ? "1 unread" : count + " unread" })
+    ]));
+    if (fresh) { void box.offsetWidth; }   // drawn once where it starts, so it has somewhere to slide from
+    box.classList.add("show");
+    _toast = { items: all, timer: setTimeout(hideToast, TOAST_MS) };
   }
 
   /* ---- CONTACTS (the people you can reach) ----------------------------------
@@ -1049,7 +1227,6 @@ EN.faceView = (function () {
     // the author's clipboard, linked figures and envelope, one per Social sub-tab; same [icon,
     // text] convention the Inventory sub-nav uses for Stash, Chrome and Gray Market
     var ICON_LEDGER = '<svg viewBox="0 0 101.83 122.88" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.77,12.82h16.25v10.5h-7.01c-3.13,0-5.72,2.59-5.72,5.72v78.43c0,3.13,2.58,5.72,5.72,5.72h69.8 c3.14,0,5.72-2.58,5.72-5.72V29.04c0-3.14-2.59-5.72-5.72-5.72h-7.01v-10.5h16.25c3.73,0,6.77,3.07,6.77,6.77v96.51 c0,3.71-3.06,6.77-6.77,6.77H6.77c-3.71,0-6.77-3.05-6.77-6.77V19.59C0,15.86,3.05,12.82,6.77,12.82L6.77,12.82z M37.79,95.89 c-2.01,0-3.64-1.63-3.64-3.64c0-2.01,1.63-3.64,3.64-3.64h26.24c2.01,0,3.64,1.63,3.64,3.64c0,2.01-1.63,3.64-3.64,3.64H37.79 L37.79,95.89z M30.03,73.91c-2.01,0-3.64-1.63-3.64-3.64c0-2.01,1.63-3.64,3.64-3.64h41.76c2.01,0,3.64,1.63,3.64,3.64 c0,2.01-1.63,3.64-3.64,3.64H30.03L30.03,73.91z M23.2,51.94c-2.01,0-3.64-1.63-3.64-3.64s1.63-3.64,3.64-3.64h55.44 c2.01,0,3.64,1.63,3.64,3.64s-1.63,3.64-3.64,3.64H23.2L23.2,51.94z M32.4,9.46h7.68C40.73,4.13,45.04,0,50.26,0 c5.19,0,9.47,4.07,10.17,9.35l8.99,0.11c0.63,0,1.13,0.5,1.13,1.13v15.33c0,0.63-0.5,1.13-1.13,1.13h-37 c-0.61,0-1.13-0.5-1.13-1.13V10.59C31.27,9.97,31.78,9.46,32.4,9.46L32.4,9.46L32.4,9.46L32.4,9.46z M46.06,14.1 c0.69,0.95,1.69,1.89,2.74,2.37c0.86,0.26,1.8,0.28,2.67,0.04c1.36-0.63,2.62-2.14,3.2-3.4c0.07-0.36,0.11-0.73,0.11-1.13 c0-2.67-2.05-4.84-4.57-4.84c-2.53,0-4.57,2.17-4.57,4.84C45.64,12.8,45.79,13.51,46.06,14.1L46.06,14.1L46.06,14.1L46.06,14.1z"/></svg>';
-    var ICON_POST = '<svg viewBox="0 0 122.88 88.86" fill="currentColor" aria-hidden="true"><path d="M7.05,0H115.83a7.07,7.07,0,0,1,7,7.05V81.81a7,7,0,0,1-1.22,4,2.78,2.78,0,0,1-.66,1,2.62,2.62,0,0,1-.66.46,7,7,0,0,1-4.51,1.65H7.05a7.07,7.07,0,0,1-7-7V7.05A7.07,7.07,0,0,1,7.05,0Zm-.3,78.84L43.53,40.62,6.75,9.54v69.3ZM49.07,45.39,9.77,83.45h103L75.22,45.39l-11,9.21h0a2.7,2.7,0,0,1-3.45,0L49.07,45.39Zm31.6-4.84,35.46,38.6V9.2L80.67,40.55ZM10.21,5.41,62.39,47.7,112.27,5.41Z"/></svg>';
     // the author's own Social tab mark (ICON_SOCIAL in app.js), copied verbatim, never redrawn
     var ICON_CONTACTS = '<svg viewBox="0 0 122.88 119.91" fill="currentColor" aria-hidden="true"><path d="M20,52a4.32,4.32,0,0,1-7.79-3.73A52.4,52.4,0,0,1,15,43.09a54.42,54.42,0,0,1,3.4-4.83l.06-.08a55.27,55.27,0,0,1,3.83-4.33,54.44,54.44,0,0,1,4.36-4l0,0a4.33,4.33,0,0,1,3.15-.93,4.27,4.27,0,0,1,2.89,1.56l0,0a4.33,4.33,0,0,1,.93,3.15,4.27,4.27,0,0,1-1.56,2.89h0a44.87,44.87,0,0,0-3.68,3.34A44.45,44.45,0,0,0,20,52ZM8.91,95.49l.25-.19c2.57-1.53,6.46-1.13,9-2.9a5.41,5.41,0,0,0,.47-.91c.24-.54.45-1.13.59-1.53a18.83,18.83,0,0,1-1.54-2.2l-1.56-2.48A4.54,4.54,0,0,1,15.23,83a1.79,1.79,0,0,1,.15-.82,1.44,1.44,0,0,1,.53-.62,1.93,1.93,0,0,1,.38-.19,41.2,41.2,0,0,1-.07-4.46,5.64,5.64,0,0,1,2.83-4.37,8.36,8.36,0,0,1,2.2-1c.5-.14-.42-1.72.09-1.77,2.48-.26,6.49,2,8.21,3.87a6,6,0,0,1,1.53,3.83l-.09,4h0a1.13,1.13,0,0,1,.82.85,3.54,3.54,0,0,1-.43,2.13h0l0,0-1.77,2.93a15.8,15.8,0,0,1-2.18,3,4,4,0,0,0,.23.34,10.37,10.37,0,0,0,1.16,1.5s0,0,0,0c2,1.45,7,1.8,8.94,2.86l.07,0,.24.19a19.11,19.11,0,0,0-1-25.74L37,69.64A19.11,19.11,0,0,0,8.91,95.49ZM23.5,59.65a23.41,23.41,0,0,1,16.61,6.88l.13.14a23.49,23.49,0,0,1-.13,33.09l-.14.13A23.49,23.49,0,1,1,23.5,59.65ZM85.56,96.11c1.91-1.68,6-2.1,8.51-3.58,2.2-1.32,1.82-2.65,1.81-4.83H92.39c-9.06,0-3.09.71-1.86-9.13,1.84-13.9,15.84-13.91,17.91,0,1.32,9.47,7,9.13-1.87,9.13H103c0,2.41-.39,3.64,2.11,5,1.86,1,6.09,1.65,8.12,3.33A19.12,19.12,0,0,0,113,69.5l-.12-.1A19.11,19.11,0,0,0,86,69.28l-.11.12a19.13,19.13,0,0,0-.31,26.71Zm13.82-36.7A23.44,23.44,0,0,1,116,66.29l.12.14A23.48,23.48,0,0,1,116,99.52l-.14.13a23.47,23.47,0,0,1-33.09-.13l-.13-.13a23.48,23.48,0,0,1,.13-33.1l.13-.13a23.44,23.44,0,0,1,16.48-6.75ZM48.72,35.84l.25-.2c2.58-1.52,6.46-1.12,9-2.89a7.53,7.53,0,0,0,.47-.91c.23-.54.45-1.13.58-1.53a20.12,20.12,0,0,1-1.54-2.2l-1.56-2.48A4.54,4.54,0,0,1,55,23.36a1.78,1.78,0,0,1,.15-.81,1.46,1.46,0,0,1,.54-.62,1.5,1.5,0,0,1,.38-.19A38.76,38.76,0,0,1,56,17.28a5.8,5.8,0,0,1,.19-1,6,6,0,0,1,2.64-3.36,8.42,8.42,0,0,1,2.21-1c.49-.14-.42-1.72.09-1.78,2.47-.25,6.48,2,8.21,3.88a6.11,6.11,0,0,1,1.53,3.82l-.1,4h0a1.13,1.13,0,0,1,.82.85,3.54,3.54,0,0,1-.43,2.13h0a.17.17,0,0,1,0,.05l-1.78,2.93a15.38,15.38,0,0,1-2.18,3l.23.34a10.29,10.29,0,0,0,1.16,1.49l0,.05c2,1.45,7,1.8,8.94,2.86l.07,0,.24.19a19.13,19.13,0,0,0-1-25.74L76.82,10a19.11,19.11,0,0,0-28.1,25.85ZM63.31,0A23.41,23.41,0,0,1,79.92,6.88l.13.14a23.47,23.47,0,0,1-.13,33.09l-.13.13A23.49,23.49,0,1,1,63.31,0Zm29,37.29a4.32,4.32,0,0,1,2.4-7.6,4.34,4.34,0,0,1,3.14,1L99.37,32l1.49,1.42c1,1,2,2,2.86,3s1.73,2.06,2.52,3.12,1.59,2.22,2.32,3.38,1.42,2.34,2,3.52l0,.12a4.31,4.31,0,0,1-5.15,6A4.23,4.23,0,0,1,103,50.51c-.52-1-1.1-2-1.71-2.94s-1.27-1.92-1.94-2.81S97.9,42.94,97.12,42s-1.52-1.68-2.3-2.45-1.65-1.55-2.53-2.3ZM76.05,109a4.27,4.27,0,0,1,3.28.23l.08,0a4.33,4.33,0,0,1,2.1,2.45v0a4.31,4.31,0,0,1-2.73,5.42c-1.37.46-2.75.86-4.15,1.21s-2.76.62-4.19.85-2.86.41-4.27.52-2.89.18-4.32.18-2.92-.06-4.38-.18-2.9-.3-4.36-.54-2.92-.55-4.31-.9-2.83-.78-4.19-1.24a4.33,4.33,0,0,1-2.48-2.2,4.28,4.28,0,0,1-.21-3.3,4.34,4.34,0,0,1,2.19-2.48,4.28,4.28,0,0,1,3.3-.21l0,0c1.13.38,2.3.73,3.49,1l0,0c1.16.29,2.33.54,3.49.73h0c1.16.19,2.37.34,3.61.44s2.43.15,3.7.15,2.46-.05,3.64-.15,2.42-.24,3.56-.43h.07c1.16-.19,2.33-.43,3.49-.72s2.32-.62,3.44-1Z"/></svg>';
     function subTab(key, label) {
@@ -1087,6 +1264,6 @@ EN.faceView = (function () {
     mount.appendChild(el("div", null, blocks));
   }
 
-  return { render: render, personaTick: personaTick, unread: unread,
+  return { render: render, personaTick: personaTick, unread: unread, postToast: postToast, openPost: openPost,
            bgContactsDialog: bgContactsDialog, bgContactsSummary: bgContactsSummary, bgContactsTarget: BG_CONTACTS };
 })();

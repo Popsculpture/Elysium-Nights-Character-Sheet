@@ -198,7 +198,9 @@ EN.campaigns = (function () {
     EN_NOT_MEMBER: "They aren't in this campaign anymore.",
     EN_ADMIN_LOCKED: "The Admin has to transfer leadership first.",
     EN_ADMIN_ONLY: "Only the Admin can do that.",
-    EN_BAD_ROLE: "That role isn't one of the choices."
+    EN_BAD_ROLE: "That role isn't one of the choices.",
+    EN_BAD_MAIL: "A message needs a From, and a subject, a message or a package.",
+    EN_TOO_LATE: "Too late to recall. It's been delivered."
   };
   function code(e) {
     var m = e && e.message ? String(e.message) : "";
@@ -234,6 +236,16 @@ EN.campaigns = (function () {
   function rename(id, name) { return rpc("rename_campaign", { p_campaign: id, p_name: name }).then(afterRoster); }
   function remove(id) { return rpc("delete_campaign", { p_campaign: id }).then(afterRoster); }
   function inviteUrl(token) { return cloud().appUrl() + "?join=" + encodeURIComponent(token); }
+
+  /* #POST from the Admin (batch 3). The sends list asks by sender_id and by campaign: the read policy
+     also answers with mail sent to this account's own characters, which is not what this list is. */
+  function sendToCharacter(rowId, mail) { return rpc("send_to_character", { p_character: rowId, p_mail: mail }); }
+  function sendToCrew(id, mail) { return rpc("send_to_crew", { p_campaign: id, p_mail: mail }); }
+  function recallSend(id) { return rpc("recall_send", { p_id: id }); }
+  function sends(id) {
+    return client().from("character_inbox").select("id, character_id, mail, status, created_at")
+      .eq("campaign_id", id).eq("sender_id", me()).order("created_at", { ascending: false }).limit(50).then(check);
+  }
 
   // the Campaign tab's picker, remembered per device
   function pick() { return getKey(PICK) || ""; }
@@ -412,7 +424,11 @@ EN.campaigns = (function () {
     });
   }
   // app.js, once the login card is out of the way and the desktop is up
-  function landed() { landedYet = true; checkJoin(); }
+  function landed() {
+    landedYet = true;
+    checkJoin();
+    if (cloud() && cloud().landed) cloud().landed();   // mail that came during the boot can show now
+  }
 
   return {
     start: start, landed: landed, enabled: enabled, refresh: refresh, refreshSoon: refreshSoon,
@@ -421,6 +437,7 @@ EN.campaigns = (function () {
     pendingJoin: pendingJoin, newForm: newForm, errText: errText,
     create: create, leave: leave, roster: roster, blocked: blocked, invite: invite, resetInvite: resetInvite,
     removeMember: removeMember, unblock: unblock, setRole: setRole, transfer: transfer, rename: rename, remove: remove,
-    inviteUrl: inviteUrl, viewSheet: viewSheet, refreshView: refreshView, backToCampaign: backToCampaign
+    inviteUrl: inviteUrl, viewSheet: viewSheet, refreshView: refreshView, backToCampaign: backToCampaign,
+    sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sends: sends
   };
 })();

@@ -771,6 +771,10 @@ EN.gmStore = (function () {
           m[k] = typeof v === "string" ? v : (v == null ? "" : String(v));
         });
         m.id = postId();
+        // what the Admin's inbox adds (deliverMail below): a package, not yet taken, and the row it came from
+        var pkg = EN.store.cleanPackage ? EN.store.cleanPackage(o.mail.package) : null;
+        if (pkg) { m.package = pkg; m.taken = false; }
+        if (typeof o.mail.inboxId === "string" && o.mail.inboxId) m.inboxId = o.mail.inboxId;
         out.push({ op: "post", mail: m });
       } else if (o.op === "milestone") {
         var a = whole(o.amount);
@@ -972,8 +976,11 @@ EN.gmStore = (function () {
       if (!isObj(ch.face)) ch.face = {};
       if (!Array.isArray(ch.face.post)) ch.face.post = [];
       if (sign > 0) {
-        ch.face.post.unshift({ id: o.mail.id, from: o.mail.from, subj: o.mail.subj,
-                               when: o.mail.when, body: o.mail.body, read: false });
+        var msg = { id: o.mail.id, from: o.mail.from, subj: o.mail.subj,
+                    when: o.mail.when, body: o.mail.body, read: false };
+        if (o.mail.package) { msg.package = copy(o.mail.package); msg.taken = false; }
+        if (o.mail.inboxId) msg.inboxId = o.mail.inboxId;
+        ch.face.post.unshift(msg);
       } else {
         ch.face.post = ch.face.post.filter(function (m) { return !(m && m.id === o.mail.id); });
       }
@@ -1068,6 +1075,44 @@ EN.gmStore = (function () {
     }
     emit();
     return id;
+  }
+
+  /* THE COURIER'S DOOR (campaigns batch 3). A row from the character_inbox table becomes a #POST
+     message the way a posting does: cleanOps, then applyOp, through EN.store.updateById. What it
+     does not do is file a ledger record. The ledger is the GM's undo list on the GM's device, and
+     this runs on the player's device, for mail their Admin already sent, so there is nothing here
+     for anyone to undo.
+
+     The row's id goes on the record in the same write (meta.inboxApplied), so whichever device's
+     copy wins the sync holds the message once, and the message's id is made from the row's, so
+     every device's copy of it is the same message. Answers whether the write landed. Called only
+     for a row the record has not filed yet: js/cloud.js asks first, because a write that changed
+     nothing would still read as a local edit. */
+  function deliverMail(charId, rowId, mail) {
+    var roster = rosterNow();
+    if (typeof charId !== "string" || !own(roster, charId) || !isObj(roster[charId]) || !EN.store.updateById) return false;
+    if (typeof rowId !== "string" || !rowId || !isObj(mail)) return false;
+    var clean = cleanOps([{ op: "post", mail: { from: mail.from, subj: mail.subj, when: mail.when, body: mail.body, package: mail.package, inboxId: rowId } }]);
+    if (!clean.length) return false;
+    clean[0].mail.id = "pm_in_" + rowId;
+    return recordWrite(charId, function (ch) {
+      if (!isObj(ch.meta)) ch.meta = {};
+      if (!Array.isArray(ch.meta.inboxApplied)) ch.meta.inboxApplied = [];
+      ch.meta.inboxApplied.push(rowId);
+      applyOp(ch, clean[0], 1);
+    }, "mail");
+  }
+  /* The sender recalled it in the moment between this device reading the row and marking it
+     delivered. The message comes back off the record unless the player has already opened it or
+     taken what was in it: nobody can unread a letter. The row's id stays on the record. */
+  function withdrawMail(charId, rowId) {
+    var ch = rosterNow()[charId];
+    var list = isObj(ch) && isObj(ch.face) && Array.isArray(ch.face.post) ? ch.face.post : [];
+    var gone = list.filter(function (m) { return isObj(m) && m.inboxId === rowId && !m.read && !m.taken; });
+    if (!gone.length) return false;
+    return recordWrite(charId, function (c) {
+      c.face.post = c.face.post.filter(function (m) { return gone.map(function (g) { return g.id; }).indexOf(m && m.id) === -1; });
+    }, "withdraw");
   }
 
   /* THE WRITES THAT STILL STAND, newest first: write records not undone, not
@@ -1224,6 +1269,8 @@ EN.gmStore = (function () {
     setRoom: setRoom, setClock: setClock, setEncounterMeta: setEncounterMeta,
     // GM writes to player records, and the ones that still stand
     writeCrew: writeCrew, undoLast: undoLast, undoable: undoable, liveWrites: liveWrites, paidWrites: paidWrites,
+    // the player's side of the Admin's inbox (js/cloud.js)
+    deliverMail: deliverMail, withdrawMail: withdrawMail,
     // the document as a file, and whether the last write of it landed
     exportDoc: exportDoc, importDoc: importDoc, inspectDoc: inspectDoc, flush: flush, saveOk: saveOk
   };

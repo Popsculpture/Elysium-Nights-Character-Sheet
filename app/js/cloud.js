@@ -52,6 +52,9 @@
    a campaign can read its members' rows, so a pull asks for this account's rows by name:
    anything else would pull other players' characters into the Admin's roster.
 
+   THE INBOX. #POST from the Admin (campaigns batch 3). The character_inbox table is the
+   courier, and the record is still where mail lives. See THE INBOX below.
+
    WHERE IT SHOWS. The top bar's LINK readout is the cloud indicator, and Jack in
    and Jack out sit in Settings (// CLOUD LINK, first in the tray). Jacking in only
    works on a page served over http(s): Discord sends
@@ -155,6 +158,8 @@ EN.cloud = (function () {
             function (e) { console.warn("Cloud sync failed", e); setStatus("error"); })
       // beside the sync, never inside it: a failure over there costs the campaign list and nothing else
       .then(function () { if (wantPull && EN.campaigns && EN.campaigns.refresh) EN.campaigns.refresh(); })
+      // after it, inside the run: a pull landing halfway through filing a message would lose the message
+      .then(function () { return inbox(wantPull); })
       .then(function () {
         runP = null;
         if (again) { var p = again === "pull"; again = false; return sync({ pull: p }); }
@@ -271,6 +276,210 @@ EN.cloud = (function () {
     if (!client || !user) return;
     clearTimeout(pushTimer);
     pushTimer = setTimeout(function () { sync(); }, PUSH_DELAY);
+  }
+
+  /* ---- THE INBOX: #POST from the Admin ---------------------------------------------
+     Each character_inbox row is one message on its way to one character. While jacked in this
+     listens with Realtime, and reads waiting rows after every sync, which is how mail that came
+     while the player was away arrives. Each row goes on the record through EN.gmStore.deliverMail,
+     then mark_delivered, and then the toast. Only this device's account ever writes its records.
+
+     WHAT IT READS. The account's own characters, asked for by id. An Admin can read everything they
+     sent, so a read with no filter would answer with other players' mail. A row for a record that
+     isn't on this device, or is locked, stays waiting.
+
+     A PULL COMES FIRST. A device sitting idle holds an old copy of its records, and until now it
+     never pushed one. Filing mail on that copy would make it the newest copy there is, and its push
+     would overwrite whatever the player did since on the device they are actually using. So a row
+     is filed only straight after a pull: a run that had none finds rows, and asks for another run
+     that does. Rows are only filed from inside a run, so the two can't interleave.
+
+     TWO DEVICES AT ONCE. The first to mark a row delivered takes it out of everyone's waiting list,
+     and a second device that then stayed silent would hold a copy with no message, and overwrite the
+     first device's on its next save. So what Realtime says about a row (`wanted`) counts as well as
+     what is waiting: this device files any row it hears about that its copy has not filed, and a
+     refusal saying "already delivered" is only news. Each copy holds the message once, and
+     meta.inboxApplied is what says so.
+
+     A RECALL IN BETWEEN. A row can be recalled after this device read it and before it was marked,
+     or while a network failure kept the mark from landing. The refusal then takes the message back
+     off the record, unless the player has opened it.
+
+     TAKE IT REPORTS THROUGH A QUEUE (en_inbox_taken_v1, row ids). A package can be taken while
+     jacked out or offline, because it is already on the record. The report goes when it can, after
+     the delivery it depends on. A device queue rather than the link book, since nobody may be jacked
+     in when it is written. A refusal drops it: another account on this device would be refused too,
+     and all that costs is the word Taken on somebody's list.
+
+     IT FAILS QUIETLY. No table, no Realtime, no network: the mail waits, the character sync never
+     hears about it, and one warning goes to the console. */
+  var TAKEN_KEY = "en_inbox_taken_v1";
+  var channel = null, channelOf = null;
+  var wanted = {};            // row ids Realtime spoke of, to read whatever their status
+  var inboxWarned = false;
+  var hasLanded = false, heldMail = [];
+
+  function inboxWarn(e) {
+    if (inboxWarned) return;
+    inboxWarned = true;
+    console.warn("The inbox could not be read. Mail waits until it can.", e);
+  }
+  function filed(ch, rowId) {
+    var a = ch && ch.meta && ch.meta.inboxApplied;
+    return Array.isArray(a) && a.indexOf(rowId) !== -1;
+  }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  var DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  // a row's created_at in the When a Job Board posting writes
+  function whenOf(iso) {
+    var t = new Date(iso);
+    return isNaN(t.getTime()) ? "" : pad2(t.getHours()) + ":" + pad2(t.getMinutes()) + ", " + DAYS[t.getDay()];
+  }
+  var SELECT_ROW = "id, character_id, mail, created_at";
+  function readRows() {
+    var b = book(), cids = Object.keys(b.links).map(function (k) { return b.links[k].cid; });
+    if (!cids.length) return Promise.resolve([]);
+    var ask = Object.keys(wanted).filter(function (id) { return wanted[id]; });
+    wanted = {};
+    return Promise.resolve().then(function () {
+      return Promise.all([
+        client.from("character_inbox").select(SELECT_ROW).eq("status", "waiting").in("character_id", cids).order("created_at", { ascending: true }).then(check),
+        ask.length ? client.from("character_inbox").select(SELECT_ROW).in("id", ask).in("character_id", cids).neq("status", "recalled").then(check) : []
+      ]);
+    }).then(function (all) {
+      var seen = {}, rows = [];
+      (all[0] || []).concat(all[1] || []).forEach(function (r) { if (!seen[r.id]) { seen[r.id] = 1; rows.push(r); } });
+      return rows;
+    }, function (e) {
+      ask.forEach(function (id) { wanted[id] = 1; });
+      throw e;
+    });
+  }
+  function fileRow(r, uid, came) {
+    if (!user || user.id !== uid) return Promise.resolve();
+    var lid = linkedTo(book(), r.character_id), ch = lid ? roster()[lid] : null;
+    if (!ch || (store().isLocked && store().isLocked(lid))) return Promise.resolve();   // stays waiting
+    var had = filed(ch, r.id), mail = r.mail || {};
+    if (!had && !(EN.gmStore && EN.gmStore.deliverMail(lid, r.id, {
+      from: mail.from, subj: mail.subj, body: mail.body, package: mail.package, when: whenOf(r.created_at)
+    }))) return Promise.resolve();   // this device would not store it: stays waiting
+    var pkg = Array.isArray(mail.package) && mail.package.length > 0;
+    return client.rpc("mark_delivered", { p_id: r.id }).then(check).then(function () { return ""; }, function (e) {
+      return e && e.message ? String(e.message) : "";
+    }).then(function (refusal) {
+      if (refusal === "EN_RECALLED") { EN.gmStore.withdrawMail(lid, r.id); return; }
+      // anything else: on the record it stays. A network failure marks it on the next read
+      if (!had) came.push({ lid: lid, from: typeof mail.from === "string" ? mail.from : "", pkg: pkg });
+    });
+  }
+  function inbox(pulled) {
+    if (!client || !user || offline) return Promise.resolve();
+    var uid = user.id, came = [];
+    return readRows().then(function (rows) {
+      if (!user || user.id !== uid) return;
+      // something to file, on a copy that hasn't just been brought up to date: go round again with a pull
+      var fresh = rows.some(function (r) {
+        var lid = linkedTo(book(), r.character_id), ch = lid ? roster()[lid] : null;
+        return ch && !(store().isLocked && store().isLocked(lid)) && !filed(ch, r.id);
+      });
+      if (fresh && !pulled) {
+        again = "pull";
+        rows.forEach(function (r) { wanted[r.id] = 1; });
+        return;
+      }
+      return rows.reduce(function (p, r) {
+        return p.then(function () { return fileRow(r, uid, came); });
+      }, Promise.resolve());
+    }).catch(inboxWarn).then(function () {
+      if (came.length) tellMail(came);
+      return flushTaken();
+    }).catch(inboxWarn);
+  }
+
+  /* ---- the toast waits for the desktop ---- */
+  function tellMail(items) {
+    if (!hasLanded) { heldMail = heldMail.concat(items); return; }
+    if (EN.faceView && EN.faceView.postToast) EN.faceView.postToast(items);
+  }
+  function landed() {
+    hasLanded = true;
+    var held = heldMail;
+    heldMail = [];
+    if (held.length) tellMail(held);
+  }
+
+  /* ---- Take it reports back ---- */
+  function readTaken() {
+    try { var v = JSON.parse(localStorage.getItem(TAKEN_KEY) || "[]"); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+  function writeTaken(list) {
+    try { if (list.length) localStorage.setItem(TAKEN_KEY, JSON.stringify(list)); else localStorage.removeItem(TAKEN_KEY); } catch (e) {}
+  }
+  var flushing = null;
+  function flushTaken() {
+    if (flushing) return flushing;
+    if (!client || !user || offline) return Promise.resolve();
+    flushing = readTaken().reduce(function (p, id) {
+      return p.then(function () {
+        return client.rpc("mark_taken", { p_id: id }).then(check).then(function () { return true; }, function (e) {
+          // only these two can still come right: the network, and a delivery not marked yet
+          var m = e && e.message ? String(e.message) : "";
+          return /^EN_/.test(m) && m !== "EN_NOT_DELIVERED";
+        }).then(function (done) {
+          if (done) writeTaken(readTaken().filter(function (x) { return x !== id; }));
+        });
+      });
+    }, Promise.resolve()).catch(inboxWarn).then(function () { flushing = null; });
+    return flushing;
+  }
+  function markTaken(rowId) {
+    var list = readTaken();
+    if (list.indexOf(rowId) === -1) { list.push(rowId); writeTaken(list); }
+    return flushTaken();
+  }
+  // what the inbox says about one row, or null if it can't say inside 3 seconds
+  function inboxStatus(rowId) {
+    if (!client || !user || offline) return Promise.resolve(null);
+    return new Promise(function (done) {
+      var t = setTimeout(function () { done(null); }, 3000);
+      Promise.resolve().then(function () {
+        return client.from("character_inbox").select("status").eq("id", rowId).maybeSingle().then(check);
+      }).then(function (row) { clearTimeout(t); done(row ? row.status : null); }, function (e) { clearTimeout(t); inboxWarn(e); done(null); });
+    });
+  }
+
+  /* ---- listening ----
+     A row's arrival is only a signal: what to file is read fresh, through the same path as everything
+     else. A listener that came back after a gap has missed whatever happened in the gap, so being
+     subscribed is a reason to read as well. */
+  function onInboxEvent(ev) {
+    var row = ev && ev.new ? ev.new : null;
+    if (!user || !row) return;
+    var mine = linkedTo(book(), row.character_id);
+    if (mine && (row.status === "waiting" || row.status === "delivered")) {
+      var ch = roster()[mine];
+      if (!filed(ch, row.id)) { wanted[row.id] = 1; sync({ pull: true }); }
+    }
+    // the Admin's list of sends, when it is open
+    if (row.sender_id === user.id && ev.eventType === "UPDATE" && EN.gmCampaign && EN.gmCampaign.sendsChanged) EN.gmCampaign.sendsChanged(row.campaign_id);
+  }
+  function stopListening() {
+    if (channel && channelOf && typeof channelOf.removeChannel === "function") {
+      try { channelOf.removeChannel(channel); } catch (e) {}
+    }
+    channel = null; channelOf = null;
+  }
+  function listen() {
+    stopListening();
+    if (!client || !user || typeof client.channel !== "function") return;
+    var me = user.id;
+    try {
+      channelOf = client;
+      channel = client.channel("inbox:" + me)
+        .on("postgres_changes", { event: "*", schema: "public", table: "character_inbox" }, onInboxEvent)
+        .subscribe(function (state) { if (state === "SUBSCRIBED" && user && user.id === me) sync({ pull: true }); });
+    } catch (e) { inboxWarn(e); }
   }
 
   /* ---- records from before jack-in ---------------------------------------- */
@@ -396,10 +605,12 @@ EN.cloud = (function () {
     awaiting = null;
     var box = document.getElementById("cloud-offer");
     if (box && (!user || user.id !== prev)) box.parentNode.removeChild(box);
-    if (!user) { setStatus("off"); tellUser(); return; }
+    if (!user) { stopListening(); setStatus("off"); tellUser(); return; }
     if (!loggedMeta) { loggedMeta = true; try { console.info("Discord profile fields", Object.keys(meta())); } catch (e) {} }
     if (user.id !== prev) {
       var me = user.id;
+      wanted = {};
+      listen();
       holdUnclaimed();
       sync({ pull: true }).then(function () { if (user && user.id === me && awaiting) offerUpload(); });
       refreshPacks();
@@ -451,7 +662,7 @@ EN.cloud = (function () {
     var was = offline;
     offline = false;
     user = u;
-    if (was) { sync({ pull: true }); refreshPacks(); tellUser(); }
+    if (was) { if (!channel) listen(); sync({ pull: true }); refreshPacks(); tellUser(); }
     paint();
   }
   // a real jack out: the account's packs leave this device
@@ -636,8 +847,10 @@ EN.cloud = (function () {
     client: function () { return client; },
     userId: function () { return user ? user.id : null; },
     onUser: onUser, rowOf: rowOf, ensureRow: ensureRow, appUrl: returnUrl,
+    // the Admin's inbox, for js/face.js's Take it; js/campaigns.js says when the desktop is up
+    markTaken: markTaken, inboxStatus: inboxStatus, landed: landed,
     // the test suite swaps in a stand-in client (no network, no Discord)
-    _useClient: function (c) { start(); user = null; offline = false; wire(c); },
+    _useClient: function (c) { start(); stopListening(); user = null; offline = false; wire(c); },
     offline: function () { return offline; }
   };
 })();
