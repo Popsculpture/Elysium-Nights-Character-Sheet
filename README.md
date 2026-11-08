@@ -8,10 +8,10 @@ all tracked and derived live.
 ## Two desktops
 
 After the boot animation one card asks you to **Jack in with Discord** or **Run offline**, and
-there are no codes. A device that is jacked in, or has picked Run offline, skips it. The first
-landing is the Freelancer desktop; after that the app opens on the last desktop you used, and the
-settings cog's // WORKSPACE buttons switch between them (`?portal=admin` lands on Admin for one
-load). `?dev` skips the card and `?login` forces it, for testing.
+there are no codes. Either button lands on the Freelancer desktop. A device that is jacked in, or
+has picked Run offline, skips the card and opens on the last desktop you used. The settings cog's
+// WORKSPACE buttons switch between them (`?portal=admin` lands on Admin for one load that skips the
+card). `?dev` skips the card and `?login` forces it, for testing.
 
 - **Freelancer portal**: the player's own sheet. #PRINT (character creation & leveling, the
   foundation every other tab reads from; export / import a record as JSON), Freelancer (the live

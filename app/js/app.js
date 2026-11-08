@@ -599,11 +599,10 @@ EN.app = (function () {
         document.getElementById("os").style.display = "flex";
         setTimeout(function () { b.style.display = "none"; }, 520);
       };
-      /* After the login card: which desktop. The gate no longer chooses one
-         (campaigns batch 1): it answers with no profile, so this falls back to
-         the remembered desktop, which is Freelancer on a device's first
-         landing (only ?portal=admin, a testing switch, names one). Set the
-         portal FIRST, then reveal, so the render inside setPortal happens
+      /* After the login card: which desktop. Coming through the card answers
+         "freelancer". A load that skips the card answers with no profile, so
+         this falls back to the remembered desktop (only ?portal=admin, a
+         testing switch, names one). Set the portal FIRST, then reveal, so the render inside setPortal happens
          while #os is still display:none and any repaint is invisible. The
          settings tray's // WORKSPACE buttons are the way across. */
       var land = function (p) { setPortal(p || portal); reveal(); recoveryNotice(); };

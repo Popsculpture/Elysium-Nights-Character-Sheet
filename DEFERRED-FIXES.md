@@ -12494,14 +12494,17 @@ plain FREELANCER and ADMIN buttons for everyone. Gizmo greets a device once and 
 
 **Readings taken where the spec left room, smallest first:**
 
-- **Run offline opens the remembered desktop, not always Freelancer.** Section 3 says Run offline
-  goes to "the Freelancer desktop"; section 2 says the gate answers with no profile and `land()`
-  falls back to the remembered portal. On a fresh device those agree (Freelancer). On a device that
-  last used Admin (the author's), Run offline opens Admin. Section 2 is the rule; section 3 describes
-  the fresh device. Saying `"freelancer"` there instead is one word in `runOffline()`.
-- **`?portal=admin` still lands on Admin for one load.** The spec drops the gate's choice of desktop,
-  but this query is a testing switch and the suite's default query is `?dev&portal=admin`: dropping it
-  would quietly move most of ~500 runs onto the Freelancer desktop.
+- ~~**Run offline opens the remembered desktop, not always Freelancer.**~~ **Ruled by the author, 8 Nov
+  2026, the other way: anyone who comes through the card, by either button, lands on the Freelancer
+  desktop, and only a load that skips the card keeps the last desktop.** The first build read section
+  2 as the rule, so a device that last used Admin opened Admin after Run offline. Run offline now
+  answers `"freelancer"`. Jack in writes Freelancer through `EN.app.setPortal` before it leaves for
+  Discord, because the redirect back skips the card and reads the remembered desktop. A Jack in from
+  Settings does not come through the card and keeps the desktop it left from.
+- **`?portal=admin` still lands on Admin for one load that skips the card.** The spec drops the gate's
+  choice of desktop, but this query is a testing switch and the suite's default query is
+  `?dev&portal=admin`: dropping it would quietly move most of ~500 runs onto the Freelancer desktop.
+  Through the card it does nothing, under the author's 8 Nov ruling above.
 - **`?dev` keeps its habits.** It lands on Freelancer on #PRINT unless `?portal=admin`, as before, and
   it writes `en_login_v1 = "offline"` the way the old bypass wrote its unlock flag, so a reload
   without the query stays open.
@@ -12544,8 +12547,9 @@ plain FREELANCER and ADMIN buttons for everyone. Gizmo greets a device once and 
 
 **Still open, deliberately:**
 
-- **Gizmo's sway on the login card ignores reduced motion**, as it always has (`gate-clipwob` has no
-  reduced-motion rule; the tour's sway does). The spec asked only for the blink there; one line fixes it.
+- ~~**Gizmo's sway on the login card ignores reduced motion.**~~ **Fixed 8 Nov 2026 at the author's
+  ask.** The rule sits in the card's own styles, right after the sway it overrides: the blink's
+  always-on stylesheet loads first, so a rule there would lose to the sway at equal specificity.
 - **The real Discord round trip** (card, Gizmo, Discord, back to the app with no card) needs the
   hosted app: localhost is not on the redirect allow list. Waiting for the author on the live site.
 - **The lines are a draft** and the author may rewrite them (`LINES` and `PATCH` in gate.js).

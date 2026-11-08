@@ -6,11 +6,11 @@
    client, as on a file:// page) the card offers Run offline only, with one
    line saying sign-in needs the hosted app.
 
-   THE GATE DOES NOT CHOOSE THE DESKTOP. require(land) answers with no
-   profile, so land() in app.js falls back to the remembered desktop
-   (en_portal_v1): Freelancer on a device's first landing, the last desktop
-   after that. The settings tray's // WORKSPACE buttons cross between
-   desktops, and the Admin desktop opens for everyone.
+   DESKTOPS: coming through this card, by either button, lands on the
+   Freelancer desktop (the author, 8 Nov 2026). A load that skips the card
+   answers with no profile, so land() in app.js falls back to the remembered
+   desktop (en_portal_v1). The settings tray's // WORKSPACE buttons cross
+   between desktops, and the Admin desktop opens for everyone.
 
    REMEMBERING: the card shows until the device has a Discord session or has
    picked Run offline. The pick is en_login_v1 ("offline"). A device with a
@@ -31,7 +31,8 @@
    QUERY: ?dev and ?nogate skip the card (and record the offline pick, as the
    old bypass wrote its unlock, so a reload stays open). ?login forces it,
    for testing, and clears nothing. ?portal=admin lands on the Admin desktop
-   for that load, as before.
+   for a load that skips the card; through the card it is Freelancer like
+   everyone else.
 
    TO TURN IT OFF:       set CONFIG.enabled to false.
    TO REMOVE COMPLETELY: do not. tour.js reads Gizmo from this file, so a
@@ -114,6 +115,8 @@ EN.gate = (function () {
     ".gate-bubble .t.typing::after{ content:'█'; color:var(--success); animation:gate-blink .7s steps(2) infinite; }",
     ".gate-clipsvg{ width:58px; height:78px; flex:0 0 auto; filter:drop-shadow(0 0 10px rgba(46,230,160,.55)); animation:gate-clipwob 2.4s ease-in-out infinite; transform-origin:50% 90%; }",
     "@keyframes gate-clipwob{ 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(5deg)} }",
+    "/* after the rule it overrides, at the same specificity: his sway stops under reduced motion */",
+    "@media (prefers-reduced-motion:reduce){ .gate-clipsvg{ animation:none; } }",
     "/* his two answers, under his first line */",
     ".gate-acts{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }",
     ".gate-act{ font-family:var(--disp); font-weight:600; font-size:11px; letter-spacing:.12em; text-transform:uppercase; padding:6px 12px; border-radius:4px;",
@@ -229,7 +232,7 @@ EN.gate = (function () {
   function queryLogin() {
     try { return /[?&](login|gate)\b/.test(window.location.search); } catch (e) { return false; }
   }
-  // the gate does not choose the desktop; only ?portal=admin, a testing switch, names one
+  // a load that skips the card keeps the remembered desktop; only ?portal=admin, a testing switch, names one
   function landing() { return queryAdmin() ? "admin" : undefined; }
 
   /* ---- the card ------------------------------------------------------------ */
@@ -247,7 +250,7 @@ EN.gate = (function () {
     var done = _onDone;
     setKey(PICK, "offline");
     closeOverlay(fade);
-    if (done) done(landing());
+    if (done) done("freelancer");   // through the card is always the Freelancer desktop
     // land() ran setPortal (a synchronous render) and revealed #os, so the gear has real layout
     coach();
   }
@@ -255,6 +258,10 @@ EN.gate = (function () {
   function jackIn() {
     var ov = _ov, err = ov && ov.querySelector("#gate-err");
     if (err) { err.style.color = "var(--success)"; err.textContent = "OPENING DISCORD…"; }
+    /* Through the card is always the Freelancer desktop. The redirect back skips the card and lands
+       on the remembered desktop, so that is written now, before the page leaves. A Jack in from
+       Settings does not come through here, and keeps the desktop it left from. */
+    try { if (EN.app && EN.app.setPortal) EN.app.setPortal("freelancer"); } catch (e) {}
     var p = null;
     try { p = EN.cloud.jackIn("discord"); } catch (e) { p = null; }
     /* A redirect leaves the page. If it is still here a few seconds after the request settled,
@@ -484,8 +491,8 @@ EN.gate = (function () {
 
   /* ---- entry point --------------------------------------------------------
      Boot. Hands over silently when the device is jacked in (or coming back from Discord) or
-     has picked Run offline, and paints the card otherwise. Either way it answers with no
-     profile (only ?portal=admin names one), so app.js lands on the remembered desktop. */
+     has picked Run offline, with no profile (only ?portal=admin names one), so app.js lands on
+     the remembered desktop. Otherwise it paints the card, which answers "freelancer". */
   function require(onUnlock) {
     if (devBypass()) {
       setKey(PICK, "offline");

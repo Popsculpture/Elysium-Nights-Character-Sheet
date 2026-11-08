@@ -78,8 +78,8 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   (`?dev&cb=x`). Open `app/index.html` directly, not the repo-root `index.html`, which is
   a redirect stub that races a meta refresh against a JS redirect. There are no codes any more
   (campaigns batch 1, 8 Nov 2- The login card (`app/js/gate.js`, since campaigns batch 1 on 8 Nov 2026) offers Jack in with
-  Discord and Run offline, and does not choose the desktop: `require(land)` answers with no profile,
-  so the app opens on the remembered desktop (`en_portal_v1`, Freelancer on a first landing). The
+  Discord and Run offline. Either button lands on the Freelancer desktop; a load that skips the card
+  answers with no profile, so the app opens on the remembered desktop (`en_portal_v1`). The
   card shows until the device has a stored Discord session or picked Run offline (`en_login_v1`);
   the old `en_gate_ok_v1` and `en_gate_admin_ok_v1` are ignored. `?dev` skips it (and records the
   offline pick), `?dev&portal=admin` lands on Admin, `?login` forces the card and clears nothing.
