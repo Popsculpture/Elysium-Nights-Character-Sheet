@@ -12782,6 +12782,11 @@ and the first fix for it, each lost work in a new way, and two independent revie
 
 **Still open, deliberately:**
 
+- **Until this branch is merged, an account running a campaign must stay off the live site.** The live site is `main`, whose `pull()` has no
+  owner filter, and batch 2's read policy is already live. Open it as an Admin or co-Admin of a campaign with someone else's character in it, and
+  those characters come down into that account's roster. The next save can't update them, so it uploads them as that account's own. The other player's rows are
+  untouched. Nothing has happened: the live project had no campaigns at all when this was found. **It starts mattering with the first real campaign,**
+  so during the two-account round, close any live-site tab signed in as those accounts, and either merge or delete the test campaign when the round ends.
 - **A stale device with newer offline edits can still overwrite a delivered message,** the way it overwrites any edit.
   Device A files the mail and pushes. Device B, offline, edits something after that, comes back, and its copy wins whole. The
   row says delivered, so nobody files it again. A read of delivered rows that a record doesn't hold could heal this, at

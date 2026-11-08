@@ -543,6 +543,11 @@ the row locks never contend). **The slide and the box-opening moment have not be
 
 ## Still open
 
+- **Until this branch is merged, an account running a campaign must stay off the live site.** The live site is `main`, whose `pull()` has no
+  owner filter, and batch 2's read policy is already live. Open it as an Admin or co-Admin of a campaign with someone else's character in it, and
+  those characters come down into that account's roster. The next save can't update them, so it uploads them as that account's own. The other player's rows are
+  untouched. Nothing has happened: the live project had no campaigns at all when this was found. **It starts mattering with the first real campaign,**
+  so during the two-account round, close any live-site tab signed in as those accounts, and either merge or delete the test campaign when the round ends.
 - **A stale device with newer offline edits can overwrite a delivered message,** the way it overwrites any edit. The row says delivered, so nobody files it again. A read of delivered rows that a record doesn't hold could heal it, at the cost of a growing read after every sync. **The package goes with it,** so it wants a ruling if it ever happens to someone.
 - **Two devices both on screen:** an edit inside the push delay can lose to the other device's filing.
 - **Opening a message is an edit,** so on a stale device it makes that copy the newest. The items still land once.
