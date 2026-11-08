@@ -166,6 +166,22 @@ link, the roster, who is blocked, and each player's sheet, read-only.
 - `supabase/tests/campaign_checks.sql` is the check, run the way `entitlements_checks.sql` is. To run it
   without touching the live project, see `pg/README.txt` in the test suite.
 
+### #POST from the Admin
+
+The Admin and co-Admins can send in-game mail from the Campaign tab, to one character or the whole crew,
+signed as an NPC card from the People tab or any typed name, with items from the gear catalog attached.
+A message can go alone, and so can a package. The list under the roster shows each of their sends as
+Waiting, Delivered or Taken, and a send that is still waiting can be recalled.
+
+- The player sees a toast and an unread message in #POST on the Social tab. A package waits in the message
+  until Take it moves the items into the Stash, the way a purchase does.
+- The record is still where mail lives. `character_inbox` is only the courier: while jacked in, `js/cloud.js`
+  files each row on the record and marks it delivered. A record that isn't on the device, or is locked,
+  leaves its row waiting.
+- `supabase/migrations/20261108180000_campaign_inbox.sql` holds the rules, and puts the table in the
+  Realtime publication. The server only checks a package's shape, because it can't see the catalog: the
+  player's app checks the names at Take it.
+
 ## Install it on a phone
 
 The app ships a web app manifest, so a phone browser offers **Add to Home screen** (Chrome on

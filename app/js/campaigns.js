@@ -200,7 +200,7 @@ EN.campaigns = (function () {
     EN_ADMIN_ONLY: "Only the Admin can do that.",
     EN_BAD_ROLE: "That role isn't one of the choices.",
     EN_BAD_MAIL: "A message needs a From, and a subject, a message or a package.",
-    EN_TOO_LATE: "Too late to recall. It's been delivered."
+    EN_TOO_LATE: "Too late to recall that one."
   };
   function code(e) {
     var m = e && e.message ? String(e.message) : "";

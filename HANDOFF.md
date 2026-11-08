@@ -121,6 +121,13 @@ card.
   its members' rows, so any read of `characters` for "my characters" must filter on `owner_id`, as
   `pull()` in cloud.js does. `store.setViewing` holds another player's sheet in memory with
   `meta.viewing` set; `store.update` refuses every write while one is open.
+- #POST from the Admin (batch 3) adds `character_inbox`, the courier. The same warning applies: a sender can
+  read what they sent, so any read of it for "my mail" must ask by the account's own character ids, as
+  `readRows()` in cloud.js does. A row becomes a message only through `EN.gmStore.deliverMail`, which writes
+  the row's id to `meta.inboxApplied` in the same write. That list is never pruned: a row it forgot would
+  come back as a second copy. A row is filed only straight after a pull, because a device holding an old
+  copy would otherwise overwrite newer work with it. One more device key: `en_inbox_taken_v1`, the Take it
+  reports still waiting to go.
 - Held content lives in ONE place: `app/data/launch.js` (`EN.launch`, since 2026-10-16). It
   has three switches, `holds.lineup` (held lineages, subclasses, Talents, Backgrounds),
   `holds.availability` (rarity) and `holds.toolkit` (gear the Player's Handbook doesn't print:

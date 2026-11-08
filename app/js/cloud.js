@@ -150,8 +150,8 @@ EN.cloud = (function () {
     if (!client || !user || offline) return Promise.resolve();
     if (runP) { again = (again === "pull" || (opts && opts.pull)) ? "pull" : true; return runP; }
     setStatus("syncing");
-    var wantPull = !!(opts && opts.pull);
-    runP = (wantPull ? pull() : Promise.resolve())
+    var wantPull = !!(opts && opts.pull), pulled = false;
+    runP = (wantPull ? pull().then(function () { pulled = true; }) : Promise.resolve())
       .then(deletes)
       .then(push)
       .then(function () { setStatus("ok"); },
@@ -159,7 +159,7 @@ EN.cloud = (function () {
       // beside the sync, never inside it: a failure over there costs the campaign list and nothing else
       .then(function () { if (wantPull && EN.campaigns && EN.campaigns.refresh) EN.campaigns.refresh(); })
       // after it, inside the run: a pull landing halfway through filing a message would lose the message
-      .then(function () { return inbox(wantPull); })
+      .then(function () { return inbox(pulled, wantPull); })
       .then(function () {
         runP = null;
         if (again) { var p = again === "pull"; again = false; return sync({ pull: p }); }
@@ -198,7 +198,7 @@ EN.cloud = (function () {
           var L = b.links[lid];
           if (r.updated_at === L.at) return;
           var dirty = stamp(ch) !== L.lat;
-          if (!dirty || Date.parse(r.updated_at) > Number(stamp(ch) || 0)) wanted.push({ row: r, lid: lid });
+          if (!dirty || mustTake[lid] || Date.parse(r.updated_at) > Number(stamp(ch) || 0)) wanted.push({ row: r, lid: lid });
         });
         saveBook(b);
         // fetch the wanted rows one by one, so one bad row cannot stop the rest
@@ -216,6 +216,7 @@ EN.cloud = (function () {
                   lid = want && !roster()[want] && !b2.links[want] ? want : freshId();
                 }
                 if (!store().putRecord(lid, data)) throw new Error("This device refused the pulled record.");
+                delete mustTake[lid];
                 b2.links[lid] = { cid: full.id, at: full.updated_at, lat: stamp(roster()[lid]) };
                 b2.uploaded[lid] = 1;
                 delete b2.localOnly[lid];
@@ -243,7 +244,7 @@ EN.cloud = (function () {
   function push() {
     var b = book();
     var jobs = Object.keys(roster()).filter(function (id) {
-      if (!eligible(id, b)) return false;
+      if (!eligible(id, b) || mustTake[id]) return false;
       var L = b.links[id];
       return !L || stamp(roster()[id]) !== L.lat;
     });
@@ -263,13 +264,28 @@ EN.cloud = (function () {
       ? client.from("characters").update(body).eq("id", L.cid).select("id, updated_at").then(check)
           .then(function (rows) { return rows && rows.length ? rows[0] : insert(); })   // the row went away: last write wins, put it back
       : insert();
-    return req.then(function (row) {
-      if (!row || !user || user.id !== uid) return;
-      var b = book();
-      b.links[lid] = { cid: row.id, at: row.updated_at, lat: lat };
-      b.uploaded[lid] = 1;
-      saveBook(b);
-    });
+    return req.then(function (row) { noteRow(lid, row, lat, uid); });
+  }
+  function noteRow(lid, row, lat, uid) {
+    if (!row || !user || user.id !== uid) return;
+    var b = book();
+    b.links[lid] = { cid: row.id, at: row.updated_at, lat: lat };
+    b.uploaded[lid] = 1;
+    saveBook(b);
+  }
+  /* A push that only lands on the row as this device last saw it, for mail just filed (THE INBOX below).
+     Answers whether it landed. A device that only changed because a letter came has no business winning a
+     race against the device somebody is actually playing on. */
+  function pushIfUnmoved(lid) {
+    var ch = roster()[lid], L = book().links[lid];
+    if (!ch || !L) return Promise.resolve(false);
+    var lat = stamp(ch), uid = user.id;
+    return client.from("characters").update(payload(ch)).eq("id", L.cid).eq("updated_at", L.at).select("id, updated_at").then(check)
+      .then(function (rows) {
+        if (!rows || !rows.length) return false;
+        noteRow(lid, rows[0], lat, uid);
+        return true;
+      });
   }
 
   function schedulePush() {
@@ -282,7 +298,8 @@ EN.cloud = (function () {
      Each character_inbox row is one message on its way to one character. While jacked in this
      listens with Realtime, and reads waiting rows after every sync, which is how mail that came
      while the player was away arrives. Each row goes on the record through EN.gmStore.deliverMail,
-     then mark_delivered, and then the toast. Only this device's account ever writes its records.
+     up to the account, then mark_delivered, and then the toast. Only this device's account ever
+     writes its records.
 
      WHAT IT READS. The account's own characters, asked for by id. An Admin can read everything they
      sent, so a read with no filter would answer with other players' mail. A row for a record that
@@ -291,8 +308,22 @@ EN.cloud = (function () {
      A PULL COMES FIRST. A device sitting idle holds an old copy of its records, and until now it
      never pushed one. Filing mail on that copy would make it the newest copy there is, and its push
      would overwrite whatever the player did since on the device they are actually using. So a row
-     is filed only straight after a pull: a run that had none finds rows, and asks for another run
-     that does. Rows are only filed from inside a run, so the two can't interleave.
+     is filed only straight after a pull that worked: a run that had none finds rows, and asks for
+     another run that does. A run whose pull failed leaves them waiting, and does not ask again, or a
+     dropped network would spin. Rows are only filed from inside a run, so the two can't interleave.
+
+     THE ACCOUNT BEFORE THE MARK. Delivered has to mean the mail is somewhere another device can get
+     it. A device that marked first and closed inside the two-second push delay would leave the row
+     saying delivered and the message on that device alone, and nobody would ever file it again. So the
+     record goes up first, and a row is marked only if that landed.
+
+     THAT PUSH CAN'T WIN A RACE. A pull comes first, but another device can push in the moment after
+     it. This push only lands on the row as this device last saw it (pushIfUnmoved). If the row moved
+     it does nothing, and this record goes on `mustTake`: nothing pushes it until a pull has taken the
+     row's copy, whatever the clocks say. They can't be asked, since the filing is stamped a moment
+     after the other device's save, and would read as the newer edit. An ordinary push ran just before
+     the filing, so all this copy gives up is the filing itself. The row is still waiting, so it is
+     filed again on top, and `told` keeps it to one toast.
 
      TWO DEVICES AT ONCE. The first to mark a row delivered takes it out of everyone's waiting list,
      and a second device that then stayed silent would hold a copy with no message, and overwrite the
@@ -302,8 +333,10 @@ EN.cloud = (function () {
      meta.inboxApplied is what says so.
 
      A RECALL IN BETWEEN. A row can be recalled after this device read it and before it was marked,
-     or while a network failure kept the mark from landing. The refusal then takes the message back
-     off the record, unless the player has opened it.
+     or while a network failure kept the mark from landing, and a recalled row is on nobody's waiting
+     list. So the link book keeps the rows this device filed and has not got an answer for
+     (`unmarked`), and they are read whatever their status. A recall takes the message back off the
+     record, unless the player has opened it. Then only the package goes, at Take it (js/face.js).
 
      TAKE IT REPORTS THROUGH A QUEUE (en_inbox_taken_v1, row ids). A package can be taken while
      jacked out or offline, because it is already on the record. The report goes when it can, after
@@ -316,6 +349,8 @@ EN.cloud = (function () {
   var TAKEN_KEY = "en_inbox_taken_v1";
   var channel = null, channelOf = null;
   var wanted = {};            // row ids Realtime spoke of, to read whatever their status
+  var told = {};              // row ids this device has shown a toast for, this session
+  var mustTake = {};          // local ids whose row moved under a filing: see THAT PUSH CAN'T WIN A RACE
   var inboxWarned = false;
   var hasLanded = false, heldMail = [];
 
@@ -335,61 +370,103 @@ EN.cloud = (function () {
     var t = new Date(iso);
     return isNaN(t.getTime()) ? "" : pad2(t.getHours()) + ":" + pad2(t.getMinutes()) + ", " + DAYS[t.getDay()];
   }
-  var SELECT_ROW = "id, character_id, mail, created_at";
+  var SELECT_ROW = "id, character_id, mail, status, created_at";
+  function unmarked(b) { return Array.isArray(b.unmarked) ? b.unmarked : []; }
+  function setUnmarked(rowId, on) {
+    var b = book(), list = unmarked(b).filter(function (x) { return x !== rowId; });
+    if (on) list.push(rowId);
+    if (list.length) b.unmarked = list; else delete b.unmarked;
+    saveBook(b);
+  }
   function readRows() {
     var b = book(), cids = Object.keys(b.links).map(function (k) { return b.links[k].cid; });
     if (!cids.length) return Promise.resolve([]);
-    var ask = Object.keys(wanted).filter(function (id) { return wanted[id]; });
+    var ask = Object.keys(wanted).filter(function (id) { return wanted[id]; }), open = unmarked(b);
     wanted = {};
     return Promise.resolve().then(function () {
       return Promise.all([
         client.from("character_inbox").select(SELECT_ROW).eq("status", "waiting").in("character_id", cids).order("created_at", { ascending: true }).then(check),
-        ask.length ? client.from("character_inbox").select(SELECT_ROW).in("id", ask).in("character_id", cids).neq("status", "recalled").then(check) : []
+        ask.length ? client.from("character_inbox").select(SELECT_ROW).in("id", ask).in("character_id", cids).neq("status", "recalled").then(check) : [],
+        open.length ? client.from("character_inbox").select(SELECT_ROW).in("id", open).then(check) : []
       ]);
     }).then(function (all) {
+      // a row this device was still waiting to hear about that is simply gone went with its campaign
+      var there = (all[2] || []).map(function (r) { return r.id; });
+      open.forEach(function (id) { if (there.indexOf(id) === -1) setUnmarked(id, false); });
       var seen = {}, rows = [];
-      (all[0] || []).concat(all[1] || []).forEach(function (r) { if (!seen[r.id]) { seen[r.id] = 1; rows.push(r); } });
+      (all[0] || []).concat(all[1] || [], all[2] || []).forEach(function (r) { if (!seen[r.id]) { seen[r.id] = 1; rows.push(r); } });
       return rows;
     }, function (e) {
       ask.forEach(function (id) { wanted[id] = 1; });
       throw e;
     });
   }
-  function fileRow(r, uid, came) {
-    if (!user || user.id !== uid) return Promise.resolve();
+  // the record this row is for, if this device can write it. Anything else stays waiting
+  function writable(r) {
     var lid = linkedTo(book(), r.character_id), ch = lid ? roster()[lid] : null;
-    if (!ch || (store().isLocked && store().isLocked(lid))) return Promise.resolve();   // stays waiting
-    var had = filed(ch, r.id), mail = r.mail || {};
-    if (!had && !(EN.gmStore && EN.gmStore.deliverMail(lid, r.id, {
-      from: mail.from, subj: mail.subj, body: mail.body, package: mail.package, when: whenOf(r.created_at)
-    }))) return Promise.resolve();   // this device would not store it: stays waiting
-    var pkg = Array.isArray(mail.package) && mail.package.length > 0;
-    return client.rpc("mark_delivered", { p_id: r.id }).then(check).then(function () { return ""; }, function (e) {
-      return e && e.message ? String(e.message) : "";
-    }).then(function (refusal) {
-      if (refusal === "EN_RECALLED") { EN.gmStore.withdrawMail(lid, r.id); return; }
-      // anything else: on the record it stays. A network failure marks it on the next read
-      if (!had) came.push({ lid: lid, from: typeof mail.from === "string" ? mail.from : "", pkg: pkg });
+    return ch && !(store().isLocked && store().isLocked(lid)) ? lid : null;
+  }
+  function refusalOf(e) { return e && e.message ? String(e.message) : ""; }
+  function fileRows(rows, uid, came) {
+    var todo = [], toPush = [], stuck = {};
+    rows.forEach(function (r) {
+      if (!user || user.id !== uid) return;
+      var lid = writable(r);
+      if (!lid) return;
+      if (r.status === "recalled") { EN.gmStore.withdrawMail(lid, r.id); setUnmarked(r.id, false); return; }
+      var mail = r.mail || {};
+      if (!filed(roster()[lid], r.id)) {
+        if (!EN.gmStore || !EN.gmStore.deliverMail(lid, r.id, { from: mail.from, subj: mail.subj, body: mail.body, package: mail.package, when: whenOf(r.created_at) })) return;   // this device would not store it
+        setUnmarked(r.id, true);
+        if (!told[r.id]) {
+          told[r.id] = 1;
+          came.push({ row: r.id, lid: lid, from: typeof mail.from === "string" ? mail.from : "", pkg: Array.isArray(mail.package) && mail.package.length > 0 });
+        }
+      }
+      todo.push({ id: r.id, lid: lid });
+      if (toPush.indexOf(lid) === -1) toPush.push(lid);
+    });
+    // up to the account first, and only over the row this device last saw
+    return toPush.reduce(function (p, lid) {
+      return p.then(function () {
+        var L = book().links[lid];
+        // already lost the race, and the pull that settles it has not worked yet: it sits still until one does
+        if (mustTake[lid]) { stuck[lid] = 1; return; }
+        if (L && stamp(roster()[lid]) === L.lat) return;   // nothing here the account doesn't have
+        return pushIfUnmoved(lid).then(function (landed) {
+          if (!landed) { stuck[lid] = 1; mustTake[lid] = 1; again = "pull"; }   // the row moved
+        }, function (e) { stuck[lid] = 1; inboxWarn(e); });  // no network: the next read tries again
+      });
+    }, Promise.resolve()).then(function () {
+      return todo.reduce(function (p, t) {
+        return p.then(function () {
+          if (stuck[t.lid] || !user || user.id !== uid) return;
+          return client.rpc("mark_delivered", { p_id: t.id }).then(check).then(function () { return ""; }, refusalOf).then(function (refusal) {
+            if (refusal === "EN_RECALLED") {
+              EN.gmStore.withdrawMail(t.lid, t.id);
+              came.forEach(function (x, i) { if (x.row === t.id) came.splice(i, 1); });
+            }
+            // a network failure leaves it open, and the next read marks it. Anything else is an answer
+            if (!refusal || /^EN_/.test(refusal)) setUnmarked(t.id, false);
+          });
+        });
+      }, Promise.resolve());
     });
   }
-  function inbox(pulled) {
+  function inbox(pulled, tried) {
     if (!client || !user || offline) return Promise.resolve();
     var uid = user.id, came = [];
     return readRows().then(function (rows) {
       if (!user || user.id !== uid) return;
-      // something to file, on a copy that hasn't just been brought up to date: go round again with a pull
-      var fresh = rows.some(function (r) {
-        var lid = linkedTo(book(), r.character_id), ch = lid ? roster()[lid] : null;
-        return ch && !(store().isLocked && store().isLocked(lid)) && !filed(ch, r.id);
-      });
+      // something to file, on a copy that hasn't just been brought up to date
+      var fresh = rows.some(function (r) { var lid = writable(r); return lid && r.status !== "recalled" && !filed(roster()[lid], r.id); });
       if (fresh && !pulled) {
-        again = "pull";
-        rows.forEach(function (r) { wanted[r.id] = 1; });
+        rows.forEach(function (r) { if (r.status !== "recalled") wanted[r.id] = 1; });
+        // go round again with a pull, unless this run's just failed: then it waits for the next sync
+        if (!tried) again = "pull";
         return;
       }
-      return rows.reduce(function (p, r) {
-        return p.then(function () { return fileRow(r, uid, came); });
-      }, Promise.resolve());
+      return fileRows(rows, uid, came);
     }).catch(inboxWarn).then(function () {
       if (came.length) tellMail(came);
       return flushTaken();
@@ -609,7 +686,7 @@ EN.cloud = (function () {
     if (!loggedMeta) { loggedMeta = true; try { console.info("Discord profile fields", Object.keys(meta())); } catch (e) {} }
     if (user.id !== prev) {
       var me = user.id;
-      wanted = {};
+      wanted = {}; told = {}; mustTake = {}; heldMail = [];
       listen();
       holdUnclaimed();
       sync({ pull: true }).then(function () { if (user && user.id === me && awaiting) offerUpload(); });

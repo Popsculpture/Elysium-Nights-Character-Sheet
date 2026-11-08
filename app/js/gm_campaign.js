@@ -214,20 +214,25 @@ EN.gmCampaign = (function () {
     });
   }
   function sendNow(c, btn) {
-    var s = _send, mail = { from: s.from.trim(), subj: s.subj.trim(), body: s.body.trim() };
+    var s = _send;
+    // held on the draft, not the button: a redraw while it is on its way draws a new button
+    if (s.busy) return;
+    var mail = { from: s.from.trim(), subj: s.subj.trim(), body: s.body.trim() };
     if (s.pkg.length) mail.package = s.pkg.map(function (r) { return { name: r.name, qty: r.qty }; });
     if (!mail.from) { toast("Who is it from? Pick a card or type a name."); return; }
     if (!mail.subj && !mail.body && !s.pkg.length) { toast("Add a subject, a message or a package."); return; }
     var crew = s.to === "crew", to = s.to;
+    s.busy = true;
     btn.disabled = true;
     (crew ? C().sendToCrew(c.id, mail) : C().sendToCharacter(to, mail)).then(function (n) {
-      _send = null;
+      if (_send === s) _send = null;
       if (crew && !n) toast("Nobody has a character in this campaign yet.");
       else toast(crew ? (n === 1 ? "Sent to 1 character." : "Sent to " + n + " characters.") : "Sent. It waits until their app picks it up.");
       delete _d[c.id];
       repaint();
     }, function (e) {
       console.warn("Could not send", e);
+      s.busy = false;
       btn.disabled = false;
       toast(C().errText(e));
       // the character may have left: what the page shows is out of date, and the words are still in _send
@@ -263,7 +268,7 @@ EN.gmCampaign = (function () {
       hits,
       attached,
       (function () {
-        var go = el("button.btn.sm.primary", { type: "button", "data-camp": "send-go", onclick: function () { sendNow(c, go); } }, "SEND");
+        var go = el("button.btn.sm.primary", { type: "button", "data-camp": "send-go", disabled: !!s.busy, onclick: function () { sendNow(c, go); } }, "SEND");
         return el("div.camp-line", { style: { marginTop: "10px" } }, [
           go,
           el("button.btn.sm", { type: "button", "data-camp": "send-cancel", onclick: function () { _send = null; EN.app.render(); } }, "CANCEL")
@@ -307,7 +312,7 @@ EN.gmCampaign = (function () {
     d.sends.forEach(function (r) { host.appendChild(sendRow(c, d, r)); });
   }
   function sendsSection(c, d) {
-    _sendsHost = el("div", { "data-camp": "sends" });
+    _sendsHost = el("div", { "data-camp": "sends", "data-campaign": c.id });
     drawSends(_sendsHost, c, d);
     return EN.ui.panel("#POST sends", d.sends ? String(d.sends.length) : null, [_sendsHost]);
   }
@@ -326,7 +331,8 @@ EN.gmCampaign = (function () {
       if (!now) return;
       if (now.loading) { now.again = true; return; }
       now.sends = rows || [];
-      if (_sendsHost && _sendsHost.isConnected) drawSends(_sendsHost, { id: id }, now);
+      // the list on screen may be another campaign's, if the Admin runs more than one and has picked it since
+      if (_sendsHost && _sendsHost.isConnected && _sendsHost.getAttribute("data-campaign") === id) drawSends(_sendsHost, { id: id }, now);
     }, function (e) { console.warn("Could not read your sends", e); });
   }
   function memberRow(c, m, isAdmin) {

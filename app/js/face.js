@@ -308,6 +308,11 @@ EN.faceView = (function () {
      more happens. If it does not (that copy never reached the account, or this one is newer),
      this is the copy that will win, and it takes the items after all.
 
+     A recall. A row can be recalled while the message is here, if a network failure kept this device
+     from saying it had arrived. If the player has already opened the letter it stays, because nobody
+     can unread one, but the sender took the package back, so that goes at Take it. A package taken
+     with no network at all can't be asked about, and stays taken.
+
      A read-only record (a viewed sheet, a locked record, an example) can't take it. */
   var _taking = {};    // message id -> a Take it is asking the inbox
   var _opening = {};   // message id -> play the box-opening moment on the next draw, once
@@ -344,17 +349,23 @@ EN.faceView = (function () {
     var cloud = EN.cloud;
     _taking[id] = true;
     (m.inboxId && cloud && cloud.inboxStatus ? cloud.inboxStatus(m.inboxId) : Promise.resolve(null)).then(function (status) {
-      if (status !== "taken") return false;
+      if (status === "recalled") return "recalled";
+      if (status !== "taken") return "";
       return cloud.sync({ pull: true }).then(function () {
         var rec = store.roster()[lid], now = rec ? msgOf(rec, id) : null;
-        return !now || !!now.taken;
+        return !now || now.taken ? "taken" : "";
       });
     }).catch(function (e) {
       console.warn("Could not ask about the package", e);
-      return false;
+      return "";
     }).then(function (settled) {
       delete _taking[id];
-      if (settled) { EN.ui.toast("Already taken on another device."); EN.app.render(); return; }
+      if (settled === "taken") { EN.ui.toast("Already taken on another device."); EN.app.render(); return; }
+      if (settled === "recalled") {
+        store.updateById(lid, function (c) { var was = msgOf(c, id); if (was) { delete was.package; delete was.taken; } });
+        EN.ui.toast("The sender recalled this package.");
+        return;
+      }
       takeNow(lid, id);
     });
   }
