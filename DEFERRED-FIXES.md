@@ -12680,3 +12680,134 @@ its Postgres 17.11, and the rollback left nothing behind.
 - **The real round needs a way to reach sign-in.** Localhost is not on the redirect list and the live site is `main`,
   so running the branch against real Discord before merging takes one temporary entry on that list. The author's call;
   the build report has both ways.
+
+### Batch 3, #POST from the Admin, built 2026-11-08 on `campaigns-batch-3`
+
+**What changed.** A migration and its checks, not applied to the live project. Send and the list of sends on the
+Campaign tab (`app/js/gm_campaign.js`). The courier in `app/js/cloud.js`. A new toast and the package box in
+`app/js/face.js`. `EN.gmStore.deliverMail` as the one way a row becomes a message. `EN.inventoryView.takePackage`
+for Take it. `store.js` cleans a package on load. `gate.js` and `tour.js` are untouched. The build report has the
+commands.
+
+**The branch.** The spec says to cut from `main` once batch 2 is merged. Batch 2's migration is live but its branch
+was not merged, and merging to `main` is the author's call. So `campaigns-batch-3` is cut from the tip of
+`campaigns-batch-2` (`e852599`), and merging it merges both.
+
+**Mail changes something the sync never had to think about, so these are the rules. Do not relitigate them.** Until now a
+device nobody was using never pushed, because it never changed. Now a letter can arrive on it. The first build of this,
+and the first fix for it, each lost work in a new way, and two independent reviews and the real-database round found them:
+
+- **A row is filed only straight after a pull that worked.** Filing on an old copy makes it the newest copy there is, and
+  its push would overwrite the player's real work on the device they are actually using. A run with no pull that finds
+  rows asks for one. A run whose pull failed leaves them waiting and does not ask, or a dropped network would spin.
+- **Mail only goes on a copy with nothing else to send.** Real edits go up first, by the ordinary push. If that failed, the
+  row waits. A first attempt forced a pull on any record that lost a race, and that would have thrown away two hours of
+  offline work.
+- **While a record's stamp is the one a filing left (`filing` in the link book), all it holds that the account doesn't is
+  mail.** Its push lands only on the row as this device last saw it, and if the row moved, a pull takes the row's copy
+  whatever the clocks say. The clocks can't be asked: a filing is stamped a moment after the other device's save, so it
+  reads as the newer edit, and the ordinary rule would push it straight over that save. The real-database round is what caught
+  this. It is in the link book because a reload in that window would otherwise bring the bug straight back. The moment the
+  player edits, the stamp moves, and it is an ordinary record under last write wins, with nothing thrown away.
+- **The record goes up before the row is marked.** Delivered has to mean somewhere another device can get it. A device that
+  marked first and closed inside the two-second push delay would leave the row saying delivered and the message on that
+  device alone, and nobody would ever file it again.
+- **A hidden tab doesn't file.** It would race the device in use, and its toast would be gone before anyone saw it. It waits, and
+  coming back into view reads at once, however recent the last pull.
+- **A device files a row it hears about even if another device delivered it first.** The first mark takes a row off everyone's
+  waiting list, and a second open device that stayed silent would hold a copy with no message and overwrite the first on its
+  next save. So Realtime's INSERT and UPDATE events name the row, and it is read whatever its status, unless
+  `meta.inboxApplied` already holds it. `EN_ALREADY` from `mark_delivered` is only news.
+- **A sender can read what they sent, so a read of the inbox has to say whose mail it wants.** Batch 2's trap in a new table.
+  `readRows()` asks by the account's own character ids. The Campaign tab's list asks by `sender_id` and campaign, because the
+  policy also answers an Admin with mail sent to their own characters.
+- **A recalled row is on nobody's waiting list, so this device keeps the rows it filed and has no answer for (`unmarked`), and
+  reads them whatever their status.** A recall takes the message back off the record unless the player has opened it. Then the
+  letter stays, because nobody can unread one, and the package goes when Take it asks.
+
+**Readings taken where the spec left room, smallest first:**
+
+- **The limits.** From 1 to 80 characters, subject up to 140, message up to 4000, 20 items, item names up to 120.
+  Quantities are the spec's 1 to 99. `clean_mail` is private, and answers with the mail as it is stored: trimmed, whole
+  quantities, and no `package` key when the list is empty.
+- **"Refuses anything but a #POST message" is a closed list of keys,** at the top level and in each item. An `op` or an
+  `amount` riding in is refused, so nothing else can go through this door later by accident.
+- **A character in no campaign, and a character that does not exist, both answer `EN_NOT_ALLOWED`,** so the function
+  can't be used to find a row.
+- **`send_to_crew` answers how many went.** Zero is not an error. The tab disables the button when the roster has no
+  characters, and says so if it finds out too late.
+- **The Admin's own character gets the crew's mail,** because the spec says every character in the campaign.
+- **`mark_taken` refuses a row still waiting (`EN_NOT_DELIVERED`),** rather than skipping a step. It happens only when a
+  delivery mark failed and the player took the package anyway. The report waits in its queue and goes after the
+  delivery is marked.
+- **Take it asks the inbox first, then does what the spec says.** The spec's order is add the items, then `mark_taken`.
+  That order stands, with one read in front of it. If the row says taken, a pull goes first, and if that brings the other
+  device's copy, nothing else happens and the toast says "Already taken on another device." If it does not, this copy is the
+  one that will win the sync, so it takes the items, because refusing there could lose them. If the row says recalled, the
+  package goes. The read gives up after 3 seconds, so a bad network never holds a button down.
+- **Take it's report goes through a device queue (`en_inbox_taken_v1`).** A package is on the record, so it can be taken
+  jacked out or offline, and nobody may be signed in to write a link book entry.
+- **A name the catalog doesn't know is marked on the package row (`refused`),** so the box can strike it out, since a
+  toast is gone in two seconds. **If every name is refused, nothing is taken:** the button stays, no report goes, and a
+  device holding the right pack can still take it. **If only some are refused, the package closes,** and the refused rows can't
+  be taken later, even if a pack loads. The spec's "the rest still go in" reads as done, and the Admin should see Taken.
+- **The search lists `catalog()` with the listing gate on it.** Held Toolkit gear isn't offered, like everywhere else
+  that lists gear. Flip the hold and it returns. Cyberware isn't in `catalog()`, so it isn't offered, and a name the
+  catalog doesn't hold would be refused at Take it anyway.
+- **Examples count as read-only for Take it,** alongside a viewed sheet and a locked record. An example is never stored,
+  so taking anything on one would report a Taken for items that evaporate.
+- **Deleting a message with an untaken package asks first,** with the same arming button the rest of the app uses. The
+  spec doesn't say, but the items would go with it.
+- **Recalled sends stay on the list, marked Recalled.** The spec's list names three statuses. Hiding the fourth would
+  make a send seem to vanish.
+- **A co-Admin's list is their own sends,** and so is the Admin's. The spec gives reads to the sender and the owner, and
+  nobody else. An Admin can't see or recall a co-Admin's send.
+- **The list updates itself on Realtime's UPDATE events,** though the spec only asks to listen for new rows. "The Admin
+  sees Taken" reads badly if it needs a Refresh. Only the list redraws, in its own node, so nothing being typed in the
+  composer is touched.
+- **A message half written survives a look at a sheet,** a tab switch, and a second press of Send. Cancel, another
+  account or another campaign ends it.
+- **The toast for one piece of mail that came while away reads like any other single message.** The summary is for two
+  or more.
+- **A toast for several characters says so:** "For Rook and Vex", or "For 3 characters". The press opens the open
+  character if the mail includes them, and the first otherwise.
+- **The When on a message is the row's time,** in the format the Job Board's postings use, in the player's clock.
+- **A message's id is made from the row's (`pm_in_<row id>`),** so every device's copy is the same message, and it keeps
+  its place when a pull replaces the record.
+- **No ledger record for delivered mail.** `writeCrew` files one, but the ledger is the GM's undo list on the GM's
+  device, and this runs on the player's.
+- **SEND sits after VIEW SHEET on the row,** so the row's first button stays where it was.
+- **The package glyph is drawn here, `ICON_PKG` in `face.js`,** because the app has no art for a package. Its flaps are
+  separate paths for the box-opening moment, so a replacement wants the same two classes or the moment loses its flaps.
+
+**Still open, deliberately:**
+
+- **A stale device with newer offline edits can still overwrite a delivered message,** the way it overwrites any edit.
+  Device A files the mail and pushes. Device B, offline, edits something after that, comes back, and its copy wins whole. The
+  row says delivered, so nobody files it again. A read of delivered rows that a record doesn't hold could heal this, at
+  the cost of a growing read after every sync. It wants a ruling if it ever happens to someone.
+- **Two devices both on screen.** Device A has an edit inside its two-second push delay when mail arrives. Device B files, and its
+  guarded push lands, because the row hasn't moved yet. If A's pull then comes after B's push, A is the older copy and takes B's,
+  and the edit goes. It needs both devices in view at once and a few milliseconds of bad luck. A hidden tab can't do this.
+- **Opening a message is an edit, so it counts.** A stale device where a player opens the message and then presses Take it is the
+  newer copy, wins the sync, and takes the items itself. They land once, but the other device's work since then loses, as with any
+  edit on a stale device. It takes two devices on screen at once inside the 30 seconds before a tab coming back pulls.
+- **A row that always fails to pull stops mail for the account,** because a failed pull is not a pull, and one bad row fails it.
+  That is the safe way round: the mail waits and nothing is overwritten. `pull()`'s comment says one bad row can't stop the rest, but
+  the loop stops at the first failure. That is older than this batch and wasn't touched.
+- **Two tabs in one browser.** Each holds its own roster and writes the whole of it to storage, so an idle tab filing mail writes its
+  old copies of everything. That is older than this batch, since a pull could already do it, but a background event can now set it off.
+- **A removed player's waiting mail still reaches them,** and the sender can still recall it. The spec gives both reads and
+  both functions by sender and owner, with no mention of membership. It wants a ruling if it matters. A character moved to
+  another campaign keeps its waiting mail the same way.
+- **'98's #POST Express shows a strip reading "es Help" across the top of the message list.** It is on `main` too, with plain
+  mail, so it isn't this batch's. Not touched.
+
+**Tests.** New in the suite: `campaigns_b3` (the whole batch through the real UI against a stand-in, 226 checks), `campaigns_b3_shot.js`
+(a stage for screenshots, with `&frame=375` for a true phone width, since headless Chrome won't open a window under 500 px),
+and `pg/inbox_realdb.js` (the real app on the real SQL, 61 checks). `pg/bridge.mjs` now speaks enough of Realtime's wire format for the
+real realtime-js to subscribe, and `pg/mutants.mjs` breaks either migration. `run_harness.py` takes `EN_CHROME_FLAGS`, for
+`--force-prefers-reduced-motion`. Two things worth knowing next time: the harness runs the page on virtual time, so a page timer can
+run out while a real frame is still on the wire, and anything waiting on a socket has to poll over real requests (`realUntil`). And
+the browser pane's `gridos` server serves the session's starting folder, not a worktree, and shows `file://` pages as static
+snapshots, so a worktree can't be previewed there.

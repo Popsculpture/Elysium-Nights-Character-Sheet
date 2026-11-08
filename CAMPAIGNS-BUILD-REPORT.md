@@ -379,3 +379,168 @@ The dash and syntax sweeps are clean.
   refused read on the Campaign tab). A pick in that window is refused by the database and reverts.
 - **The tour is not told about a viewed sheet.** `tour.js` is off limits. It only runs when started by hand,
   and anything it wrote would be refused.
+
+---
+
+# Campaigns build report: batch 3, #POST from the Admin
+
+Built 8 Nov 2026 on `campaigns-batch-3`. **Nothing is applied to the live project and nothing is merged.** The migration, Realtime and
+the live site are all waiting for your go.
+
+**Read this first: batch 2 is not merged.** The spec says to cut from `main` once it is. Its migration is live, but its branch isn't on
+`main`, and merging is yours to sign off. So this branch is cut from the tip of `campaigns-batch-2` (`e852599`), and **merging it merges
+both batches.**
+
+Every decision is also logged under "Campaigns" in `DEFERRED-FIXES.md`.
+
+## What is built
+
+**0. Gizmo is off limits.** `gate.js` and `tour.js` have no diff against batch 2.
+
+**1. Database.** `supabase/migrations/20261108180000_campaign_inbox.sql`: the `character_inbox` table, its read policy, `send_to_character`,
+`send_to_crew`, `recall_send`, `mark_delivered`, `mark_taken`, and the table in the Realtime publication. A private `clean_mail` is the one
+place the mail's shape is checked: from, subj, body and package are the only keys there are. `campaign_checks.sql` goes from 102 checks to 168.
+
+**2. Sending.** On the Campaign tab: SEND on each character's row, SEND TO THE CREW, From as a People card or any typed name, Subject,
+Message, and Attach items with a catalog search and a quantity. A message can go alone, and so can a package. Under the roster, **#POST
+sends** lists your sends as Waiting, Delivered, Taken or Recalled, with Recall while waiting. It moves by itself as a player's app moves a row.
+
+**3. Receiving.** While jacked in, `cloud.js` listens with Realtime, and reads waiting rows on start and after each sync. Each row becomes an unread
+#POST message on the record, through the same `cleanOps` and `applyOp` the `post` op uses, with the row id in `meta.inboxApplied`. The new toast
+has the envelope, "New on #POST from Kade" or "Package from Kade", and a bubble with the unread count, for about 6 seconds, and a press opens
+#POST, switching character if needed. Several at once, or mail from while you were away, is one toast: "3 new on #POST." A row keeps a package glyph
+until it is taken. The opened message shows a box and Take it, which adds each item through `addToStash()`, plays a short box-opening moment, and
+settles to "Taken, in your Stash." A name the catalog doesn't know is refused with a toast and struck out in the box, and the rest still go in. A
+read-only record can't take it. The `face.js` comment now says the record is where mail lives and the inbox is the courier.
+
+Also: the asset stamp is `?v=20261108.6`. README and HANDOFF describe the inbox.
+
+## Applying it
+
+From a worktree, as batch 2's run found, each command has to name the project. First, what the project has:
+
+```bash
+npx supabase@2 migration list --project-ref ggjgkcnhfpjwyrhakqun
+```
+
+All four earlier migrations should show under Remote. Then the migration, which also puts the table in the Realtime publication:
+
+```bash
+npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/migrations/20261108180000_campaign_inbox.sql
+```
+
+The checks, which roll themselves back and should end in `168 PASS, 0 FAIL`. One of them asks whether the table is in the publication:
+
+```bash
+npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/campaign_checks.sql
+```
+
+Then record it in the history, because `db query` doesn't:
+
+```bash
+npx supabase@2 migration repair --status applied 20261108180000 --project-ref ggjgkcnhfpjwyrhakqun
+```
+
+**No dashboard change is needed.** The migration is what turns Realtime on for this table. To see it for yourself: Database, then Publications, then
+`supabase_realtime`, where `character_inbox` should be on.
+
+**Applying it before merging is safe.** The live site's code doesn't know the table is there. **Merging before applying is also safe:** with no table, the
+mail just waits, the Campaign tab says your sends can't be read, and everything else works. The suite plays that.
+
+## Commits
+
+- `ed65a3c` the inbox migration and its checks
+- `8b69f36` Send from the Campaign tab, the courier, the toast, the package
+- `e0b3213` Send sits after View sheet; a status change mid-read isn't lost
+- `7e95ffa` small fixes from reading it back
+- `55a72a7` what an independent review of the courier found
+- `9f83ae7` mail only goes on a copy with nothing else to send
+- this report and the log
+
+## Things the spec did not mention
+
+The spec's flow is right, but a letter changes something the sync never had to think about. Until now, a device nobody was using never pushed, because
+it never changed. Now a letter can arrive on it, and these are worth your eye. Each of them lost real work in some build along the way:
+
+1. **A device left open could overwrite your real work.** It holds an old copy, and filing a letter on it makes it the newest copy there is. So a row is
+   filed only straight after a pull that worked.
+2. **"Delivered" could be a lie.** Marking the row and then closing the tab inside the two-second push delay left the message on that device alone, with a row saying
+   delivered, so nobody would ever file it again. The record now goes up before the row is marked.
+3. **A second device could overwrite the message,** because the first mark takes the row off everyone's waiting list. A device now files any row Realtime tells it about, whatever its status.
+4. **A push racing another device could overwrite that device's save, and the clocks can't catch it.** While a record differs from the account by mail alone, the link
+   book says so. Its push only lands on the row as this device last saw it, and if the row moved, it takes the row's copy. The moment you edit, it is an ordinary record again.
+5. **A hidden tab doesn't file at all.** It would race the device you are using, and a toast in a hidden tab is wasted. It waits, and you get the toast when you come back. So
+   a phone with the app in the background shows Waiting on your list until the player looks at it. **This one you may want to rule on.**
+6. **A recalled row is on nobody's waiting list,** so a message filed before a failed mark would have stayed forever. The link book keeps the rows it has no answer for.
+7. **An Admin can read what they sent,** the same trap as batch 2's pull. Every read of the inbox says whose mail it wants.
+
+## How it was reviewed
+
+The first full build passed every check. Then:
+
+- **An independent review of the diff** found nine issues: items 1, 2 and 6 above, among others. Seven are fixed. The other two are written down rather than changed: Decision 9 and the two tabs under "Still open".
+- **The fix for those** passed its own tests, and **the real-database round caught it**: my guard refused correctly, and then the next pull's clock comparison let the ordinary push overwrite
+  the other device's save anyway. A new test then caught the fix for that spinning in a tight loop.
+- **A second review of those fixes** found they could throw away real offline work, and that a network blip or a reload could get past the guard. That is why item 4 is one rule
+  kept in the link book, instead of the patch it replaced.
+
+**I have not had that final rule reviewed a third time.** Its routes are each under test. This is the part of the batch to be most suspicious of.
+
+## Checked, and how
+
+| Done when | Result | How |
+| --- | --- | --- |
+| Gizmo: `EN.gate.gizmoSvg()` fingerprint before and after | Pass | SHA-256 of all three forms, `clipSvg`'s source and the bubble's CSS lines, in Node, before any edit and after the last: identical. `git diff` on both files is empty. |
+| Gizmo: tour step 1, his bubble, eyes on the card, his blink | Pass | Headless Chrome, all three skins. He shows with his typed bubble and a `-3px` rest. Stepping his running animations through a whole 10 s cycle in 20 ms steps: pupils only at -3 and -1, eyes squashing at the blink. Not watched by eye, because the browser pane couldn't reach this branch. |
+| `campaign_checks.sql`: every line PASS | Pass on a local Postgres, **waiting for you on the live project** | 168 PASS, 0 FAIL, nothing left behind. `entitlements_checks.sql` 21 PASS before and after. |
+| The checks have teeth | Pass | 157 deliberately broken copies of the migrations, 88 of them new: all 157 caught. One survived at first (a quantity stored as `1.0`), so a check was added. |
+| Send from an NPC card with a package, to one character and the crew. Online toast within seconds, offline summary on next load | Pass locally, **waiting for you with real Discord and real Realtime** | `pg/inbox_realdb.js`: the real app, the real supabase-js and the real realtime-js on the real SQL, 61 checks, three runs in a row. 15 ms or so from send to delivered on the bridge's clock, which says nothing about the real service. |
+| Take it adds the items once, with the record on two devices | Pass locally, **waiting for you** | Both chains. The second device is the account's own calls made while the page sits there, including its save landing in the gap between this device's pull and push. Not two real browsers. |
+| Recall works while waiting and fails after delivery. The Admin sees Taken | Pass locally, **waiting for you** | The real round, with the database's own rows checked after each step. |
+| Checked in all three skins | Pass | Screenshots of the composer, the list, the inbox, the box and the toast on Classic, '98 and #GRIDroid. A true 375 px through an iframe, on all three: nothing overflows. |
+| Reduced motion | Pass | Chrome with `--force-prefers-reduced-motion`: the box animations are `none`, and the toast has no transition and no offset. Without the flag all of them are set. |
+
+The stand-in chain `campaigns_b3` is 226 checks. Batch 2's `campaigns_b2` stays at 163 and `pg/campaigns_realdb.js` at 144, with their pinned lists of panels updated for the new one.
+The full suite on the final code: **488 chains, 512 runs, 0 bad (round 211)**. Syntax and dash sweeps are clean.
+
+**What none of this can reach:** Discord, Supabase's own Auth, PostgREST and Realtime (the bridge imitates them), and two sessions at once (PGlite has one connection, so
+the row locks never contend). **The slide and the box-opening moment have not been watched.** Headless Chrome doesn't paint frames in virtual time, so I checked that the animations are set, not how they look.
+
+## Waiting for the author
+
+- **Merge batch 2, or merge this branch, which includes it.** Your call, and it needs the two-account round from batch 2 as well.
+- **Apply the migration,** with the commands above.
+- **The round with real Discord,** on real Realtime: send from a card to one character and the crew, with a second account online and then offline, Take it on two real devices, Recall before and after. It needs a way for the
+  branch to reach sign-in, the same two ways as batch 2: a temporary `http://localhost:8777/**` on Supabase's redirect list (my pick), or after merging.
+- **Watch the slide and the box-opening moment,** and tune by feel. `postBoxHop`, `postBoxFlap` and `postBoxRise` in `theme.css`.
+- **The package glyph is my drawing,** `ICON_PKG` in `face.js`, because the app has no art for a package. Swap in your own if you like; the moment wants its two flaps as separate paths.
+- **A ruling on a hidden tab,** item 5 above.
+
+## Decisions
+
+1. **Cut from batch 2, not `main`,** above.
+2. **The limits:** From up to 80 characters, subject 140, message 4000, 20 items, names 120.
+3. **"Refuses anything but a #POST message" is a closed list of keys,** at the top level and in each item.
+4. **The Admin's own character gets the crew's mail.** The spec says every character.
+5. **A co-Admin's list is their own sends,** and so is the Admin's. An Admin can't see or recall a co-Admin's send, because the spec gives reads to the sender and the owner.
+6. **Recalled sends stay on the list.** The spec names three statuses, but hiding the fourth would make a send seem to vanish.
+7. **The list moves by itself on Realtime's updates,** though the spec only asks to listen for new rows. "The Admin sees Taken" reads badly if it needs a Refresh.
+8. **Take it asks the inbox first,** then does as the spec says. If the row says taken and a pull brings that copy: "Already taken on another device." If no copy comes, this one wins the sync, so it takes them. If the row says recalled, the package goes.
+9. **A package with some names refused closes,** and the refused rows can't be taken later. **One with every name refused stays open,** and the Admin doesn't see Taken.
+10. **Held Toolkit gear isn't in the search,** like every other listing, and cyberware isn't in the catalog that `findItem` reads.
+11. **Deleting a message with an untaken package asks first.** The items would go with it.
+12. **A message half written survives** a look at a sheet, a tab switch, and a second press of Send.
+13. **Examples count as read-only for Take it.** They are never stored.
+14. **`mark_taken` refuses a row still waiting,** and the report waits in a device queue, `en_inbox_taken_v1`, so a package can be taken offline.
+15. **One piece of mail from while away reads like any single message.** The summary is for two or more.
+16. **SEND sits after VIEW SHEET,** so the row's first button stays put.
+
+## Still open
+
+- **A stale device with newer offline edits can overwrite a delivered message,** the way it overwrites any edit. The row says delivered, so nobody files it again. A read of delivered rows that a record doesn't hold could heal it, at the cost of a growing read after every sync. **The package goes with it,** so it wants a ruling if it ever happens to someone.
+- **Two devices both on screen:** an edit inside the push delay can lose to the other device's filing.
+- **Opening a message is an edit,** so on a stale device it makes that copy the newest. The items still land once.
+- **A row that always fails to pull stops mail for the account.** That is the safe way round, but `pull()` stops at its first bad row. Older than this batch.
+- **Two tabs in one browser** can overwrite each other's records in storage. Older than this batch, but a background event can now set it off.
+- **A removed player's waiting mail still reaches them,** and the sender can still recall it. The spec doesn't mention membership.
+- **'98's #POST Express shows a strip reading "es Help" across the top of the list.** It is on `main` too, so it isn't this batch's. Not touched.
