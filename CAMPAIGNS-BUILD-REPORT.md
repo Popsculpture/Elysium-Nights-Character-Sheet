@@ -129,8 +129,9 @@ headless Chrome on `file://`.
 # Campaigns build report: batch 2, campaigns
 
 Built 8 Nov 2026 on `campaigns-batch-2`, cut from `main` at `21004f4` (batch 1 was already merged). Not
-merged. **The migration and the checks have not been applied or run anywhere**: the live project was
-not touched, and neither was Discord or any Supabase setting.
+merged. **The migration has not been applied to the live project**, and Discord and the Supabase settings
+were not touched. Both SQL files have run on a local Postgres with the real app driven against them, which
+is a long way short of the live project but no longer nothing: see "Run on a local Postgres".
 
 Every decision is also logged under "Campaigns" in `DEFERRED-FIXES.md`.
 
@@ -160,7 +161,7 @@ fails with a toast. The character sync does not depend on it, and that was teste
    npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/migrations/20261108120000_campaigns.sql
    ```
 
-3. Run the checks. They always roll back and end in an error whose text says `N PASS, 0 FAIL`:
+3. Run the checks. They always roll back and end in an error whose text should say `102 PASS, 0 FAIL`:
 
    ```bash
    npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/campaign_checks.sql
@@ -176,7 +177,7 @@ are. No new art.
 **1. Database.** `supabase/migrations/20261108120000_campaigns.sql`: the four tables, `characters.campaign_id`,
 the three helpers, the policies and all the functions in the spec, plus `campaign_blocked` (below). Clients
 only read the tables, and write privileges are revoked outright. `supabase/tests/campaign_checks.sql`
-covers every line in the spec and more, 84 checks. Each refusal is checked for its own error code,
+covers every line in the spec and more, 102 checks. Each refusal is checked for its own error code,
 so a typo or a missing grant cannot pass as a refusal.
 
 **2. The join card.** `?join=<token>` is stashed by `js/campaigns.js`, now the first script on the page.
@@ -202,7 +203,7 @@ never pushed. The Freelancer desktop in the read-only mode, with the banner, las
 **Back to campaign**.
 
 Also: the Admin rail is twelve tabs now, so it takes 12 px sides below 1430 px and 8 px below 1330 px. The
-asset stamp is `?v=20261108.3`. README and HANDOFF describe campaigns.
+asset stamp is `?v=20261108.5`. README and HANDOFF describe campaigns.
 
 ## Commits
 
@@ -210,7 +211,9 @@ asset stamp is `?v=20261108.3`. README and HANDOFF describe campaigns.
 - `2388dbf` the join card, Manage characters, the Campaign tab, Gizmo's no, View sheet
 - `24a64aa` sub-tabs on a viewed sheet, twelve tabs on the Admin rail, the docs
 - `4740bd2` the non-member check uses a real non-member
-- this report
+- `ff1f3a7` this report
+- the three commits after it: the stronger checks, the two app fixes the local Postgres run led to, and this
+  report brought up to date
 
 ## Three traps the spec did not mention
 
@@ -230,14 +233,68 @@ These would have shipped as real bugs, so they are worth your eye:
 And one in the spec's own words: the read-only mode blocks every click, so an Admin could not have reached
 the Notes sub-tab at all. On a viewed sheet only, sub-tabs and collapsing headers still work.
 
+## Run on a local Postgres
+
+After the first report you agreed to test the SQL locally with PGlite, which is real PostgreSQL compiled to
+WebAssembly. It runs in memory on this machine and cannot reach the live project. The tools are in the test
+suite's `pg/` folder, with a README, ready for batch 3.
+
+It stands in for what a Supabase project has before any migration: the roles, the `auth` schema, `auth.uid()`
+and the default privileges. `postgres` is not a superuser there, as on a real project, because a superuser
+skips every privilege check and every policy.
+
+| What ran | Result |
+| --- | --- |
+| All four migrations, in order, on an empty database | Applied clean |
+| `campaign_checks.sql` | 102 PASS, 0 FAIL, and nothing left behind after the rollback |
+| `entitlements_checks.sql`, before and after the campaigns migration | 21 PASS, 0 FAIL both times |
+| 69 deliberately broken copies of the migration, one rule broken in each | The checks caught all 69 |
+| The real app and the real `supabase-js` on the real SQL, three accounts, through the UI | 144 checks pass, 330 requests, every function the app uses called |
+
+**What it found:**
+
+1. **The checks had holes.** The first version, 84 checks, passed on the first run, so I broke the migration
+   on purpose to see whether that meant anything, and 5 of the first 45 broken copies got through. The worst:
+   "a player cannot read the blocks" ran before any block existed, so it passed with row security turned off.
+   It now runs with a block in place. New checks cover what nothing was guarding, among them removing one
+   player clearing everyone's characters, a second Admin at the database itself, and every function refusing
+   a session with no user. That is why there are 102.
+2. **A co-Admin could get stuck.** Demoted or removed with the Campaign tab open, their next click left them on
+   "You can't do that in this campaign. TRY AGAIN", with a button that could never work and a page still
+   saying CO-ADMIN, because nothing asked for the role again. A refused read on the tab now does. A demoted
+   co-Admin gets Gizmo, and a removed one gets the empty page. The stand-in chain never had that scene. I only
+   wrote it after the real server's log showed refusals I had not planned.
+3. **Copy could say nothing at all.** One run of the stand-in chain ended with no answer from the button, then
+   the next three passed. The likely cause: if the old copy route fails, `navigator.clipboard` can wait on a
+   permission with nothing on screen. After 1.5 s the button now says "Could not copy it. The link is in the
+   box." A real click takes the old route, which did not change. That route was checked in the browser pane
+   before this change, and not since.
+
+**What passed that the stand-in could not prove:** every function name, argument and column the app uses exists
+and matches. The first trap above is real on the real policy: an Admin's plain select does answer with the
+members' rows, and the pull brings down none of them. A save goes through the new policy while the character
+is in a campaign. `level` and `class` are where a real sheet keeps them. A character moved between campaigns
+keeps `data` and `updated_at` exactly, and a sync afterwards changes nothing on either side.
+
+**What this cannot prove,** and why your run still matters:
+
+- **The server in the middle is my imitation of PostgREST.** It is strict on purpose (a wrong name is an error,
+  as it would be there), but it is not the real one, and sign-in is still a stand-in.
+- **Two sessions at once.** PGlite has one connection, so the row locks that keep role changes from
+  interleaving have never contended.
+- **The Postgres version.** PGlite is 18.6 and the project's config says 17. I know of nothing in the migration
+  that is new in 18, but it has not run on 17.
+- **What is already on the live project:** existing rows, anything changed by hand, and whether the policy names
+  the migration drops match, if the earlier migrations were applied another way.
+
 ## Checked, and how
 
 | Done when | Result | How |
 | --- | --- | --- |
 | `EN.gate.gizmoSvg()` fingerprint before and after | Pass | SHA-256 of all three forms, plus `clipSvg`'s source text and the bubble's CSS lines, in Node before any edit and after the last: identical. `git diff main` on `tour.js` is empty. |
 | Tour step 1: Gizmo, his bubble, eyes on the card, his blink | Pass | Browser pane, Classic, '98 and #GRIDroid: he shows with his typed bubble and a `-3px` rest, and the blink animations run. Sampled every 20 ms for a whole cycle in Classic: pupils only at -3 and -1, never between. |
-| Join, drop two characters in, roster, read-only sheets, Gizmo's no, co-Admin gets in, remove with block, old link fails, reset, transfer | Pass, **on the stand-in only** | The suite's `campaigns_b2` chain, 162 checks through the real UI, signing several accounts in and out against a stand-in client that models the tables, RLS and every refusal. No network. This proves the app's half. |
-| A character moved between campaigns keeps everything | Pass, **on the stand-in only** | The same chain: `data` and `updated_at` identical after a move. `campaign_checks.sql` checks the real trigger when it runs. |
+| Join, drop two characters in, roster, read-only sheets, Gizmo's no, co-Admin gets in, remove with block, old link fails, reset, transfer | Pass on a local Postgres, **not yet on the live project** | `pg/campaigns_realdb.js`, 144 checks through the real UI on the real SQL, with the database's own rows checked after each step. The suite's `campaigns_b2` chain, 163 checks, plays the same round on a stand-in, as part of every regular run. |
+| A character moved between campaigns keeps everything | Pass on a local Postgres, **not yet on live rows** | `pg/campaigns_realdb.js`: `data` and `updated_at` identical in the database after a move, after No campaign, and after a sync. `campaign_checks.sql` checks the trigger directly. |
 | Reload onto a remembered Admin desktop, and `?portal=admin` | Pass | `campaigns_fence`, three reloads on one profile. Also: an account running a campaign, one in none, and one jacked out all get in. |
 | Fresh device on a join link | Pass | `campaigns_joinlink`: stash first, login card, Gizmo, then the join card. Jack in keeps the token, and the sign-in brings the card up. A campaign name holding HTML shows as text. |
 | Nothing from a viewed sheet saves | Pass | The chain: writes refused, the rows byte for byte the same after a push window, the stored roster identical after Back. A record full of `<img onerror>` ran nothing. |
@@ -246,24 +303,23 @@ the Notes sub-tab at all. On a viewed sheet only, sub-tabs and collapsing header
 Also checked: Copy on a real click in the pane said "Invite link copied." The pane would not let me read
 the clipboard back, so the text itself was not compared.
 
-The full suite on the final app code: 487 chains, 511 runs, 0 bad (round 206). That is what caught the
-twelfth tab: at 1264 to 1366 px it pushed Codex behind the gear on Classic, so the rail now tightens in two
+The full suite on the final app code: 487 chains, 511 runs, 0 bad (round 208). An earlier round is what caught
+the twelfth tab: at 1264 to 1366 px it pushed Codex behind the gear on Classic, so the rail now tightens in two
 steps. Three older tests pinned eleven tabs, and one pinned 16 px padding at 1366, so they were updated to
-say twelve. The only commit after that run changes `campaign_checks.sql`, which the suite does not read.
+say twelve. On the same final code, `campaigns_b2` passed five runs in a row on its own, with the Copy button
+answering each time. `pg/campaigns_realdb.js` passed 144 of 144, and the checks caught all 69 broken copies.
 
-The dash, control-character and syntax sweeps are clean.
+The dash and syntax sweeps are clean.
 
 ## Waiting for the author
 
-- **`campaign_checks.sql`: every line PASS.** Not run. There is no Postgres on this machine, and the live
-  project was off limits, so **none of the SQL has been executed yet**, not even for syntax. Expect that a
-  first run could turn up a typo. Everything in the app was tested against my model of what the SQL does,
-  not the SQL itself.
+- **`campaign_checks.sql` on the live project: every line PASS.** It says 102 PASS, 0 FAIL on a local Postgres.
+  The run that counts is the one on the project, and it needs your go.
 - **The two-account round on the live project**: create, copy the link, fresh device with the second
   account, join, two characters in, both on the roster, each sheet read-only, Gizmo's no, make co-Admin
-  and they get in, remove with Also block and their link fails, reset, transfer. Needs the migration and a
-  real Discord round trip.
-- **A character moved between campaigns**, on real rows.
+  and they get in, remove with Also block and their link fails, reset, transfer. All of it has passed
+  locally. What only you can add is the migration on the real project and a real Discord round trip.
+- **A character moved between campaigns**, on the project's real rows.
 - **Gizmo's two lines** read as the spec has them; they are `NO` in `gate.js` if you want to change them.
 
 ## Decisions
@@ -289,12 +345,17 @@ The dash, control-character and syntax sweeps are clean.
 13. **A pack the Admin does not hold** draws like a locked record, and the banner says so.
 14. **Copy tries `execCommand` first,** since `navigator.clipboard` can wait on a permission with nothing on screen.
 15. **The Admin rail's old 16 px pin at 1366 is overruled.** Twelve tabs do not fit at 16 px until about 1430 px.
+16. **A refused read on the Campaign tab asks for the role again.** It is the only way that page finds out a role
+    changed while it was open. It does not loop: the read only repaints if something changed.
+17. **The real-database chain lives in `pg/`, not `tests/`.** The regular runner takes everything in `tests/`, and
+    this one needs the bridge up, so it runs by hand. The stuck co-Admin is also guarded in `campaigns_b2`, so a
+    regular run still catches it.
 
 ## Still open
 
 - **Deleting an Admin's account leaves a campaign with no Admin.** Nothing in the app deletes accounts today.
   It wants a ruling when something does.
-- **A player's device learns of a removal on its next read** (jack-in, or the tab coming back after 30 s). A
-  pick in that window is refused by the database and reverts.
+- **A player's device learns of a removal on its next read** (jack-in, the tab coming back after 30 s, or a
+  refused read on the Campaign tab). A pick in that window is refused by the database and reverts.
 - **The tour is not told about a viewed sheet.** `tour.js` is off limits. It only runs when started by hand,
   and anything it wrote would be refused.

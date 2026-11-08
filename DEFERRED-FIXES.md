@@ -12637,9 +12637,9 @@ Manage characters. The build report has the full list and the commands.
   `auth.users`, matching `characters`, so deleting an Admin's auth user leaves the campaign leaderless:
   nobody can rename, delete or transfer it. Nothing in the app deletes accounts today. Wants a ruling
   when something does.
-- **A player's device learns of a removal on its next read** (jack-in, or the tab coming back into view
-  after 30 s). Until then its dropdown shows the old campaign. A pick made in that window is refused by
-  the database and reverts.
+- **A player's device learns of a removal on its next read** (jack-in, the tab coming back into view
+  after 30 s, or a refused read on the Campaign tab). Until then its dropdown shows the old campaign. A
+  pick made in that window is refused by the database and reverts.
 - **The tour is not told about a viewed sheet.** `tour.js` is off limits, and it treats a viewed sheet
   as a real record. It only runs when started by hand, and every write it could make is refused.
 
@@ -12648,4 +12648,22 @@ stand-in client that models the tables, RLS and every refusal), `campaigns_fence
 `?portal=admin`), `campaigns_joinlink` (a fresh device on a join link). `campaigns_b2_shot.js` is a stage
 for screenshots, not a check. `cloud_sync.js`'s stand-in now reads a column it has no value for as null,
 and `campaigns_login_2.js` pins the gate's new exports. The stand-in proves the app's half only; the SQL's
-half is `supabase/tests/campaign_checks.sql`, which waits for the author's go.
+half is `supabase/tests/campaign_checks.sql`, whose run on the live project waits for the author's go.
+
+**Run on a local Postgres, the same day.** The author agreed to PGlite, real PostgreSQL in Node, in memory, no
+way to the live project. The tools are in the test suite's `pg/` folder (`pg/README.txt`): the migrations and
+checks, 69 deliberately broken copies of the migration, and a strict imitation of PostgREST so the real app
+and the real supabase-js can play the whole round on the real SQL (`pg/campaigns_realdb.js`). `postgres` is not
+a superuser there, or the run would prove little. Any new SQL should go through all three before it is
+reported. What it changed:
+
+- **`campaign_checks.sql` went from 84 checks to 102.** A clean first run meant little: 5 of the first 45 broken
+  copies got past it. A check can pass for no reason, as "a player cannot read the blocks" did by running before
+  any block existed, so a new check that expects nothing should first make sure there is something to see.
+- **A refused read on the Campaign tab asks for the role again.** Without it a co-Admin demoted or removed with
+  the tab open sat on TRY AGAIN forever. It cannot loop: the read only repaints if something changed.
+- **Copy always answers.** `navigator.clipboard` can wait on a permission with nothing on screen, so after 1.5 s
+  the button says it could not copy and the link is in the box. That wait is the likely reason `campaigns_b2` got
+  no answer from the button in one of four runs on its own.
+- **Not proved by any of it:** the real PostgREST and Auth, two sessions at once (one connection, so the row locks
+  never contend), Postgres 17 (PGlite is 18.6), and whatever is already on the live project.

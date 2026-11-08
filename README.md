@@ -163,7 +163,8 @@ link, the roster, who is blocked, and each player's sheet, read-only.
   the Admin desktop. That is a polite fence: jacking out, or creating a campaign, gets past it.
 - A record's campaign is `characters.campaign_id`, account state like the link book. It is not in the
   record, so it never rides an export.
-- `supabase/tests/campaign_checks.sql` is the check, run the way `entitlements_checks.sql` is.
+- `supabase/tests/campaign_checks.sql` is the check, run the way `entitlements_checks.sql` is. To run it
+  without touching the live project, see `pg/README.txt` in the test suite.
 
 ## Install it on a phone
 
