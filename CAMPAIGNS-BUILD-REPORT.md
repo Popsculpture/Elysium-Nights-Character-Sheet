@@ -159,17 +159,18 @@ npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/
 npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/campaign_checks.sql
 ```
 
-**The migration history is behind, and it needs a decision.** `migration list` showed the first two migrations
+**The migration history is caught up, on your second go.** `migration list` showed the first two migrations
 recorded but not the playtest gate (`20261108000000`), though its rule is in effect, so it went in outside the
 history. `db push` would have run the gate again along with campaigns, so I took the route this report gave for
-that case, `db query`, which applies the one file and records nothing. Both are now missing from the history, so
-the next `db push` would try to run both: the gate's update would run again, and it would fail at
-`create table campaigns`. This records them without running anything. I have not run it, since it is a write
-your go did not cover:
+that case, `db query`, which applies the one file and records nothing. Then this recorded both without running
+either:
 
 ```bash
 npx supabase@2 migration repair --status applied 20261108000000 20261108120000 --project-ref ggjgkcnhfpjwyrhakqun
 ```
+
+All four migrations now show under Remote, and a `db push --dry-run` says the project is up to date. The gate,
+its grant and the data read the same afterwards.
 
 **Until the branch is merged,** the live site's code has no campaign buttons. A signed-in account could still call
 the functions directly, and reach only what the rules allow.
@@ -226,7 +227,8 @@ asset stamp is `?v=20261108.5`. README and HANDOFF describe campaigns.
 - `5ca076f` the stronger checks
 - `f4197d2` the two app fixes the local Postgres run led to
 - `bdeb860` this report brought up to date
-- the commit after it: the run on the live project, written up
+- `88c0a5a` the run on the live project, written up
+- the commit after it: the migration history caught up, written up
 
 ## Three traps the spec did not mention
 
@@ -336,7 +338,6 @@ The dash and syntax sweeps are clean.
   - **After merging,** on the live site, the way batch 1's Jack in round trip was done. No setting, but players
     could reach campaigns before you have seen them work.
 - **A character moved between campaigns**, by hand, during that round.
-- **The migration history**, above: repair it, or say not to.
 - **Gizmo's two lines** read as the spec has them; they are `NO` in `gate.js` if you want to change them.
 
 ## Decisions

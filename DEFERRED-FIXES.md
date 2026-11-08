@@ -12671,10 +12671,11 @@ reported. What it changed:
 **Applied to the live project, the same day, on the author's go.** `campaign_checks.sql` says 102 PASS, 0 FAIL on
 its Postgres 17.11, and the rollback left nothing behind.
 
-- **The migration history is behind, so do not `db push` yet.** It records only the first two migrations. The
-  playtest gate went in outside it, and campaigns went in by `db query`, which records nothing, because a push would
-  have run the gate again. A push now would try both and fail at `create table campaigns`. The repair command is in
-  the build report.
+- **The migration history is caught up.** It only recorded the first two migrations. The playtest gate had gone in
+  outside it, so a push would have run the gate again, and campaigns went in by `db query`, which records nothing.
+  `migration repair --status applied` then recorded both, on the author's go, without running either. All four show
+  under Remote, and `db push --dry-run` says the project is up to date. Run `migration list` before any push: if a
+  migration ever goes in by `db query` again, the history needs the same repair.
 - **A worktree has no `supabase link`.** `--linked` alone fails there; name the project with `--project-ref`.
 - **The real round needs a way to reach sign-in.** Localhost is not on the redirect list and the live site is `main`,
   so running the branch against real Discord before merging takes one temporary entry on that list. The author's call;
