@@ -123,3 +123,178 @@ headless Chrome on `file://`.
 10. **Under reduced motion the pupils keep the keyframe's name** at a 0 s duration, because the
     pupil rule outranks the `animation:none` rule. Measured inert: nothing moves, and the gaze stays
     where the scene puts it.
+
+---
+
+# Campaigns build report: batch 2, campaigns
+
+Built 8 Nov 2026 on `campaigns-batch-2`, cut from `main` at `21004f4` (batch 1 was already merged). Not
+merged. **The migration and the checks have not been applied or run anywhere**: the live project was
+not touched, and neither was Discord or any Supabase setting.
+
+Every decision is also logged under "Campaigns" in `DEFERRED-FIXES.md`.
+
+## To apply it, when you say go
+
+Nothing in Supabase settings or Discord needs changing. An invite link is the app's address plus
+`?join=`, and the sign-in itself still goes back to the bare address already on the redirect list.
+
+Apply the migration before merging to `main`. Without it the app still runs, but every campaign button
+fails with a toast. The character sync does not depend on it, and that was tested.
+
+1. See how earlier migrations were recorded (read-only):
+
+   ```bash
+   npx supabase@2 migration list --linked
+   ```
+
+2. If the three earlier migrations show under Remote, apply with:
+
+   ```bash
+   npx supabase@2 db push --linked
+   ```
+
+   If they do not (they were applied another way), `db push` would try to run them again, so use this instead:
+
+   ```bash
+   npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/migrations/20261108120000_campaigns.sql
+   ```
+
+3. Run the checks. They always roll back and end in an error whose text says `N PASS, 0 FAIL`:
+
+   ```bash
+   npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/campaign_checks.sql
+   ```
+
+## What is built
+
+**0. Gizmo is off limits.** `gate.js` gained code and changed three lines: a comment, the `coach()` call
+now skipped on a join link, and the export line. `clipSvg()` and `gizmoSvg` are byte for byte. `tour.js`
+has no changes. His two new appearances reuse `.gate-clip`, `.gate-bubble` and `.gate-clipsvg` as they
+are. No new art.
+
+**1. Database.** `supabase/migrations/20261108120000_campaigns.sql`: the four tables, `characters.campaign_id`,
+the three helpers, the policies and all the functions in the spec, plus `campaign_blocked` (below). Clients
+only read the tables, and write privileges are revoked outright. `supabase/tests/campaign_checks.sql`
+covers every line in the spec and more, 84 checks. Each refusal is checked for its own error code,
+so a typo or a missing grant cannot pass as a refusal.
+
+**2. The join card.** `?join=<token>` is stashed by `js/campaigns.js`, now the first script on the page.
+Login card first if it is due, with Gizmo's greeting, then the join card. Run offline explains and offers
+Jack in. Join opens Manage characters with "You're in <campaign>. Pick a character below." The dead-link
+and blocked messages read as the spec has them.
+
+**3. Manage characters.** A Campaign dropdown per record, saved the moment it is picked, reverting with
+a toast on failure. A local-only record uploads itself. A locked record's dropdown is greyed with the
+lock reason. Examples get none. Not jacked in: "Jack in to join campaigns." The meta line and the
+switcher show the campaign. **Your campaigns** has roles, Leave (or "Transfer leadership first") and
+**+ New campaign**.
+
+**4. The Campaign tab.** `js/gm_campaign.js`, first on the Admin rail: picker, Invite link, Roster, Blocked,
+Campaign settings, with the spec's confirms and who-can-do-what.
+
+**5. Gizmo says no.** Every way onto the Admin desktop goes through `usePortal` in `app.js`, so that is the
+one place that says no. His two lines and **Take me back** are in `gate.js` as `NO`. The polite-fence
+comment is at `usePortal`.
+
+**6. View sheet.** `store.setViewing`: in memory, flagged `meta.viewing`, never in the roster, never saved,
+never pushed. The Freelancer desktop in the read-only mode, with the banner, last-save time, **Refresh** and
+**Back to campaign**.
+
+Also: the Admin rail is twelve tabs now, so it takes 12 px sides below 1430 px and 8 px below 1330 px. The
+asset stamp is `?v=20261108.3`. README and HANDOFF describe campaigns.
+
+## Commits
+
+- `e5048f3` the migration and its checks
+- `2388dbf` the join card, Manage characters, the Campaign tab, Gizmo's no, View sheet
+- `24a64aa` sub-tabs on a viewed sheet, twelve tabs on the Admin rail, the docs
+- `4740bd2` the non-member check uses a real non-member
+- this report
+
+## Three traps the spec did not mention
+
+These would have shipped as real bugs, so they are worth your eye:
+
+1. **The Admin's roster would have filled with other people's characters.** The new read policy means an
+   Admin's select on `characters` answers with their members' rows, and `pull()` took everything it was
+   given. It would have copied them into the Admin's roster and pushed them back as the Admin's own. Pull
+   now asks for `owner_id` by name.
+2. **A campaign move looked like a save.** The `updated_at` trigger fired on any update, so an Admin's
+   Remove could make a player's device overwrite unsaved edits with the older copy in the account. The
+   trigger now fires only when the sheet changes. This also keeps "last saved" true.
+3. **A player's sheet could have run code in the Admin's browser.** Some views build HTML from record
+   fields, which was harmless while only the owner read them. An Admin's session is in their browser, so
+   a viewed sheet loses every `<` and `>` before anything draws it.
+
+And one in the spec's own words: the read-only mode blocks every click, so an Admin could not have reached
+the Notes sub-tab at all. On a viewed sheet only, sub-tabs and collapsing headers still work.
+
+## Checked, and how
+
+| Done when | Result | How |
+| --- | --- | --- |
+| `EN.gate.gizmoSvg()` fingerprint before and after | Pass | SHA-256 of all three forms, plus `clipSvg`'s source text and the bubble's CSS lines, in Node before any edit and after the last: identical. `git diff main` on `tour.js` is empty. |
+| Tour step 1: Gizmo, his bubble, eyes on the card, his blink | Pass | Browser pane, Classic, '98 and #GRIDroid: he shows with his typed bubble and a `-3px` rest, and the blink animations run. Sampled every 20 ms for a whole cycle in Classic: pupils only at -3 and -1, never between. |
+| Join, drop two characters in, roster, read-only sheets, Gizmo's no, co-Admin gets in, remove with block, old link fails, reset, transfer | Pass, **on the stand-in only** | The suite's `campaigns_b2` chain, 162 checks through the real UI, signing several accounts in and out against a stand-in client that models the tables, RLS and every refusal. No network. This proves the app's half. |
+| A character moved between campaigns keeps everything | Pass, **on the stand-in only** | The same chain: `data` and `updated_at` identical after a move. `campaign_checks.sql` checks the real trigger when it runs. |
+| Reload onto a remembered Admin desktop, and `?portal=admin` | Pass | `campaigns_fence`, three reloads on one profile. Also: an account running a campaign, one in none, and one jacked out all get in. |
+| Fresh device on a join link | Pass | `campaigns_joinlink`: stash first, login card, Gizmo, then the join card. Jack in keeps the token, and the sign-in brings the card up. A campaign name holding HTML shows as text. |
+| Nothing from a viewed sheet saves | Pass | The chain: writes refused, the rows byte for byte the same after a push window, the stored roster identical after Back. A record full of `<img onerror>` ran nothing. |
+| Checked in all three skins | Pass | Screenshots of the card, Gizmo's no, Manage characters, the tab and a viewed sheet in Classic and '98, plus the same states in #GRIDroid at a true 375 px in the browser pane, where nothing overflowed. |
+
+Also checked: Copy on a real click in the pane said "Invite link copied." The pane would not let me read
+the clipboard back, so the text itself was not compared.
+
+The full suite on the final app code: 487 chains, 511 runs, 0 bad (round 206). That is what caught the
+twelfth tab: at 1264 to 1366 px it pushed Codex behind the gear on Classic, so the rail now tightens in two
+steps. Three older tests pinned eleven tabs, and one pinned 16 px padding at 1366, so they were updated to
+say twelve. The only commit after that run changes `campaign_checks.sql`, which the suite does not read.
+
+The dash, control-character and syntax sweeps are clean.
+
+## Waiting for the author
+
+- **`campaign_checks.sql`: every line PASS.** Not run. There is no Postgres on this machine, and the live
+  project was off limits, so **none of the SQL has been executed yet**, not even for syntax. Expect that a
+  first run could turn up a typo. Everything in the app was tested against my model of what the SQL does,
+  not the SQL itself.
+- **The two-account round on the live project**: create, copy the link, fresh device with the second
+  account, join, two characters in, both on the roster, each sheet read-only, Gizmo's no, make co-Admin
+  and they get in, remove with Also block and their link fails, reset, transfer. Needs the migration and a
+  real Discord round trip.
+- **A character moved between campaigns**, on real rows.
+- **Gizmo's two lines** read as the spec has them; they are `NO` in `gate.js` if you want to change them.
+
+## Decisions
+
+1. **"Gets their old row back"** reads as the same key, a fresh `player` row. The spec's table has no column
+   for an ended membership, and handing back the old row would hand a removed co-Admin their role.
+2. **`campaign_blocked(campaign)` is added.** The Blocked section needs names, and a blocked account is not
+   in the roster. Same gate as the table.
+3. **The insert policy gains the campaign check** as well as the update policy.
+4. **`invite_preview` needs a session,** as the spec has every function check `auth.uid()`, so the Run
+   offline card cannot name the campaign.
+5. **A blocked account sees the card and is told at Join,** since the preview is "nothing else".
+6. **Not now clears the stash,** or the card returns on every load. The link still works. A network failure
+   keeps it, with Try again.
+7. **`?join=` comes off the address** once stashed.
+8. **Crew on several campaigns:** Gizmo names the one joined first.
+9. **The fence writes Freelancer as the remembered desktop,** so a reload gets him once. The ADMIN button and
+   `?portal=admin` get him every time.
+10. **Roles are cached per account in `en_campaigns_v1`,** so the fence answers at boot. An attempt re-reads, so
+    someone just made co-Admin gets in without reloading.
+11. **The Admin desktop still lands on Table.** Campaign is first on the rail, not the default.
+12. **Sub-tabs and collapsing headers stay live on a viewed sheet** (above).
+13. **A pack the Admin does not hold** draws like a locked record, and the banner says so.
+14. **Copy tries `execCommand` first,** since `navigator.clipboard` can wait on a permission with nothing on screen.
+15. **The Admin rail's old 16 px pin at 1366 is overruled.** Twelve tabs do not fit at 16 px until about 1430 px.
+
+## Still open
+
+- **Deleting an Admin's account leaves a campaign with no Admin.** Nothing in the app deletes accounts today.
+  It wants a ruling when something does.
+- **A player's device learns of a removal on its next read** (jack-in, or the tab coming back after 30 s). A
+  pick in that window is refused by the database and reverts.
+- **The tour is not told about a viewed sheet.** `tour.js` is off limits. It only runs when started by hand,
+  and anything it wrote would be refused.
