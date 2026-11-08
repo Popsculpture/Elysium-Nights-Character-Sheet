@@ -3656,7 +3656,7 @@ html.skin-droid .camp-qty-in{ flex:0 0 72px; flex-basis:72px; width:72px; }
 .post-box-list{ list-style:none; margin:0; padding:0; display:grid; gap:2px; font-size:13px; color:var(--text); }
 .post-box-list li{ display:flex; flex-wrap:wrap; gap:4px 8px; align-items:baseline; }
 .post-box-name{ overflow-wrap:anywhere; }
-.post-box-qty{ font-size:11px; color:var(--text3); }
+.post-box-qty{ font-size:12px; color:var(--text2); }
 .post-box-refused{ opacity:.6; }
 .post-box-refused .post-box-name{ text-decoration:line-through; }
 .post-take{ grid-column:1 / -1; justify-self:start; text-transform:none; letter-spacing:.02em; }

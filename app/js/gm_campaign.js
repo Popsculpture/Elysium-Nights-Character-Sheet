@@ -153,8 +153,8 @@ EN.gmCampaign = (function () {
      the search's results and the attached list redraw, in place, inside their own nodes. */
   function sendingTo(c, to) { return !!_send && _send.campaign === c.id && _send.to === to; }
   function openSend(c, to) {
-    var same = sendingTo(c, to);
-    if (same) { _send = null; EN.app.render(); return; }
+    // a second press folds it away with its words kept: Cancel is the one that throws them out
+    if (sendingTo(c, to)) { _send.to = null; EN.app.render(); return; }
     var was = _send && _send.campaign === c.id && _send.uid === me() ? _send : null;
     // a message half written keeps its words when it is pointed at someone else
     _send = { uid: me(), campaign: c.id, to: to, from: was ? was.from : "", subj: was ? was.subj : "", body: was ? was.body : "",
@@ -258,7 +258,7 @@ EN.gmCampaign = (function () {
       el("textarea.camp-input.camp-wide.camp-body", { maxlength: "4000", value: s.body, "aria-label": "Message", "data-camp": "send-body",
         oninput: function (e) { s.body = e.target.value; } }),
       el("label.fl", { text: "Attach items" }),
-      el("input.camp-input.camp-wide", { type: "search", value: s.search, placeholder: "Search the gear catalog", "aria-label": "Search the gear catalog", "data-camp": "send-search", "data-no-swipe": "1",
+      el("input.camp-input.camp-wide", { type: "text", value: s.search, placeholder: "Search the gear catalog", "aria-label": "Search the gear catalog", "data-camp": "send-search",
         oninput: function (e) { s.search = e.target.value; drawHits(hits, attached); } }),
       hits,
       attached,

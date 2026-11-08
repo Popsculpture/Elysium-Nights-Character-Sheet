@@ -423,9 +423,9 @@ EN.cloud = (function () {
     flushing = readTaken().reduce(function (p, id) {
       return p.then(function () {
         return client.rpc("mark_taken", { p_id: id }).then(check).then(function () { return true; }, function (e) {
-          // only these two can still come right: the network, and a delivery not marked yet
+          // only these can still come right: the network, a session gone for now, a delivery not marked yet
           var m = e && e.message ? String(e.message) : "";
-          return /^EN_/.test(m) && m !== "EN_NOT_DELIVERED";
+          return /^EN_/.test(m) && m !== "EN_NOT_DELIVERED" && m !== "EN_SIGNED_OUT";
         }).then(function (done) {
           if (done) writeTaken(readTaken().filter(function (x) { return x !== id; }));
         });
