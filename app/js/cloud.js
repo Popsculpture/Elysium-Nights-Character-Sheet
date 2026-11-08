@@ -18,11 +18,12 @@
    THE LINK BOOK (localStorage en_cloud_links_v1) remembers, per account, which
    local record goes with which row:
      { <user id>: { links: { <local id>: { cid, at, lat } },
-                    localOnly: { <local id>: 1 }, pendingDel: [cid], uploaded: { <local id>: 1 } } }
+                    localOnly: { <local id>: 1 }, pendingDel: [cid], uploaded: { <local id>: 1 },
+                    filing: { <local id>: stamp }, unmarked: [row id] } }
    cid is the row id, at the row's updated_at as last seen, lat the record's
    meta.updatedAt when it last matched the row. A record whose updatedAt has
    moved past lat has local edits to upload; a row whose updated_at has moved
-   past at was changed somewhere else. The book lives beside the roster rather
+   past at was changed somewhere else. filing and unmarked belong to THE INBOX below. The book lives beside the roster rather
    than on the records, so an exported file never carries a row id into
    somebody else's account.
 
@@ -95,6 +96,7 @@ EN.cloud = (function () {
     if (!b.localOnly || typeof b.localOnly !== "object") b.localOnly = {};
     if (!Array.isArray(b.pendingDel)) b.pendingDel = [];
     if (!b.uploaded || typeof b.uploaded !== "object") b.uploaded = {};
+    if (!b.filing || typeof b.filing !== "object") b.filing = {};
     return b;
   }
   function saveBook(b) {
@@ -186,7 +188,7 @@ EN.cloud = (function () {
         // a row gone from the account (deleted on another device): the local copy stays, local only
         Object.keys(b.links).forEach(function (lid) {
           var L = b.links[lid];
-          if (!seen[L.cid] && b.pendingDel.indexOf(L.cid) === -1) { delete b.links[lid]; b.localOnly[lid] = 1; }
+          if (!seen[L.cid] && b.pendingDel.indexOf(L.cid) === -1) { delete b.links[lid]; delete b.filing[lid]; b.localOnly[lid] = 1; }
         });
         var wanted = [];
         rows.forEach(function (r) {
@@ -198,7 +200,8 @@ EN.cloud = (function () {
           var L = b.links[lid];
           if (r.updated_at === L.at) return;
           var dirty = stamp(ch) !== L.lat;
-          if (!dirty || mustTake[lid] || Date.parse(r.updated_at) > Number(stamp(ch) || 0)) wanted.push({ row: r, lid: lid });
+          // ahead by mail alone, the row always wins: see THE COPY MAY ONLY BE AHEAD BY THE MAIL
+          if (!dirty || aheadByMail(lid, b) || Date.parse(r.updated_at) > Number(stamp(ch) || 0)) wanted.push({ row: r, lid: lid });
         });
         saveBook(b);
         // fetch the wanted rows one by one, so one bad row cannot stop the rest
@@ -216,7 +219,7 @@ EN.cloud = (function () {
                   lid = want && !roster()[want] && !b2.links[want] ? want : freshId();
                 }
                 if (!store().putRecord(lid, data)) throw new Error("This device refused the pulled record.");
-                delete mustTake[lid];
+                delete b2.filing[lid];
                 b2.links[lid] = { cid: full.id, at: full.updated_at, lat: stamp(roster()[lid]) };
                 b2.uploaded[lid] = 1;
                 delete b2.localOnly[lid];
@@ -244,12 +247,12 @@ EN.cloud = (function () {
   function push() {
     var b = book();
     var jobs = Object.keys(roster()).filter(function (id) {
-      if (!eligible(id, b) || mustTake[id]) return false;
+      if (!eligible(id, b)) return false;
       var L = b.links[id];
       return !L || stamp(roster()[id]) !== L.lat;
     });
     return jobs.reduce(function (p, lid) {
-      return p.then(function () { return pushOne(lid); });
+      return p.then(function () { return aheadByMail(lid, book()) ? pushFiled(lid) : pushOne(lid); });
     }, Promise.resolve());
   }
   function pushOne(lid) {
@@ -271,18 +274,24 @@ EN.cloud = (function () {
     var b = book();
     b.links[lid] = { cid: row.id, at: row.updated_at, lat: lat };
     b.uploaded[lid] = 1;
+    delete b.filing[lid];
     saveBook(b);
   }
-  /* A push that only lands on the row as this device last saw it, for mail just filed (THE INBOX below).
-     Answers whether it landed. A device that only changed because a letter came has no business winning a
-     race against the device somebody is actually playing on. */
-  function pushIfUnmoved(lid) {
+  /* A record ahead of the account by mail alone: see THE INBOX below. A push of one lands only on the row as
+     this device last saw it, because a device that only changed since a letter came has no business winning a
+     race against the device somebody is actually playing on. If the row moved it does nothing and asks for a
+     pull, which takes the row's copy. Answers whether it landed. */
+  function aheadByMail(lid, b) {
+    var ch = roster()[lid], at = b.filing[lid];
+    return at !== undefined && !!ch && stamp(ch) === at;
+  }
+  function pushFiled(lid) {
     var ch = roster()[lid], L = book().links[lid];
     if (!ch || !L) return Promise.resolve(false);
     var lat = stamp(ch), uid = user.id;
     return client.from("characters").update(payload(ch)).eq("id", L.cid).eq("updated_at", L.at).select("id, updated_at").then(check)
       .then(function (rows) {
-        if (!rows || !rows.length) return false;
+        if (!rows || !rows.length) { again = "pull"; return false; }
         noteRow(lid, rows[0], lat, uid);
         return true;
       });
@@ -317,13 +326,20 @@ EN.cloud = (function () {
      saying delivered and the message on that device alone, and nobody would ever file it again. So the
      record goes up first, and a row is marked only if that landed.
 
-     THAT PUSH CAN'T WIN A RACE. A pull comes first, but another device can push in the moment after
-     it. This push only lands on the row as this device last saw it (pushIfUnmoved). If the row moved
-     it does nothing, and this record goes on `mustTake`: nothing pushes it until a pull has taken the
-     row's copy, whatever the clocks say. They can't be asked, since the filing is stamped a moment
-     after the other device's save, and would read as the newer edit. An ordinary push ran just before
-     the filing, so all this copy gives up is the filing itself. The row is still waiting, so it is
-     filed again on top, and `told` keeps it to one toast.
+     THE COPY MAY ONLY BE AHEAD BY THE MAIL. A pull comes first, but another device can push in the
+     moment after it, so a row is filed only on a copy with nothing else waiting to go up: real edits
+     go first, by the ordinary push, and if that failed the row waits. The link book then remembers the
+     stamp the record has after the filing (`filing`). While the record still has that stamp, all it
+     holds that the account doesn't is mail, and two rules hold, in every run and across a reload. Its
+     push only lands on the row as this device last saw it (pushFiled). And if the row has moved, a
+     pull takes the row's copy, whatever the clocks say. They can't be asked: the filing is stamped a
+     moment after the other device's save, and would read as the newer edit. The row is still waiting,
+     so it is filed again on top, and `told` keeps it to one toast. The moment the player edits, the
+     stamp moves, and it is an ordinary record under last write wins again, with nothing thrown away.
+
+     A TAB NOBODY IS LOOKING AT DOESN'T FILE. It would race the device in use, and its toast would be
+     gone before anyone saw it. Rows wait until it comes back into view (`waitingForView`), and the
+     player sees the toast then.
 
      TWO DEVICES AT ONCE. The first to mark a row delivered takes it out of everyone's waiting list,
      and a second device that then stayed silent would hold a copy with no message, and overwrite the
@@ -350,7 +366,7 @@ EN.cloud = (function () {
   var channel = null, channelOf = null;
   var wanted = {};            // row ids Realtime spoke of, to read whatever their status
   var told = {};              // row ids this device has shown a toast for, this session
-  var mustTake = {};          // local ids whose row moved under a filing: see THAT PUSH CAN'T WIN A RACE
+  var waitingForView = false; // a hidden tab left mail waiting: coming back into view reads it, however recent the last pull
   var inboxWarned = false;
   var hasLanded = false, heldMail = [];
 
@@ -407,16 +423,36 @@ EN.cloud = (function () {
     return ch && !(store().isLocked && store().isLocked(lid)) ? lid : null;
   }
   function refusalOf(e) { return e && e.message ? String(e.message) : ""; }
-  function fileRows(rows, uid, came) {
-    var todo = [], toPush = [], stuck = {};
+  function isClean(lid, b) {
+    var L = b.links[lid], ch = roster()[lid];
+    return !!L && !!ch && stamp(ch) === L.lat;
+  }
+  // a write only the courier made: a copy that was ahead by mail alone, or level, still is afterwards
+  function courierWrite(lid, write) {
+    var b = book(), quiet = isClean(lid, b) || aheadByMail(lid, b);
+    var done = write();
+    if (done && quiet) { b = book(); b.filing[lid] = stamp(roster()[lid]); saveBook(b); }
+    return done;
+  }
+  function fileRows(rows, uid, came, pulled) {
+    var todo = [], touched = [], stuck = {};
     rows.forEach(function (r) {
       if (!user || user.id !== uid) return;
       var lid = writable(r);
       if (!lid) return;
-      if (r.status === "recalled") { EN.gmStore.withdrawMail(lid, r.id); setUnmarked(r.id, false); return; }
+      if (r.status === "recalled") {
+        courierWrite(lid, function () { return EN.gmStore.withdrawMail(lid, r.id); });
+        setUnmarked(r.id, false);
+        return;
+      }
       var mail = r.mail || {};
       if (!filed(roster()[lid], r.id)) {
-        if (!EN.gmStore || !EN.gmStore.deliverMail(lid, r.id, { from: mail.from, subj: mail.subj, body: mail.body, package: mail.package, when: whenOf(r.created_at) })) return;   // this device would not store it
+        var b = book();
+        if (!isClean(lid, b) && !aheadByMail(lid, b)) return;   // real edits have not gone up: this row waits for them
+        var landed = courierWrite(lid, function () {
+          return EN.gmStore && EN.gmStore.deliverMail(lid, r.id, { from: mail.from, subj: mail.subj, body: mail.body, package: mail.package, when: whenOf(r.created_at) });
+        });
+        if (!landed) return;   // this device would not store it
         setUnmarked(r.id, true);
         if (!told[r.id]) {
           told[r.id] = 1;
@@ -424,18 +460,16 @@ EN.cloud = (function () {
         }
       }
       todo.push({ id: r.id, lid: lid });
-      if (toPush.indexOf(lid) === -1) toPush.push(lid);
+      if (touched.indexOf(lid) === -1) touched.push(lid);
     });
-    // up to the account first, and only over the row this device last saw
-    return toPush.reduce(function (p, lid) {
+    // up to the account first: delivered has to mean somewhere another device can get it
+    return touched.reduce(function (p, lid) {
       return p.then(function () {
-        var L = book().links[lid];
-        // already lost the race, and the pull that settles it has not worked yet: it sits still until one does
-        if (mustTake[lid]) { stuck[lid] = 1; return; }
-        if (L && stamp(roster()[lid]) === L.lat) return;   // nothing here the account doesn't have
-        return pushIfUnmoved(lid).then(function (landed) {
-          if (!landed) { stuck[lid] = 1; mustTake[lid] = 1; again = "pull"; }   // the row moved
-        }, function (e) { stuck[lid] = 1; inboxWarn(e); });  // no network: the next read tries again
+        var b = book();
+        if (isClean(lid, b)) return;   // nothing here the account doesn't have
+        // real edits since, or a run with no pull behind it: this run's ordinary push has had its chance
+        if (!pulled || !aheadByMail(lid, b) || !eligible(lid, b)) { stuck[lid] = 1; return; }
+        return pushFiled(lid).then(function (ok) { if (!ok) stuck[lid] = 1; }, function (e) { stuck[lid] = 1; inboxWarn(e); });
       });
     }, Promise.resolve()).then(function () {
       return todo.reduce(function (p, t) {
@@ -443,7 +477,7 @@ EN.cloud = (function () {
           if (stuck[t.lid] || !user || user.id !== uid) return;
           return client.rpc("mark_delivered", { p_id: t.id }).then(check).then(function () { return ""; }, refusalOf).then(function (refusal) {
             if (refusal === "EN_RECALLED") {
-              EN.gmStore.withdrawMail(t.lid, t.id);
+              courierWrite(t.lid, function () { return EN.gmStore.withdrawMail(t.lid, t.id); });
               came.forEach(function (x, i) { if (x.row === t.id) came.splice(i, 1); });
             }
             // a network failure leaves it open, and the next read marks it. Anything else is an answer
@@ -453,20 +487,24 @@ EN.cloud = (function () {
       }, Promise.resolve());
     });
   }
+  function tabHidden() {
+    try { return document.visibilityState === "hidden"; } catch (e) { return false; }
+  }
   function inbox(pulled, tried) {
     if (!client || !user || offline) return Promise.resolve();
     var uid = user.id, came = [];
     return readRows().then(function (rows) {
       if (!user || user.id !== uid) return;
-      // something to file, on a copy that hasn't just been brought up to date
       var fresh = rows.some(function (r) { var lid = writable(r); return lid && r.status !== "recalled" && !filed(roster()[lid], r.id); });
-      if (fresh && !pulled) {
+      if (fresh && (tabHidden() || !pulled)) {
         rows.forEach(function (r) { if (r.status !== "recalled") wanted[r.id] = 1; });
-        // go round again with a pull, unless this run's just failed: then it waits for the next sync
-        if (!tried) again = "pull";
+        if (tabHidden()) waitingForView = true;
+        // something to file on a copy that hasn't just been brought up to date: go round again with a pull,
+        // unless this run's just failed, and then it waits for the next sync
+        else if (!tried) again = "pull";
         return;
       }
-      return fileRows(rows, uid, came);
+      return fileRows(rows, uid, came, pulled);
     }).catch(inboxWarn).then(function () {
       if (came.length) tellMail(came);
       return flushTaken();
@@ -536,7 +574,11 @@ EN.cloud = (function () {
     var mine = linkedTo(book(), row.character_id);
     if (mine && (row.status === "waiting" || row.status === "delivered")) {
       var ch = roster()[mine];
-      if (!filed(ch, row.id)) { wanted[row.id] = 1; sync({ pull: true }); }
+      if (!filed(ch, row.id)) {
+        wanted[row.id] = 1;
+        if (tabHidden()) waitingForView = true;
+        else sync({ pull: true });
+      }
     }
     // the Admin's list of sends, when it is open
     if (row.sender_id === user.id && ev.eventType === "UPDATE" && EN.gmCampaign && EN.gmCampaign.sendsChanged) EN.gmCampaign.sendsChanged(row.campaign_id);
@@ -686,7 +728,7 @@ EN.cloud = (function () {
     if (!loggedMeta) { loggedMeta = true; try { console.info("Discord profile fields", Object.keys(meta())); } catch (e) {} }
     if (user.id !== prev) {
       var me = user.id;
-      wanted = {}; told = {}; mustTake = {}; heldMail = [];
+      wanted = {}; told = {}; waitingForView = false; heldMail = [];
       listen();
       holdUnclaimed();
       sync({ pull: true }).then(function () { if (user && user.id === me && awaiting) offerUpload(); });
@@ -883,12 +925,16 @@ EN.cloud = (function () {
       var b = book(), L = b.links[id];
       delete b.localOnly[id];
       delete b.uploaded[id];
+      delete b.filing[id];
       if (L) { delete b.links[id]; if (b.pendingDel.indexOf(L.cid) === -1) b.pendingDel.push(L.cid); }
       saveBook(b);
       if (L) sync();
     });
     document.addEventListener("visibilitychange", function () {
-      if (document.visibilityState === "visible" && user && Date.now() - lastPull > 30000) sync({ pull: true });
+      if (document.visibilityState === "visible" && user && (waitingForView || Date.now() - lastPull > 30000)) {
+        waitingForView = false;
+        sync({ pull: true });
+      }
     });
     window.addEventListener("online", function () {
       if (offline && client) {
