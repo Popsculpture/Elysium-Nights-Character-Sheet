@@ -540,11 +540,11 @@ the row locks never contend). **The slide and the box-opening moment have not be
 
 ## Still open
 
-- **A stale device with newer offline edits can overwrite a delivered message,** the way it overwrites any edit. The row says delivered, so nobody files it again. A read of delivered rows that a record doesn't hold could heal it, at the cost of a growing read after every sync. **The package goes with it,** so it wants a ruling if it ever happens to someone.
+- **A stale device with newer offline edits can still overwrite a sheet,** the way it overwrites any edit. A delivered message lost that way now comes back (see the two-tab part of this report). Other edits, and a package already taken, do not.
 - **Two devices both on screen:** an edit inside the push delay can lose to the other device's filing.
 - **Opening a message is an edit,** so on a stale device it makes that copy the newest. The items still land once.
 - **A row that always fails to pull stops mail for the account.** That is the safe way round, but `pull()` stops at its first bad row. Older than this batch.
-- **Two tabs in one browser** can overwrite each other's records in storage. Older than this batch, but a background event can now set it off.
+- **Two tabs in one browser** used to overwrite each other's records. Fixed: see the two-tab part of this report.
 - **A removed player's waiting mail still reaches them,** and the sender can still recall it. The spec doesn't mention membership.
 - **'98's #POST Express shows a strip reading "es Help" across the top of the list.** It is on `main` too, so it isn't this batch's. Not touched.
 
@@ -621,3 +621,78 @@ There has been no second review of these fixes. The tests below cover each one.
 - **A Table per campaign.** The GM document is one per browser, so Encounters, Payroll history and so on are shared across campaigns too.
 - **The next account on the same browser** sees the last account's Table rows, as it always has. A campaign's row carries a character name, a Discord name and a campaign id, no sheet, and is marked. The Table is one per browser, not per account.
 - **VIEW SHEET from the Table** comes back to the Campaign tab, not the Table.
+
+# Campaigns build report: two tabs work together
+
+Built 8 Nov 2026 on `campaigns-tabs`, cut from `main` at `0fcae4a`. No SQL and no migration. **Not merged yet:** that's yours to say.
+
+## Why
+
+The real Discord round found it. You had MyGalFRIDAY open in two tabs, one on Nessa and one on BOLLARD-7, and a delivered package disappeared from BOLLARD-7's sheet with nobody touching it. The row still said delivered,
+so nobody would ever have filed it again. I reproduced it with two live copies of the app, against the real rules: one small edit in the tab with the old copy wiped the message.
+
+Each tab held the whole roster in memory and wrote all of it on every save, so the last tab to write undid the other's saves. The sync's link book was shared between tabs and the records weren't, so a tab couldn't tell its old copy
+from an edit, and pushed it over the newer row. You chose tabs that work together over one tab at a time.
+
+## What is built
+
+- **Saves merge, record by record.** Before every write, and whenever another tab announces one, a tab compares what it last saw, what it holds, and what's stored. It takes what changed elsewhere and keeps what changed here. If both changed
+  one character it merges field by field, and the newer save wins only where both changed the same field.
+- **A save reaches the other tab at once,** with no reload. A character this tab isn't on doesn't repaint the page.
+- **Each tab keeps its own character,** across a reload. A new tab opens on the last character used anywhere.
+- **Sync runs take turns across tabs,** under a browser lock, so two tabs can't turn one new row into two characters or one new record into two rows. A browser without the lock, or a tab that has waited 20 seconds, runs anyway, as every tab did before.
+- **A stale copy is never sent,** and a pull brings it up to date. A pull also re-checks a record after its fetch, so it can't overwrite an edit or bring back a delete made while it waited.
+- **Storage isn't atomic across tabs,** so a slow tab can write over a save it hadn't heard about. A delete is now written down first, so a missing character goes back in instead of being taken for deleted, and a copy older than the one last
+  stored is old news, not a change. Before this, either could lose a character or an edit.
+- **Lost mail comes back.** A run with a pull files delivered rows a sheet doesn't list, up to 20 a run, from the newest 100. A message the player deleted stays deleted, unless the copy saved over the sheet predates the delete. A recalled row or a taken package never comes back.
+- **The browser can't fill a field.** Every input the app draws has `autocomplete="off"`. I confirmed Chrome otherwise puts one character's words into another's Identity step when you return to a page through history.
+- **Closing a tab saves the edit still in the debounce.** It used to lose up to the last third of a second of typing, in one tab or two.
+
+## What you'll notice
+
+- Two tabs on two characters just work, side by side.
+- **Your lost message should come back.** MyGalFRIDAY's next sign-in should file `dd` and its Assault Rifle again on the sheet that was BOLLARD-7, with a toast. That hasn't been checked on the live site.
+- **A toast shows in the tab that filed the mail,** which may not be the tab on that character. The other tab still gets the message and the unread count.
+
+## Still unexplained: BOLLARD-7's identity
+
+That sheet is still a Fury with its own gear, but its name and entire identity block are now Nessa's, word for word. **I don't know how.** Nothing in the app copies an identity between records, and two tabs alone don't do it: names stayed correct in every two-tab test. The copied fields are exactly the
+inputs on the #PRINT Identity step, and I confirmed Chrome can restore those fields from another character through history, but it fires no events, so that alone doesn't save anything. That restore is now blocked, which removes the one way I found for those words to reach those fields.
+**If a sheet's name changes again, it's a separate bug,** and what that tab had just been doing is the clue. The sheet hasn't been repaired.
+
+## How it was reviewed
+
+Two independent reads, each given the code and not my conclusions.
+
+**The first** found ten problems, all fixed but where noted below. The worst: two tabs pulling one new row made a duplicate character, two tabs inserting one new record made two rows, a pull could overwrite an edit made in the other tab while it fetched, and a slow tab's write could make a new character read as deleted.
+
+**The second** simulated lagging storage in 500 two-tab store trials and 75 cloud trials, and found the design holds. It found one more real bug, affecting one tab too: a character deleted and then imported back from a file vanished at the next reload. Fixed, with a test.
+
+## Checked, and how
+
+- **The whole suite:** 492 chains, 516 runs, 0 bad, on the final code (round 219). The three new chains are among them.
+- **The new chains:** `tabs_1` (61 checks, two live copies of the app on one storage), `tabs_2` (20, across real reloads), `tabs_3` (76, the sync's half).
+- **The real rules on a local database:** all five rounds pass on the final code: two tabs 40, the same sequence in one window 21, the Table 150, batch 2 144, batch 3 61.
+- **The real lock:** `pg/lock_probe.py` takes `oneAtATime` out of `cloud.js` and runs it in real Chrome on real time, 7 of 7: runs take turns, a run that throws lets go, a stuck holder is given up on.
+- **Breaking the new code on purpose:** 52 lines broken one at a time, all 52 caught, each failing its own check (`pg/tabs_mutants.py`). Earlier passes caught fewer, and those misses tightened several checks, including the stale-copy check itself, which could not fail before.
+- **Two mutants were retired as equivalent,** with the reason in `pg/tabs_mutants.py`. Taking those lines out changes nothing a chain can reach.
+
+**The harness runs chains without the real lock.** Its virtual clock can't see the lock's handshake, so a timer runs out while a sync is still waiting for it, and five chains fail for that reason alone. I proved that by turning the lock off in the harness: they pass. So chains use no lock or a stand-in, and the real one is only proved by the probe above.
+
+**Not checked:** the live site, real Discord, and two real tabs in a real browser against the real project. The next round is the first time.
+
+## Decisions
+
+1. **Tabs work together,** your call, over one tab at a time.
+2. **Delete wins over an edit.** Two tabs on one character, one deleting it: the delete stands.
+3. **An array counts as one thing in a merge.** Merging lists item by item is more code than the case deserves, and it only matters for one character in two tabs.
+4. **The lock waits 20 seconds,** then runs anyway. A stuck tab shouldn't stop another from saving.
+
+## Still open
+
+- **The Admin desktop's document has the same problem.** `en_gm_v1` is one value, so an Admin in two tabs still overwrites their own Table, Payroll and so on. I didn't touch it. **Keep the Admin desktop to one tab for now.** It belongs with the Table-per-campaign work.
+- **One character in two tabs,** editing inside the same few milliseconds or changing the same list inside a moment: one change loses.
+- **A stale device** still overwrites a sheet under last write wins. Mail comes back. Other edits, and a package already taken, don't.
+- **Rare ones the second review found:** two tabs deleting different characters within milliseconds, or full storage, can lose the delete note, so a delete comes back. A tab frozen for over 7 days can bring one back too. A pack-locked record pulled with a fast clock's stamp keeps it. A 20 second lock fallback during a stall can still insert twice.
+- **Older than this, in one tab too:** deleting a character while its first upload is in flight, or reloading during it, can leave a stray row or a duplicate.
+- **A record deleted while jacked out and re-imported with an older stamp:** the account's row now replaces it.

@@ -12838,3 +12838,18 @@ The build report has the rest.
 5. With no campaign (jacked out, offline, running none), everything is as it was, except that a `row:` row left on the Table stops the filed roster standing in for it.
 
 **Left open:** the writing tabs through the inbox, a Table per campaign, and the Table being per browser and not per account. VIEW SHEET from the Table comes back to the Campaign tab.
+
+### Two tabs work together, built 2026-11-08 on `campaigns-tabs`
+
+**What changed, and why.** The author's real Discord round lost a delivered message on the live project, with one account on two characters in two tabs. Every save wrote the whole roster, and the link book was shared while the records were not.
+`store.js` now merges record by record (TWO TABS, ONE ROSTER), `cloud.js` runs take turns under a browser lock (ONE RUN AT A TIME, ACROSS TABS) and files delivered mail a sheet doesn't list (LOST MAIL COMES BACK), and `ui.js`'s `el()` sets `autocomplete="off"`. The build report has the rest.
+
+**Decisions, none of them in a spec.**
+
+1. The author chose tabs that work together over one tab at a time.
+2. A delete is written down first (`en_roster_gone_v1`, kept 7 days), so a record missing from storage with no note goes back in. Anything that brings an id back on purpose has to clear it: `putRecord`, `restoreRecord`, `importCharacter`.
+3. A stored copy older than the one last seen is old news, not a change. That only holds because stamps only go forward on a device: `nextStamp` on an edit, `pulledStamp` on a pull. The local stamp can now differ from the row's `data.meta.updatedAt`, and nothing relies on them matching.
+4. A delete wins over an edit. An array counts as one thing in a merge.
+5. The lock gives up after 20 seconds and runs anyway. The harness turns the lock off, because its virtual clock can't see the handshake: `pg/lock_probe.py` tests the real one on real time.
+
+**Left open:** the Admin desktop's `en_gm_v1` has the same two-tab problem and was not touched. BOLLARD-7's copied identity on the live project is unexplained, and the sheet is unrepaired. The build report lists the rare ones.

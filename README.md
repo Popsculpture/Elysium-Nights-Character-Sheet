@@ -188,6 +188,11 @@ Waiting, Delivered or Taken, and a send that is still waiting can be recalled.
   Realtime publication. The server only checks a package's shape, because it can't see the catalog: the
   player's app checks the names at Take it.
 
+## Two tabs
+
+One account can be open in two tabs, each on its own character. A save reaches the other tab at once, and each tab keeps its character across
+a reload. The Admin desktop's own document isn't covered yet, so keep that to one tab.
+
 ## Install it on a phone
 
 The app ships a web app manifest, so a phone browser offers **Add to Home screen** (Chrome on
