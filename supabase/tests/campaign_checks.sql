@@ -12,9 +12,11 @@ declare
   c uuid := '00000000-0000-4000-8000-00000000c0c3';   -- a player
   d uuid := '00000000-0000-4000-8000-00000000c0d4';   -- another player
   e uuid := '00000000-0000-4000-8000-00000000c0e5';   -- not in the campaign
-  camp uuid; camp2 uuid;
-  t1 text; t2 text; t3 text;
+  camp uuid; camp2 uuid; camp3 uuid; camp4 uuid;
+  t1 text; t2 text; t3 text; t4 text;
   ch_a uuid; ch_c uuid; ch_c2 uuid; ch_d uuid; ch_e uuid;
+  m1 uuid; m2 uuid; m3 uuid; m4 uuid;
+  bad jsonb;
   n int;
   v text;
   f text;
@@ -423,6 +425,288 @@ begin
   select count(*) into n from public.characters where id = ch_e and campaign_id is null;
   out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' deleting a campaign row clears it from its characters (' || n || E')\n';
 
+  /* ---- #POST from the Admin (the inbox migration) ----
+     a runs camp3, b is a co-Admin, c and d are players in it with one character each, e is outside it
+     and runs camp4. Each read below that should answer nothing first makes sure there is something to see. */
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  camp3 := public.create_campaign('Inbox Table');
+  select token into t4 from public.campaign_invites where campaign_id = camp3;
+  update public.characters set campaign_id = camp3 where id = ch_a;
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(t4);
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(t4);
+  update public.characters set campaign_id = camp3 where id = ch_c;
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(t4);
+  update public.characters set campaign_id = camp3 where id = ch_d;
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  camp4 := public.create_campaign('Stranger Table');
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.set_role(camp3, b, 'coadmin');
+
+  select count(*) into n from pg_catalog.pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'character_inbox';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' character_inbox is in the Realtime publication (' || n || E')\n';
+
+  -- who can send
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.send_to_character(ch_d, '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot send to another character (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.send_to_character(ch_c, '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot send to their own character (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.send_to_crew(camp3, '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot send to the crew (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.send_to_character(ch_c, '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' the Admin of another campaign cannot send to this character (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.send_to_crew(camp3, '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' the Admin of another campaign cannot send to this crew (' || coalesce(err, 'no error') || E')\n';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  m1 := public.send_to_character(ch_c, '{"from": "  Kade  ", "subj": " A job ", "body": " Come alone. ", "package": [{"name": " Stimpak ", "qty": 2}, {"name": "Rope", "qty": 1.0}]}');
+  select count(*) into n from public.character_inbox i where i.id = m1 and i.status = 'waiting' and i.sender_id = b and i.character_id = ch_c and i.campaign_id = camp3 and i.delivered_at is null and i.taken_at is null;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a co-Admin can send, and the row waits with its sender and campaign (' || n || E')\n';
+  select mail into j from public.character_inbox where id = m1;
+  out := out || case when j = '{"from": "Kade", "subj": "A job", "body": "Come alone.", "package": [{"name": "Stimpak", "qty": 2}, {"name": "Rope", "qty": 1}]}'::jsonb then 'PASS' else 'FAIL' end || ' the mail is stored trimmed (' || coalesce(j::text, 'null') || E')\n';
+  -- as text: jsonb calls 1.0 and 1 equal, but a quantity on its way to a record should be a whole number
+  out := out || case when j -> 'package' -> 1 ->> 'qty' = '1' then 'PASS' else 'FAIL' end || ' a quantity sent as 1.0 is stored as 1 (' || coalesce(j -> 'package' -> 1 ->> 'qty', 'null') || E')\n';
+
+  -- nobody writes the table directly
+  err := null;
+  begin insert into public.character_inbox (character_id, campaign_id, sender_id, mail) values (ch_c, camp3, b, '{}'); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a sender cannot insert a row directly (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.character_inbox set mail = '{}' where id = m1; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a sender cannot rewrite a row (' || coalesce(err, 'no error') || E')\n';
+
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  m2 := public.send_to_character(ch_c, '{"from": "Kade", "body": "No package here."}');
+  select count(*) into n from public.character_inbox i where i.id = m2 and i.sender_id = a and not (i.mail ? 'package');
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the Admin can send, and a message can go alone (' || n || E')\n';
+  m3 := public.send_to_character(ch_c, '{"from": "Kade", "package": [{"name": "Rope", "qty": 99}]}');
+  select count(*) into n from public.character_inbox i where i.id = m3 and i.mail ->> 'subj' = '' and i.mail ->> 'body' = '' and i.mail -> 'package' -> 0 ->> 'qty' = '99';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a package can go alone, and 99 is allowed (' || n || E')\n';
+  m4 := public.send_to_character(ch_c, '{"from": "Kade", "subj": "Empty box", "package": []}');
+  select count(*) into n from public.character_inbox i where i.id = m4 and not (i.mail ? 'package');
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' an empty package is no package (' || n || E')\n';
+  select jsonb_agg(jsonb_build_object('name', 'Item ' || x, 'qty', 1)) into j from generate_series(1, 20) x;
+  err := null;
+  begin perform public.send_to_character(ch_c, jsonb_build_object('from', 'Kade', 'package', j)); exception when others then err := sqlerrm; end;
+  out := out || case when err is null then 'PASS' else 'FAIL' end || ' twenty items are allowed (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.send_to_character(ch_c, jsonb_build_object('from', repeat('k', 80), 'subj', repeat('s', 140), 'body', repeat('b', 4000), 'package', jsonb_build_array(jsonb_build_object('name', repeat('n', 120), 'qty', 1)))); exception when others then err := sqlerrm; end;
+  out := out || case when err is null then 'PASS' else 'FAIL' end || ' every field at its longest is allowed (' || coalesce(err, 'no error') || E')\n';
+
+  -- anything but a #POST message with an optional package
+  v := '';
+  foreach bad in array array[
+    'null'::jsonb, '[]'::jsonb, '"hi"'::jsonb, '{}'::jsonb,
+    '{"subj": "No from"}'::jsonb, '{"from": "", "subj": "Blank"}'::jsonb, '{"from": "   ", "subj": "Blank"}'::jsonb, '{"from": 7, "subj": "Number"}'::jsonb,
+    '{"from": "Kade"}'::jsonb, '{"from": "Kade", "subj": " ", "body": " "}'::jsonb,
+    '{"from": "Kade", "subj": 7}'::jsonb, '{"from": "Kade", "body": {"a": 1}}'::jsonb, '{"from": "Kade", "subj": null}'::jsonb,
+    '{"from": "Kade", "subj": "Hi", "op": "glimmer"}'::jsonb, '{"from": "Kade", "subj": "Hi", "amount": 500}'::jsonb, '{"from": "Kade", "subj": "Hi", "read": true}'::jsonb,
+    '{"from": "Kade", "package": {"name": "Rope", "qty": 1}}'::jsonb, '{"from": "Kade", "package": "Rope"}'::jsonb, '{"from": "Kade", "package": null}'::jsonb,
+    '{"from": "Kade", "package": ["Rope"]}'::jsonb, '{"from": "Kade", "package": [{"name": "Rope"}]}'::jsonb, '{"from": "Kade", "package": [{"qty": 1}]}'::jsonb,
+    '{"from": "Kade", "package": [{"name": 7, "qty": 1}]}'::jsonb, '{"from": "Kade", "package": [{"name": " ", "qty": 1}]}'::jsonb,
+    '{"from": "Kade", "package": [{"name": "Rope", "qty": 0}]}'::jsonb, '{"from": "Kade", "package": [{"name": "Rope", "qty": 100}]}'::jsonb,
+    '{"from": "Kade", "package": [{"name": "Rope", "qty": -1}]}'::jsonb, '{"from": "Kade", "package": [{"name": "Rope", "qty": 1.5}]}'::jsonb,
+    '{"from": "Kade", "package": [{"name": "Rope", "qty": "2"}]}'::jsonb, '{"from": "Kade", "package": [{"name": "Rope", "qty": 1, "taken": true}]}'::jsonb,
+    jsonb_build_object('from', repeat('k', 81), 'subj', 'Long'), jsonb_build_object('from', 'Kade', 'subj', repeat('s', 141)),
+    jsonb_build_object('from', 'Kade', 'body', repeat('b', 4001)), jsonb_build_object('from', 'Kade', 'package', jsonb_build_array(jsonb_build_object('name', repeat('n', 121), 'qty', 1))),
+    jsonb_build_object('from', 'Kade', 'package', (select jsonb_agg(jsonb_build_object('name', 'Item ' || x, 'qty', 1)) from generate_series(1, 21) x))
+  ] loop
+    err := null;
+    begin perform public.send_to_character(ch_c, bad); exception when others then err := sqlerrm; end;
+    if err is distinct from 'EN_BAD_MAIL' then v := v || left(bad::text, 60) || ' = ' || coalesce(err, 'no error') || '; '; end if;
+  end loop;
+  out := out || case when v = '' then 'PASS' else 'FAIL' end || ' every malformed mail is refused as EN_BAD_MAIL (' || v || E')\n';
+  err := null;
+  begin perform public.send_to_character(ch_c, null); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_MAIL' then 'PASS' else 'FAIL' end || ' no mail at all is refused (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.send_to_crew(camp3, '{"from": "Kade", "subj": "Hi", "op": "xp"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_MAIL' then 'PASS' else 'FAIL' end || ' the crew send checks the mail too (' || coalesce(err, 'no error') || E')\n';
+
+  -- who can be sent to
+  err := null;
+  begin perform public.send_to_character(ch_c2, '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a character in no campaign cannot be sent to (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.send_to_character(gen_random_uuid(), '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a character that does not exist answers the same way (' || coalesce(err, 'no error') || E')\n';
+
+  -- the crew: every character in the campaign, and no other
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  n := public.send_to_crew(camp3, '{"from": "Fixer", "subj": "Crew call", "package": [{"name": "Rope", "qty": 3}]}');
+  out := out || case when n = 3 then 'PASS' else 'FAIL' end || ' a co-Admin can send to the crew, one row per character (' || n || E')\n';
+  select count(*) into n from public.character_inbox i where i.mail ->> 'from' = 'Fixer' and i.sender_id = b and i.status = 'waiting' and i.campaign_id = camp3 and i.character_id in (ch_a, ch_c, ch_d);
+  out := out || case when n = 3 then 'PASS' else 'FAIL' end || ' the crew rows reach the Admin''s character and both players'' (' || n || E')\n';
+  select count(*) into n from public.character_inbox i where i.mail ->> 'from' = 'Fixer' and i.character_id = ch_c2;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' the crew send skips a character outside the campaign (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  n := public.send_to_crew(camp4, '{"from": "Kade", "subj": "Nobody home"}');
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a crew with no characters answers zero (' || n || E')\n';
+
+  -- who can read
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.character_inbox where id = m2;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the owner reads their character''s row (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.character_inbox where id = m1;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the sender reads their send (' || n || E')\n';
+  select count(*) into n from public.character_inbox where id = m2;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' another co-Admin cannot read someone else''s send (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.character_inbox where id = m1;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' the Admin cannot read a co-Admin''s send to someone else (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.character_inbox where id = m2;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' another player cannot read it (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.character_inbox where id = m2;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' someone outside the campaign cannot read it (' || n || E')\n';
+
+  -- recall
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.recall_send(m1); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' the owner cannot recall (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.recall_send(m1); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' another of those who run it cannot recall someone else''s send (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.recall_send(gen_random_uuid()); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a send that does not exist cannot be recalled (' || coalesce(err, 'no error') || E')\n';
+  perform public.recall_send(m3);
+  select count(*) into n from public.character_inbox where id = m3 and status = 'recalled';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the sender can recall while it waits (' || n || E')\n';
+  err := null;
+  begin perform public.recall_send(m3); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_TOO_LATE' then 'PASS' else 'FAIL' end || ' a recalled send cannot be recalled again (' || coalesce(err, 'no error') || E')\n';
+
+  -- delivery
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_delivered(m2); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' the sender cannot mark it delivered (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_delivered(m2); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' another player cannot mark it delivered (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.mark_delivered(gen_random_uuid()); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a row that does not exist cannot be marked (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_delivered(m3); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_RECALLED' then 'PASS' else 'FAIL' end || ' a recalled send cannot be delivered (' || coalesce(err, 'no error') || E')\n';
+  perform public.mark_delivered(m2);
+  select count(*) into n from public.character_inbox where id = m2 and status = 'delivered' and delivered_at is not null and taken_at is null;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the owner can mark it delivered (' || n || E')\n';
+  err := null;
+  begin perform public.mark_delivered(m2); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_ALREADY' then 'PASS' else 'FAIL' end || ' mark_delivered works once (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.recall_send(m2); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_TOO_LATE' then 'PASS' else 'FAIL' end || ' recall fails once delivered (' || coalesce(err, 'no error') || E')\n';
+  select count(*) into n from public.character_inbox where id = m2 and status = 'delivered';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a refused recall leaves it delivered (' || n || E')\n';
+
+  -- taking
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_taken(m2); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NO_PACKAGE' then 'PASS' else 'FAIL' end || ' a message with no package cannot be taken (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.mark_taken(m1); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_DELIVERED' then 'PASS' else 'FAIL' end || ' a package still waiting cannot be taken (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.mark_taken(m3); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_RECALLED' then 'PASS' else 'FAIL' end || ' a recalled package cannot be taken (' || coalesce(err, 'no error') || E')\n';
+  perform public.mark_delivered(m1);
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_taken(m1); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' the sender cannot mark it taken (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_taken(m1); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' another player cannot mark it taken (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.mark_taken(gen_random_uuid()); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a row that does not exist cannot be taken (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  perform public.mark_taken(m1);
+  select count(*) into n from public.character_inbox where id = m1 and status = 'taken' and taken_at is not null and delivered_at is not null;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the owner can mark it taken (' || n || E')\n';
+  err := null;
+  begin perform public.mark_taken(m1); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_ALREADY' then 'PASS' else 'FAIL' end || ' mark_taken works once (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.mark_delivered(m1); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_ALREADY' then 'PASS' else 'FAIL' end || ' a taken package cannot go back to delivered (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  select status into v from public.character_inbox where id = m1;
+  out := out || case when v = 'taken' then 'PASS' else 'FAIL' end || E' the sender sees Taken\n';
+  err := null;
+  begin perform public.recall_send(m1); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_TOO_LATE' then 'PASS' else 'FAIL' end || ' a taken package cannot be recalled (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  err := null;
+  begin delete from public.character_inbox where id = m4; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' the owner cannot delete a row (' || coalesce(err, 'no error') || E')\n';
+
+  -- a removed player: the mail already on its way still belongs to the sender and the owner
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.remove_member(camp3, c, false);
+  err := null;
+  begin perform public.send_to_character(ch_c, '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a removed player''s character cannot be sent to (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.character_inbox where id = m4 and status = 'waiting';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a removed player still reads what was on its way (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.recall_send(m4);
+  select count(*) into n from public.character_inbox where id = m4 and status = 'recalled';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the sender can still recall it (' || n || E')\n';
+
+  -- the status is one of the four, whoever asks
+  perform set_config('role', 'postgres', true);
+  err := null;
+  begin update public.character_inbox set status = 'lost' where id = m4; exception when others then err := sqlstate; end;
+  out := out || case when err = '23514' then 'PASS' else 'FAIL' end || ' the database refuses a status that is not one of the four (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'authenticated', true);
+
+  -- the rows go with their character and their campaign
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.character_inbox where character_id = ch_d;
+  out := out || case when n > 0 then 'PASS' else 'FAIL' end || ' before deleting, the owner has rows to lose (' || n || E')\n';
+  delete from public.characters where id = ch_d;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.character_inbox where character_id = ch_d;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' deleting a character takes its rows (' || n || E')\n';
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.delete_campaign(camp3);
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.character_inbox where campaign_id = camp3;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' deleting a campaign takes its rows (' || n || E')\n';
+
+  -- clean_mail stays private
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.clean_mail('{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a client cannot call clean_mail (' || coalesce(err, 'no error') || E')\n';
+
   -- a session with no user, for every function a client can call
   perform set_config('request.jwt.claims', '', true);
   perform set_config('role', 'authenticated', true);
@@ -431,7 +715,8 @@ begin
     'create_campaign(''x'')', 'invite_preview(''x'')', 'join_campaign(''x'')',
     'reset_invite(%1$L)', 'leave_campaign(%1$L)', 'campaign_roster(%1$L)', 'campaign_blocked(%1$L)',
     'remove_member(%1$L, %1$L)', 'unblock_member(%1$L, %1$L)', 'set_role(%1$L, %1$L, ''player'')',
-    'transfer_leadership(%1$L, %1$L)', 'rename_campaign(%1$L, ''x'')', 'delete_campaign(%1$L)'
+    'transfer_leadership(%1$L, %1$L)', 'rename_campaign(%1$L, ''x'')', 'delete_campaign(%1$L)',
+    'send_to_character(%1$L, ''{}'')', 'send_to_crew(%1$L, ''{}'')', 'recall_send(%1$L)', 'mark_delivered(%1$L)', 'mark_taken(%1$L)'
   ] loop
     err := null;
     begin execute 'select * from public.' || format(f, a); exception when others then err := sqlerrm; end;
@@ -451,6 +736,12 @@ begin
   err := null;
   begin select count(*) into n from public.campaigns; exception when others then err := sqlstate; end;
   out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot read campaigns (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.send_to_crew(camp4, '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot send (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin select count(*) into n from public.character_inbox; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot read the inbox (' || coalesce(err, 'no error') || E')\n';
   perform set_config('role', 'postgres', true);
 
   -- the error text is cut off after about 1 KB, so the result is the count and any failures in full
