@@ -154,22 +154,27 @@ EN.gmScenes = (function () {
      was last started, opened or saved, which is what "unsaved changes" is
      measured against. The other fields are working inputs that belong to no
      scene (a check being typed, a damage amount), deliberately not saved. */
-  var _v = {
-    page: "sitdown",
-    d: { sitdown: null, chase: null, incursion: null },
-    base: { sitdown: "", chase: "", incursion: "" },
-    approach: "",                 // the Approach the next Sit-Down result is logged under
-    chk: { a: "", b: "", rollA: "", rollB: "", last: null },
-    dmg: Object.create(null),     // vehicle line id -> damage amount, as typed
-    dmgKind: Object.create(null), // vehicle line id -> "siege", "crash" or absent: what the next DAMAGE is
-    posture: "",                  // the Posture the Opposition meets the next logged result with
-    anchorDmg: "",
-    lrPick: "", lrText: "",
-    addHostile: "", addCrew: "",
-    pend: null                   // a handoff waiting on the GM's word over unsaved work
-  };
+  function freshScenes() {
+    return {
+      page: "sitdown",
+      d: { sitdown: null, chase: null, incursion: null },
+      base: { sitdown: "", chase: "", incursion: "" },
+      approach: "",                 // the Approach the next Sit-Down result is logged under
+      chk: { a: "", b: "", rollA: "", rollB: "", last: null },
+      dmg: Object.create(null),     // vehicle line id -> damage amount, as typed
+      dmgKind: Object.create(null), // vehicle line id -> "siege", "crash" or absent: what the next DAMAGE is
+      posture: "",                  // the Posture the Opposition meets the next logged result with
+      anchorDmg: "",
+      lrPick: "", lrText: "",
+      addHostile: "", addCrew: "",
+      pend: null                   // a handoff waiting on the GM's word over unsaved work
+    };
+  }
+  var _v = freshScenes();
   var _mount = null;
   var _keepT = null, _keepKind = null;
+  // a scene running belongs to its campaign: its last keystroke lands there before the desktop changes (js/gmstore.js perDesk)
+  gm.perDesk(function () { flushKeep(true); return _v; }, function (k) { _v = k || freshScenes(); });
 
   function floorBlank() {
     var F = S() && S().sitdown && S().sitdown.floor;

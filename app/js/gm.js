@@ -442,6 +442,12 @@ EN.gmView = (function () {
      reload. Crew rows are never passed over: a Freelancer at 0 is still in the
      fight, making Death Saves. */
   var _turn = { skipDown: true, round: null, set: null };   // `set`: a SET ROUND not yet passed to the Table extras
+  // another campaign's Table: a row's open tools come back with it, and a SET ROUND half typed stays behind
+  gm.perDesk(function () { return { rows: _rows, round: _turn.round }; }, function (k) {
+    _rows = k ? k.rows : Object.create(null);
+    _turn.round = k ? k.round : null;
+    _turn.set = null;
+  });
   function downed(r) { return !!r && r.kind === "threat" && Number(r.vit) <= 0; }
   function turnOpts() { return _turn.skipDown ? { skip: downed } : null; }
   /* A row's X. Removing the row that is acting moves the cursor on as NEXT
@@ -1146,17 +1152,25 @@ EN.gmView = (function () {
       (res.refused.length ? " Vigor NOT cleared on " + res.refused.join(", ") + ": this device did not save the write, so clear it on the sheet." : "");
   }
 
+  /* WHICH DESKTOP. Each campaign has its own Table, plans, jobs and so on (js/gmstore.js), so this picker
+     switches all of it, for this tab. No campaign is this browser's own desktop and its own characters.
+     It stands wherever the crew is pulled from, because it decides who is on that list. Null for an account
+     that runs no campaign, which has nothing to switch to. */
+  function deskPicker() {
+    var C = EN.campaigns, mine = C && C.running ? C.running() : [];
+    if (!mine.length) return null;
+    var now = C.desktop();
+    return el("select.camp-input.gm-crew-pick", { "aria-label": "Campaign", dataset: { gm: "crew-pick" }, onchange: function (e) { C.setPick(e.target.value); EN.app.render(); } },
+      mine.map(function (x) { return el("option", { value: x.id, selected: !!now && x.id === now.id, text: x.name }); })
+        .concat([el("option", { value: C.NO_CAMPAIGN, selected: !now, text: "No campaign" })]));
+  }
   /* Pull in the crew while this account runs a campaign: that campaign's characters and nobody else's,
-     each with its player's name. The campaign is named here, with the picker from the Campaign tab when
-     there is more than one to run, because it decides who is on this list. */
+     each with its player's name. */
   function crewPicker(c, already) {
-    var C = EN.campaigns, state = C.crew(c.id), mine = C.running();
+    var C = EN.campaigns, state = C.crew(c.id);
     var out = [el("div.section-title", null, [document.createTextNode("Pull in the crew"), el("span.line")])];
     out.push(el("div.row.wrap", { dataset: { gm: "crew-campaign" }, style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, [
-      mine.length > 1
-        ? el("select.camp-input.gm-crew-pick", { "aria-label": "Campaign", dataset: { gm: "crew-pick" }, onchange: function (e) { C.setPick(e.target.value); EN.app.render(); } },
-            mine.map(function (x) { return el("option", { value: x.id, selected: x.id === c.id, text: x.name }); }))
-        : el("span.help", { style: { margin: 0 }, text: "From " + c.name }),
+      deskPicker(),
       el("button.btn.sm", { type: "button", dataset: { gm: "crew-refresh" }, title: "Read the campaign's characters again", onclick: function () { C.crew(c.id, true); EN.app.render(); } }, "↻")
     ]));
     if (state.error && !state.rows) {
@@ -1277,11 +1291,13 @@ EN.gmView = (function () {
     enc.entries.forEach(function (r) { if (r.kind === "crew") already[r.charId] = true; });
     var addable = Object.keys(roster).filter(function (k) { return !already[k]; });
     var theCampaign = campaignOf();
+    var picker = theCampaign ? null : deskPicker();
     if (theCampaign) {
       crewPicker(theCampaign, already).forEach(function (n) { kids.push(n); });
-    } else if (addable.length) {
+    } else if (addable.length || picker) {
       kids.push(el("div.section-title", null,
         [document.createTextNode("Pull in the crew"), el("span.line")]));
+      if (picker) kids.push(el("div.row.wrap", { dataset: { gm: "crew-campaign" }, style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, [picker]));
       kids.push(el("div.row.wrap", { style: { gap: "6px" } }, addable.map(function (k) {
         var ch = roster[k], d;
         try { d = eng.derive(ch); } catch (e) { return null; }

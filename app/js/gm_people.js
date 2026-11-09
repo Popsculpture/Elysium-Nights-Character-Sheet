@@ -106,14 +106,19 @@ EN.gmPeople = (function () {
      `customProfile` is the Profile select sitting on "written in play".
      `promote.grade` null follows the crew's Caliber; `promote.type` and
      `promote.template` null follow the card's species ("none" is no template). */
-  var _p = {
-    draft: blankDraft(),
-    customProfile: false,
-    roll: { table: "humans", count: 3, results: [], showTable: false },
-    promote: { grade: null, designation: "standard", role: "gunhand", type: null, template: null },
-    fromThreat: "",
-    q: ""
-  };
+  function freshEditor() {
+    return {
+      draft: blankDraft(),
+      customProfile: false,
+      roll: { table: "humans", count: 3, results: [], showTable: false },
+      promote: { grade: null, designation: "standard", role: "gunhand", type: null, template: null },
+      fromThreat: "",
+      q: ""
+    };
+  }
+  var _p = freshEditor();
+  // a card being written belongs to the campaign it was started on (js/gmstore.js perDesk)
+  gm.perDesk(function () { return _p; }, function (k) { _p = k || freshEditor(); });
   var _crew = null;       // EN.gmEngine.crew(), read once per render
   /* What follows the GM's typing without a re-render (F19): the card's header
      tags and actions, its text, the Resolve line, the promote preview, the

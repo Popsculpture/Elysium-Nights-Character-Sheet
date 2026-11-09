@@ -32,15 +32,20 @@ EN.gmEncounters = (function () {
 
   /* Transient UI state. Survives a tab switch and a portal flip (this is one
      module), not a reload. A plan worth keeping is a plan the GM saved. */
-  var _s = {
-    plan: null,                          // the plan being edited, always in normPlan() shape
-    adder: "bestiary",                   // which "add a line" source is open
-    q: "", cat: "all", inBand: true,     // the Bestiary picker's filter
-    b: { name: "", grade: null, designation: "standard", role: "gunhand" },   // the quick build
-    hz: { key: "", grade: null },        // the hazard picker
-    banner: null,                        // one line about lines that arrived from another tab
-    award: { at: null, skip: Object.create(null), objXp: null }   // XP award choices, per snapshot
-  };
+  function freshPlanner() {
+    return {
+      plan: null,                          // the plan being edited, always in normPlan() shape
+      adder: "bestiary",                   // which "add a line" source is open
+      q: "", cat: "all", inBand: true,     // the Bestiary picker's filter
+      b: { name: "", grade: null, designation: "standard", role: "gunhand" },   // the quick build
+      hz: { key: "", grade: null },        // the hazard picker
+      banner: null,                        // one line about lines that arrived from another tab
+      award: { at: null, skip: Object.create(null), objXp: null }   // XP award choices, per snapshot
+    };
+  }
+  var _s = freshPlanner();
+  // a plan being edited belongs to the campaign it was started on (js/gmstore.js perDesk)
+  gm.perDesk(function () { return _s; }, function (k) { _s = k || freshPlanner(); });
 
   /* ---- small helpers (each view carries its own, per the house convention) */
   function own(o, k) { return !!o && typeof o === "object" && Object.prototype.hasOwnProperty.call(o, k); }

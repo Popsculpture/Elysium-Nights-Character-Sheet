@@ -77,15 +77,20 @@ EN.gmJobs = (function () {
      draft means "follow the crew's Caliber". `pick` holds the GM's recipient
      choices keyed by charId (null-prototype, the keys come from records);
      absent means the default, which is on. */
-  var _j = {
-    draft: blankDraft(),
-    locks: Object.create(null),
-    postN: null,          // the posting the d12 last landed on
-    pick: Object.create(null),
-    from: "JOB BOARD",
-    when: "",             // blank follows the clock
-    filter: "all"
-  };
+  function freshBoard() {
+    return {
+      draft: blankDraft(),
+      locks: Object.create(null),
+      postN: null,          // the posting the d12 last landed on
+      pick: Object.create(null),
+      from: "JOB BOARD",
+      when: "",             // blank follows the clock
+      filter: "all"
+    };
+  }
+  var _j = freshBoard();
+  // a card being drawn up belongs to the campaign it was started on (js/gmstore.js perDesk)
+  gm.perDesk(function () { return _j; }, function (k) { _j = k || freshBoard(); });
   var _crew = null;       // EN.gmEngine.crew(), read once per render
   /* What follows the GM's typing without a re-render (F19): the two text
      previews, the card's subtitle, header tags and buttons, the #POST buttons

@@ -43,6 +43,20 @@
    a `meta` tag saying what made it (an award, a posting, a payday), so a view
    can rebuild its own UNDO after a reload instead of keeping the ids in
    memory, where a reload, a HIDE or the next fight used to strand them (F4).
+
+   ONE DESKTOP PER CAMPAIGN (8 Nov 2026, the author's choices). A campaign has its own document,
+   en_gm_camp_<campaign id>_v1, holding its Table and last fight, encounters, jobs, ledger, Heat log,
+   contacts and scenes. Saved threats and custom hazards are one library, and they stay where they
+   always were, in en_gm_v1, which is also the desktop of an Admin with no campaign. So nobody without
+   a campaign has anything migrated, and get() still answers one document with every bag in it: the
+   split happens only on the way to storage. Which desktop a tab is on comes from EN.campaigns.desktop(),
+   and follow() acts on it (app.js, on every render). It all stays on this device, as it always has.
+
+   TWO TABS, ONE DESKTOP. See the section of that name below. A document's parts merge one by one, so
+   an Admin in two tabs no longer overwrites their own Table, Payroll and so on.
+
+   WORK FROM BEFORE ALL THIS is in en_gm_v1 too, and nothing moves it unasked. moveDevice() moves it into
+   the campaign this tab is on, on the Admin's word (js/campaigns.js's one-time card, or Settings).
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -55,9 +69,18 @@ EN.gmStore = (function () {
   // Sit-Downs, chases and Incursions.
   var BAGS = ["threats", "encounters", "hazards", "jobs", "ledger", "heat", "contacts", "scenes"];
 
+  // the library: the bags every desktop shares. They always live in en_gm_v1
+  var LIB_BAGS = ["threats", "hazards"];
+  var CAMP_PRE = "en_gm_camp_", CAMP_SUF = "_v1";
+  var PREMOVE_KEY = "en_gm_premove_v1";     // en_gm_v1 as it stood before the last moveDevice()
+  // the lists of rows in the live encounter: each row is its own part (see TWO TABS, ONE DESKTOP)
+  var ROW_LISTS = ["entries", "room", "defeated"];
+
   var state = null;
   var listeners = [];
   var saveTimer = null;
+  var deskId = null;                        // the campaign this tab's desktop belongs to, or null for en_gm_v1's own
+  var files = [];                           // where this desktop's parts are kept: see openFiles
 
   function uid() { return "gme_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36); }
   // the #POST id shape face.js mints, so a GM posting is indistinguishable from any other message
@@ -318,21 +341,57 @@ EN.gmStore = (function () {
       s.encounter.defeated = cleanEntries(e.defeated);
     }
     try { s.lastEncounter = cleanLast(raw.lastEncounter); } catch (err) { s.lastEncounter = null; }
+    // which campaign a document belongs to, so one left behind can still say so
+    if (isObj(raw.campaign) && typeof raw.campaign.id === "string") {
+      s.campaign = { id: raw.campaign.id, name: typeof raw.campaign.name === "string" ? raw.campaign.name : "" };
+    }
     return s;
   }
 
-  function load() {
-    var raw = null;
-    try { raw = JSON.parse(localStorage.getItem(STATE_KEY) || "null"); } catch (e) { raw = null; }
-    var read = false;
+  function readKey(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function parseOr(text, dflt) {
+    try { var v = JSON.parse(text || "null"); return isObj(v) ? v : dflt; } catch (e) { return dflt; }
+  }
+  // the campaign this tab should be on, as { id, name }, or null for en_gm_v1's own desktop
+  function wantedDesk() {
+    var C = EN.campaigns, c = null;
+    try { c = C && C.desktop ? C.desktop() : null; } catch (e) { c = null; }
+    return c && typeof c.id === "string" && c.id ? { id: c.id, name: String(c.name == null ? "" : c.name) } : null;
+  }
+  function deskKey(id) { return id ? CAMP_PRE + id + CAMP_SUF : STATE_KEY; }
+
+  /* Reads the desktop `want` names into memory. A campaign's document brings no library of its own:
+     those two bags come from en_gm_v1, with the stamps that go with them. */
+  function readDesk(want) {
+    deskId = want ? want.id : null;
+    openFiles(deskId);
+    var deskText = readKey(deskKey(deskId)), raw = null, read = false;
+    try { raw = JSON.parse(deskText || "null"); } catch (e) { raw = null; }
+    var fromLib = null, libText = null;
+    if (deskId) {
+      libText = readKey(STATE_KEY);
+      fromLib = parseOr(libText, null);
+      if (!isObj(raw)) raw = {};
+      LIB_BAGS.forEach(function (b) { raw[b] = fromLib ? fromLib[b] : undefined; });
+    }
     reachFixed = 0; presenceFixed = 0;
     try { state = migrate(raw); read = true; } catch (e) { state = blank(); }
+    if (deskId) state.campaign = { id: deskId, name: want.name };
+    noteLoaded(files[0], deskText, raw);
+    if (deskId) noteLoaded(files[1], libText, fromLib);
     pruneCrew();
     // the Reach pass changed what is stored: write the corrected document back once, so the
     // next load finds nothing to do (it is idempotent either way). Never after a failed read,
     // where `state` is the blank document and the stored one is still the player's.
-    if (read && (reachFixed || presenceFixed)) persist(false);
+    if (read && (reachFixed || presenceFixed)) {
+      files.forEach(function (f) { f.owes = true; });
+      persist(false);
+    }
     reachFixed = 0; presenceFixed = 0;
+  }
+
+  function load() {
+    readDesk(wantedDesk());
     // en_gm_mode_v1 held the GM TAB's visibility and retired with that tab
     // (2026-09). Both desktops are always offered now, so the flag decides
     // nothing. Removed rather than left behind, so it does not sit in every
@@ -367,6 +426,8 @@ EN.gmStore = (function () {
       // another player's character in a campaign (js/campaigns.js) was never going to be in this roster
       if (isCampaignRow(row.charId)) return true;
       var live = Object.prototype.hasOwnProperty.call(roster, row.charId);
+      // not in this tab's roster but in storage: another tab's character whose news hasn't arrived yet, not a dead one
+      if (!live && EN.store && EN.store.storedHas && EN.store.storedHas(row.charId)) return true;
       if (!live) dropped.push(row.charId);
       return live;
     });
@@ -382,6 +443,271 @@ EN.gmStore = (function () {
     return before - state.encounter.entries.length;
   }
 
+  /* ---- TWO TABS, ONE DESKTOP ------------------------------------------------------
+     Each tab holds its desktop in memory, and every save used to write the whole document back, so
+     whichever tab wrote last undid what the other had saved. The same bug the roster had (store.js,
+     TWO TABS, ONE ROSTER), and the same answer, cut finer: a document here is one big value holding
+     many small things, and two tabs on one Table is the ordinary case, so a document is taken apart
+     into PARTS, each with its own stamp, and they merge one by one:
+
+       b/<bag>/<id>       a saved record
+       r/<list>/<id>      a row of the live encounter (entries, room, defeated)
+       o/<list>           the order of that list's rows
+       e/<field>          the encounter's other fields (round, activeId, name, sourceId, clock)
+       lastEncounter      what clearEncounter() kept
+       stamps             the v1 field, carried along
+
+     Stored beside the parts is `rev`, path -> stamp. A path in `rev` with no part is a DELETE NOTE, so
+     a delete travels in the same write as everything else, and is forgotten after GONE_KEEP. A part
+     with no stamp has not changed since before stamps, and counts as 0.
+
+     Before every write, and whenever another tab's write is announced, a tab compares each part in
+     storage against what it last knew (file.seen, the stamp and text of each part):
+       same as known             nothing new
+       older, or missing         old news from a tab that hadn't heard. This tab's goes back in. Storage
+                                 isn't atomic across tabs, so a slow tab can write over a save it missed
+       newer, unchanged here     take it
+       newer, changed here too   this tab hasn't said its change yet, so it is the newer one: merge key by
+                                 key, and where both changed one thing, this tab's wins. A delete wins over
+                                 an edit on either side, as it does on the roster
+     Hearing a save writes nothing unless something has to go back in, so two tabs can't set each other
+     off. Stamps only move forward (nextStamp). What's left: two tabs changing one thing in the same
+     instant, where one change loses, and a tab frozen past GONE_KEEP, which can bring a delete back.
+     A save written over before anyone heard it isn't lost: the storage event carries it.
+
+     A desktop's parts live in one file or two (openFiles): a tab on a campaign keeps the campaign's parts
+     in its own document, and writes the library's into en_gm_v1, leaving the rest of that document as it
+     found it. A reader of en_gm_v1 ignores a field it doesn't know, so an old copy of the app still reads it. */
+  var GONE_KEEP = 7 * 86400000;
+  function isLibPath(p) { return LIB_BAGS.some(function (b) { return p.indexOf("b/" + b + "/") === 0; }); }
+  function newFile(key, holds) { return { key: key, holds: holds, seen: {}, lastText: null, hi: 0, owes: false }; }
+  // holds: "all" (en_gm_v1 as the desktop it is), "desk" (a campaign's own parts), "lib" (the library, in en_gm_v1)
+  function openFiles(id) {
+    files = id ? [newFile(deskKey(id), "desk"), newFile(STATE_KEY, "lib")] : [newFile(STATE_KEY, "all")];
+  }
+  function fileHolds(file, p) { return file.holds === "all" || (file.holds === "lib") === isLibPath(p); }
+  /* A part's text, for comparing. Keys in order: two tabs can hold the same thing with its keys in a different
+     order, since a merge adds them as it finds them, and that isn't a change. Reading one as a change stamps it
+     again, and a fresh stamp on a copy of something just deleted brings it back. Never what is stored. */
+  function canon(v) {
+    if (Array.isArray(v)) return "[" + v.map(function (x) { var t = canon(x); return t === undefined ? "null" : t; }).join(",") + "]";
+    if (v && typeof v === "object") {
+      var out = [];
+      Object.keys(v).sort().forEach(function (k) {
+        var t = canon(v[k]);
+        if (t !== undefined) out.push(JSON.stringify(k) + ":" + t);
+      });
+      return "{" + out.join(",") + "}";
+    }
+    return JSON.stringify(v);
+  }
+  // every part of a document that this file holds, path -> its text. A path always has a prefix, so no key here is __proto__
+  function partsOf(doc, file) {
+    var out = {};
+    function add(p, v) {
+      if (!fileHolds(file, p)) return;
+      var t = canon(v);
+      if (t !== undefined) out[p] = t;
+    }
+    BAGS.forEach(function (b) {
+      var src = doc[b] || {};
+      Object.keys(src).forEach(function (k) { add("b/" + b + "/" + k, src[k]); });
+    });
+    if (file.holds === "lib") return out;
+    var e = doc.encounter || {};
+    Object.keys(e).forEach(function (k) {
+      if (ROW_LISTS.indexOf(k) === -1) add("e/" + k, e[k]);
+    });
+    ROW_LISTS.forEach(function (k) {
+      var rows = Array.isArray(e[k]) ? e[k] : [];
+      rows.forEach(function (r) { if (r && typeof r.id === "string") add("r/" + k + "/" + r.id, r); });
+      add("o/" + k, rows.map(function (r) { return r && r.id; }));
+    });
+    add("lastEncounter", doc.lastEncounter === undefined ? null : doc.lastEncounter);
+    add("stamps", doc.stamps || {});
+    return out;
+  }
+  function noteLoaded(file, text, raw) {
+    var rev = isObj(raw) && isObj(raw.rev) ? raw.rev : {}, now = partsOf(state, file), hi = 0;
+    file.seen = {};
+    Object.keys(rev).forEach(function (p) {
+      var at = Number(rev[p]);
+      if (!fileHolds(file, p) || !isFinite(at) || at <= 0) return;
+      if (at > hi) hi = at;
+      file.seen[p] = { at: at, text: null };
+    });
+    Object.keys(now).forEach(function (p) { file.seen[p] = { at: file.seen[p] ? file.seen[p].at : 0, text: now[p] }; });
+    file.lastText = text;
+    file.hi = hi;
+    file.owes = false;
+  }
+  function nextStamp(file) { file.hi = Math.max(Date.now(), file.hi + 1); return file.hi; }
+  // in place, so a view holding the object still holds the live one
+  function refill(obj, next) {
+    Object.keys(obj).forEach(function (k) { if (!own(next, k)) delete obj[k]; });
+    Object.keys(next).forEach(function (k) { obj[k] = next[k]; });
+  }
+  function mergeKeys(base, mine, theirs) {
+    var out = Object.create(null), b = isObj(base) ? base : {}, keys = Object.create(null);
+    Object.keys(mine).concat(Object.keys(theirs)).forEach(function (k) { keys[k] = 1; });
+    Object.keys(keys).forEach(function (k) {
+      var inM = own(mine, k), inT = own(theirs, k), inB = own(b, k);
+      var hereMoved = inM !== inB || (inM && canon(mine[k]) !== canon(b[k]));
+      var thereMoved = inT !== inB || (inT && canon(theirs[k]) !== canon(b[k]));
+      if (hereMoved && thereMoved && inM && inT && isObj(mine[k]) && isObj(theirs[k])) { out[k] = mergeKeys(b[k], mine[k], theirs[k]); return; }
+      if (hereMoved || !thereMoved) { if (inM) out[k] = mine[k]; }
+      else if (inT) out[k] = theirs[k];
+    });
+    return out;
+  }
+  // one part's value in a document, undefined when it holds none
+  function valueAt(doc, p) {
+    if (p === "lastEncounter") return doc.lastEncounter;
+    if (p === "stamps") return doc.stamps;
+    var kind = p.charAt(0), rest = p.slice(2), e = doc.encounter || {};
+    if (kind === "e") return e[rest];
+    if (kind === "o") return (Array.isArray(e[rest]) ? e[rest] : []).map(function (r) { return r && r.id; });
+    var cut = rest.indexOf("/"), name = rest.slice(0, cut), id = rest.slice(cut + 1);
+    if (kind === "b") return doc[name] && own(doc[name], id) ? doc[name][id] : undefined;
+    return (Array.isArray(e[name]) ? e[name] : []).filter(function (r) { return r && r.id === id; })[0];
+  }
+  // both sides changed one part: what they make together. This tab hasn't said its change yet, so it is the newer one
+  function mergeParts(baseText, mine, theirs) {
+    if (!isObj(mine) || !isObj(theirs)) return mine;
+    return JSON.parse(JSON.stringify(mergeKeys(baseText === null ? null : JSON.parse(baseText), mine, theirs)));
+  }
+  /* One part from elsewhere into memory, undefined to delete it. `orders` collects a list's order, put right once every row is in. */
+  function applyPart(p, v, orders) {
+    var gone = v === undefined;
+    if (p === "lastEncounter") { state.lastEncounter = gone ? null : v; return; }
+    if (p === "stamps") { state.stamps = Object.create(null); if (isObj(v)) Object.keys(v).forEach(function (k) { state.stamps[k] = v[k]; }); return; }
+    var kind = p.charAt(0), rest = p.slice(2);
+    if (kind === "e") { if (gone) delete state.encounter[rest]; else state.encounter[rest] = v; return; }
+    if (kind === "o") { orders[rest] = Array.isArray(v) ? v : []; return; }
+    var cut = rest.indexOf("/"), name = rest.slice(0, cut), id = rest.slice(cut + 1);
+    if (kind === "b") {
+      var bag = state[name];
+      if (!bag) return;
+      if (gone) delete bag[id];
+      else if (own(bag, id)) refill(bag[id], v);
+      else bag[id] = v;
+      return;
+    }
+    var list = state.encounter[name], i;
+    if (!Array.isArray(list)) list = state.encounter[name] = [];
+    for (i = 0; i < list.length; i++) if (list[i] && list[i].id === id) break;
+    if (gone) { if (i < list.length) list.splice(i, 1); }
+    else if (i < list.length) refill(list[i], v);
+    else list.push(v);
+  }
+  // the named rows first, in that order; a row the order doesn't name yet keeps its place after them
+  function applyOrder(name, ids) {
+    var list = state.encounter[name];
+    if (!Array.isArray(list)) return;
+    var at = Object.create(null), rest = [], out = [];
+    ids.forEach(function (id, i) { if (typeof id === "string" && !(id in at)) at[id] = i; });
+    list.forEach(function (r) { if (r && typeof r.id === "string" && r.id in at) out.push(r); else rest.push(r); });
+    out.sort(function (a, b) { return at[a.id] - at[b.id]; });
+    list.length = 0;
+    out.concat(rest).forEach(function (r) { list.push(r); });
+  }
+  function tieText(t) { return t === null ? "" : t; }
+  /* Takes in what another tab has written. Answers whether memory changed. Sets file.owes when something
+     here still has to reach storage. `past` is a document that has been written and may already be written
+     over (the storage event's newValue): only what is news in it counts, and storage isn't judged by it. */
+  function hear(file, past) {
+    var isPast = typeof past === "string";
+    var text = isPast ? past : readKey(file.key);
+    if (!isPast && text === file.lastText) return false;
+    var raw = null;
+    if (text) {
+      try { raw = JSON.parse(text); } catch (e) { return false; }   // unreadable: the next load decides
+      if (!isObj(raw)) return false;
+    }
+    var doc;
+    try { doc = migrate(raw); } catch (e) { return false; }
+    var theirs = partsOf(doc, file), rev = isObj(raw) && isObj(raw.rev) ? raw.rev : {}, now = partsOf(state, file);
+    var paths = {}, moved = false, orders = Object.create(null);
+    [now, theirs, file.seen].forEach(function (o) { Object.keys(o).forEach(function (p) { paths[p] = 1; }); });
+    Object.keys(rev).forEach(function (p) { if (fileHolds(file, p)) paths[p] = 1; });
+    Object.keys(paths).forEach(function (p) {
+      var was = file.seen[p] || null, wasAt = was ? was.at : 0, wasText = was ? was.text : null;
+      var t = own(theirs, p) ? theirs[p] : null, at = Number(rev[p]);
+      if (!isFinite(at) || at < 0) at = 0;
+      if (at > file.hi) file.hi = at;
+      if (t === wasText && at === wasAt) return;   // nothing new from elsewhere
+      if (!(at > wasAt || (at === wasAt && at > 0 && tieText(t) > tieText(wasText)))) {
+        if (!isPast) file.owes = true;             // old news: this tab's goes back in
+        return;
+      }
+      var m = own(now, p) ? now[p] : null;
+      file.seen[p] = { at: at, text: t };
+      if (m === t) return;                         // the two tabs agree
+      var v = valueAt(doc, p);
+      if (m !== wasText && t !== null) {           // changed here too, and not yet said
+        file.owes = true;
+        if (m === null) return;                    // deleted here: it stays deleted
+        v = mergeParts(wasText, valueAt(state, p), v);
+      }
+      applyPart(p, v, orders);
+      moved = true;
+    });
+    Object.keys(orders).forEach(function (name) { applyOrder(name, orders[name]); });
+    if (!isPast) file.lastText = text;
+    return moved;
+  }
+  function revOf(file) {
+    var out = {}, now = Date.now();
+    Object.keys(file.seen).forEach(function (p) {
+      var s = file.seen[p];
+      if (s.text === null && now - s.at >= GONE_KEEP) { delete file.seen[p]; return; }
+      if (s.at > 0) out[p] = s.at;
+    });
+    return out;
+  }
+  function textOf(file) {
+    var doc = {}, rev = revOf(file);
+    if (file.holds === "lib") {
+      // en_gm_v1 belongs to the no-campaign desktop as well: everything else in it stays as it is
+      var was = parseOr(readKey(file.key), null) || { v: SCHEMA };
+      Object.keys(was).forEach(function (k) { doc[k] = was[k]; });
+      LIB_BAGS.forEach(function (b) { doc[b] = state[b]; });
+      var kept = isObj(was.rev) ? was.rev : {};
+      Object.keys(kept).forEach(function (p) { if (!isLibPath(p)) rev[p] = kept[p]; });
+    } else {
+      Object.keys(state).forEach(function (k) { if (file.holds === "all" || LIB_BAGS.indexOf(k) === -1) doc[k] = state[k]; });
+    }
+    doc.rev = rev;
+    return JSON.stringify(doc);
+  }
+  /* One file's share of a write. Stamps what changed here since the last look; whatever another tab
+     saved goes into this write, never under it. A file with nothing to say is left alone. */
+  function writeFile(file) {
+    var res = { ok: true, moved: hear(file) };
+    var now = partsOf(state, file), paths = {}, at = 0, undo = [];
+    [now, file.seen].forEach(function (o) { Object.keys(o).forEach(function (p) { paths[p] = 1; }); });
+    Object.keys(paths).forEach(function (p) {
+      var was = file.seen[p] || null, m = own(now, p) ? now[p] : null;
+      if ((was ? was.text : null) === m) return;
+      if (!at) at = nextStamp(file);
+      undo.push([p, was]);
+      file.seen[p] = { at: at, text: m };
+    });
+    if (!undo.length && !file.owes) return res;
+    var text = textOf(file);
+    try {
+      localStorage.setItem(file.key, text);
+      file.lastText = text;
+      file.owes = false;
+    } catch (e) {
+      // not said: put the notes back, so these parts still read as changed here, and try again next time
+      undo.forEach(function (u) { if (u[1]) file.seen[u[0]] = u[1]; else delete file.seen[u[0]]; });
+      file.owes = true;
+      res.ok = false;
+    }
+    return res;
+  }
+
   /* ---- persistence --------------------------------------------------------
      write() is the one place that touches storage, and it answers whether the
      write landed. persist() stamps the document and either writes now or arms
@@ -394,12 +720,37 @@ EN.gmStore = (function () {
   var lastSaveOk = true;
   function write() {
     if (!state) return false;
-    var ok = true;
-    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) { ok = false; }
+    var ok = true, moved = false;
+    files.forEach(function (f) {
+      var r = writeFile(f);
+      if (!r.ok) ok = false;
+      if (r.moved) moved = true;
+    });
     lastSaveOk = ok;
+    // this runs inside the save of whoever called, so the repaint waits its turn
+    if (moved) setTimeout(heard, 0);
     return ok;
   }
   function saveOk() { return lastSaveOk; }
+  // what a repaint is told: another tab's save changed what this tab holds
+  var heardFns = [];
+  function onHeard(fn) { heardFns.push(fn); }
+  function heard() {
+    heardFns.forEach(function (fn) { try { fn(); } catch (e) {} });
+    emit();
+  }
+  // the look before a decision that can't wait for the announcement. An edit still in the debounce goes first
+  function syncTabs() {
+    if (!state) return;
+    if (saveTimer) { flush(); return; }
+    var moved = false, owes = false;
+    files.forEach(function (f) {
+      if (hear(f)) moved = true;
+      if (f.owes) owes = true;
+    });
+    if (owes) write();
+    if (moved) heard();
+  }
   function persist(immediate) {
     if (!state) return false;
     state.updatedAt = Date.now();
@@ -1043,6 +1394,7 @@ EN.gmStore = (function () {
        {source: "milestone"}   (Payroll's AWARD MILESTONE)
        {source: "vigor"}       (the Table's END, clearing the crew's Vigor) */
   function writeCrew(charId, label, ops, meta) {
+    syncTabs();
     var roster = rosterNow();
     if (typeof charId !== "string" || !own(roster, charId) || !isObj(roster[charId])) return false;
     if (!EN.store.updateById) return false;
@@ -1173,6 +1525,7 @@ EN.gmStore = (function () {
      the record and the ledger both stay as they were. The record keeps its
      updatedAt, so undoing does not move it to the top of the ledger. */
   function undoLast() {
+    syncTabs();
     var r = undoable();
     if (!r) return null;
     var before = copy(rosterNow()[r.charId]);
@@ -1212,7 +1565,25 @@ EN.gmStore = (function () {
   function counts(s) {
     var c = { entries: s.encounter.entries.length, room: s.encounter.room.length };
     BAGS.forEach(function (b) { c[b] = Object.keys(s[b]).length; });
+    // the campaign a file was exported from, for the confirmation that names it
+    if (s.campaign && s.campaign.name) c.campaign = s.campaign.name;
     return c;
+  }
+  // what a count says, in words: Settings' GM data section and the one-time card use the same sentence
+  function countText(c) {
+    function say(n, one, many) { return n + " " + (n === 1 ? one : many); }
+    var parts = [];
+    if (c.threats) parts.push(say(c.threats, "saved threat", "saved threats"));
+    if (c.encounters) parts.push(say(c.encounters, "saved encounter", "saved encounters"));
+    if (c.hazards) parts.push(say(c.hazards, "custom hazard", "custom hazards"));
+    if (c.jobs) parts.push(say(c.jobs, "logged job", "logged jobs"));
+    if (c.ledger) parts.push(say(c.ledger, "ledger record", "ledger records"));
+    if (c.heat) parts.push(say(c.heat, "Heat record", "Heat records"));
+    if (c.contacts) parts.push(say(c.contacts, "contact card", "contact cards"));
+    if (c.scenes) parts.push(say(c.scenes, "saved scene", "saved scenes"));
+    if (c.entries) parts.push(say(c.entries, "initiative row", "initiative rows"));
+    if (c.room) parts.push(say(c.room, "Room hazard", "Room hazards"));
+    return parts.length ? parts.join(", ") : "nothing saved yet";
   }
   /* Every refusal is a thrown Error whose message is a sentence a toast can show
      as it stands. A Freelancer's .json is an object too, and migrating one would
@@ -1256,9 +1627,20 @@ EN.gmStore = (function () {
     // a debounced write of the OLD document must not land over the new one
     clearTimeout(saveTimer);
     saveTimer = null;
+    /* On a campaign's desktop a file replaces that desktop and only adds to the library, which other
+       desktops are using too. Anything the document no longer holds reads as deleted here, so another tab
+       on this desktop takes the file whole. */
+    if (deskId) {
+      LIB_BAGS.forEach(function (b) {
+        var had = get()[b];
+        Object.keys(had).forEach(function (k) { if (!own(next[b], k)) next[b][k] = had[k]; });
+      });
+      next.campaign = { id: deskId, name: state.campaign ? state.campaign.name : "" };
+    } else delete next.campaign;
     state = next;
     var droppedCrew = pruneCrew();
     var c = counts(state);
+    delete c.campaign;
     c.droppedCrew = droppedCrew;
     c.importedWrites = importedWrites;
     c.saved = persist(true);
@@ -1266,7 +1648,181 @@ EN.gmStore = (function () {
     return c;
   }
 
-  try { window.addEventListener("pagehide", function () { flush(); }); } catch (e) {}
+  /* ---- which desktop --------------------------------------------------------------
+     desk() is the campaign this tab's desktop belongs to, as { id, name }, or null for en_gm_v1's own.
+     follow() is how a tab gets where EN.campaigns says it should be, and app.js asks on every render:
+     a pick, a jack in or out, and a campaign created, left or deleted all end in a render. It costs a
+     look at a short list, and does nothing unless the answer changed. */
+  var deskKeepers = [];
+  function desk() { return deskId && state && state.campaign ? { id: deskId, name: state.campaign.name } : null; }
+  /* A view's working state belongs to a desktop as much as the records it is working on: a half-built
+     payday can't follow you to another campaign. take() answers what to keep, and give(kept) puts it back,
+     or starts fresh on null. Kept in memory for this tab's life, so going back finds the work where it was.
+     take() may still save, since the old desktop is the one in memory when it runs. */
+  function perDesk(take, give) { deskKeepers.push({ take: take, give: give, kept: Object.create(null) }); }
+  function follow() {
+    if (!state) return false;
+    var want = wantedDesk(), id = want ? want.id : null;
+    if (id === deskId) {
+      if (want && state.campaign && state.campaign.name !== want.name) state.campaign.name = want.name;   // renamed: said at the next write
+      return false;
+    }
+    var from = deskId || "", to = id || "";
+    deskKeepers.forEach(function (k) { try { k.kept[from] = k.take(); } catch (e) { try { console.warn("GM: a view could not keep its work", e); } catch (e2) {} } });
+    /* The last edit goes to the desktop it was made on. If this device refuses it, this tab stays on that
+       desktop, so the work is still here, and NOT SAVED says why. The next render tries again. */
+    if (!persist(true)) return false;
+    readDesk(want);
+    deskKeepers.forEach(function (k) { try { k.give(own(k.kept, to) ? k.kept[to] : null); } catch (e) { try { console.warn("GM: a view could not start on this desktop", e); } catch (e2) {} } });
+    emit();
+    return true;
+  }
+
+  /* ---- what is on this device, beyond the desktop in memory -------------------------
+     The parts of en_gm_v1 that aren't the library, as counts, or null when there are none. Only
+     the things a move would carry count. */
+  var MOVE_BAGS = BAGS.filter(function (b) { return LIB_BAGS.indexOf(b) === -1; });
+  function tableBusy(e) {
+    return !!(e.entries.length || e.room.length || e.clock || e.name || e.sourceId || (e.defeated && e.defeated.length) || (e.round | 0) > 0);
+  }
+  function deviceHolds() {
+    var doc;
+    try { doc = migrate(parseOr(readKey(STATE_KEY), null)); } catch (e) { return null; }
+    var c = counts(doc), any = tableBusy(doc.encounter) || !!doc.lastEncounter;
+    MOVE_BAGS.forEach(function (b) { if (c[b]) any = true; });
+    LIB_BAGS.forEach(function (b) { delete c[b]; });
+    delete c.campaign;
+    return any ? c : null;
+  }
+  /* MOVES en_gm_v1's own work into the campaign this tab is on, on the Admin's word. Answers { ok, moved,
+     stayed, tableStayed, copied, why }. Nothing is ever written over: a record already here under the same
+     id with different contents stays behind, a Table stays behind when this desktop's is in use, and so
+     does a row a different campaign owns. `copied` says the second step failed, so the work is in both.
+
+     In this order, so a failure at any point costs nothing:
+       1. the backup, or nothing happens     2. this desktop's write, or it is all put back
+       3. en_gm_v1 lets go                   */
+  function moveDevice() {
+    if (!deskId || !state) return { ok: false, why: "no-desktop" };
+    if (!persist(true)) return { ok: false, why: "refused" };
+    var text = readKey(STATE_KEY), doc;
+    try { doc = migrate(parseOr(text, null)); } catch (e) { return { ok: false, why: "unreadable" }; }
+    try { localStorage.setItem(PREMOVE_KEY, JSON.stringify({ at: Date.now(), text: text })); }
+    catch (e) { return { ok: false, why: "refused" }; }
+    var took = [], stayed = 0, res = { ok: true, moved: 0, stayed: 0, tableStayed: false, copied: false };
+    MOVE_BAGS.forEach(function (b) {
+      Object.keys(doc[b]).forEach(function (id) {
+        var here = own(state[b], id) ? state[b][id] : null;
+        if (here && canon(here) !== canon(doc[b][id])) { stayed++; return; }
+        state[b][id] = doc[b][id];
+        took.push("b/" + b + "/" + id);
+      });
+    });
+    var moveTable = tableBusy(doc.encounter) && !tableBusy(state.encounter);
+    var leftRows = [];
+    if (moveTable) {
+      var e = doc.encounter;
+      leftRows = e.entries.filter(function (r) { return r.kind === "crew" && r.campaign && r.campaign !== deskId; });
+      var rows = e.entries.filter(function (r) { return leftRows.indexOf(r) === -1; });
+      state.encounter = e;
+      e.entries = rows;
+      if (e.activeId && !rows.some(function (r) { return r.id === e.activeId; })) e.activeId = null;
+    } else if (tableBusy(doc.encounter)) res.tableStayed = true;
+    var moveLast = !!doc.lastEncounter && !state.lastEncounter;
+    if (moveLast) state.lastEncounter = doc.lastEncounter;
+    else if (doc.lastEncounter && canon(doc.lastEncounter) !== canon(state.lastEncounter)) stayed++;
+    if (!persist(true)) {
+      readDesk({ id: deskId, name: state.campaign ? state.campaign.name : "" });
+      emit();
+      return { ok: false, why: "refused" };
+    }
+    // en_gm_v1 lets go of exactly what moved, and says so in `rev`, so a tab open on that desktop follows
+    var raw = parseOr(readKey(STATE_KEY), null) || { v: SCHEMA };
+    var rev = isObj(raw.rev) ? raw.rev : (raw.rev = {}), at = Date.now();
+    Object.keys(rev).forEach(function (p) { if (Number(rev[p]) >= at) at = Number(rev[p]) + 1; });
+    took.forEach(function (p) {
+      var cut = p.indexOf("/", 2), b = p.slice(2, cut), id = p.slice(cut + 1);
+      if (isObj(raw[b])) delete raw[b][id];
+      rev[p] = at;
+    });
+    if (moveTable && isObj(raw.encounter)) {
+      var empty = blankEncounter(), old = raw.encounter;
+      ROW_LISTS.forEach(function (k) {
+        (Array.isArray(old[k]) ? old[k] : []).forEach(function (r) {
+          if (r && typeof r.id === "string" && !(k === "entries" && leftRows.some(function (l) { return l.id === r.id; }))) rev["r/" + k + "/" + r.id] = at;
+        });
+        rev["o/" + k] = at;
+      });
+      Object.keys(empty).forEach(function (k) { if (ROW_LISTS.indexOf(k) === -1) rev["e/" + k] = at; });
+      empty.entries = leftRows;
+      raw.encounter = empty;
+    }
+    if (moveLast) { raw.lastEncounter = null; rev.lastEncounter = at; }
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(raw)); }
+    catch (e2) { res.copied = true; }
+    res.moved = took.length + (moveTable ? 1 : 0) + (moveLast ? 1 : 0);
+    res.stayed = stayed + leftRows.length;
+    emit();
+    return res;
+  }
+
+  /* The backup moveDevice() takes, as { at, text }, or null. */
+  function premove() {
+    var v = parseOr(readKey(PREMOVE_KEY), null);
+    return v && typeof v.text === "string" && typeof v.at === "number" ? v : null;
+  }
+  function dropPremove() { try { localStorage.removeItem(PREMOVE_KEY); } catch (e) {} }
+  /* Desktops on this device that this tab can't open from the picker: the campaign was deleted or left, or
+     another account on this browser runs it. Their work is still here, and Settings offers it as a file.
+     `live` is the ids the picker offers. */
+  function leftBehind(live) {
+    var out = [], ids = Object.create(null);
+    (live || []).forEach(function (id) { ids[id] = true; });
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k || k.indexOf(CAMP_PRE) !== 0 || k.slice(-CAMP_SUF.length) !== CAMP_SUF) continue;
+        var id = k.slice(CAMP_PRE.length, -CAMP_SUF.length);
+        if (ids[id] || id === deskId) continue;
+        var doc = null;
+        try { doc = migrate(parseOr(readKey(k), null)); } catch (e) { doc = null; }
+        if (!doc) continue;
+        var c = counts(doc);
+        delete c.campaign;
+        out.push({ id: id, name: doc.campaign && doc.campaign.name ? doc.campaign.name : "Unnamed campaign", counts: c });
+      }
+    } catch (e) {}
+    return out.sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
+  }
+  function exportLeft(id) {
+    var doc = migrate(parseOr(readKey(deskKey(id)), null));
+    return JSON.stringify(doc, null, 2);
+  }
+  // a whole desktop, gone from this device: Settings asks first. Never the one a tab is on
+  function dropLeft(id) {
+    if (!id || id === deskId) return false;
+    try { localStorage.removeItem(deskKey(id)); return true; } catch (e) { return false; }
+  }
+
+  try {
+    window.addEventListener("pagehide", function () { flush(); });
+    // a timer in a hidden tab can wait a second or more, and the Admin has just gone to the other tab
+    document.addEventListener("visibilitychange", function () { if (document.hidden) flush(); else syncTabs(); });
+    window.addEventListener("storage", function (e) {
+      if (!state) return;
+      var mine = files.filter(function (f) { return f.key === e.key; });
+      if (e.key !== null && !mine.length) return;
+      /* The announcement carries what was written. If a tab that hadn't heard has already written over it, and
+         the tab that wrote it has since closed, this is the one copy left of that save. It goes in first, and
+         the look at storage below then finds storage behind and puts it back. */
+      var moved = false;
+      if (typeof e.newValue === "string") {
+        mine.forEach(function (f) { if (e.newValue !== readKey(f.key) && hear(f, e.newValue)) moved = true; });
+      }
+      syncTabs();
+      if (moved) setTimeout(heard, 0);
+    });
+  } catch (e) {}
 
   return {
     load: load, get: get, update: update, on: on, uid: uid,
@@ -1284,6 +1840,11 @@ EN.gmStore = (function () {
     // the player's side of the Admin's inbox (js/cloud.js)
     deliverMail: deliverMail, withdrawMail: withdrawMail,
     // the document as a file, and whether the last write of it landed
-    exportDoc: exportDoc, importDoc: importDoc, inspectDoc: inspectDoc, flush: flush, saveOk: saveOk
+    exportDoc: exportDoc, importDoc: importDoc, inspectDoc: inspectDoc, countText: countText, flush: flush, saveOk: saveOk,
+    // which desktop this tab is on, and two tabs on one
+    desk: desk, follow: follow, perDesk: perDesk, syncTabs: syncTabs, onHeard: onHeard,
+    // work on this device beyond the desktop in memory
+    deviceHolds: deviceHolds, moveDevice: moveDevice, premove: premove, dropPremove: dropPremove,
+    leftBehind: leftBehind, exportLeft: exportLeft, dropLeft: dropLeft
   };
 })();

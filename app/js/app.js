@@ -462,6 +462,8 @@ EN.app = (function () {
     // a rebuild under a finger strands its touch (the events keep targeting the removed node),
     // so the gesture is told to snap back first; a no-op unless a drag is in flight
     if (_swipe) _swipe.abort();
+    // which campaign's Admin desktop this tab is on: a pick, a jack in or out and a campaign coming or going all end up here
+    if (EN.gmStore && EN.gmStore.follow) EN.gmStore.follow();
     // per-character theme: repaint to whatever the active Freelancer selected (no-op if unchanged).
     // In Admin this resolves to the Admin desktop's own device theme instead (see settings.js).
     if (EN.theme && EN.theme.syncToActive) EN.theme.syncToActive();
@@ -515,6 +517,7 @@ EN.app = (function () {
     applyPin(view);
     _lastTab = LAST[portal];
     paintActiveName();
+    if (portal === "admin" && EN.campaigns && EN.campaigns.checkMove) EN.campaigns.checkMove();
     revealActive();
     /* Currency marks, last, once the view is fully built. A NO-OP on any device whose fonts
        carry U+1D4A2 and U+25CE, which is the common case and costs one cached measurement;
@@ -535,7 +538,14 @@ EN.app = (function () {
     if (portal === "admin") {
       var enc = null;
       try { enc = EN.gmStore && EN.gmStore.get && EN.gmStore.get().encounter; } catch (e) {}
-      node.appendChild(el("span.an-name", { text: (enc && enc.round > 0) ? ("ROUND " + enc.round) : "NO ENCOUNTER" }));
+      // whose desktop this is, once there is more than one it could be
+      var deskName = "";
+      try {
+        var here = EN.gmStore && EN.gmStore.desk ? EN.gmStore.desk() : null;
+        if (here) deskName = here.name;
+        else if (EN.campaigns && EN.campaigns.running && EN.campaigns.running().length) deskName = "No campaign";
+      } catch (e) {}
+      node.appendChild(el("span.an-name", { dataset: { gm: "desk-name" }, text: (deskName ? deskName.toUpperCase() + " · " : "") + ((enc && enc.round > 0) ? ("ROUND " + enc.round) : "NO ENCOUNTER") }));
       return;
     }
     var ch = store.active();
@@ -747,6 +757,24 @@ EN.app = (function () {
     // away with the old rail a moment later (the top bar's readout is static
     // HTML and never noticed the difference)
     store.on(function () { render(); flashSave(); });
+    /* Another tab saved something on the Admin desktop this tab is on (js/gmstore.js). A tab nobody is
+       looking at repaints when it is looked at, and one with a field in use repaints once the field is
+       left: a redraw under a caret costs the typing, and one under a blur swallows the click that caused
+       it (F19). Memory is already up to date either way, so a click on what is drawn acts on the news. */
+    if (EN.gmStore && EN.gmStore.onHeard) {
+      var heldPaint = false;
+      var gmHeard = function () {
+        if (portal !== "admin") { heldPaint = false; return; }
+        var a = document.activeElement, view = document.getElementById("view");
+        var typing = !!a && !!view && view.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+        if (document.hidden || typing) { heldPaint = true; return; }
+        heldPaint = false;
+        render();
+      };
+      EN.gmStore.onHeard(gmHeard);
+      document.addEventListener("visibilitychange", function () { if (!document.hidden && heldPaint) gmHeard(); });
+      document.addEventListener("focusout", function () { if (heldPaint) setTimeout(function () { if (heldPaint) gmHeard(); }, 200); });
+    }
     /* The one place that knows whether the record is really on this device. It also has to
        out-live a re-render, which rebuilds the tray glyph from scratch, so renderTabs repaints
        a failure after appending it. */
