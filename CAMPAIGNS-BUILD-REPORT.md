@@ -845,7 +845,7 @@ npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/
 npx supabase@2 migration repair --status applied 20261108210000 --project-ref ggjgkcnhfpjwyrhakqun
 ```
 
-The checks should say 253 PASS, 0 FAIL. The repair is there because `db query` applies a file and records nothing.
+The checks should say 269 PASS, 0 FAIL. The repair is there because `db query` applies a file and records nothing.
 
 ## Worth your eye
 
@@ -879,24 +879,37 @@ There has been no second review of these fixes. The tests below cover each one.
 5. **Another account signing in during a run** stops it quietly, and the first account's sends go when it's back, instead of being refused for good.
 6. **The library refusing a save** no longer holds up a campaign's sends. The note that a send tried, which that hung on, is gone: the database decides now.
 
+That round had a review of its own, below.
+
+**A fourth independent read, of that round,** found the security sound: every lookup is the caller's own, there is no way to learn about anyone else's sends, and the two functions serialize. It traced two real faults and four plausible ones. Each has a check that failed before the fix, apart from the one that is yours to decide:
+
+1. **A send refused as taken back still counted as paid** on the desktop it was on. Fixed.
+2. **A take back for a character who had left the campaign marked nothing,** so a second copy could land after they rejoined, with no correction. The marks now live in a table of their own (`inbox_taken_back`): a mark needs no character or campaign, and outlives a deleted campaign. Fixed.
+3. **Deleting a campaign deletes the rows that show which sends landed.** That is a choice about pay history, and it's under Still open.
+4. **The account could change between the app's own look and the request leaving,** with another tab signing in. The app now says which account it means (`p_sender`), and the database refuses anything else, EN_NOT_MINE, so it can't send or take back for the wrong account. Fixed.
+5. **Copies of one send on two desktops** could disagree, one paid and one taken back. Every answer now reaches the other copies too. Fixed.
+6. **A key ending `:fix` could stand in for a correction.** Those keys are `take_back`'s own now, and refused anywhere else. Fixed.
+
+The checks it asked for are in, with one exception. Two sends of one key landing in the same instant needs two database connections, and PGlite has one. `send_write` and `take_back` now take a lock per sender and key, so neither has a branch for losing that race any more, and the database's one-row-per-key index still holds if one ever slipped through. The lock itself is untested here: the live round is the first time it can be.
+
 This last round hasn't had a review of its own.
 
 ## Checked, and how
 
 | What | Result | How |
 | --- | --- | --- |
-| The SQL | 253 PASS, 0 FAIL locally, nothing left behind | `campaign_checks.sql`, up from 168. Not yet on the live project |
-| The checks have teeth | 243 of 243 caught | Broken copies of the migrations, 86 of them for this one, `take_back` among them |
-| The story, on the stand-in | 348 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, the far door's rules, sends from another campaign's desktop, and every finding of both reviews of that |
-| The same story, on the real SQL | 352 checks pass | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
+| The SQL | 269 PASS, 0 FAIL locally, nothing left behind | `campaign_checks.sql`, up from 168. Not yet on the live project |
+| The checks have teeth | 249 of 249 caught | Broken copies of the migrations, 92 of them for this one |
+| The story, on the stand-in | 368 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, the far door's rules, sends from another campaign's desktop, and every finding of the three reviews of that |
+| The same story, on the real SQL | 372 checks pass | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
 | Two real tabs | 36 checks pass | `pg/writes_tabs_realdb.js`: the double payment held back, the idle tab's send, both tabs agreeing, a send queued in one tab going from the other on another campaign, and a take back landing while the other tab's send of it was out |
 | A real reload with a send queued | Pass | `tests/campaigns_writes_2.js` and `_3.js`: it goes with nobody asking, under the same key |
-| Breaking the code on purpose | 104 of 104 caught. The first full run missed three, all checks the story didn't have, so I added them and ran those three again | `pg/writes_mutants.py`, a line at a time, each failing its own check. The two that only two real tabs show run on the real database |
-| Before each fix | On `a5bba7b`, 16 of the new checks fail, at least one for each of the seven findings | The same story on the code before it |
+| Breaking the code on purpose | 115 of 115 caught. The first full run missed one, a check the story didn't have, so I added it and ran that one again | `pg/writes_mutants.py`, a line at a time, each failing its own check. The one that only two real tabs show runs on the real database |
+| Before each fix | On `d2eedcc`: 16 of the new SQL checks fail, 8 of the story's on the stand-in and 10 on the real database, finding 2's among them. Every finding but the one left to you has at least one | The same story and checks on the code before it |
 | The other real rounds | All pass: batch 2 144, batch 3 61, the Table 159, two tabs 40, the same sequence in one window 21 | On the final code |
 | The two-tab fuzz | 400 random rounds of two and three tabs, nothing lost | `pg/gm_tabs_fuzz.mjs` on the final `gmstore.js` |
-| The whole suite | 498 chains, 523 runs, 0 bad, 0 skipped, `gmtabs_1` to `_4`, `campaigns_table_1`, `tabs_1` and `campaigns_b3_1` included. The story gained 3 checks after it, and ran again on its own | `cx_integ_run.py`, round wr8, on the final code |
-| Three skins, desktop and 375 px | 30 of 30 measured, none scrolls sideways | `tests/campaigns_writes_shot.js` measured without a screenshot, so its numbers are read. Measured before the last round, which changed no screen |
+| The whole suite | 498 chains, 523 runs, 0 bad, 0 skipped, `gmtabs_1` to `_4`, `campaigns_table_1`, `tabs_1` and `campaigns_b3_1` included. The story gained 2 checks after it, and its three chains ran again | `cx_integ_run.py`, round wr9, on the final code |
+| Three skins, desktop and 375 px | 30 of 30 measured, none scrolls sideways | `tests/campaigns_writes_shot.js` measured without a screenshot, so its numbers are read. Measured before the last two rounds, which changed no screen |
 
 `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
 
@@ -913,14 +926,16 @@ This last round hasn't had a review of its own.
 5. **A send only goes under the account that wrote it,** and only that account can take it back.
 6. **The player's name is on the lists about to be written to,** as it is on the Table.
 7. **A run reads every desktop on this browser,** under the account that wrote each send, and stops quietly if another account signs in. Each step reads the record again where it's kept, and what either copy knows stays known. A desktop with nothing queued isn't even read.
-8. **An UNDO's mark is a row of its own:** a send taken back before it landed leaves a recalled row under its key, which the Campaign tab's list shows as Recalled. That row is how the database refuses the send later.
+8. **An UNDO's mark lives apart from the inbox** (`inbox_taken_back`). It needs no character or campaign, it outlives a deleted campaign, and it doesn't show in the Campaign tab's list of sends. Anyone can mark a key of their own, which delivers nothing to anyone.
+9. **The app says which account it means** with each send and take back, and the database refuses a session that changed under it. A run stops quietly on that, as it does when another account signs in.
 
 ## Still open
 
 - **Heat through the inbox.** Next, on your word. **Vigor at the Table's END** doesn't reach another player's sheet either. It was never one of the four, and it depends on what the sheet holds, as Heat does.
 - **Two Admins paying one fight,** above.
-- **A removed player's rows still land on them,** as their mail does, and a correction after they've gone is refused, and says so on the strip. If they rejoin, a copy of a send taken back while they were away, still queued on another desktop, could land: the mark needs a campaign to sit in.
-- **One record on two desktops** can disagree about whether it counts as paid, after one copy is taken back. The money is right either way.
+- **A removed player's rows still land on them,** as their mail does, and a correction after they've gone is refused, and says so on the strip.
+- **Deleting a campaign forgets which of its sends landed,** because its inbox rows go with it. An UNDO of one afterwards answers that nothing went, so it sends no correction, and the player keeps the money. A send still queued on that campaign's desktop can go after the delete, wherever the character is now, if this account runs that campaign. A taken back key stays refused. This one is yours to decide, so it isn't built.
+- **The lock between `send_write` and `take_back`** has never had two connections to work against. PGlite has one.
 - **RECALL on the Campaign tab's list leaves the Job Board saying "(posted)".** A later UNDO POSTING comes out right.
 - **A row still due goes with its campaign if the campaign is deleted,** and the Admin's ledger still reads as paid.
 - **Importing an older GM file drops queued sends it doesn't hold,** because an import replaces the document. The ledger then has no word of them, so it doesn't read as paid either.

@@ -1659,20 +1659,49 @@ EN.gmStore = (function () {
   function farSave(it, ch) {
     var r = it.r;
     farPut(r, ch);
-    if (inMemory(it)) { persist(true); return; }
+    if (inMemory(it)) { persist(true); farSpread(it); return; }
     // a desktop this tab isn't on, or left while the send was out
     var got = farStored(it);
     if (!got) return;                                         // gone from there: nowhere to say it
-    var raw = got.raw, next = farJoin(r, got.rec);
-    next.id = r.id;
-    raw.ledger[r.id] = next;
+    var next = farJoin(r, got.rec);
+    if (!farWrite(it.key, got.raw, r.id, next)) return;
+    refill(r, copy(next));
+    farSpread(it);
+  }
+  // one record into a stored desktop, stamped in its `rev`. A desktop this tab has open hears it the way it hears any other tab
+  function farWrite(key, raw, id, rec) {
+    rec.id = id;
+    raw.ledger[id] = rec;
     var rev = isObj(raw.rev) ? raw.rev : (raw.rev = {}), at = Date.now();
     Object.keys(rev).forEach(function (p) { if (Number(rev[p]) >= at) at = Number(rev[p]) + 1; });
-    rev["b/ledger/" + r.id] = at;
-    try { localStorage.setItem(it.key, JSON.stringify(raw)); } catch (e) { return; }
-    refill(r, copy(next));
-    // a desktop this tab has open hears it the way it hears any other tab
-    if (files.some(function (f) { return f.key === it.key; })) syncTabs();
+    rev["b/ledger/" + id] = at;
+    try { localStorage.setItem(key, JSON.stringify(raw)); } catch (e) { return false; }
+    if (files.some(function (f) { return f.key === key; })) syncTabs();
+    return true;
+  }
+  /* The same send kept on other desktops too (a move that kept a copy, a file imported into another campaign): each copy
+     hears what this one learned, so one can't read as paid while another reads as taken back. */
+  function farSpread(it) {
+    var r = it.r, here = deskKey(deskId);
+    farKeys().forEach(function (k) {
+      if (k === it.key) return;
+      if (k === here && state) {
+        var mem = own(state.ledger, r.id) ? state.ledger[r.id] : null;
+        if (!isObj(mem) || !isObj(mem.far)) return;
+        var j = farJoin(r, mem);
+        if (canon(j) === canon(mem)) return;
+        refill(mem, j);
+        persist(true);
+        emit();
+        return;
+      }
+      var text = readKey(k);
+      if (!text || text.indexOf('"' + r.id + '"') === -1) return;
+      var got = farStored({ key: k, r: r });
+      if (!got) return;
+      var next = farJoin(r, got.rec);
+      if (canon(next) !== canon(got.rec)) farWrite(k, got.raw, r.id, next);
+    });
   }
   function sendCrew(charId, label, ops, meta) {
     var who = farUser(), row = who ? EN.campaigns.crewRow(charId) : null;
@@ -1720,16 +1749,19 @@ EN.gmStore = (function () {
   /* Another account signed in since the run began: its session must not send, or be refused, for this one. */
   var NOT_MINE = { notMine: true };
   function farMine(r) { if (farUser() !== r.far.by) throw NOT_MINE; }
+  // the same, said by the database: the session changed between that look and the request (EN_NOT_MINE in the migration)
+  function farNotMine(e) { if (e && String(e.message || "") === "EN_NOT_MINE") throw NOT_MINE; }
   // UNDO, as the database decides it. `r.far` is read where it is at every step: a save heard from another tab puts a new object there
   function farBack(it, unfixed) {
     var r = it.r, letter;
     if (!farFresh(it) || r.far.fix !== "queued") return;   // gone from its desktop, or another tab has asked already
     try { letter = farFixLetter(r); } catch (e) { try { console.warn("A queued UNDO can't be read, so it stays queued.", r.id, e); } catch (e2) {} return; }
     farMine(r);
-    return EN.campaigns.takeBack(r.far.row, r.id, letter).then(function (said) {
+    return EN.campaigns.takeBack(r.far.row, r.id, letter, r.far.by).then(function (said) {
       if (said === "cancelled") farSave(it, { far: { state: r.far.state === "queued" ? "skipped" : r.far.state, fix: "done" } });
       else farSave(it, { far: { state: "sent", fix: said === "recalled" ? "recalled" : "done" } });
     }, function (e) {
+      farNotMine(e);
       if (!farAnswer(e)) throw e;
       if (!farFresh(it) || r.far.fix !== "queued") return;    // gone, or another tab has given the answer already
       unfixed.push(it);
@@ -1746,14 +1778,15 @@ EN.gmStore = (function () {
       // a record this app can't read stays queued, and holds up nothing behind it
       try { nums = farNums(r.ops); letter = farLetter(r); } catch (e) { try { console.warn("A queued send can't be read, so it stays queued.", r.id, e); } catch (e2) {} return; }
       farMine(r);
-      return EN.campaigns.sendWrite(r.far.row, r.id, letter, nums.length ? nums : null).then(function (rowId) {
+      return EN.campaigns.sendWrite(r.far.row, r.id, letter, nums.length ? nums : null, r.far.by).then(function (rowId) {
         farFresh(it);
         farSave(it, { far: { state: "sent", rowId: rowId } });
       }, function (e) {
+        farNotMine(e);
         var code = farAnswer(e);
         if (!code) throw e;
         if (!farFresh(it) || r.far.state !== "queued") return;   // gone, or another tab has given the answer already
-        if (code === "EN_TAKEN_BACK") { farSave(it, { undoneAt: r.undoneAt || Date.now(), far: { state: "skipped", fix: "done" } }); return; }
+        if (code === "EN_TAKEN_BACK") { farSave(it, { undone: true, undoneAt: r.undoneAt || Date.now(), far: { state: "skipped", fix: "done" } }); return; }
         // taken back while it was out: nothing landed, so there's nothing to correct
         if (r.undone) { farSave(it, { far: { state: "refused", why: code, fix: "done" } }); return; }
         refused.push(it);

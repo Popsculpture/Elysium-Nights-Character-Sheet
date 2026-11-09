@@ -16,9 +16,12 @@
 --
 -- UNDO IS DECIDED HERE. More than one of the Admin's tabs can be sending, and a write can sit on two
 -- desktops, so no app can know whether a send landed. take_back asks the one place that does: a key with no
--- row yet gets a recalled row of its own, and anything sent under that key later is refused with
--- EN_TAKEN_BACK, so it never lands. A key that has a row gets the correction, once, or is recalled if it is
--- a posting still waiting. Either way the one-row-per-key index decides which came first.
+-- row yet is marked, for its sender alone, and anything sent under it later is refused with EN_TAKEN_BACK,
+-- so it never lands. A key that has a row gets the correction, once, or is recalled if it is a posting still
+-- waiting. send_write and take_back take one lock per sender and key, so whichever comes first decides.
+--
+-- THE MARKS LIVE APART FROM THE INBOX (inbox_taken_back). A mark needs no character or campaign, so it can be
+-- made for a character who has left, and it outlives a campaign that is deleted. Only the two functions touch it.
 
 alter table public.character_inbox
   add column ops jsonb,
@@ -31,6 +34,16 @@ alter table public.character_inbox add constraint character_inbox_status_check c
 );
 
 create unique index character_inbox_send_key_idx on public.character_inbox (sender_id, send_key) where send_key is not null;
+
+-- keys taken back before anything was sent under them (UNDO IS DECIDED HERE)
+create table public.inbox_taken_back (
+  sender_id  uuid not null references auth.users (id) on delete cascade,
+  send_key   text not null,
+  taken_at   timestamptz not null default now(),
+  primary key (sender_id, send_key)
+);
+alter table public.inbox_taken_back enable row level security;
+revoke all on table public.inbox_taken_back from public, anon, authenticated;
 
 /* ---- helpers ---- */
 
@@ -78,7 +91,9 @@ end;
 $$;
 
 /* ---- the functions the app calls ----------------------------------------------------------
-   Each checks auth.uid(). New refusals: EN_BAD_OPS, EN_BAD_KEY, EN_TAKEN_BACK. */
+   Each checks auth.uid(). New refusals: EN_BAD_OPS, EN_BAD_KEY, EN_TAKEN_BACK, EN_NOT_MINE. p_sender is the account the app
+   means to send as: a session that changed under it, between the app's own look and the request, is refused with EN_NOT_MINE,
+   so it can neither send nor take back for the wrong account. A key ending ':fix' is take_back's own, and refused. */
 
 -- Those who run the character's campaign, like send_to_character. With p_ops it is a row with ops, and the
 -- mail is the letter that goes with the numbers, so it can't carry a package. Without, it is plain mail, and
@@ -86,7 +101,7 @@ $$;
 -- list stays as batch 3 left it, and a row with no When shows the time it was sent.
 -- A key already used answers with its row before anything else is asked: whoever sent it, it was sent.
 -- A key take_back got to first is refused, EN_TAKEN_BACK.
-create or replace function public.send_write(p_character uuid, p_key text, p_mail jsonb, p_ops jsonb default null)
+create or replace function public.send_write(p_character uuid, p_key text, p_mail jsonb, p_ops jsonb default null, p_sender uuid default null)
 returns uuid
 language plpgsql
 security definer
@@ -104,7 +119,10 @@ declare
   v_id uuid;
 begin
   if v_uid is null then raise exception 'EN_SIGNED_OUT'; end if;
-  if p_key is null or char_length(p_key) not between 1 and 80 then raise exception 'EN_BAD_KEY'; end if;
+  if p_sender is not null and p_sender is distinct from v_uid then raise exception 'EN_NOT_MINE'; end if;
+  if p_key is null or char_length(p_key) not between 1 and 80 or right(p_key, 4) = ':fix' then raise exception 'EN_BAD_KEY'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(v_uid::text || '/' || p_key, 0));
+  if exists (select 1 from public.inbox_taken_back t where t.sender_id = v_uid and t.send_key = p_key) then raise exception 'EN_TAKEN_BACK'; end if;
   select i.id, i.character_id, i.status into v_had, v_for, v_was from public.character_inbox i where i.sender_id = v_uid and i.send_key = p_key;
   if v_had is not null then
     if v_for is distinct from p_character then raise exception 'EN_NOT_ALLOWED'; end if;
@@ -129,15 +147,10 @@ begin
     if v_mail ? 'package' then raise exception 'EN_BAD_MAIL'; end if;
   end if;
 
+  -- the lock above means nothing else is making a row under this key, so this is the only one
   insert into public.character_inbox (character_id, campaign_id, sender_id, mail, ops, status, send_key)
     values (p_character, v_campaign, v_uid, v_mail, v_ops, case when v_ops is null then 'waiting' else 'due' end, p_key)
-    on conflict (sender_id, send_key) where send_key is not null do nothing
     returning id into v_id;
-  -- two tabs sending the one write at once: the row the other one made is this one's answer, unless it was take_back's
-  if v_id is null then
-    select i.id, i.status into v_id, v_was from public.character_inbox i where i.sender_id = v_uid and i.send_key = p_key;
-    if v_was = 'recalled' then raise exception 'EN_TAKEN_BACK'; end if;
-  end if;
   return v_id;
 end;
 $$;
@@ -166,9 +179,9 @@ $$;
 -- UNDO on another player's sheet, by the sender, for a key send_write takes. p_mail is the letter a correction carries.
 -- Answers what happened: cancelled (nothing went under the key, and now nothing will), recalled (a posting still
 -- waiting) or corrected (it landed, and the correction is on its way, once). The correction is the key with ':fix',
--- its numbers the landed row's the other way. EN_NOT_ALLOWED where send_write would refuse something new, or the key
--- was another character's.
-create or replace function public.take_back(p_character uuid, p_key text, p_mail jsonb)
+-- its numbers the landed row's the other way. Marking a key asks nothing of the character: it is the sender's own key,
+-- and it delivers nothing. EN_NOT_ALLOWED where a correction can't go now, or the key was another character's.
+create or replace function public.take_back(p_character uuid, p_key text, p_mail jsonb, p_sender uuid default null)
 returns text
 language plpgsql
 security definer
@@ -185,23 +198,19 @@ declare
   v_back jsonb;
 begin
   if v_uid is null then raise exception 'EN_SIGNED_OUT'; end if;
-  if p_key is null or char_length(p_key) not between 1 and 80 then raise exception 'EN_BAD_KEY'; end if;
+  if p_sender is not null and p_sender is distinct from v_uid then raise exception 'EN_NOT_MINE'; end if;
+  if p_key is null or char_length(p_key) not between 1 and 80 or right(p_key, 4) = ':fix' then raise exception 'EN_BAD_KEY'; end if;
   v_mail := public.clean_mail(p_mail);
   if v_mail ? 'package' then raise exception 'EN_BAD_MAIL'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(v_uid::text || '/' || p_key, 0));
   select c.campaign_id into v_campaign from public.characters c where c.id = p_character;
 
   select i.id, i.character_id, i.status, i.ops into v_id, v_for, v_status, v_ops
     from public.character_inbox i where i.sender_id = v_uid and i.send_key = p_key for update;
   if v_id is null then
-    if v_campaign is null or not public.runs_campaign(v_campaign) then raise exception 'EN_NOT_ALLOWED'; end if;
-    insert into public.character_inbox (character_id, campaign_id, sender_id, mail, status, send_key)
-      values (p_character, v_campaign, v_uid, v_mail, 'recalled', p_key)
-      on conflict (sender_id, send_key) where send_key is not null do nothing
-      returning id into v_id;
-    if v_id is not null then return 'cancelled'; end if;
-    -- a send of it landed in the same instant: then it is that row this answers about
-    select i.id, i.character_id, i.status, i.ops into v_id, v_for, v_status, v_ops
-      from public.character_inbox i where i.sender_id = v_uid and i.send_key = p_key for update;
+    -- nothing went under it: mark it, and nothing ever will
+    insert into public.inbox_taken_back (sender_id, send_key) values (v_uid, p_key) on conflict do nothing;
+    return 'cancelled';
   end if;
   if v_for is distinct from p_character then raise exception 'EN_NOT_ALLOWED'; end if;
   if v_status = 'recalled' then return 'cancelled'; end if;
@@ -217,8 +226,7 @@ begin
     select jsonb_agg(o || jsonb_build_object('amount', -((o ->> 'amount')::numeric))) into v_back from jsonb_array_elements(v_ops) o;
   end if;
   insert into public.character_inbox (character_id, campaign_id, sender_id, mail, ops, status, send_key)
-    values (p_character, v_campaign, v_uid, v_mail, v_back, case when v_back is null then 'waiting' else 'due' end, p_key || ':fix')
-    on conflict (sender_id, send_key) where send_key is not null do nothing;
+    values (p_character, v_campaign, v_uid, v_mail, v_back, case when v_back is null then 'waiting' else 'due' end, p_key || ':fix');
   return 'corrected';
 end;
 $$;
@@ -231,7 +239,7 @@ do $$
 declare
   f text;
 begin
-  foreach f in array array['public.send_write(uuid, text, jsonb, jsonb)', 'public.take_back(uuid, text, jsonb)', 'public.mark_applied(uuid)'] loop
+  foreach f in array array['public.send_write(uuid, text, jsonb, jsonb, uuid)', 'public.take_back(uuid, text, jsonb, uuid)', 'public.mark_applied(uuid)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to authenticated', f);
   end loop;

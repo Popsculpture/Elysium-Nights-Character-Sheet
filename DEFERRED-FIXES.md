@@ -12889,8 +12889,9 @@ Run on the live site with two real accounts, with the rows read after each step.
 5. The numbers and the row's id go on the record in one write, so a copy holds both or neither, and a copy that lost them files them again. Lost mail has a horizon for letters and none for numbers.
 6. In a tab merge a wallet and a tally add up, and `meta.inboxApplied` is both tabs'. Newer-wins could leave a letter saying paid with the money gone. This is the one change to the author's "the newer save wins where both changed one field", and only for those.
 7. A run reads every desktop on the device (EVERY DESKTOP'S OUTBOX), because a ledger belongs to a campaign. Each step reads the record again where it's kept, since a tab open there may have sent it or taken it back, and writes it back stamped in `rev`, so that tab hears it.
-8. UNDO is the database's to decide (`take_back`): no tab can know whether a send landed, with every Admin tab running every desktop's outbox. A key with no row is marked, and a send under it later is refused. Don't put the choice back in the app.
-9. What either copy of a far record knows stays known (`farJoin`, in a tab hearing another and in a run writing to another desktop). A send, a refusal, an UNDO and what came of it only move forward.
+8. UNDO is the database's to decide (`take_back`): no tab can know whether a send landed, with every Admin tab running every desktop's outbox. A key with no row is marked in `inbox_taken_back`, which needs no campaign and outlives one, and a send under it later is refused. One lock per sender and key orders the two functions. Don't put the choice back in the app.
+9. What either copy of a far record knows stays known (`farJoin`, in a tab hearing another and in a run writing to another desktop), and an answer reaches every copy of the send on this device (`farSpread`). A send, a refusal, an UNDO and what came of it only move forward.
+10. The app passes the account it means (`p_sender`), and the database refuses another one, EN_NOT_MINE, which stops the run like another account signing in. A key ending `:fix` is `take_back`'s own.
 
 **Readings taken where the rulings left room, smallest first:**
 
@@ -12906,4 +12907,4 @@ Run on the live site with two real accounts, with the rows read after each step.
 
 **Tests.** `pg/writes_body.js` is one story, told by `tests/campaigns_writes_1.js` against batch 3's stand-in and by `pg/writes_realdb.js` against the real migration. `tests/campaigns_writes_2.js` and `_3.js` are a real reload with a send queued. `pg/writes_tabs_realdb.js` is two real tabs, on one campaign and on two. `pg/writes_mutants.py` breaks the code a line at a time, and `pg/mutants.mjs` the migration.
 
-**Left open:** Heat, and Vigor at the Table's END. Two different Admins can pay one fight twice, because "already paid" reads a ledger that is per browser. The migration has to land before this code, or the inbox can't be read. The desktops' open item about queued sends is closed by rule 7, and the review of that by rules 8 and 9. The build report lists the rare ones.
+**Left open:** Heat, and Vigor at the Table's END. Two different Admins can pay one fight twice, because "already paid" reads a ledger that is per browser. The migration has to land before this code, or the inbox can't be read. The desktops' open item about queued sends is closed by rule 7, and the reviews of that by rules 8 to 10. Left for the author: what deleting a campaign does to its pay history (the build report has it). The build report lists the rare ones.
