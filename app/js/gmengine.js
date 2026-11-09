@@ -147,16 +147,16 @@ EN.gmEngine = (function () {
 
     /* A CAMPAIGN'S CREW. While this account runs a campaign, the crew is that campaign's characters
        (js/campaigns.js), so a bank of characters on this browser stops counting anywhere, including
-       as somebody to pay. opts.device is for the tabs that write to sheets (Payroll, Heat, the Job
-       Board, the XP award): headcount and Caliber stay the whole crew's, so a share and a Grade come
-       out right, and members holds only the ones with a sheet on this device, the only ones a write
-       can reach until those writes go through the inbox. */
-    var local = roster, known = [], alias = Object.create(null);
+       as somebody to pay. A member another player holds has the charId "row:<row id>": sheetOf reads
+       it, and EN.gmStore.writeCrew reaches it through the inbox. opts.device is for Heat, the one tab
+       that writes to sheets and doesn't reach them that way yet: headcount and Caliber stay the whole
+       crew's, so a bounty comes out right, and members holds only the ones with a sheet on this device. */
+    var local = roster, known = [], alias = Object.create(null), players = Object.create(null);
     var C = EN.campaigns && EN.campaigns.current ? EN.campaigns.current() : null;
     if (C) {
       var pool = {};
       known = EN.campaigns.crew(C.id).rows || [];
-      known.forEach(function (r) { pool[r.charId] = r.ch; alias["row:" + r.rowId] = r.charId; });
+      known.forEach(function (r) { pool[r.charId] = r.ch; alias["row:" + r.rowId] = r.charId; players[r.charId] = r.player; });
       roster = pool;
     }
     var ids = [], seen = Object.create(null);
@@ -189,7 +189,10 @@ EN.gmEngine = (function () {
     var members = ids.map(function (id) {
       var ch = roster[id], cal = null;
       try { cal = EN.engine.derive(ch).caliber; } catch (e) { cal = null; }
-      return { charId: id, name: crewName(ch), caliber: typeof cal === "number" ? cal : null };
+      var m = { charId: id, name: crewName(ch), caliber: typeof cal === "number" ? cal : null };
+      // who it belongs to, for a list somebody is about to write to: two players can both hire the same pre-made
+      m.tag = players[id] ? m.name + " · " + players[id] : m.name;
+      return m;
     });
     var cals = members.filter(function (m) { return m.caliber !== null; }).map(function (m) { return m.caliber; });
     var avg = cals.length ? Math.round(cals.reduce(function (a, b) { return a + b; }, 0) / cals.length) : 1;
@@ -214,12 +217,22 @@ EN.gmEngine = (function () {
       overridden: { headcount: useHc, caliber: useCal }
     };
   }
-  // the line a tab that writes to sheets shows when some of the Table is out of its reach
+  // a crew member's sheet, to read: the record on this device, else the campaign's read-only copy of it
+  function sheetOf(charId) {
+    var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
+    if (own(roster, charId)) return roster[charId];
+    var hit = EN.campaigns && EN.campaigns.crewRow ? EN.campaigns.crewRow(charId) : null;
+    return hit ? hit.ch : null;
+  }
+  /* The line a tab that writes to sheets shows when some of the Table is out of its reach, or when something it
+     already sent is still waiting for the link (EN.gmStore's far door). */
   function crewFarNote(c) {
-    var n = (c && c.far) | 0;
-    if (!n) return "";
-    return n === 1 ? "1 of the crew has no sheet on this device, so nothing here reaches them yet. The numbers count them."
-                   : n + " of the crew have no sheet on this device, so nothing here reaches them yet. The numbers count them.";
+    var n = (c && c.far) | 0, w = EN.gmStore && EN.gmStore.sendsWaiting ? EN.gmStore.sendsWaiting() : 0, out = [];
+    if (n) out.push(n === 1 ? "1 of the crew has no sheet on this device, so nothing here reaches them yet. The numbers count them."
+                            : n + " of the crew have no sheet on this device, so nothing here reaches them yet. The numbers count them.");
+    if (w) out.push(w === 1 ? "1 send is waiting for the link. It goes when the link is back."
+                            : w + " sends are waiting for the link. They go when the link is back.");
+    return out.join(" ");
   }
 
   /* ---- THE BUDGET ----------------------------------------------------------
@@ -637,6 +650,6 @@ EN.gmEngine = (function () {
     // threat initiative from the book's formula, and the one roll for it
     threatInit: threatInit, rollInit: rollInit,
     // XP, the crew, and the encounter budget
-    xpOf: xpOf, crew: crew, crewFarNote: crewFarNote, share: share, budget: budget, tierFor: tierFor
+    xpOf: xpOf, crew: crew, sheetOf: sheetOf, crewFarNote: crewFarNote, share: share, budget: budget, tierFor: tierFor
   };
 })();

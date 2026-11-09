@@ -153,7 +153,7 @@ EN.gmJobs = (function () {
      follows the crew's Caliber. */
   function crewNow() {
     if (!_crew) {
-      try { _crew = EN.gmEngine.crew({ device: true }); }   // it writes to these sheets
+      try { _crew = EN.gmEngine.crew(); }
       catch (e) { _crew = { members: [], headcount: 0, caliber: 1, source: "none" }; }
     }
     return _crew;
@@ -314,10 +314,9 @@ EN.gmJobs = (function () {
     return e.name + " (Grade " + e.grade + " " + (e.designation || "") + (xp ? ", " + xp + " XP" : "") + ")";
   }
   function crewNames(ids) {
-    var roster = (EN.store.roster && EN.store.roster()) || {};
     return (ids || []).map(function (id) {
-      var ch = own(roster, id) ? roster[id] : null;
-      if (!ch) return "a record no longer on this device";
+      var ch = EN.gmEngine.sheetOf(id);
+      if (!ch) return String(id).indexOf("row:") === 0 ? "a character no longer in this campaign" : "a record no longer on this device";
       return ((ch.firstName || "") + " " + (ch.lastName || "")).trim() || ch.name || "Freelancer";
     });
   }
@@ -561,7 +560,8 @@ EN.gmJobs = (function () {
         dirty = true;
         var added = Array.isArray(s.added) ? s.added : [];
         var left = ws.filter(function (w) { return !withdrawn(w.id); });
-        var standing = left.filter(function (w) { return own(roster, w.charId); });
+        // another player's character was never in this roster
+        var standing = left.filter(function (w) { return own(roster, w.charId) || gm.isCampaignRow(w.charId); });
         (standing.length ? back : ws).forEach(function (w) {
           if (added.indexOf(w.charId) !== -1) c.sentTo = c.sentTo.filter(function (x) { return x !== w.charId; });
         });
@@ -590,6 +590,7 @@ EN.gmJobs = (function () {
       names.push(crewNames([r.charId])[0]);
     }
     reconcileSends();
+    // a far posting is recalled if it's still waiting, and gets a letter if it isn't: this device can't tell yet
     toast((names.length ? "Posting withdrawn from " + names.join(", ") + "." : "Nothing was withdrawn.") +
           (stuck ? " The browser refused a save, so the rest is still in place." : ""));
     EN.app.render();
@@ -793,10 +794,9 @@ EN.gmJobs = (function () {
   /* ---- the job card ---------------------------------------------------------- */
   // the crew's own Heat, Debts and Cred, read off ch.face (the Social tab's shapes, js/face.js)
   function crewTies() {
-    var roster = (EN.store.roster && EN.store.roster()) || {};
     var out = [];
     (crewNow().members || []).forEach(function (m) {
-      var ch = own(roster, m.charId) ? roster[m.charId] : null;
+      var ch = EN.gmEngine.sheetOf(m.charId);
       var f = (ch && ch.face) || {};
       (f.heat || []).forEach(function (h) {
         if (!h || !String(h.source || "").trim()) return;
@@ -1101,7 +1101,7 @@ EN.gmJobs = (function () {
 
     kids.push(EN.ui.sectionTitle("Send to #POST"));
     kids.push(el("p.help", { style: { margin: "0 0 8px" },
-      text: "Files the crew's text in each record's #POST inbox, unread, from this device. The opposition and the complication stay here. For a crew on other devices, COPY FOR THE CREW and paste it." }));
+      text: "Files the crew's text in each character's #POST, unread. Another player's character gets it through the inbox. The opposition and the complication stay here." }));
     var farNote = EN.gmEngine.crewFarNote(crewNow());
     if (farNote) kids.push(el("p.help", { dataset: { gm: "crew-far" }, style: { margin: "0 0 8px", color: "var(--warn)" }, text: farNote }));
     var list = recipients();
@@ -1114,7 +1114,7 @@ EN.gmJobs = (function () {
         return el("span.chip" + (on ? ".on" : ""), { dataset: { recipient: m.charId },
           style: { cursor: "pointer", fontSize: "10.5px" }, title: on ? "Will receive the posting" : "Will not receive it",
           onclick: function () { _j.pick[m.charId] = !on; EN.app.render(); } },
-          (on ? "✓ " : "") + m.name + (sent ? " (posted)" : ""));
+          (on ? "✓ " : "") + (m.tag || m.name) + (sent ? " (posted)" : ""));
       })));
     }
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end" } }, [

@@ -35,7 +35,8 @@
    GM WRITES TO PLAYER RECORDS go through writeCrew() and nowhere else (author
    ruling, 2026-10). Each one is confirmed by the view before it is called, lands
    through EN.store.updateById, and leaves a ledger record that undoLast() can
-   invert. Nothing on the GM side calls EN.store.setActive to reach a record.
+   invert. Nothing on the GM side calls EN.store.setActive to reach a record. A
+   record another player holds is reached through the inbox: see THE FAR DOOR.
 
    WHETHER A WRITE STILL STANDS is read from the ledger and nowhere else
    (liveWrites below, for what UNDO can take back, and paidWrites, which also
@@ -357,6 +358,7 @@ EN.gmStore = (function () {
      and a ghost row should not survive until the next reload. Idempotent, and it
      does not persist unless something actually changed. */
   function isCampaignRow(charId) { return typeof charId === "string" && charId.indexOf("row:") === 0; }
+  // (a character another player holds: its writes go through the far door, below)
   function pruneCrew() {
     if (!state) return 0;
     var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
@@ -1019,6 +1021,18 @@ EN.gmStore = (function () {
     }, "rollback");
   }
 
+  /* `at` is kept strictly increasing across write records. A payday credits a whole
+     crew in one click, so several writes land in the same millisecond, and with equal
+     stamps undo would pick among them arbitrarily instead of newest first. */
+  function nextAt(s) {
+    var newest = 0;
+    Object.keys(s.ledger).forEach(function (k) {
+      var r = s.ledger[k];
+      if (r && typeof r.at === "number" && r.at > newest) newest = r.at;
+    });
+    return Math.max(Date.now(), newest + 1);
+  }
+
   /* Returns the ledger record's id, or false when it refuses: a charId that is not
      in the roster (a deleted record, or an example, which is never stored), no
      usable op, or a write this device would not store. The ledger record is filed
@@ -1041,8 +1055,11 @@ EN.gmStore = (function () {
        {source: "posting", jobId}
        {source: "payday", paydayId, encounterAt, jobId}
        {source: "milestone"}   (Payroll's AWARD MILESTONE)
-       {source: "vigor"}       (the Table's END, clearing the crew's Vigor) */
+       {source: "vigor"}       (the Table's END, clearing the crew's Vigor)
+
+     A character another player holds has the charId "row:<row id>", and goes through the far door below. */
   function writeCrew(charId, label, ops, meta) {
+    if (isCampaignRow(charId)) return sendCrew(charId, label, ops, meta);
     var roster = rosterNow();
     if (typeof charId !== "string" || !own(roster, charId) || !isObj(roster[charId])) return false;
     if (!EN.store.updateById) return false;
@@ -1051,15 +1068,8 @@ EN.gmStore = (function () {
     if (!clean.length) return false;
     var tag = null;
     if (isObj(meta)) { try { tag = copy(meta); } catch (e) { tag = null; } }
-    var s = get(), id = uid(), newest = 0;
-    /* `at` is kept strictly increasing across write records. A payday credits a whole
-       crew in one click, so several writes land in the same millisecond, and with equal
-       stamps undo would pick among them arbitrarily instead of newest first. */
-    Object.keys(s.ledger).forEach(function (k) {
-      var r = s.ledger[k];
-      if (r && typeof r.at === "number" && r.at > newest) newest = r.at;
-    });
-    var at = Math.max(Date.now(), newest + 1);
+    var s = get(), id = uid();
+    var at = nextAt(s);
     var before = copy(roster[charId]);
     var r = { id: id, kind: "write", at: at, label: String(label == null ? "" : label),
               charId: charId, charName: roster[charId].name || "", ops: clean, undone: false,
@@ -1089,6 +1099,221 @@ EN.gmStore = (function () {
     return id;
   }
 
+  /* THE FAR DOOR (the writing tabs through the inbox). A character another player holds has the id
+     "row:<row id>" (js/campaigns.js). Its sheet isn't on this device, so a write can't land on it here:
+     it goes as a row in the character_inbox table, and that player's app files it (deliverMail, below).
+     In every other way it is a write like any other. It files the same ledger record, with the same
+     tag, so "already paid", UNDO and every view that reads the ledger go on working without knowing.
+
+     THE LEDGER IS THE OUTBOX. writeCrew answers at once, because every tab's flow is built on that, and the
+     row goes a moment later (flushSends). A record carries `far`: { by, row, state, tried, rowId, why, fix }.
+     state: queued, sent, refused, or skipped (taken back before it ever tried to leave). fix: what UNDO
+     still owes, queued, done, recalled or refused.
+
+     ONCE, WHATEVER THE NETWORK DOES. The record's id is the row's send key, and the database answers a
+     repeat with the row it already made, so a send that lost its answer, a reload or a second tab can all
+     simply send again. They go oldest first, one at a time, and a failure stops the run, so a correction
+     can't overtake what it corrects.
+
+     A REFUSAL IS AN ANSWER. A code from the database means it will never land: the character left the
+     campaign, or this account stopped running it. The record is marked undone, so it doesn't read as paid,
+     and a toast names who missed out. Anything else (the network, a session gone for now, a migration
+     not applied yet) is no answer, so it stays queued and says so on the tab (sendsWaiting).
+
+     A POSTING IS PLAIN MAIL, anything else is a row with ops, with a letter on it. A closed list of what the
+     door can carry, because the database has one: Heat and Vigor depend on what the sheet holds, so they
+     aren't on it yet.
+
+     UNDO IS A CORRECTION. A player's app files a row in about a second, so what UNDO usually finds is
+     already on their sheet, and only that player's app can write it. A row with ops can't be recalled at all
+     (the migration says why), so UNDO sends a second row with the numbers the other way, and a letter
+     saying so. A posting is recalled if it's still waiting, and followed by a letter if it isn't. Both can
+     leave a wallet below zero, as the near door's UNDO can.
+
+     WHOSE. The GM document is one per browser, and a campaign's rows aren't. A record goes only under the account
+     that wrote it (`by`), so somebody else jacking in on this browser can't get it refused. */
+  var FAR_FROM = { payday: "Payroll", award: "XP Award", milestone: "Milestones", posting: "JOB BOARD" };
+  var FAR_RETRY = 30000, FAR_WAIT = 5000;
+  var _sending = null, _sendAgain = false, _sendStuck = false, _sendTimer = null, _sendRetry = null;
+  function farNums(ops) {
+    return ops.filter(function (o) { return o.op === "glimmer" || o.op === "nexus" || o.op === "xp" || o.op === "milestone"; }).map(function (o) {
+      var n = { op: o.op, amount: Number(o.amount) };
+      if (o.op === "milestone") n.kind = o.kind;
+      return n;
+    });
+  }
+  function farCommas(n) { return String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+  function farLine(o) {
+    var a = Math.abs(o.amount);
+    if (o.op === "glimmer") return "𝒢" + farCommas(a);
+    if (o.op === "nexus") return "◎" + a;
+    if (o.op === "xp") return farCommas(a) + " XP";
+    return a + " " + (o.kind === "major" ? "Major" : "Minor") + (a === 1 ? " Milestone" : " Milestones");
+  }
+  // the letter on a row, inside what the database takes. A posting or a pay stub is its own letter
+  function farLetter(r) {
+    var post = r.ops.filter(function (o) { return o.op === "post"; })[0], m = post ? post.mail : null;
+    var src = isObj(r.meta) ? r.meta.source : "", label = String(r.label || "");
+    var body = m ? String(m.body || "")
+      : (label.length > 140 ? label + "\n\n" : "") + farNums(r.ops).map(farLine).join("\n") + "\n\nIt's on your sheet.";
+    if (body.length > 4000) body = body.slice(0, 3940) + "\n\nThe rest didn't fit. Ask the GM.";
+    var out = { from: String((m ? m.from : FAR_FROM[src]) || "").trim().slice(0, 80) || "The GM", subj: String(m ? m.subj : label).trim().slice(0, 140), body: body };
+    if (m && m.when) out.when = String(m.when).trim().slice(0, 40);
+    return out;
+  }
+  function farFixLetter(r) {
+    var first = farLetter(r), nums = farNums(r.ops);
+    return { from: first.from, subj: ((nums.length ? "Taken back: " : "Withdrawn: ") + first.subj).slice(0, 140),
+             body: nums.length ? "The GM took this back:\n" + nums.map(farLine).join("\n") + "\n\nIt's off your sheet." : "The GM withdrew this." };
+  }
+  function farUser() {
+    var c = EN.cloud;
+    return (c && c.userId && !(c.offline && c.offline()) && EN.campaigns && EN.campaigns.sendWrite) ? c.userId() : null;
+  }
+  function farDue(r, who) {
+    return isObj(r) && r.kind === "write" && isObj(r.far) && !r.imported && r.far.by === who &&
+           (r.far.state === "queued" || (r.undone === true && r.far.fix === "queued"));
+  }
+  function farTodo(who) {
+    return list("ledger").filter(function (r) { return farDue(r, who); }).sort(function (a, b) { return (a.at || 0) - (b.at || 0); });
+  }
+  function sendCrew(charId, label, ops, meta) {
+    var who = farUser(), row = who ? EN.campaigns.crewRow(charId) : null;
+    if (!row) return false;
+    var clean = cleanOps(ops);
+    if (!clean.length || clean.some(function (o) { return o.op === "heat" || o.op === "vigor"; })) return false;
+    var s = get(), id = uid(), at = nextAt(s);
+    var r = { id: id, kind: "write", at: at, label: String(label == null ? "" : label), charId: charId, charName: row.name || "",
+              ops: clean, undone: false, createdAt: at, updatedAt: at, far: { by: who, row: row.rowId, state: "queued" } };
+    if (isObj(meta)) { try { r.meta = copy(meta); } catch (e) {} }
+    s.ledger[id] = r;
+    // on this device first, or a reload could send a write the ledger has no word of
+    if (!persist(true)) { delete s.ledger[id]; persist(false); emit(); return false; }
+    emit();
+    soonSends();
+    return id;
+  }
+  function undoFar(r) {
+    r.undone = true;
+    r.undoneAt = Date.now();
+    r.far.fix = "queued";
+    if (!persist(true)) {
+      r.undone = false;
+      delete r.undoneAt;
+      delete r.far.fix;
+      persist(false);
+      emit();
+      return false;
+    }
+    emit();
+    soonSends();
+    return r;
+  }
+  function soonSends() {
+    clearTimeout(_sendTimer);
+    _sendTimer = setTimeout(function () { _sendTimer = null; flushSends(); }, 0);
+  }
+  // a code from the database, which is an answer. EN_SIGNED_OUT comes right by itself
+  function farAnswer(e) {
+    var m = e && e.message ? String(e.message) : "";
+    return /^EN_/.test(m) && m !== "EN_SIGNED_OUT" ? m : "";
+  }
+  function farFix(r, unfixed) {
+    var f = r.far, nums = farNums(r.ops);
+    function letter() {
+      return EN.campaigns.sendWrite(f.row, r.id + ":fix", farFixLetter(r), nums.length ? nums.map(function (o) {
+        var back = { op: o.op, amount: -o.amount };
+        if (o.kind) back.kind = o.kind;
+        return back;
+      }) : null).then(function () { f.fix = "done"; persist(true); }, function (e) {
+        if (!farAnswer(e)) throw e;
+        f.fix = "refused";
+        unfixed.push(r);
+        persist(true);
+      });
+    }
+    function recalled() { f.fix = "recalled"; persist(true); }
+    if (nums.length || !f.rowId) return letter();
+    return EN.campaigns.recallSend(f.rowId).then(recalled, function (e) {
+      if (farAnswer(e) === "EN_TOO_LATE") {
+        // too late can also mean an earlier try landed and lost its answer. A letter about that would be news of nothing
+        return EN.cloud.inboxStatus(f.rowId).then(function (st) {
+          if (st === null) throw e;
+          if (st === "recalled") return recalled();
+          return letter();
+        });
+      }
+      if (!farAnswer(e)) throw e;
+      f.fix = "done";   // the row is gone, and the letter went with it
+      persist(true);
+    });
+  }
+  function farStep(r, refused, unfixed) {
+    var f = r.far, nums = farNums(r.ops);
+    return Promise.resolve().then(function () {
+      if (f.state !== "queued") return;
+      if (r.undone && !f.tried) { f.state = "skipped"; f.fix = "done"; persist(true); return; }
+      f.tried = true;
+      persist(true);
+      return EN.campaigns.sendWrite(f.row, r.id, farLetter(r), nums.length ? nums : null).then(function (rowId) {
+        f.state = "sent";
+        f.rowId = rowId;
+        persist(true);
+      }, function (e) {
+        var code = farAnswer(e);
+        if (!code) throw e;
+        f.state = "refused";
+        f.why = code;
+        if (r.undone) f.fix = "done";
+        else { r.undone = true; r.undoneAt = Date.now(); refused.push(r); }
+        persist(true);
+      });
+    }).then(function () {
+      if (r.undone && f.fix === "queued") return farFix(r, unfixed);
+    });
+  }
+  function farNames(list) {
+    var names = [];
+    list.forEach(function (r) { var n = r.charName || "a Freelancer"; if (names.indexOf(n) === -1) names.push(n); });
+    return names.join(", ");
+  }
+  function flushSends() {
+    if (_sending) { _sendAgain = true; return _sending; }
+    var who = farUser();
+    if (!who) return Promise.resolve();
+    var todo = farTodo(who);
+    if (!todo.length) { _sendStuck = false; return Promise.resolve(); }
+    var refused = [], unfixed = [], failed = false;
+    clearTimeout(_sendRetry);
+    _sending = todo.reduce(function (p, r) {
+      return p.then(function () { return farStep(r, refused, unfixed); });
+    }, Promise.resolve()).then(function () { _sendStuck = false; }, function (e) {
+      failed = true;
+      try { console.warn("A send to another player's sheet did not go. It stays queued.", e); } catch (e2) {}
+      if (!_sendStuck) {
+        _sendStuck = true;
+        if (EN.ui && EN.ui.toast) EN.ui.toast("Could not reach your account. What you sent goes when the link is back.");
+      }
+      _sendRetry = setTimeout(function () { flushSends(); }, FAR_RETRY);
+    }).then(function () {
+      _sending = null;
+      var again = _sendAgain;
+      _sendAgain = false;
+      if (refused.length && EN.ui && EN.ui.toast) EN.ui.toast("Not delivered to " + farNames(refused) + ": this campaign can't reach them any more, so it doesn't count as paid.");
+      if (unfixed.length && EN.ui && EN.ui.toast) EN.ui.toast("Could not take it back from " + farNames(unfixed) + ": this campaign can't reach them any more. It stays on their sheet.");
+      if ((refused.length || unfixed.length) && EN.app && EN.app.render) EN.app.render();
+      if (again && !failed) return flushSends();
+    });
+    return _sending;
+  }
+  // what has been waiting long enough to mention: a send on a good link has gone before anyone could read this
+  function sendsWaiting() {
+    var who = farUser();
+    if (!who) return 0;
+    var now = Date.now();
+    return farTodo(who).filter(function (r) { return now - (r.undone && r.undoneAt ? r.undoneAt : (r.at || 0)) > FAR_WAIT; }).length;
+  }
+
   /* THE COURIER'S DOOR (campaigns batch 3). A row from the character_inbox table becomes a #POST
      message the way a posting does: cleanOps, then applyOp, through EN.store.updateById. What it
      does not do is file a ledger record. The ledger is the GM's undo list on the GM's device, and
@@ -1099,20 +1324,29 @@ EN.gmStore = (function () {
      copy wins the sync holds the message once, and the message's id is made from the row's, so
      every device's copy of it is the same message. Answers whether the write landed. Called only
      for a row the record has not filed yet: js/cloud.js asks first, because a write that changed
-     nothing would still read as a local edit. */
-  function deliverMail(charId, rowId, mail) {
+     nothing would still read as a local edit.
+
+     A ROW WITH OPS changes numbers too, in that same one write, so a copy holds the numbers and the
+     row's id together or neither. That is what makes it once: a copy that lost them to another
+     device's save doesn't list the row, so it files them again, and a copy that has them does. The
+     numbers go through the ops the far door's closed list allows and no others, and the wallet's own
+     Ledger gets a line, an Adjustment if it's a correction. */
+  function deliverMail(charId, rowId, mail, ops) {
     var roster = rosterNow();
     if (typeof charId !== "string" || !own(roster, charId) || !isObj(roster[charId]) || !EN.store.updateById) return false;
     if (typeof rowId !== "string" || !rowId || !isObj(mail)) return false;
     var clean = cleanOps([{ op: "post", mail: { from: mail.from, subj: mail.subj, when: mail.when, body: mail.body, package: mail.package, inboxId: rowId } }]);
     if (!clean.length) return false;
     clean[0].mail.id = "pm_in_" + rowId;
+    var nums = cleanOps(Array.isArray(ops) ? farNums(ops.filter(isObj)) : []);
+    var back = nums.some(function (o) { return Number(o.amount) < 0; }), subj = String(mail.subj || "").trim() || "credited";
     return recordWrite(charId, function (ch) {
       if (!isObj(ch.meta)) ch.meta = {};
       if (!Array.isArray(ch.meta.inboxApplied)) ch.meta.inboxApplied = [];
       ch.meta.inboxApplied.push(rowId);
       applyOp(ch, clean[0], 1);
-    }, "mail");
+      nums.forEach(function (o) { applyOp(ch, o, 1); });
+    }, "mail", nums.length ? { ledger: back ? { memo: "Adjustment: " + subj, kind: "adjust" } : "From the GM: " + subj } : undefined);
   }
   /* The sender recalled it in the moment between this device reading the row and marking it
      delivered. The message comes back off the record unless the player has already opened it or
@@ -1135,8 +1369,9 @@ EN.gmStore = (function () {
      posting or payday can still be taken back from this and nothing else (F4,
      F10). The records are the live ones: read them, never change them. */
   function isLive(r, roster, withImported) {
+    // a far write's sheet was never in this roster (the far door, above)
     return isObj(r) && r.kind === "write" && !r.undone && (withImported || !r.imported) && Array.isArray(r.ops) &&
-           typeof r.charId === "string" && own(roster, r.charId);
+           typeof r.charId === "string" && (own(roster, r.charId) || isObj(r.far));
   }
   function standing(filter, withImported) {
     var roster = rosterNow();
@@ -1175,6 +1410,7 @@ EN.gmStore = (function () {
   function undoLast() {
     var r = undoable();
     if (!r) return null;
+    if (isObj(r.far)) return undoFar(r);
     var before = copy(rosterNow()[r.charId]);
     r.undone = true;
     r.undoneAt = Date.now();
@@ -1281,6 +1517,8 @@ EN.gmStore = (function () {
     setRoom: setRoom, setClock: setClock, setEncounterMeta: setEncounterMeta,
     // GM writes to player records, and the ones that still stand
     writeCrew: writeCrew, undoLast: undoLast, undoable: undoable, liveWrites: liveWrites, paidWrites: paidWrites,
+    // the far door's outbox: js/cloud.js says when to try again, and the tabs say what's still waiting
+    flushSends: flushSends, sendsWaiting: sendsWaiting,
     // the player's side of the Admin's inbox (js/cloud.js)
     deliverMail: deliverMail, withdrawMail: withdrawMail,
     // the document as a file, and whether the last write of it landed

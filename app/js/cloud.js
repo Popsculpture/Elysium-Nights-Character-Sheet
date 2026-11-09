@@ -198,7 +198,11 @@ EN.cloud = (function () {
         .then(function () { if (wantPull && EN.campaigns && EN.campaigns.refresh) EN.campaigns.refresh(); })
         // after it, inside the run: a pull landing halfway through filing a message would lose the message
         .then(function () { return inbox(pulled, wantPull); });
-    }).then(finish, function (e) { console.warn("Cloud sync failed", e); setStatus("error"); return finish(); });
+    }).then(function () {
+      // beside the sync again: what the Admin desktop has waiting to send, for other players' sheets. A sync is how it hears the link is back
+      if (EN.gmStore && EN.gmStore.flushSends) EN.gmStore.flushSends();
+      return finish();
+    }, function (e) { console.warn("Cloud sync failed", e); setStatus("error"); return finish(); });
     return runP;
   }
   function check(res) {
@@ -415,6 +419,12 @@ EN.cloud = (function () {
      It looks at the newest LOST_LOOK rows only, and files LOST_FILE a run: a message with no package stays delivered
      for good, and one read shouldn't grow with them.
 
+     A ROW WITH OPS (a payday, an XP award, a milestone) changes numbers as well, in the same write as the message
+     (EN.gmStore.deliverMail), so everything above holds for it unchanged: filed after a pull, on a clean copy, up to the
+     account before it's marked, and once per copy, because meta.inboxApplied says which rows a copy holds. It has its own
+     two statuses, due and applied, and its own mark_applied. A tab from before this can't see them, so it can't file one
+     as plain mail and lose the numbers. It can't be recalled, so a row with ops never takes the withdraw paths here.
+
      IT FAILS QUIETLY. No table, no Realtime, no network: the mail waits, the character sync never
      hears about it, and one warning goes to the console. */
   var TAKEN_KEY = "en_inbox_taken_v1";
@@ -441,7 +451,7 @@ EN.cloud = (function () {
     var t = new Date(iso);
     return isNaN(t.getTime()) ? "" : pad2(t.getHours()) + ":" + pad2(t.getMinutes()) + ", " + DAYS[t.getDay()];
   }
-  var SELECT_ROW = "id, character_id, mail, status, created_at";
+  var SELECT_ROW = "id, character_id, mail, ops, status, created_at";
   var LOST_LOOK = 100, LOST_FILE = 20;
   function unmarked(b) { return Array.isArray(b.unmarked) ? b.unmarked : []; }
   function setUnmarked(rowId, on) {
@@ -457,11 +467,11 @@ EN.cloud = (function () {
     wanted = {};
     return Promise.resolve().then(function () {
       return Promise.all([
-        client.from("character_inbox").select(SELECT_ROW).eq("status", "waiting").in("character_id", cids).order("created_at", { ascending: true }).then(check),
+        client.from("character_inbox").select(SELECT_ROW).in("status", ["waiting", "due"]).in("character_id", cids).order("created_at", { ascending: true }).then(check),
         ask.length ? client.from("character_inbox").select(SELECT_ROW).in("id", ask).in("character_id", cids).neq("status", "recalled").then(check) : [],
         open.length ? client.from("character_inbox").select(SELECT_ROW).in("id", open).then(check) : [],
         // LOST MAIL COMES BACK. Its own failure costs only this: the rest of the read still stands
-        pulled ? client.from("character_inbox").select("id, character_id").eq("status", "delivered").in("character_id", cids).order("created_at", { ascending: false }).limit(LOST_LOOK).then(check).then(null, function (e) { inboxWarn(e); return []; }) : []
+        pulled ? client.from("character_inbox").select("id, character_id").in("status", ["delivered", "applied"]).in("character_id", cids).order("created_at", { ascending: false }).limit(LOST_LOOK).then(check).then(null, function (e) { inboxWarn(e); return []; }) : []
       ]);
     }).then(function (all) {
       // a row this device was still waiting to hear about that is simply gone went with its campaign
@@ -519,7 +529,7 @@ EN.cloud = (function () {
       if (!filed(roster()[lid], r.id)) {
         if (!isClean(lid, b) && !aheadByMail(lid, b)) return;   // real edits have not gone up: this row waits for them
         var landed = courierWrite(lid, function () {
-          return EN.gmStore && EN.gmStore.deliverMail(lid, r.id, { from: mail.from, subj: mail.subj, body: mail.body, package: mail.package, when: whenOf(r.created_at) });
+          return EN.gmStore && EN.gmStore.deliverMail(lid, r.id, { from: mail.from, subj: mail.subj, body: mail.body, package: mail.package, when: mail.when || whenOf(r.created_at) }, r.ops);
         });
         if (!landed) return;   // this device would not store it
         setUnmarked(r.id, true);
@@ -528,7 +538,7 @@ EN.cloud = (function () {
           came.push({ row: r.id, lid: lid, from: typeof mail.from === "string" ? mail.from : "", pkg: Array.isArray(mail.package) && mail.package.length > 0 });
         }
       }
-      todo.push({ id: r.id, lid: lid });
+      todo.push({ id: r.id, lid: lid, mark: r.ops ? "mark_applied" : "mark_delivered" });
       if (touched.indexOf(lid) === -1) touched.push(lid);
     });
     // up to the account first: delivered has to mean somewhere another device can get it
@@ -544,7 +554,7 @@ EN.cloud = (function () {
       return todo.reduce(function (p, t) {
         return p.then(function () {
           if (stuck[t.lid] || !user || user.id !== uid) return;
-          return client.rpc("mark_delivered", { p_id: t.id }).then(check).then(function () { return ""; }, refusalOf).then(function (refusal) {
+          return client.rpc(t.mark, { p_id: t.id }).then(check).then(function () { return ""; }, refusalOf).then(function (refusal) {
             if (refusal === "EN_RECALLED") {
               courierWrite(t.lid, function () { return EN.gmStore.withdrawMail(t.lid, t.id); });
               came.forEach(function (x, i) { if (x.row === t.id) came.splice(i, 1); });
@@ -641,7 +651,7 @@ EN.cloud = (function () {
     var row = ev && ev.new ? ev.new : null;
     if (!user || !row) return;
     var mine = linkedTo(book(), row.character_id);
-    if (mine && (row.status === "waiting" || row.status === "delivered")) {
+    if (mine && (row.status === "waiting" || row.status === "delivered" || row.status === "due" || row.status === "applied")) {
       hearTabs();   // the tab that filed this may have said so already
       var ch = roster()[mine];
       if (!filed(ch, row.id)) {

@@ -2218,7 +2218,8 @@ EN.gmView = (function () {
             try { now = gm.undoable(); } catch (e) { now = null; }
             if (!now || now.id !== u.id) { toast("A newer write arrived. Check the strip again."); EN.app.render(); return; }
             var r = gm.undoLast();
-            if (r) toast("Undone: " + (r.label || "a GM write") + " on " + (r.charName || "a Freelancer") + "'s record.");
+            if (r && r.far) toast("Taken back: " + (r.label || "a GM write") + ". " + (r.charName || "A Freelancer") + " gets a correction through #POST.");
+            else if (r) toast("Undone: " + (r.label || "a GM write") + " on " + (r.charName || "a Freelancer") + "'s record.");
             else if (r === false) toast("Not undone: this device refused the write, so nothing changed.");
             else toast("Nothing left to undo.");
             EN.app.render();

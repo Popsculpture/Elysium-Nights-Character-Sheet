@@ -17,8 +17,9 @@
    RULINGS this file carries out (author, 2026-10):
      D1  a write to a player record goes through EN.gmStore.writeCrew only,
          behind an armed confirm, logged in the ledger and undoable, and the
-         same content is always on offer as copyable text for the crews whose
-         records live on other devices.
+         same content is always on offer as copyable text. Another player's
+         character in a campaign is reached through the inbox (gmStore's far
+         door), and undoing that sends a correction.
      D5  every Freelancer gets the full encounter XP; only records with
          useXp take it, and the milestone ones are named and skipped.
      D6  the printed band is shown and its midpoint prefilled as an editable
@@ -447,7 +448,7 @@ EN.gmPayroll = (function () {
      Otherwise crew() answers as it does everywhere (the Table, then the filed
      roster). The overrides apply either way. */
   function crewNow() {
-    var opts = { headcount: _p.hc, caliber: _p.cal, device: true };   // it writes to these sheets
+    var opts = { headcount: _p.hc, caliber: _p.cal };
     var fromEnc = encCrew(_p.enc).length > 0;
     if (fromEnc) opts.encounter = _p.enc;
     var c = null;
@@ -524,11 +525,10 @@ EN.gmPayroll = (function () {
     var tAward = tableAward(_p.enc);
     var xpWrite = xpPaid ? 0 : (tAward && !_p.xpAgain) ? 0 : xpTotal;
 
-    var roster = (EN.store && EN.store.roster && EN.store.roster()) || {};
     var credit = c.members.filter(function (x) {
-      return _p.noCredit.indexOf(x.charId) === -1 && own(roster, x.charId);
+      return _p.noCredit.indexOf(x.charId) === -1 && !!EN.gmEngine.sheetOf(x.charId);
     }).map(function (x) {
-      var ch = roster[x.charId];
+      var ch = EN.gmEngine.sheetOf(x.charId);
       return { charId: x.charId, name: x.name, caliber: x.caliber, useXp: !!(ch && ch.useXp === true) };
     });
 
@@ -704,13 +704,12 @@ EN.gmPayroll = (function () {
         text: c.headcount + " " + plural(c.headcount, "Freelancer") + DOT + "Caliber " + c.caliber }),
       el("span.help", { style: { margin: 0 }, text: src ? "from " + src : "no crew yet: set a headcount and a Caliber" })
     ]));
-    var roster = (EN.store.roster && EN.store.roster()) || {};
     if (c.members.length) {
       kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "6px" } }, c.members.map(function (x) {
-        var ch = roster[x.charId];
+        var ch = EN.gmEngine.sheetOf(x.charId);
         var onXp = !!(ch && ch.useXp === true);
         return el("span.chip", { style: { fontSize: "10px" },
-          text: x.name + DOT + (x.caliber ? "C" + x.caliber : "C?") + DOT + (onXp ? "XP" : "MILESTONE") });
+          text: (x.tag || x.name) + DOT + (x.caliber ? "C" + x.caliber : "C?") + DOT + (onXp ? "XP" : "MILESTONE") });
       })));
     }
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "8px" } }, [
@@ -1275,7 +1274,7 @@ EN.gmPayroll = (function () {
      when what is typed is not a whole number of 1 or more (blank is one).
      A person's `next` is what their counters will read after the award. */
   function msModel(m) {
-    var M = MS(), roster = (EN.store.roster && EN.store.roster()) || {};
+    var M = MS();
     var item = msItem(_ms.key), other = _ms.key === "other";
     var kind = item ? item.kind : other ? (_ms.kind === "minor" ? "minor" : "major") : null;
     var reason = item ? item.text : other ? String(_ms.reason || "").trim() : "";
@@ -1283,14 +1282,14 @@ EN.gmPayroll = (function () {
     var n = raw === "" ? 1 : Number(raw);
     var amount = (isFinite(n) && n >= 1 && Math.floor(n) === n) ? n : null;
     var above = Number(M.majorOnlyAbove);
-    var people = m.crew.members.filter(function (x) { return own(roster, x.charId) && isObj(roster[x.charId]); }).map(function (x) {
-      var ch = roster[x.charId], ms = isObj(ch.milestones) ? ch.milestones : {};
+    var people = m.crew.members.filter(function (x) { return isObj(EN.gmEngine.sheetOf(x.charId)); }).map(function (x) {
+      var ch = EN.gmEngine.sheetOf(x.charId), ms = isObj(ch.milestones) ? ch.milestones : {};
       var useXp = ch.useXp === true;
       var on = own(_ms.who, x.charId) ? !!_ms.who[x.charId] : !useXp;
       var cur = { major: msCount(ms.major), minor: msCount(ms.minor) };
       var next = { major: cur.major, minor: cur.minor };
       if (on && kind && amount) next[kind] += amount;
-      return { charId: x.charId, name: x.name, caliber: x.caliber, level: Number(ch.level) || 0, useXp: useXp, on: on,
+      return { charId: x.charId, name: x.name, tag: x.tag || x.name, caliber: x.caliber, level: Number(ch.level) || 0, useXp: useXp, on: on,
                cur: cur, next: next, readyNow: msReady(cur), readyNext: msReady(next),
                pastCal: isFinite(above) && typeof x.caliber === "number" && x.caliber > above };
     });
@@ -1344,10 +1343,9 @@ EN.gmPayroll = (function () {
     return !!(u && mt.source === "milestone" && mt.awardId === id);
   }
   function awardText(g) {
-    var roster = (EN.store.roster && EN.store.roster()) || {};
     var L = [msHead(g.kind, g.amount), "For: " + stop(g.reason)];
     g.writes.forEach(function (w) {
-      var ch = roster[w.charId], ms = (ch && isObj(ch.milestones)) ? ch.milestones : {};
+      var ch = EN.gmEngine.sheetOf(w.charId), ms = (ch && isObj(ch.milestones)) ? ch.milestones : {};
       var now = { major: msCount(ms.major), minor: msCount(ms.minor) };
       L.push((w.charName || "a Freelancer") + ": now Major " + now.major + ", Minor " + now.minor + "." + (msReady(now) ? " Ready to level." : ""));
     });
@@ -1393,7 +1391,7 @@ EN.gmPayroll = (function () {
       n += 1;
     }
     var left = liveWrites(function (w) { return metaOf(w).awardId === id; }).length;
-    toast(!left ? "Milestone undone: " + n + " " + plural(n, "record") + " put back as they were."
+    toast(!left ? "Milestone undone: " + n + " " + plural(n, "record") + " put back as they were." + FAR_FIX
       : refused ? (n ? "Undid " + n + " of the award's writes. " : "") + "This device refused to save the next undo, so the rest of the award stands."
       : "Undid " + n + " of the award's writes. A newer write sits on top of the rest.");
     EN.app.render();
@@ -1420,7 +1418,7 @@ EN.gmPayroll = (function () {
         _ms.who[p.charId] = !p.on;
         refresh();
       } }),
-      el("span", { style: { fontWeight: 600, color: p.on ? "var(--text)" : "var(--text3)" }, text: p.name }),
+      el("span", { style: { fontWeight: 600, color: p.on ? "var(--text)" : "var(--text3)" }, text: p.tag }),
       el("span.chip", { style: { fontSize: "9.5px" }, text: (p.useXp ? "XP" : "MILESTONES") + DOT + (p.caliber ? "C" + p.caliber : "C?") + DOT + "L" + (p.level || "?") }),
       el("span.help", { dataset: { pay: "ms-count-" + p.charId }, style: { margin: 0 },
         text: counts + (moves ? " → " + kindName(mm.kind) + " " + p.next[mm.kind] : "") }),
@@ -1613,6 +1611,8 @@ EN.gmPayroll = (function () {
     if ((_p.heat || "").trim()) L.push("Heat: " + _p.heat.trim());
     return L.join("\n");
   }
+  // what an UNDO adds when it can't reach the sheet itself. Harmless said to a crew all on this device: no campaign, no far write
+  var FAR_FIX = " Another player's sheet gets a correction through #POST.";
   function opsFor(m, x, now) {
     var ops = [];
     if (m.eachG > 0) ops.push({ op: "glimmer", amount: m.eachG });
@@ -1620,7 +1620,8 @@ EN.gmPayroll = (function () {
     // D5, and only on an XP table: a milestone record never takes XP. xpWrite is
     // 0 when the Table's AWARD XP already paid this fight's (see tableAward)
     if (x.useXp && m.xpWrite > 0) ops.push({ op: "xp", amount: m.xpWrite });
-    if (_p.stub) ops.push({ op: "post", mail: { from: "Payroll", subj: titled("Payday", m.title), when: clock(now), body: stubText(m, x) } });
+    // another player's sheet always gets the stub: a letter is how they hear what just landed on it
+    if (_p.stub || gm.isCampaignRow(x.charId)) ops.push({ op: "post", mail: { from: "Payroll", subj: titled("Payday", m.title), when: clock(now), body: stubText(m, x) } });
     return ops;
   }
   function recordFrom(m) {
@@ -1690,7 +1691,7 @@ EN.gmPayroll = (function () {
   function credit(again) {
     var m = model();
     if (m.paid) { toast("This payday is already credited."); return; }
-    if (!m.credit.length) { toast("Nobody on this device to credit. Copy the summary instead."); return; }
+    if (!m.credit.length) { toast("Nobody to credit. Copy the summary instead."); return; }
     if (m.dup && again !== true) {
       toast("Held: " + titled("Payday", m.dup.pd.title) + " already paid this " + (m.dup.fight ? "fight" : "job") + ". CREDIT ANYWAY pays it again.");
       EN.app.render();
@@ -1767,7 +1768,7 @@ EN.gmPayroll = (function () {
       unmarkJob(pd);
     }
     gm.put("ledger", next, { silent: true });
-    toast(!left.length ? "Payday undone: " + n + " " + plural(n, "record") + " put back as they were."
+    toast(!left.length ? "Payday undone: " + n + " " + plural(n, "record") + " put back as they were." + FAR_FIX
       : refused ? (n ? "Undid " + n + " of " + pd.writeIds.length + " writes. " : "") + "This device refused to save the next undo, so the rest of the payday stands."
       : "Undid " + n + " of " + pd.writeIds.length + " writes. A newer write sits on top of the rest.");
     EN.app.render();
@@ -1816,13 +1817,13 @@ EN.gmPayroll = (function () {
       el("button.btn.sm", { dataset: { pay: "copy" }, onclick: function () { copyText(text, "The payday summary"); } }, "COPY")
     ]));
 
-    // who gets credited on this device
+    // who gets credited: another player's character through the inbox
     kids.push(EN.ui.sectionTitle("Credit the crew"));
-    var all = m.crew.members, roster = (EN.store.roster && EN.store.roster()) || {};
+    var all = m.crew.members;
     if (!all.length) kids.push(help("No Freelancer records on this device. Copy the summary to the crew instead.", { margin: 0 }));
     all.forEach(function (x) {
       var on = _p.noCredit.indexOf(x.charId) === -1;
-      var ch = roster[x.charId], onXp = !!(ch && ch.useXp === true);
+      var ch = EN.gmEngine.sheetOf(x.charId), onXp = !!(ch && ch.useXp === true);
       var gets = fmtG(m.eachG) + (m.nexEach > 0 ? DOT + fmtNx(m.nexEach) : "") +
         (m.xpTotal > 0 ? DOT + (!onXp ? "milestones, no XP" : m.xpWrite > 0 ? commas(m.xpWrite) + " XP"
           : m.xpPaid ? "XP already paid" : "XP already awarded") : "");
@@ -1831,7 +1832,7 @@ EN.gmPayroll = (function () {
           if (on) _p.noCredit.push(x.charId); else _p.noCredit = _p.noCredit.filter(function (k) { return k !== x.charId; });
           refresh();
         } }),
-        el("span", { style: { fontWeight: 600, color: on ? "var(--text)" : "var(--text3)" }, text: x.name }),
+        el("span", { style: { fontWeight: 600, color: on ? "var(--text)" : "var(--text3)" }, text: x.tag || x.name }),
         el("span.help", { style: { margin: 0 }, text: on ? gets : "not credited here" })
       ]));
     });
@@ -1841,7 +1842,7 @@ EN.gmPayroll = (function () {
     }
     kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px", alignItems: "center" } }, [
       chip("#POST PAY STUB " + (_p.stub ? "ON" : "OFF"), _p.stub, "stub", function () { _p.stub = !_p.stub; refresh(); },
-        "Also file a pay stub in each credited Freelancer's #POST")
+        "Also file a pay stub in each credited Freelancer's #POST. Another player's character always gets one.")
     ]));
 
     /* AN EARLIER PAYDAY STILL STANDS for this fight or job (F8): it is named,
@@ -1894,7 +1895,7 @@ EN.gmPayroll = (function () {
       if (!EN.ui.isArmed("pay:credit")) { creditBtn.style.color = "var(--success)"; creditBtn.style.borderColor = "var(--success)"; }
     } else {
       creditBtn = el("button.btn.sm", { disabled: true, dataset: { pay: "credit" },
-        title: m.paid ? "Already credited" : held ? "Held: an earlier payday already paid this" : "Nobody on this device to credit" },
+        title: m.paid ? "Already credited" : held ? "Held: an earlier payday already paid this" : "Nobody to credit" },
         m.paid ? "CREDITED" : "CREDIT THE CREW");
     }
     // a new payday keeps the GM's fixer and Crew Kit percentages and the stub choice

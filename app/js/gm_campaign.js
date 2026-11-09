@@ -283,7 +283,8 @@ EN.gmCampaign = (function () {
   /* ---- #POST from the Admin: the list of sends --------------------------------------
      Their own sends only: that is what the read policy gives them, and js/campaigns.js asks for. A
      row whose character has left the campaign is off the roster, so it has no name to show. */
-  var STATUS = { waiting: "WAITING", delivered: "DELIVERED", taken: "TAKEN", recalled: "RECALLED" };
+  // due and applied are the same two moments for a row with numbers on it (a payday, say): it has no Recall
+  var STATUS = { waiting: "WAITING", delivered: "DELIVERED", taken: "TAKEN", recalled: "RECALLED", due: "WAITING", applied: "DELIVERED" };
   function nameOfRow(d, rowId) {
     var found = "";
     d.roster.forEach(function (m) {

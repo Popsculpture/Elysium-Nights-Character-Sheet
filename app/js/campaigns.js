@@ -244,6 +244,8 @@ EN.campaigns = (function () {
   function sendToCharacter(rowId, mail) { return rpc("send_to_character", { p_character: rowId, p_mail: mail }); }
   function sendToCrew(id, mail) { return rpc("send_to_crew", { p_campaign: id, p_mail: mail }); }
   function recallSend(id) { return rpc("recall_send", { p_id: id }); }
+  // the Admin desktop's writing tabs, for EN.gmStore's far door: safe to repeat with the same key
+  function sendWrite(rowId, key, mail, ops) { return rpc("send_write", { p_character: rowId, p_key: key, p_mail: mail, p_ops: ops || null }); }
   function sends(id) {
     return client().from("character_inbox").select("id, character_id, mail, status, created_at")
       .eq("campaign_id", id).eq("sender_id", me()).order("created_at", { ascending: false }).limit(50).then(check);
@@ -541,7 +543,7 @@ EN.campaigns = (function () {
     create: create, leave: leave, roster: roster, blocked: blocked, invite: invite, resetInvite: resetInvite,
     removeMember: removeMember, unblock: unblock, setRole: setRole, transfer: transfer, rename: rename, remove: remove,
     inviteUrl: inviteUrl, viewSheet: viewSheet, refreshView: refreshView, backToCampaign: backToCampaign,
-    sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sends: sends,
+    sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sendWrite: sendWrite, sends: sends,
     current: current, crew: crew, crewRow: crewRow
   };
 })();

@@ -2172,11 +2172,10 @@ EN.gmEncounters = (function () {
       return rows.reduce(function (a, r) { return a + (own(_s.award.skip, r.id) ? 0 : r.xp); }, 0) + objNow();
     }
     var crew = { members: [] };
-    try { crew = EN.gmEngine.crew({ encounter: last, device: true }); } catch (e) { crew = { members: [] }; }   // the award writes to these sheets
-    var roster = (EN.store.roster && EN.store.roster()) || {};
+    try { crew = EN.gmEngine.crew({ encounter: last }); } catch (e) { crew = { members: [] }; }
     var members = crew.members.map(function (m) {
-      var ch = own(roster, m.charId) ? roster[m.charId] : null;
-      return { charId: m.charId, name: m.name, useXp: !!(ch && ch.useXp) };
+      var ch = EN.gmEngine.sheetOf(m.charId);
+      return { charId: m.charId, name: m.name, tag: m.tag || m.name, useXp: !!(ch && ch.useXp) };
     });
     var xpCrew = members.filter(function (m) { return m.useXp; });
     var label = "XP award: " + (last.name || "the last encounter");
@@ -2235,7 +2234,7 @@ EN.gmEncounters = (function () {
     }
     if (members.length) {
       kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "8px" } }, members.map(function (m) {
-        return chip(m.name + (m.useXp ? " · XP" : " · MILESTONES"), m.useXp ? "var(--success)" : "var(--text3)");
+        return chip(m.tag + (m.useXp ? " · XP" : " · MILESTONES"), m.useXp ? "var(--success)" : "var(--text3)");
       })));
       var ms = members.filter(function (m) { return !m.useXp; });
       if (ms.length) kids.push(help(ms.map(function (m) { return m.name; }).join(", ") + (ms.length === 1 ? " runs" : " run") +
@@ -2352,7 +2351,7 @@ EN.gmEncounters = (function () {
     var left = awardWrites(gm.get().lastEncounter);
     if (!left.length) {
       gm.update(function (st) { if (st.lastEncounter) delete st.lastEncounter.xpAward; });
-      toast("Award undone: " + plural(n, "write") + " reversed.");
+      toast("Award undone: " + plural(n, "write") + " reversed." + (mine.some(function (w) { return !!w.far; }) ? " Another player's sheet gets a correction through #POST." : ""));
     } else if (failed) {
       toast((n ? "Partly undone: " + plural(n, "write") + " reversed. " : "") + "This device refused to save the next undo, so the rest of the award stands.");
     } else {
