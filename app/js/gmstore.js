@@ -1071,12 +1071,14 @@ EN.gmStore = (function () {
     update(function (s) {
       var prev = own(s[bag], id) ? s[bag][id] : null;
       var was = isHeld && own(heldCopies, key) ? heldCopies[key] : null;
-      if (was && prev && canon(prev) !== was.live) c = JSON.parse(JSON.stringify(mergeKeys(was.mine, c, prev)));
+      var merged = !!(was && prev && canon(prev) !== was.live);
+      if (merged) c = JSON.parse(JSON.stringify(mergeKeys(was.mine, c, prev)));
       c.createdAt = (prev && typeof prev.createdAt === "number") ? prev.createdAt
         : (typeof c.createdAt === "number" ? c.createdAt : now);
       c.updatedAt = now;
       s[bag][id] = c;
-      if (isHeld) heldCopies[key] = { mine: mine, text: heldText(mine), live: canon(c) };
+      // after a merge the record holds what the copy doesn't, so heldMoved says so, and the next draw shows it
+      if (isHeld) heldCopies[key] = { mine: mine, text: heldText(mine), live: merged ? null : canon(c) };
     }, opts);
     return id;
   }
