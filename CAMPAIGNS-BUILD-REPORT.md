@@ -746,7 +746,7 @@ Under the hood: one new migration and its checks, `writeCrew` going through THE 
 
 ## Going live, in this order
 
-1. **The per-campaign Admin desktops first.** See "Worth your eye" below.
+1. **The per-campaign Admin desktops first.** See "Worth your eye" below. Merging this branch after that one conflicts in two lines, one in `gmstore.js` and one in `campaigns.js`. `claude/writes-on-desktops` is that merge, resolved, and the tests above ran on it. It was cut when the desktops branch was at `591e33e`, so it wants redoing if that has moved.
 2. **This migration, on the live project, before this code.** The app's read of the inbox names the new column, so if the code went first, all mail would quietly wait until the migration landed. The other way round is safe: the old app can't see these rows, and nothing sends them yet.
 3. **Then the merge.**
 
@@ -797,12 +797,13 @@ There has been no second review of these fixes. The tests below cover each one.
 | --- | --- | --- |
 | The SQL | 227 PASS, 0 FAIL locally, nothing left behind | `campaign_checks.sql`, up from 168. Not yet on the live project |
 | The checks have teeth | 223 of 223 caught | Broken copies of the migrations, 66 of them new. All were caught on the first pass, apart from one check in the migration that turned out to be redundant, so I took it out |
-| The story, on the stand-in | 241 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, and the far door's rules |
-| The same story, on the real SQL | 245 checks pass | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
+| The story, on the stand-in | 244 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, and the far door's rules |
+| The same story, on the real SQL | 248 checks pass, on this branch and on the merge with the desktops | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
 | A real reload with a send queued | Pass | `tests/campaigns_writes_2.js` and `_3.js`: it goes with nobody asking, under the same key |
 | Breaking the code on purpose | 83 of 83 caught | `pg/writes_mutants.py`, a line at a time, each failing its own check. Earlier passes caught fewer, and those misses added or tightened several checks |
-| Earlier rounds on the real SQL | All pass | Batch 2 144, batch 3 61, the Table 152, two tabs 40, the same sequence in one window 21, on the first build. WR_MERGE_ROUNDS |
-| The whole suite | 497 chains, 522 runs. WR_SUITE | |
+| Earlier rounds on the real SQL | All pass, on the final code | Batch 2 144, batch 3 61, the Table 152, two tabs 40, the same sequence in one window 21. All pass on the merge too |
+| The whole suite | **On the merge with the desktops: 497 chains, 522 runs, 0 bad.** On this branch alone: 3 bad, all the desktops' own chains (`gmtabs_1` to `_3`), which need that code | `cx_integ_run.py`, rounds wr2 and wr4. One more, `tabs_3`, failed in wr2 because it counted one lost-mail read and there are now two. I fixed the test, and it passes |
+| The two branches together, two real tabs | 17 checks pass, and fail on this branch alone, as they should | `pg/writes_tabs_realdb.js` on the merge, `claude/writes-on-desktops`: the double payment, the idle tab's send, both tabs ending up agreed |
 | Three skins, desktop and 375 px | No sideways scroll | `tests/campaigns_writes_shot.js` measures the Job Board, Payroll, Milestones and the award card in Classic, '98 and #GRIDroid. I looked at the Payroll and Job Board shots at 375 px on #GRIDroid and Classic, and the longest name fits |
 
 `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
