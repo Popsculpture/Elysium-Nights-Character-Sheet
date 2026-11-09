@@ -194,7 +194,7 @@ others change numbers, so their row carries them: Glimmer, Nexus, XP and the two
 - The player gets the numbers at once, with a line in their money Ledger, an unread #POST letter saying what came, and the usual toast. Same if they were away.
 - UNDO sends a correction: a second row with the numbers the other way, and a letter saying so. It can leave a wallet below zero, as UNDO always could. A posting
   still waiting is recalled, and one that arrived gets a letter.
-- The Admin's ledger is the outbox (`EN.gmStore`, THE FAR DOOR), so the tabs work as they always did, and a send that can't reach the account yet waits and says so.
+- The Admin's ledger is the outbox (`EN.gmStore`, THE FAR DOOR), so the tabs work as they always did, and a send that can't reach the account yet waits and says so. It goes from whichever campaign's desktop is open.
   A send that can never land (the character left the campaign, say) stays on the undo strip until it's read, and doesn't count as paid.
 - `supabase/migrations/20261108210000_inbox_writes.sql` holds the rules. It has to be on the database before this app is live, or the inbox can't be read at all.
 

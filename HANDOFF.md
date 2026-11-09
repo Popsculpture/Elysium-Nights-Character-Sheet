@@ -132,7 +132,8 @@ card.
   stay the whole crew's and `members` holds only sheets on this device. Don't widen an empty list to the roster when `far` or `inCampaign` is set: that pays somebody's bank.
 - The far door: `EN.gmStore.writeCrew` on a `row:` character files the usual ledger record with a `far` tag and returns at once, and `flushSends` sends the row. The ledger is the outbox. The
   record's id is the row's `send_key`, so sending again is always safe. A row with `ops` has its own two statuses, `due` and `applied`, so a tab older than it can't file it as plain mail and lose the
-  numbers, and it can't be recalled. UNDO sends a correcting row. Read THE FAR DOOR in gmstore.js and the `ops` part of THE INBOX in cloud.js first.
+  numbers, and it can't be recalled. UNDO sends a correcting row. A ledger belongs to a campaign's desktop, so `flushSends` reads every desktop on the device and writes a record
+  back where it's kept (`farSave`, EVERY DESKTOP'S OUTBOX). Read THE FAR DOOR in gmstore.js and the `ops` part of THE INBOX in cloud.js first.
 - #POST from the Admin (batch 3) adds `character_inbox`, the courier. The same warning applies: a sender can
   read what they sent, so any read of it for "my mail" must ask by the account's own character ids, as
   `readRows()` in cloud.js does. A row becomes a message only through `EN.gmStore.deliverMail`, which writes

@@ -12874,7 +12874,7 @@ Run on the live site with two real accounts, with the rows read after each step.
 
 **Left open:** queued sends on the writing-tabs branch (`claude/funny-hermann-497402`) live in a ledger that now belongs to a campaign. Account sync, two tabs changing one list on one record at once, and a payday form saved from two tabs are in the build report.
 
-### The writing tabs through the inbox, built 2026-11-08 on `claude/funny-hermann-497402`
+### The writing tabs through the inbox, built 2026-11-08 on `claude/funny-hermann-497402`, rebuilt on `main` 2026-11-09
 
 **What changed, and why.** The next of the plan's later steps. Payroll with its Milestones panel, the XP award and the Job Board reach another player's character. `writeCrew` on a `row:` id sends a row in `character_inbox` and files the usual ledger record (THE FAR DOOR in `gmstore.js`), the courier files it (`cloud.js`, `deliverMail`), and the migration is `20261108210000_inbox_writes.sql`. Heat is not in it. The build report has the rest.
 
@@ -12888,6 +12888,7 @@ Run on the live site with two real accounts, with the rows read after each step.
 4. A code from the database is an answer, and anything else is no answer. EN_SIGNED_OUT isn't one, and class 22 (data it can't store) is, or it would hold up everything behind it for good.
 5. The numbers and the row's id go on the record in one write, so a copy holds both or neither, and a copy that lost them files them again. Lost mail has a horizon for letters and none for numbers.
 6. In a tab merge a wallet and a tally add up, and `meta.inboxApplied` is both tabs'. Newer-wins could leave a letter saying paid with the money gone. This is the one change to the author's "the newer save wins where both changed one field", and only for those.
+7. A run reads every desktop on the device (EVERY DESKTOP'S OUTBOX), because a ledger belongs to a campaign. Each step reads the record again where it's kept, since a tab open there may have sent it or taken it back, and saves only the fields it changed, stamped in `rev`, so that tab hears it and keeps its own change. That it tried goes down before it goes, or it waits.
 
 **Readings taken where the rulings left room, smallest first:**
 
@@ -12901,6 +12902,6 @@ Run on the live site with two real accounts, with the rows read after each step.
 - **The player's name is on the lists about to be written to** (`tag`), as it is on the Table.
 - **A queued write that came in with an imported file still goes.** The key makes that safe. It's marked as history, so it can't be undone from there.
 
-**Tests.** `pg/writes_body.js` is one story, told by `tests/campaigns_writes_1.js` against batch 3's stand-in and by `pg/writes_realdb.js` against the real migration. `tests/campaigns_writes_2.js` and `_3.js` are a real reload with a send queued. `pg/writes_tabs_realdb.js` is two real tabs, and needs the per-campaign Admin desktops. `pg/writes_mutants.py` breaks the code a line at a time, and `pg/mutants.mjs` the migration.
+**Tests.** `pg/writes_body.js` is one story, told by `tests/campaigns_writes_1.js` against batch 3's stand-in and by `pg/writes_realdb.js` against the real migration. `tests/campaigns_writes_2.js` and `_3.js` are a real reload with a send queued. `pg/writes_tabs_realdb.js` is two real tabs, on one campaign and on two. `pg/writes_mutants.py` breaks the code a line at a time, and `pg/mutants.mjs` the migration.
 
-**Left open:** Heat, and Vigor at the Table's END. Two different Admins can pay one fight twice, because "already paid" reads a ledger that is per browser. On this branch alone a second Admin tab can too, which the per-campaign desktops branch closes, so that branch goes first. The migration has to land before this code, or the inbox can't be read. The build report lists the rare ones.
+**Left open:** Heat, and Vigor at the Table's END. Two different Admins can pay one fight twice, because "already paid" reads a ledger that is per browser. The migration has to land before this code, or the inbox can't be read. The desktops' open item about queued sends is closed by rule 7. The build report lists the rare ones.

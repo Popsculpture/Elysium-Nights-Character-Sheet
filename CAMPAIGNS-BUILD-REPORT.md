@@ -791,7 +791,7 @@ Two independent reads, each given the code and not my conclusions.
 
 # Campaigns build report: the writing tabs through the inbox
 
-Built 8 Nov 2026 on `claude/funny-hermann-497402`, cut from `main` at `d93f722`. **Not merged, and the migration is not applied:** both wait for your go.
+Built 8 Nov 2026 on `claude/funny-hermann-497402`, cut from `main` at `d93f722`, and rebuilt on 9 Nov on `main` at `96bdb43`, which has the Admin desktop per campaign. **Not merged, and the migration is not applied:** both wait for your go.
 
 ## What you decided
 
@@ -814,17 +814,18 @@ A pay stub always goes to another player's sheet, whatever the chip says, becaus
 
 **What UNDO does.** UNDO PAYDAY, UNDO AWARD, UNDO MILESTONE and the undo strip all work as they did. For another player's sheet they send a second row with the numbers the other way, and a letter: "Taken back: Payday: The Toll". It shows as an Adjustment in their Ledger, and it can leave a wallet below zero, as UNDO always could. UNDO POSTING recalls a posting still waiting. If it already arrived, they get "Withdrawn:" and the job's title.
 
-**If the link is down,** the write still counts on your screen and goes when the link is back. After 5 seconds the tab says "1 send is waiting for the link". It survives a reload.
+**If the link is down,** the write still counts on your screen and goes when the link is back, whichever campaign's desktop is open by then: a payday made on Night Shift goes while you work on Day Shift. After 5 seconds the tab says "1 send is waiting for the link". It survives a reload.
 
-**If it can never land,** say the character left the campaign, it doesn't count as paid, and it stays on the undo strip on every Admin tab until you press OK. The toast alone would be gone before you saw it.
+**If it can never land,** say the character left the campaign, it doesn't count as paid, and it stays on that campaign's undo strip, on every Admin tab, until you press OK. The toast alone would be gone before you saw it. Refused while you're on another campaign, the toast names the one it came from.
 
 Under the hood: one new migration and its checks, `writeCrew` going through THE FAR DOOR in `gmstore.js`, and the courier in `cloud.js` filing numbers along with the letter. Heat isn't touched. The asset stamp is `?v=20261109.1`. README, HANDOFF and DEFERRED-FIXES describe it.
 
 ## Going live, in this order
 
-1. **The per-campaign Admin desktops first.** See "Worth your eye" below. Merging this branch after that one conflicts in two lines, one in `gmstore.js` and one in `campaigns.js`. `claude/writes-on-desktops` is that merge, resolved, and the tests above ran on it. It was cut when the desktops branch was at `591e33e`, so it wants redoing if that has moved.
-2. **This migration, on the live project, before this code.** The app's read of the inbox names the new column, so if the code went first, all mail would quietly wait until the migration landed. The other way round is safe: the old app can't see these rows, and nothing sends them yet.
-3. **Then the merge.**
+The Admin desktop per campaign is on `main` already, and this branch is built on it.
+
+1. **This migration, on the live project, before this code.** The app's read of the inbox names the new column, so if the code went first, all mail would quietly wait until the migration landed. The other way round is safe: the old app can't see these rows, and nothing sends them yet.
+2. **Then the merge.** `claude/writes-on-desktops` was a trial merge with an older copy of the desktops branch. It's superseded by this branch and can go.
 
 From a worktree, which has no `supabase link` of its own:
 
@@ -848,8 +849,8 @@ The checks should say 227 PASS, 0 FAIL. The repair is there because `db query` a
 
 ## Worth your eye
 
-1. **Two Admin tabs could pay twice on this branch alone.** A second tab holds its own old copy of the Admin's ledger, so it reads the fight as unpaid and its CREDIT goes out under new keys. It could also write its old copy over the ledger by itself when the link came back. The independent review found this, and `pg/writes_tabs_realdb.js` reproduces it here. **The per-campaign Admin desktops branch fixes it:** the same two real tabs on the two branches merged pass all 17 checks, including the second tab being held and the ledger surviving. That's why that branch goes first. Until it's in, keep the Admin desktop to one tab.
-2. **Two different Admins can still pay one fight twice.** "Already paid" is read from the ledger, and the ledger is per browser. A co-Admin, or you on a second device, gets no hold. Nothing in this build changes that, and the desktops branch doesn't either. It wants a ruling if you run a table with a co-Admin paying too.
+1. **A send goes from whichever desktop is open.** Each campaign has its own ledger now, so a send queued on one would have waited until you went back to it. Now every run reads every campaign's desktop on this browser, and writes the answer back into the one it came from, which a tab open there hears. Each step reads the record again first, because a tab open on that campaign may have sent it or taken it back meanwhile. Three smaller calls came with it: the waiting note counts the campaign you're on, a refusal's strip line stays on its own campaign, and a send waits if its campaign's desktop can't be written to, since the note that it tried has to be down before it goes.
+2. **Two different Admins can still pay one fight twice.** "Already paid" is read from the ledger, and the ledger is per browser. A co-Admin, or you on a second device, gets no hold. Nothing in this build changes that, and the desktops per campaign don't either. It wants a ruling if you run a table with a co-Admin paying too.
 3. **In a two-tab merge a wallet and a tally now add up.** You chose "the newer save wins where both changed one field", and that stands for everything else. Glimmer, Nexus, XP and the two Milestone counters are running totals now. If they weren't, a payday landing in one tab while the other spent money could leave a letter saying paid with the money gone. That took a small change in `store.js`.
 4. **A row with numbers can't be recalled, on purpose.** The Campaign tab's list shows it as Waiting with no Recall. A recall racing a filing would have to take numbers back off a sheet, so if a player is away, they get the payday and its correction together, two letters that come to nothing.
 
@@ -857,7 +858,7 @@ The checks should say 227 PASS, 0 FAIL. The repair is there because `db query` a
 
 One independent read of the diff, given the code and not my conclusions. Its word on the common paths was that it found nothing landing twice or not at all, and that the filing rules and the SQL held. It found real trouble in the rare cases:
 
-1. **The two tabs,** above. Closed by the other branch, and proved on the merge.
+1. **Two Admin tabs could pay twice.** A second tab held its own old copy of the ledger, so it read the fight as unpaid. The Admin desktop per campaign closes it, and with it in this branch, two real tabs pass every check (`pg/writes_tabs_realdb.js`).
 2. **A tab merge could part the numbers from the row:** the row listed as filed, with the money gone. Fixed, item 3 above.
 3. **A queued write that came in with an imported file never went,** while the ledger said paid. Fixed: it still goes, and the key means it can't go twice.
 4. **Lost numbers could fall past the look-back.** The heal only read the newest 100 rows, fair for letters, not for a wallet. Rows with numbers now have no such limit, and go first.
@@ -867,20 +868,24 @@ One independent read of the diff, given the code and not my conclusions. Its wor
 
 There has been no second review of these fixes. The tests below cover each one.
 
+**A second independent read, of the send going from any desktop,** found one real bug. A run worked from the copy of a record it read when it started, so a tab open on that campaign could take a send back while the run was out on an earlier one, and the run still sent it, with no correction. A refusal judged on that copy could even send a correction for money that never landed. Fixed: each step reads the record again where it's kept, and saves only the fields it changed. Its smaller points: a toast calling a campaign "this campaign" after the tab moved (fixed), and a save's rollback that could lose the note that a send tried (gone: memory keeps it, which costs at worst a send and its correction). The fix hasn't had a review of its own.
+
 ## Checked, and how
 
 | What | Result | How |
 | --- | --- | --- |
 | The SQL | 227 PASS, 0 FAIL locally, nothing left behind | `campaign_checks.sql`, up from 168. Not yet on the live project |
 | The checks have teeth | 223 of 223 caught | Broken copies of the migrations, 66 of them new. All were caught on the first pass, apart from one check in the migration that turned out to be redundant, so I took it out |
-| The story, on the stand-in | 244 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, and the far door's rules |
-| The same story, on the real SQL | 248 checks pass, on this branch and on the merge with the desktops | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
+| The story, on the stand-in | 303 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, the far door's rules, and sends queued on one campaign going from another's desktop |
+| The same story, on the real SQL | 307 checks pass | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
+| Two real tabs | 36 checks pass | `pg/writes_tabs_realdb.js`: the double payment held back, the idle tab's send, both tabs agreeing, a send queued in one tab going from the other on another campaign, and a take back landing while the other tab's send of it was out |
 | A real reload with a send queued | Pass | `tests/campaigns_writes_2.js` and `_3.js`: it goes with nobody asking, under the same key |
-| Breaking the code on purpose | 83 of 83 caught | `pg/writes_mutants.py`, a line at a time, each failing its own check. Earlier passes caught fewer, and those misses added or tightened several checks |
-| Earlier rounds on the real SQL | All pass, on the final code | Batch 2 144, batch 3 61, the Table 152, two tabs 40, the same sequence in one window 21. All pass on the merge too |
-| The whole suite | **On the merge with the desktops: 497 chains, 522 runs, 0 bad.** On this branch alone: 3 bad, all the desktops' own chains (`gmtabs_1` to `_3`), which need that code | `cx_integ_run.py`, rounds wr2 and wr4. One more, `tabs_3`, failed in wr2 because it counted one lost-mail read and there are now two. I fixed the test, and it passes |
-| The two branches together, two real tabs | 17 checks pass, and fail on this branch alone, as they should | `pg/writes_tabs_realdb.js` on the merge, `claude/writes-on-desktops`: the double payment, the idle tab's send, both tabs ending up agreed |
-| Three skins, desktop and 375 px | No sideways scroll | `tests/campaigns_writes_shot.js` measures the Job Board, Payroll, Milestones and the award card in Classic, '98 and #GRIDroid. I looked at the Payroll and Job Board shots at 375 px on #GRIDroid and Classic, and the longest name fits |
+| Breaking the code on purpose | 96 of 96 caught. The first full run missed three and lost one to a hang, all four in what a desktop per campaign changed, so I added the checks they showed were missing and ran those four again | `pg/writes_mutants.py`, a line at a time, each failing its own check. The two that only two real tabs show run on the real database. Earlier passes caught fewer, and those misses added or tightened several checks |
+| Without the fix for other desktops | The new checks fail: 16 on the stand-in and 4 with two real tabs, and both runs stop there | The same story on this branch's merge before it |
+| The other real rounds | All pass: batch 2 144, batch 3 61, the Table 159, two tabs 40, the same sequence in one window 21 | On the final code |
+| The two-tab fuzz | 400 random rounds of two and three tabs, nothing lost | `pg/gm_tabs_fuzz.mjs` on the final `gmstore.js` |
+| The whole suite | 498 chains, 523 runs, 0 bad, 0 skipped, `gmtabs_1` to `_4`, `campaigns_table_1`, `tabs_1` and `campaigns_b3_1` included. The story gained 8 checks after it, and ran again on its own | `cx_integ_run.py`, round wr7, on the final code |
+| Three skins, desktop and 375 px | 30 of 30 measured, none scrolls sideways | `tests/campaigns_writes_shot.js` measured without a screenshot, so its numbers are read: the Job Board, Payroll, Milestones, the award card and a player's letter, in Classic, '98 and #GRIDroid |
 
 `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
 
@@ -896,12 +901,12 @@ There has been no second review of these fixes. The tests below cover each one.
 4. **A send taken back before it ever tried to leave goes nowhere.** Once it has tried, it might have landed, so it goes first and the correction follows.
 5. **A send only goes under the account that wrote it,** and only that account can take it back.
 6. **The player's name is on the lists about to be written to,** as it is on the Table.
+7. **A run reads every desktop on this browser,** under the account that wrote each send. Each step reads the record again where it's kept and puts only its own change on it, so a tab open there keeps what it did. A desktop with nothing queued isn't even read.
 
 ## Still open
 
 - **Heat through the inbox.** Next, on your word. **Vigor at the Table's END** doesn't reach another player's sheet either. It was never one of the four, and it depends on what the sheet holds, as Heat does.
 - **Two Admins paying one fight,** above.
-- **With the desktops branch in, a send queued on one campaign's desktop goes when a tab opens that campaign** with the link up. It only exists if the link was down at the moment you sent it.
 - **A removed player's rows still land on them,** as their mail does, and a correction after they've gone is refused, and says so on the strip.
 - **RECALL on the Campaign tab's list leaves the Job Board saying "(posted)".** A later UNDO POSTING comes out right.
 - **A row still due goes with its campaign if the campaign is deleted,** and the Admin's ledger still reads as paid.
