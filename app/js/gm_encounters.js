@@ -32,15 +32,20 @@ EN.gmEncounters = (function () {
 
   /* Transient UI state. Survives a tab switch and a portal flip (this is one
      module), not a reload. A plan worth keeping is a plan the GM saved. */
-  var _s = {
-    plan: null,                          // the plan being edited, always in normPlan() shape
-    adder: "bestiary",                   // which "add a line" source is open
-    q: "", cat: "all", inBand: true,     // the Bestiary picker's filter
-    b: { name: "", grade: null, designation: "standard", role: "gunhand" },   // the quick build
-    hz: { key: "", grade: null },        // the hazard picker
-    banner: null,                        // one line about lines that arrived from another tab
-    award: { at: null, skip: Object.create(null), objXp: null }   // XP award choices, per snapshot
-  };
+  function freshPlanner() {
+    return {
+      plan: null,                          // the plan being edited, always in normPlan() shape
+      adder: "bestiary",                   // which "add a line" source is open
+      q: "", cat: "all", inBand: true,     // the Bestiary picker's filter
+      b: { name: "", grade: null, designation: "standard", role: "gunhand" },   // the quick build
+      hz: { key: "", grade: null },        // the hazard picker
+      banner: null,                        // one line about lines that arrived from another tab
+      award: { at: null, skip: Object.create(null), objXp: null }   // XP award choices, per snapshot
+    };
+  }
+  var _s = freshPlanner();
+  // a plan being edited belongs to the campaign it was started on (js/gmstore.js perDesk)
+  gm.perDesk(function () { return _s; }, function (k) { _s = k || freshPlanner(); });
 
   /* ---- small helpers (each view carries its own, per the house convention) */
   function own(o, k) { return !!o && typeof o === "object" && Object.prototype.hasOwnProperty.call(o, k); }
@@ -513,9 +518,10 @@ EN.gmEncounters = (function () {
     if (!p.name.replace(/\s+/g, "")) p.name = "Untitled encounter";
     var prev = p.id ? gm.rec("encounters", p.id) : null;
     if (prev && prev.run) p.run = copy(prev.run);
-    var id = gm.put("encounters", p);
+    var id = gm.put("encounters", p, { held: true });
     if (!id) return null;
     _s.plan = normPlan(copy(gm.rec("encounters", id)));
+    gm.hold("encounters", _s.plan);
     if (p.jobId) {
       var job = gm.rec("jobs", p.jobId);
       if (job && job.encounterId !== id) {
@@ -528,6 +534,7 @@ EN.gmEncounters = (function () {
   }
   function loadPlan(p, what) {
     _s.plan = p;
+    gm.hold("encounters", p);   // two tabs on one plan (js/gmstore.js, AN EDITOR'S OPEN COPY)
     _s.banner = null;
     toast(what);
     EN.app.render();
@@ -638,6 +645,7 @@ EN.gmEncounters = (function () {
       savedFirst = true;
     }
     _s.plan = normPlan(copy(gm.rec("encounters", id)));
+    gm.hold("encounters", _s.plan);
     _s.banner = "Opened the saved plan: " + name + "." + (savedFirst ? " The plan that was open was saved first." : "");
   }
 
@@ -1655,6 +1663,11 @@ EN.gmEncounters = (function () {
     _mount = mount;
     EN.ui.clear(mount);
     if (!_s.plan) _s.plan = blankPlan();
+    // another tab changed the plan open here, and nothing has been edited here since it was opened: show it
+    if (_s.plan.id && gm.heldMoved("encounters", _s.plan)) {
+      _s.plan = normPlan(copy(gm.rec("encounters", _s.plan.id)));
+      gm.hold("encounters", _s.plan);
+    }
     var h = null;
     try { h = (EN.gmView && EN.gmView.takeHandoff) ? EN.gmView.takeHandoff("encounters") : null; } catch (e) { h = null; }
     if (!ready()) {

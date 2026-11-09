@@ -1235,6 +1235,11 @@ EN.gmPayroll = (function () {
              who: Object.create(null) };  // charId -> true or false, the GM's own ticks over the default
   }
   var _ms = freshMs();
+  // a payday half filled in belongs to the campaign it was started on (js/gmstore.js perDesk)
+  gm.perDesk(function () { return { p: _p, base: _base, pend: _pend, ms: _ms }; }, function (k) {
+    if (k) { _p = k.p; _base = k.base; _pend = k.pend; _ms = k.ms; return; }
+    _p = fresh(); settle(); _pend = null; _ms = freshMs();
+  });
   function MS() { return (P() && P().milestones) || null; }
   function msItems() { var M = MS(); return M ? (M.major || []).concat(M.minor || []) : []; }
   function msItem(key) {

@@ -122,7 +122,10 @@ card.
   `pull()` in cloud.js does. `store.setViewing` holds another player's sheet in memory with
   `meta.viewing` set; `store.update` refuses every write while one is open.
 - Two tabs share one roster (`store.js`, TWO TABS, ONE ROSTER). Change a record through the store's own calls: a stamp has to move forward (`nextStamp`), or another tab reads the copy as old news. Take a record out only through
-  `remove`, which writes the delete down (`en_roster_gone_v1`), or the other tab puts it back. Anything that brings an id back on purpose has to `clearGone` it. `cloud.js` trusts the link book only after `hearTabs()`, and reads the book first. `en_gm_v1` is not covered.
+  `remove`, which writes the delete down (`en_roster_gone_v1`), or the other tab puts it back. Anything that brings an id back on purpose has to `clearGone` it. `cloud.js` trusts the link book only after `hearTabs()`, and reads the book first.
+- The Admin desktop's document (`gmstore.js`). `EN.gmStore.get()` is the desktop this tab is on, `EN.campaigns.desktop()` says which, and `follow()` gets it there on every render. Change it through `update`, `put` and `drop`, because a part changed any
+  other way isn't stamped and reads as old news (TWO TABS, ONE DESKTOP). An editor that saves a whole copy of a record holds it: `hold`, `put` with `{held: true}`, `heldMoved` (AN EDITOR'S OPEN COPY). A new view's working state goes through `perDesk`, or it follows
+  the Admin to another campaign. To write to a document that isn't open, stamp the part in its `rev`, as `moveDevice` does. `EN.campaigns.current()` still answers null offline, which is about the crew; `desktop()` doesn't, which is about the Table.
 - The Admin's Table: `EN.campaigns.current()` is the campaign the desktop works on, `EN.campaigns.crew(id)` its characters (a 30 second cache, never in
   the roster). A Table row with the `charId` `row:<row id>` is another player's character: `pruneCrew` keeps it, `writeCrew` sends it through the inbox, and anything reading
   crew rows has to expect it. `EN.gmEngine.crew()` is still the one reader, and `EN.gmEngine.sheetOf(charId)` reads a member's sheet wherever it is. `{device:true}` is Heat's alone: the numbers

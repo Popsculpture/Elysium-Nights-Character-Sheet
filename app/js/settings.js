@@ -1161,33 +1161,25 @@ EN.settings = (function () {
      to an armed REPLACE button. Nothing is replaced until that second click, so a
      wrong file costs a cancel, not a campaign. */
   function gmPlural(n, one, many) { return n + " " + (n === 1 ? one : many); }
-  function gmCountText(c) {
-    var parts = [];
-    if (c.threats) parts.push(gmPlural(c.threats, "saved threat", "saved threats"));
-    if (c.encounters) parts.push(gmPlural(c.encounters, "saved encounter", "saved encounters"));
-    if (c.hazards) parts.push(gmPlural(c.hazards, "custom hazard", "custom hazards"));
-    if (c.jobs) parts.push(gmPlural(c.jobs, "logged job", "logged jobs"));
-    if (c.ledger) parts.push(gmPlural(c.ledger, "ledger record", "ledger records"));
-    if (c.heat) parts.push(gmPlural(c.heat, "Heat record", "Heat records"));
-    if (c.contacts) parts.push(gmPlural(c.contacts, "contact card", "contact cards"));
-    if (c.scenes) parts.push(gmPlural(c.scenes, "saved scene", "saved scenes"));
-    if (c.entries) parts.push(gmPlural(c.entries, "initiative row", "initiative rows"));
-    if (c.room) parts.push(gmPlural(c.room, "Room hazard", "Room hazards"));
-    return parts.length ? parts.join(", ") : "nothing saved yet";
-  }
+  function gmCountText(c) { return EN.gmStore.countText(c); }
   function gmDateStamp() {
     var d = new Date();
     function p(n) { return (n < 10 ? "0" : "") + n; }
     return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
   }
-  function exportGmData() {
-    var text;
-    try { text = EN.gmStore.exportDoc(); } catch (e) { EN.ui.toast("GM data could not be exported."); return; }
+  // a campaign's name as part of a file name: letters and digits, the rest as single dashes
+  function gmSlug(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40); }
+  function gmDownload(text, stem) {
     var blob = new Blob([text], { type: "application/json" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "elysium-gm-" + gmDateStamp() + ".json";
+    a.download = "elysium-gm-" + (stem ? stem + "-" : "") + gmDateStamp() + ".json";
     a.click();
+  }
+  function exportGmData() {
+    var text, here = EN.gmStore.desk ? EN.gmStore.desk() : null;
+    try { text = EN.gmStore.exportDoc(); } catch (e) { EN.ui.toast("GM data could not be exported."); return; }
+    gmDownload(text, here ? gmSlug(here.name) : "");
     EN.ui.toast("GM data exported.");
   }
   function importGmData() {
@@ -1223,26 +1215,81 @@ EN.settings = (function () {
         };
         r.readAsText(f);
       } });
+    var G = EN.gmStore, here = G.desk ? G.desk() : null;
+    var running = EN.campaigns && EN.campaigns.running ? EN.campaigns.running() : [];
+    // an Admin with no campaign reads exactly what they always have
+    var hint = here
+      ? "This is " + here.name + "'s desktop: its Table, encounters, job log, ledger, Heat log, contact cards and saved scenes, with the saved threats and custom hazards every desktop shares. It is stored on this device only. Export it to keep a copy or to move it to another device. Importing replaces this desktop and adds the file's threats and hazards to the shared ones."
+      : running.length
+        ? "This is this device's own desktop, for play with no campaign. It also holds the saved threats and custom hazards every desktop shares. It is stored on this device only. Export it to keep a copy or to move it to another device. Importing replaces all of it, shared threats and hazards too."
+        : "Everything the Admin desktop keeps: saved threats and encounters, custom hazards, the job log, the ledger, the Heat log, contact cards, saved scenes, and the live encounter. It is stored on this device only. Export it to keep a copy or to move it to another device. Importing replaces all of it.";
     var kids = [
       el("div.set-sectitle", { text: "// GM DATA" }),
       el("label.set-label", { text: "Back up and restore" }),
-      el("p.set-hint", { text: "Everything the Admin desktop keeps: saved threats and encounters, custom hazards, the job log, the ledger, the Heat log, contact cards, saved scenes, and the live encounter. It is stored on this device only. Export it to keep a copy or to move it to another device. Importing replaces all of it." }),
+      el("p.set-hint", { text: hint }),
       el("div.row.wrap", { style: { gap: "8px" } }, [
-        el("button.btn.sm", { title: "Download all GM data as a .json file", onclick: exportGmData }, "⤓ EXPORT GM DATA"),
+        el("button.btn.sm", { title: "Download this desktop's GM data as a .json file", onclick: exportGmData }, "⤓ EXPORT GM DATA"),
         el("button.btn.sm", { title: "Pick a GM data file to import; nothing is replaced until you confirm",
           onclick: function () { picker.click(); } }, "⤒ IMPORT GM DATA")
       ]),
       picker
     ];
     if (_gmImport) {
+      var from = _gmImport.counts.campaign ? " It was exported from " + _gmImport.counts.campaign + "." : "";
       kids.push(el("p.set-hint", { style: { marginTop: "12px", color: "var(--text2)" },
-        text: "Ready to import " + _gmImport.name + ": " + gmCountText(_gmImport.counts) + ". This replaces all GM data on this device." }));
+        text: "Ready to import " + _gmImport.name + ": " + gmCountText(_gmImport.counts) + "." + from + (here ? " This replaces " + here.name + "'s desktop on this device." : " This replaces all GM data on this device.") }));
       kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
-        EN.ui.armButton("gmimport", { label: "⤒ REPLACE GM DATA", armedLabel: "SURE? REPLACES ALL GM DATA", onArm: rebuild,
-          title: "Replace this device's GM data with the file", armedTitle: "Click again to replace all GM data on this device with the file.",
+        EN.ui.armButton("gmimport", { label: "⤒ REPLACE GM DATA", armedLabel: here ? "SURE? REPLACES THIS DESKTOP" : "SURE? REPLACES ALL GM DATA", onArm: rebuild,
+          title: here ? "Replace this desktop's GM data with the file" : "Replace this device's GM data with the file",
+          armedTitle: here ? "Click again to replace " + here.name + "'s desktop with the file." : "Click again to replace all GM data on this device with the file.",
           onConfirm: importGmData }),
         el("button.btn.sm", { title: "Forget the picked file", onclick: function () { _gmImport = null; if (EN.ui.disarm) EN.ui.disarm(); rebuild(); } }, "CANCEL")
       ]));
+    }
+    // this device's own desktop still holds work, and this tab is on a campaign it could go to
+    var held = here && G.deviceHolds ? G.deviceHolds() : null;
+    if (held) {
+      kids.push(el("label.set-label", { style: { marginTop: "12px" }, text: "Work on this device" }));
+      kids.push(el("p.set-hint", { dataset: { gm: "move-held" }, text: "This device's own desktop holds " + gmCountText(held) + ". Moving it never writes over anything here, and a copy of the old document is kept first." }));
+      kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
+        EN.ui.armButton("gmmove", { label: "MOVE IT TO " + here.name.toUpperCase(), armedLabel: "SURE? MOVES IT TO THIS CAMPAIGN", onArm: rebuild,
+          title: "Move this device's own desktop into " + here.name, armedTitle: "Click again to move it. The shared threats and hazards stay shared.",
+          onConfirm: function () {
+            var res = EN.campaigns.moveInto(here.id);
+            EN.app.render();
+            rebuild();
+            EN.ui.toast(EN.campaigns.moveWords(res));
+          } })
+      ]));
+    }
+    var before = G.premove ? G.premove() : null;
+    if (before) {
+      kids.push(el("label.set-label", { style: { marginTop: "12px" }, text: "From before the last move" }));
+      kids.push(el("p.set-hint", { dataset: { gm: "premove" }, text: "The document as it stood on " + new Date(before.at).toLocaleDateString() + ", in case a move took something you wanted to stay." }));
+      kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
+        el("button.btn.sm", { dataset: { gm: "premove-export" }, title: "Download it as a .json file you can import", onclick: function () { gmDownload(before.text, "before-move"); EN.ui.toast("Exported."); } }, "⤓ EXPORT IT"),
+        EN.ui.armButton("gmpremove", { label: "DELETE IT", armedLabel: "SURE? THIS CAN'T BE UNDONE", onArm: rebuild,
+          title: "Delete this copy", armedTitle: "Click again to delete this copy from this device.",
+          onConfirm: function () { G.dropPremove(); rebuild(); } })
+      ]));
+    }
+    // jacked out, nothing says which campaigns this account runs, so nothing can be called left behind and offered for deleting
+    var signedIn = !!(EN.campaigns && EN.campaigns.enabled && EN.campaigns.enabled());
+    var left = signedIn && G.leftBehind ? G.leftBehind(running.map(function (c) { return c.id; })) : [];
+    if (left.length) {
+      kids.push(el("label.set-label", { style: { marginTop: "12px" }, text: "Other desktops on this device" }));
+      kids.push(el("p.set-hint", { text: "From campaigns this account isn't running right now. Their work stays here until you delete it." }));
+      left.forEach(function (d) {
+        kids.push(el("p.set-hint", { dataset: { gm: "left-desk" }, style: { color: "var(--text2)" }, text: d.name + ": " + gmCountText(d.counts) + "." }));
+        kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
+          el("button.btn.sm", { dataset: { gm: "left-export" }, title: "Download this desktop as a .json file you can import", onclick: function () {
+            try { gmDownload(G.exportLeft(d.id), gmSlug(d.name)); EN.ui.toast("Exported."); } catch (e) { EN.ui.toast("That desktop could not be exported."); }
+          } }, "⤓ EXPORT"),
+          EN.ui.armButton("gmleft:" + d.id, { label: "DELETE", armedLabel: "SURE? THIS CAN'T BE UNDONE", onArm: rebuild,
+            title: "Delete this desktop from this device", armedTitle: "Click again to delete " + d.name + "'s desktop from this device.",
+            onConfirm: function () { G.dropLeft(d.id); rebuild(); } })
+        ]));
+      });
     }
     return kids;
   }

@@ -2730,6 +2730,11 @@ EN.store = (function () {
   }
   // the look js/cloud.js takes before it trusts the book. An edit still in the debounce goes first, so a save is always in storage before the note of it
   function syncTabs() { if (savePending) persist(true); else tabsMoved(tabSync()); }
+  // is this record in storage, whatever this tab has heard so far? js/gmstore.js asks before it calls a Table row dead
+  function storedHas(id) {
+    var raw = readJson(KEY_ROSTER, {});
+    return tabPlain(raw) && tabHas(raw, id);
+  }
   try {
     window.addEventListener("storage", function (e) {
       if (!firstLoad && (e.key === KEY_ROSTER || e.key === null)) syncTabs();
@@ -3081,7 +3086,7 @@ EN.store = (function () {
     createAndActivate: createAndActivate,
     setActive: setActive, remove: remove, update: update,
     // the cloud saves' hooks (js/cloud.js): a deletion through the app, and a record pulled from the account
-    onRemove: onRemove, putRecord: putRecord, syncTabs: syncTabs,
+    onRemove: onRemove, putRecord: putRecord, syncTabs: syncTabs, storedHas: storedHas,
     // locked records (a content pack this device has not loaded): see the note at the top
     isLocked: isLocked, lockInfo: lockInfo, storedRecord: storedRecord, relock: relock,
     // a write to one filed record by id, for the GM side's confirmed writes; see updateById

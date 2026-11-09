@@ -34,7 +34,7 @@ window.EN = window.EN || {};
 
 EN.campaigns = (function () {
   "use strict";
-  var STASH = "en_join_v1", CACHE = "en_campaigns_v1", PICK = "en_campaign_pick_v1";
+  var STASH = "en_join_v1", CACHE = "en_campaigns_v1", PICK = "en_campaign_pick_v1", PICK_TAB = "en_campaign_pick_tab_v1", ASKED = "en_gm_asked_v1";
 
   function getKey(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function setKey(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -251,9 +251,121 @@ EN.campaigns = (function () {
       .eq("campaign_id", id).eq("sender_id", me()).order("created_at", { ascending: false }).limit(50).then(check);
   }
 
-  // the Campaign tab's picker, remembered per device
-  function pick() { return getKey(PICK) || ""; }
-  function setPick(id) { setKey(PICK, id); }
+  /* THE PICK. Which campaign this tab is on, and with it which Admin desktop (js/gmstore.js follow). Each
+     tab keeps its own, in memory and across a reload, as it keeps its own character (store.js): an Admin
+     can have one campaign open in each of two tabs. A new tab starts on the last one picked anywhere. Once
+     a tab has an answer it doesn't change unless this tab changes it. NO_CAMPAIGN is a pick too: this
+     browser's own desktop and crew, which is what an account with no campaign gets anyway. */
+  var NO_CAMPAIGN = "none";
+  var tabPick = null;
+  function pinTab() { try { sessionStorage.setItem(PICK_TAB, tabPick); } catch (e) {} }
+  function pick() {
+    if (tabPick === null) {
+      var own = null;
+      try { own = sessionStorage.getItem(PICK_TAB); } catch (e) {}
+      tabPick = own || getKey(PICK) || "";
+      if (tabPick) pinTab();   // a reload comes back here, whatever another tab picks next
+    }
+    return tabPick;
+  }
+  function setPick(id) {
+    tabPick = id || "";
+    setKey(PICK, tabPick);
+    pinTab();
+    if (EN.gmStore && EN.gmStore.follow) EN.gmStore.follow();   // the desktop never lags the pick, so a write can't land on the one just left
+  }
+  /* The campaign this tab's Admin desktop belongs to, or null. This answers from what is remembered, with
+     no network in it, unlike current() below: a dropped connection must not swap the Table out from under a
+     fight, and at boot it has to answer before the client has. Only jacking out, for real, leaves it. */
+  function desktop() {
+    var mine = running();
+    if (!mine.length) return null;
+    var want = pick();
+    if (want === NO_CAMPAIGN) return null;
+    var hit = mine.filter(function (x) { return x.id === want; })[0];
+    if (hit) return hit;
+    /* A tab with no pick pins this answer. The first in the list can change under a tab, when the account is made
+       co-Admin on an older campaign, and that must not swap the Table. It stays this tab's own: a new tab still
+       opens on the last one someone picked. A pick this account can't reach stays as it is, since it may be
+       another account's on this browser, and that account will want it back. */
+    if (!want) { tabPick = mine[0].id; pinTab(); }
+    return mine[0];
+  }
+
+  /* ---- what the device held from before a campaign had its own desktop -----------
+     Asked once per account, on this browser, the first time it reaches the Admin desktop while running a
+     campaign and en_gm_v1 holds more than the library. Nothing moves without an answer, and the answer can
+     be changed later: Settings' GM data section offers the same move. An account with nothing to move is
+     marked as asked, so a one-shot on the device later on never brings the card up. */
+  var moveOpen = false;
+  function askedMove(id) {
+    try { var v = JSON.parse(getKey(ASKED) || "{}"); return !!(v && v[id]); } catch (e) { return false; }
+  }
+  function noteAsked(id) {
+    var v = {};
+    try { v = JSON.parse(getKey(ASKED) || "{}") || {}; } catch (e) { v = {}; }
+    v[id] = true;
+    setKey(ASKED, JSON.stringify(v));
+  }
+  // what a move did, in words, for the card and for Settings
+  function moveWords(res) {
+    if (!res.ok) return "NOT MOVED. This device refused the write, and nothing changed.";
+    if (!res.moved && !res.stayed && !res.tableStayed) return "Nothing is left on the device to move.";
+    var out = res.moved ? "Moved to this campaign." : "Nothing moved.";
+    if (res.tableStayed) out += " This campaign's Table is in use, so the old one stayed on the device.";
+    if (res.stayed) out += " " + res.stayed + (res.stayed === 1 ? " thing" : " things") + " stayed on the device, where the same record already differs here or another campaign owns the row.";
+    if (res.copied) out += " The device copy could not be cleared, so it is still there too.";
+    return out;
+  }
+  /* Moves the device's work into campaign `id` and lands this tab on it. */
+  function moveInto(id) {
+    var now = desktop();
+    if (!now || now.id !== id) setPick(id);
+    // a device refusing the last edit keeps the tab where it was (js/gmstore.js follow), and the work mustn't land there instead
+    var at = EN.gmStore.desk();
+    if (!at || at.id !== id) return { ok: false, why: "refused" };
+    return EN.gmStore.moveDevice();
+  }
+  function checkMove() {
+    var who = me();
+    if (moveOpen || !who || !landedYet || cardOpen || !enabled() || !(EN.gate && EN.gate.panel) || !EN.gmStore || !EN.gmStore.deviceHolds) return;
+    if (!EN.app || EN.app.portal() !== "admin" || askedMove(who)) return;
+    var mine = running();
+    if (!mine.length) return;
+    var held = EN.gmStore.deviceHolds();
+    if (!held) { noteAsked(who); return; }
+    moveOpen = true;
+    var p = null;
+    function done(words) {
+      noteAsked(who);
+      moveOpen = false;
+      p.close();
+      if (EN.app) EN.app.render();
+      if (words) EN.ui.toast(words);
+    }
+    function card(note) {
+      var o = {
+        warn: "ADMIN DESKTOP",
+        label: "Admin work on this device",
+        lines: [
+          "Each campaign has its own Admin desktop now. This device holds work from before that: " + EN.gmStore.countText(held) + ".",
+          "Saved Threats and custom Hazards stay shared either way. Which campaign does the rest belong to?"
+        ].concat(note ? [note] : []),
+        actions: mine.map(function (c) {
+          return { label: "MOVE TO " + c.name.toUpperCase(), key: "move-" + c.id, onClick: function () {
+            var res = moveInto(c.id);
+            // refused: the question still stands, and the answer isn't this one
+            if (!res.ok) { card(moveWords(res)); return; }
+            done(moveWords(res));
+          } };
+        }).concat([
+          { label: "LEAVE IT ON THIS DEVICE", key: "move-leave", onClick: function () { done("It stays on this device. Pick \"No campaign\" in the Table's picker to open it, and Settings can move it later."); } }
+        ])
+      };
+      if (p) p.show(o); else p = EN.gate.panel(o);
+    }
+    card();
+  }
 
   /* ---- + New campaign, drawn by Manage characters and the Campaign tab alike -----
      It keeps its own state, so a redraw in the middle of typing a name loses nothing. */
@@ -435,10 +547,7 @@ EN.campaigns = (function () {
   function current() {
     var c = cloud();
     if (!enabled() || (c && c.offline && c.offline())) return null;
-    var mine = running();
-    if (!mine.length) return null;
-    var want = pick();
-    return mine.filter(function (x) { return x.id === want; })[0] || mine[0];
+    return desktop();
   }
   function localFor(rowId) {
     var c = cloud(), r = EN.store.roster() || {}, hit = null;
@@ -532,6 +641,7 @@ EN.campaigns = (function () {
   function landed() {
     landedYet = true;
     checkJoin();
+    checkMove();
     if (cloud() && cloud().landed) cloud().landed();   // mail that came during the boot can show now
   }
 
@@ -544,6 +654,8 @@ EN.campaigns = (function () {
     removeMember: removeMember, unblock: unblock, setRole: setRole, transfer: transfer, rename: rename, remove: remove,
     inviteUrl: inviteUrl, viewSheet: viewSheet, refreshView: refreshView, backToCampaign: backToCampaign,
     sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sendWrite: sendWrite, sends: sends,
-    current: current, crew: crew, crewRow: crewRow
+    current: current, crew: crew, crewRow: crewRow,
+    // which Admin desktop this tab is on, and the device's work from before each campaign had one
+    desktop: desktop, NO_CAMPAIGN: NO_CAMPAIGN, checkMove: checkMove, moveInto: moveInto, moveWords: moveWords
   };
 })();

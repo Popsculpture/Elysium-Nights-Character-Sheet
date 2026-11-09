@@ -32,6 +32,7 @@ EN.gmCampaign = (function () {
   var _remove = null;     // { user, block }: the Remove confirm that is open
   var _typed = null;      // { kind: "delete" | "transfer", to, toName }: the typed confirm that is open
   var _renameDraft = null, _transferTo = "";
+  var _for = null;        // the campaign those were opened on
 
   /* The message being written: { uid, campaign, to, from, subj, body, pkg: [{ name, qty }], search }.
      `to` is a character's row id or "crew". It lasts until it is sent or cancelled, the way a People
@@ -482,11 +483,13 @@ EN.gmCampaign = (function () {
     }
     var want = C().pick();
     var c = mine.filter(function (x) { return x.id === want; })[0] || mine[0];
+    // the Table's picker changes the campaign as well, so what is half done here is checked against it on the way in
+    if (_for !== c.id) { _for = c.id; _remove = null; _typed = null; _renameDraft = null; _transferTo = ""; }
     if (mine.length > 1) {
       mount.appendChild(el("div.camp-line.camp-pick", null, [
         el("label.fl", { style: { margin: 0 }, text: "Campaign" }),
         el("select.camp-input", { "aria-label": "Campaign", "data-camp": "picker", onchange: function (e) {
-          C().setPick(e.target.value); _remove = null; _typed = null; _renameDraft = null; _transferTo = ""; EN.app.render();
+          C().setPick(e.target.value); EN.app.render();
         } }, mine.map(function (x) { return el("option", { value: x.id, selected: x.id === c.id, text: x.name }); }))
       ]));
     }
