@@ -2609,6 +2609,16 @@ EN.store = (function () {
     });
     lastText = text;
   }
+  /* Two tabs moving one of these in the same moment. A wallet and a tally are running totals, so both moves stand: the newer
+     save winning would drop a payday the courier just filed while the letter still said paid. The rows a copy has filed are
+     only ever added to, so a merged copy lists both tabs': a row it dropped would be filed a second time. */
+  var TAB_SUMS = { glimmer: 1, nexus: 1, xp: 1, major: 1, minor: 1 };
+  function tabBoth(k, b, m, t) {
+    if (k === "inboxApplied" && Array.isArray(m) && Array.isArray(t)) return m.concat(t.filter(function (x) { return m.indexOf(x) === -1; }));
+    if (!tabHas(TAB_SUMS, k) || typeof m !== "number" || typeof t !== "number") return undefined;
+    var sum = m + t - (typeof b === "number" ? b : 0);
+    return k === "nexus" ? Math.round(sum * 100) / 100 : sum;
+  }
   function tabMerge(base, mine, theirs, mineWins) {
     var out = {}, b = tabPlain(base) ? base : {}, keys = {};
     Object.keys(mine).concat(Object.keys(theirs)).forEach(function (k) { keys[k] = 1; });
@@ -2619,6 +2629,8 @@ EN.store = (function () {
       var useMine;
       if (hereMoved && thereMoved) {
         if (inM && inT && tabPlain(mine[k]) && tabPlain(theirs[k])) { out[k] = tabMerge(b[k], mine[k], theirs[k], mineWins); return; }
+        var both = inM && inT ? tabBoth(k, b[k], mine[k], theirs[k]) : undefined;
+        if (both !== undefined) { out[k] = both; return; }
         useMine = mineWins;
       } else useMine = !thereMoved;
       if (useMine) { if (inM) out[k] = mine[k]; }

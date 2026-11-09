@@ -416,8 +416,9 @@ EN.cloud = (function () {
      which of this account's delivered rows its records don't list, and files those the ordinary way, safe behind the
      rules above. A message the player deleted is still listed in meta.inboxApplied, so it stays deleted, unless the
      copy that was saved over the sheet predates it. A package taken is `taken`, not delivered, so it can't come twice.
-     It looks at the newest LOST_LOOK rows only, and files LOST_FILE a run: a message with no package stays delivered
-     for good, and one read shouldn't grow with them.
+     It looks at the newest LOST_LOOK letters only, and files LOST_FILE a run: a message with no package stays delivered
+     for good, and one read shouldn't grow with them. A row with numbers has no such horizon, and goes first: a wallet
+     short by a payday isn't the same as a lost letter, and there are far fewer of them. PostgREST's own row limit is the limit.
 
      A ROW WITH OPS (a payday, an XP award, a milestone) changes numbers as well, in the same write as the message
      (EN.gmStore.deliverMail), so everything above holds for it unchanged: filed after a pull, on a clean copy, up to the
@@ -460,6 +461,10 @@ EN.cloud = (function () {
     if (list.length) b.unmarked = list; else delete b.unmarked;
     saveBook(b);
   }
+  function lostRead(status, cids, max) {
+    var ask = client.from("character_inbox").select("id, character_id").eq("status", status).in("character_id", cids).order("created_at", { ascending: false });
+    return (max ? ask.limit(max) : ask).then(check).then(null, function (e) { inboxWarn(e); return []; });
+  }
   function readRows(pulled) {
     var b = book(), cids = Object.keys(b.links).map(function (k) { return b.links[k].cid; });
     if (!cids.length) return Promise.resolve([]);
@@ -471,7 +476,8 @@ EN.cloud = (function () {
         ask.length ? client.from("character_inbox").select(SELECT_ROW).in("id", ask).in("character_id", cids).neq("status", "recalled").then(check) : [],
         open.length ? client.from("character_inbox").select(SELECT_ROW).in("id", open).then(check) : [],
         // LOST MAIL COMES BACK. Its own failure costs only this: the rest of the read still stands
-        pulled ? client.from("character_inbox").select("id, character_id").in("status", ["delivered", "applied"]).in("character_id", cids).order("created_at", { ascending: false }).limit(LOST_LOOK).then(check).then(null, function (e) { inboxWarn(e); return []; }) : []
+        pulled ? lostRead("applied", cids) : [],
+        pulled ? lostRead("delivered", cids, LOST_LOOK) : []
       ]);
     }).then(function (all) {
       // a row this device was still waiting to hear about that is simply gone went with its campaign
@@ -480,7 +486,7 @@ EN.cloud = (function () {
       var seen = {}, rows = [];
       (all[0] || []).concat(all[1] || [], all[2] || []).forEach(function (r) { if (!seen[r.id]) { seen[r.id] = 1; rows.push(r); } });
       var bookNow = book();
-      var lost = (all[3] || []).filter(function (r) {
+      var lost = (all[3] || []).concat(all[4] || []).filter(function (r) {
         var lid = linkedTo(bookNow, r.character_id), ch = lid ? roster()[lid] : null;
         return !seen[r.id] && !!ch && !filed(ch, r.id);
       }).map(function (r) { return r.id; }).slice(0, LOST_FILE);

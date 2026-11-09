@@ -316,7 +316,12 @@ EN.gmJobs = (function () {
   function crewNames(ids) {
     return (ids || []).map(function (id) {
       var ch = EN.gmEngine.sheetOf(id);
-      if (!ch) return String(id).indexOf("row:") === 0 ? "a character no longer in this campaign" : "a record no longer on this device";
+      if (!ch && String(id).indexOf("row:") === 0) {
+        // the campaign's read may just not be here: offline, jacked out, or another campaign's job. What was written to it still has a name
+        var wrote = gm.list("ledger").filter(function (w) { return w && w.charId === id && w.charName; })[0];
+        return wrote ? wrote.charName : "another player's character";
+      }
+      if (!ch) return "a record no longer on this device";
       return ((ch.firstName || "") + " " + (ch.lastName || "")).trim() || ch.name || "Freelancer";
     });
   }

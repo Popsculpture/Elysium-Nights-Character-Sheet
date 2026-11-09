@@ -1142,6 +1142,8 @@ EN.gmStore = (function () {
       return n;
     });
   }
+  // a cut that can't leave half a character behind: the database refuses a lone surrogate
+  function farCut(s, n) { return String(s).slice(0, n).replace(/[\uD800-\uDBFF]$/, ""); }
   function farCommas(n) { return String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
   function farLine(o) {
     var a = Math.abs(o.amount);
@@ -1156,22 +1158,25 @@ EN.gmStore = (function () {
     var src = isObj(r.meta) ? r.meta.source : "", label = String(r.label || "");
     var body = m ? String(m.body || "")
       : (label.length > 140 ? label + "\n\n" : "") + farNums(r.ops).map(farLine).join("\n") + "\n\nIt's on your sheet.";
-    if (body.length > 4000) body = body.slice(0, 3940) + "\n\nThe rest didn't fit. Ask the GM.";
-    var out = { from: String((m ? m.from : FAR_FROM[src]) || "").trim().slice(0, 80) || "The GM", subj: String(m ? m.subj : label).trim().slice(0, 140), body: body };
-    if (m && m.when) out.when = String(m.when).trim().slice(0, 40);
+    if (body.length > 4000) body = farCut(body, 3940) + "\n\nThe rest didn't fit. Ask the GM.";
+    var out = { from: farCut(String((m ? m.from : FAR_FROM[src]) || "").trim(), 80) || "The GM", subj: farCut(String(m ? m.subj : label).trim(), 140), body: body };
+    if (m && m.when) out.when = farCut(String(m.when).trim(), 40);
     return out;
   }
   function farFixLetter(r) {
     var first = farLetter(r), nums = farNums(r.ops);
-    return { from: first.from, subj: ((nums.length ? "Taken back: " : "Withdrawn: ") + first.subj).slice(0, 140),
+    return { from: first.from, subj: farCut((nums.length ? "Taken back: " : "Withdrawn: ") + first.subj, 140),
              body: nums.length ? "The GM took this back:\n" + nums.map(farLine).join("\n") + "\n\nIt's off your sheet." : "The GM withdrew this." };
   }
+  function farOwner() { var c = EN.cloud; return c && c.userId ? c.userId() : null; }
+  // who can send right now: the same account, with a link
   function farUser() {
     var c = EN.cloud;
-    return (c && c.userId && !(c.offline && c.offline()) && EN.campaigns && EN.campaigns.sendWrite) ? c.userId() : null;
+    return (c && !(c.offline && c.offline()) && EN.campaigns && EN.campaigns.sendWrite) ? farOwner() : null;
   }
   function farDue(r, who) {
-    return isObj(r) && r.kind === "write" && isObj(r.far) && !r.imported && r.far.by === who &&
+    // imported or not: it still owes what it owes, and the key means a browser holding the same one can't make it two
+    return isObj(r) && r.kind === "write" && isObj(r.far) && r.far.by === who &&
            (r.far.state === "queued" || (r.undone === true && r.far.fix === "queued"));
   }
   function farTodo(who) {
@@ -1213,9 +1218,11 @@ EN.gmStore = (function () {
     clearTimeout(_sendTimer);
     _sendTimer = setTimeout(function () { _sendTimer = null; flushSends(); }, 0);
   }
-  // a code from the database, which is an answer. EN_SIGNED_OUT comes right by itself
+  /* A code from the database, which is an answer. EN_SIGNED_OUT comes right by itself. Class 22 is Postgres saying what
+     was sent can't be stored, and sending it again won't change that: as no answer it would hold up everything behind it. */
   function farAnswer(e) {
-    var m = e && e.message ? String(e.message) : "";
+    var m = e && e.message ? String(e.message) : "", c = e && e.code ? String(e.code) : "";
+    if (/^22/.test(c)) return c;
     return /^EN_/.test(m) && m !== "EN_SIGNED_OUT" ? m : "";
   }
   function farFix(r, unfixed) {
@@ -1283,7 +1290,7 @@ EN.gmStore = (function () {
     if (!who) return Promise.resolve();
     var todo = farTodo(who);
     if (!todo.length) { _sendStuck = false; return Promise.resolve(); }
-    var refused = [], unfixed = [], failed = false;
+    var refused = [], unfixed = [], failed = false, wasStuck = _sendStuck;
     clearTimeout(_sendRetry);
     _sending = todo.reduce(function (p, r) {
       return p.then(function () { return farStep(r, refused, unfixed); });
@@ -1300,18 +1307,36 @@ EN.gmStore = (function () {
       var again = _sendAgain;
       _sendAgain = false;
       if (refused.length && EN.ui && EN.ui.toast) EN.ui.toast("Not delivered to " + farNames(refused) + ": this campaign can't reach them any more, so it doesn't count as paid.");
-      if (unfixed.length && EN.ui && EN.ui.toast) EN.ui.toast("Could not take it back from " + farNames(unfixed) + ": this campaign can't reach them any more. It stays on their sheet.");
-      if ((refused.length || unfixed.length) && EN.app && EN.app.render) EN.app.render();
+      if (unfixed.length && EN.ui && EN.ui.toast) EN.ui.toast("Could not send the correction to " + farNames(unfixed) + ": this campaign can't reach them any more.");
+      // the link back takes the note off the tab, unless somebody is typing there
+      var el = document.activeElement, typing = !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
+      if ((refused.length || unfixed.length || (wasStuck && !failed && !typing)) && EN.app && EN.app.render) EN.app.render();
       if (again && !failed) return flushSends();
     });
     return _sending;
   }
   // what has been waiting long enough to mention: a send on a good link has gone before anyone could read this
   function sendsWaiting() {
-    var who = farUser();
+    var who = farOwner();
     if (!who) return 0;
     var now = Date.now();
     return farTodo(who).filter(function (r) { return now - (r.undone && r.undoneAt ? r.undoneAt : (r.at || 0)) > FAR_WAIT; }).length;
+  }
+
+  /* A refusal has to outlast its toast: the link can come back hours later, with the Admin on another tab. These stay on the
+     undo strip, on every Admin tab, until they are read. One UNDO already asked for has nothing to say. */
+  function farNotices() {
+    var who = farOwner();
+    return list("ledger").filter(function (r) {
+      return isObj(r) && isObj(r.far) && r.far.by === who && !r.far.told && ((r.far.state === "refused" && r.far.fix !== "done") || r.far.fix === "refused");
+    });
+  }
+  function farNoticeRead(id) {
+    var r = rec("ledger", id);
+    if (!isObj(r) || !isObj(r.far)) return;
+    r.far.told = true;
+    persist(true);
+    emit();
   }
 
   /* THE COURIER'S DOOR (campaigns batch 3). A row from the character_inbox table becomes a #POST
@@ -1400,7 +1425,9 @@ EN.gmStore = (function () {
      device never applied it. Exposed so a view can name what UNDO will do before
      the GM presses it. */
   function undoable() {
-    return liveWrites()[0] || null;
+    // not another account's far write, on a browser they share: only that account can send the correction
+    var who = farOwner();
+    return liveWrites(function (r) { return !isObj(r.far) || r.far.by === who; })[0] || null;
   }
   /* Inverts the newest write, ops in reverse order, and marks its ledger record
      undone. Returns that record, null when there is nothing to undo, or false
@@ -1518,7 +1545,7 @@ EN.gmStore = (function () {
     // GM writes to player records, and the ones that still stand
     writeCrew: writeCrew, undoLast: undoLast, undoable: undoable, liveWrites: liveWrites, paidWrites: paidWrites,
     // the far door's outbox: js/cloud.js says when to try again, and the tabs say what's still waiting
-    flushSends: flushSends, sendsWaiting: sendsWaiting,
+    flushSends: flushSends, sendsWaiting: sendsWaiting, farNotices: farNotices, farNoticeRead: farNoticeRead,
     // the player's side of the Admin's inbox (js/cloud.js)
     deliverMail: deliverMail, withdrawMail: withdrawMail,
     // the document as a file, and whether the last write of it landed

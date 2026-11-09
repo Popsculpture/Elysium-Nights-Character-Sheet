@@ -1345,6 +1345,7 @@ EN.gmPayroll = (function () {
   function awardText(g) {
     var L = [msHead(g.kind, g.amount), "For: " + stop(g.reason)];
     g.writes.forEach(function (w) {
+      if (w.far) { L.push((w.charName || "a Freelancer") + ": sent through #POST."); return; }   // the copy here predates the award
       var ch = EN.gmEngine.sheetOf(w.charId), ms = (ch && isObj(ch.milestones)) ? ch.milestones : {};
       var now = { major: msCount(ms.major), minor: msCount(ms.minor) };
       L.push((w.charName || "a Freelancer") + ": now Major " + now.major + ", Minor " + now.minor + "." + (msReady(now) ? " Ready to level." : ""));
@@ -1391,7 +1392,7 @@ EN.gmPayroll = (function () {
       n += 1;
     }
     var left = liveWrites(function (w) { return metaOf(w).awardId === id; }).length;
-    toast(!left ? "Milestone undone: " + n + " " + plural(n, "record") + " put back as they were." + FAR_FIX
+    toast(!left ? "Milestone undone: " + n + " " + plural(n, "record") + " put back as they were." + farFixNote(gm.list("ledger").filter(function (w) { return metaOf(w).awardId === id; }))
       : refused ? (n ? "Undid " + n + " of the award's writes. " : "") + "This device refused to save the next undo, so the rest of the award stands."
       : "Undid " + n + " of the award's writes. A newer write sits on top of the rest.");
     EN.app.render();
@@ -1611,8 +1612,10 @@ EN.gmPayroll = (function () {
     if ((_p.heat || "").trim()) L.push("Heat: " + _p.heat.trim());
     return L.join("\n");
   }
-  // what an UNDO adds when it can't reach the sheet itself. Harmless said to a crew all on this device: no campaign, no far write
-  var FAR_FIX = " Another player's sheet gets a correction through #POST.";
+  // what an UNDO adds when it couldn't reach the sheet itself
+  function farFixNote(ws) {
+    return ws.some(function (w) { return !!(w && w.far); }) ? " Another player's sheet gets a correction through #POST." : "";
+  }
   function opsFor(m, x, now) {
     var ops = [];
     if (m.eachG > 0) ops.push({ op: "glimmer", amount: m.eachG });
@@ -1621,7 +1624,7 @@ EN.gmPayroll = (function () {
     // 0 when the Table's AWARD XP already paid this fight's (see tableAward)
     if (x.useXp && m.xpWrite > 0) ops.push({ op: "xp", amount: m.xpWrite });
     // another player's sheet always gets the stub: a letter is how they hear what just landed on it
-    if (_p.stub || gm.isCampaignRow(x.charId)) ops.push({ op: "post", mail: { from: "Payroll", subj: titled("Payday", m.title), when: clock(now), body: stubText(m, x) } });
+    if (_p.stub || (ops.length && gm.isCampaignRow(x.charId))) ops.push({ op: "post", mail: { from: "Payroll", subj: titled("Payday", m.title), when: clock(now), body: stubText(m, x) } });
     return ops;
   }
   function recordFrom(m) {
@@ -1768,7 +1771,7 @@ EN.gmPayroll = (function () {
       unmarkJob(pd);
     }
     gm.put("ledger", next, { silent: true });
-    toast(!left.length ? "Payday undone: " + n + " " + plural(n, "record") + " put back as they were." + FAR_FIX
+    toast(!left.length ? "Payday undone: " + n + " " + plural(n, "record") + " put back as they were." + farFixNote(pd.writeIds.map(function (w) { return gm.rec("ledger", w); }))
       : refused ? (n ? "Undid " + n + " of " + pd.writeIds.length + " writes. " : "") + "This device refused to save the next undo, so the rest of the payday stands."
       : "Undid " + n + " of " + pd.writeIds.length + " writes. A newer write sits on top of the rest.");
     EN.app.render();
@@ -1795,10 +1798,12 @@ EN.gmPayroll = (function () {
   function summaryPanel(m) {
     var kids = [], rec = m.rec, text = summaryText(m);
     if (rec && rec.credited && !rec.undone) {
+      // not rec.crew, which is who it was written to: the inbox can still refuse one of them afterward
+      var creditedTo = (Array.isArray(rec.writeIds) ? rec.writeIds : []).filter(function (id) { var w = gm.rec("ledger", id); return !w || !w.undone; }).length || (rec.crew || []).length;
       kids.push(el("div.feature", { dataset: { pay: "credited" }, style: { borderLeftColor: "var(--success)" } }, [
         el("div.row.between.wrap", { style: { gap: "8px", alignItems: "center" } }, [
           el("span", { style: { color: "var(--success)", fontWeight: 600 },
-            text: "Credited " + stamp(rec.creditedAt || rec.at) + " to " + (rec.crew || []).length + " " + plural((rec.crew || []).length, "Freelancer") + "." }),
+            text: "Credited " + stamp(rec.creditedAt || rec.at) + " to " + creditedTo + " " + plural(creditedTo, "Freelancer") + "." }),
           canUndo(rec) ? el("button.btn.sm.danger", { dataset: { pay: "undo-payday" }, onclick: function () { undoPayday(rec.id); } }, "↶ UNDO PAYDAY")
                        : el("span.help", { style: { margin: 0 }, text: importedPayday(rec)
                            ? "It came in with an imported GM backup, so it cannot be undone here."

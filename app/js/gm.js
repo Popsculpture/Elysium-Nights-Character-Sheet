@@ -2197,8 +2197,19 @@ EN.gmView = (function () {
     var u = null;
     try { u = gm.undoable(); } catch (e) { u = null; }
     var unsaved = typeof gm.saveOk === "function" && gm.saveOk() === false;
-    if (!u && !unsaved) return null;
+    var farNo = gm.farNotices ? gm.farNotices() : [];
+    if (!u && !unsaved && !farNo.length) return null;
     var kids = [];
+    // what the inbox refused, until it's been read: a toast is gone long before anyone looks
+    farNo.forEach(function (r) {
+      var who = r.charName || "a Freelancer", fixing = r.far.fix === "refused";
+      kids.push(el("div.row.between.wrap", { dataset: { gm: "far-refused" }, style: { gap: "8px", alignItems: "center", marginBottom: "6px" } }, [
+        el("span.help", { style: { margin: 0, color: "var(--warn)", flex: "1 1 220px", minWidth: 0 },
+          text: (fixing ? "The correction for " + (r.label || "a GM write") + " did not reach " + who + ": this campaign can't reach them any more."
+                        : (r.label || "A GM write") + " did not reach " + who + ": this campaign can't reach them any more, so it doesn't count as paid.") }),
+        el("button.btn.sm", { dataset: { gm: "far-refused-ok" }, onclick: function () { gm.farNoticeRead(r.id); EN.app.render(); } }, "OK")
+      ]));
+    });
     if (unsaved) {
       kids.push(el("p.help", { style: { margin: u ? "0 0 6px" : 0, color: "var(--danger)" },
         text: "NOT SAVED. This device refused the last write of the GM data. Export it from Settings, under GM DATA, to keep a copy." }));
