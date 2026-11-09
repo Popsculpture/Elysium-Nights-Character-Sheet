@@ -1042,14 +1042,13 @@ EN.gmStore = (function () {
     heldCopies[bag + "/" + c.id] = { mine: copy(c), live: live ? canon(live) : null };
   }
   /* A copy has something unsaid when a field of it matches neither what was held nor the record as it stands.
-     An editor's copy can start from the live record, so a field equal to the record is no edit, and the stamp
-     moves on every save, so it never counts. */
+     An editor's copy can start from the live record, so a field equal to the record is no edit. */
   function heldMoved(bag, c) {
     if (!isObj(c) || typeof c.id !== "string" || !own(heldCopies, bag + "/" + c.id)) return false;
     var h = heldCopies[bag + "/" + c.id], live = rec(bag, c.id);
     if (!live || canon(live) === h.live) return false;
     return Object.keys(c).concat(Object.keys(h.mine)).every(function (k) {
-      return k === "updatedAt" || canon(c[k]) === canon(h.mine[k]) || canon(c[k]) === canon(live[k]);
+      return canon(c[k]) === canon(h.mine[k]) || canon(c[k]) === canon(live[k]);
     });
   }
   /* Stores a COPY, so a view holding the object it passed cannot change saved
