@@ -715,7 +715,7 @@ Run on the live site on 8 Nov 2026, with two real accounts, Popsculpture and MyG
 
 # Campaigns build report: one Admin desktop per campaign
 
-Built 8 Nov 2026 on `claude/distracted-haslett-65d404`, cut from `main` at `089fd6c`. No SQL and no migration. **Not merged. It waits on your word.**
+Built 8 Nov 2026 on `claude/distracted-haslett-65d404`, cut from `main` at `089fd6c`. No SQL and no migration. **Merged to `main` on your word, 9 Nov 2026.**
 
 ## Why
 
