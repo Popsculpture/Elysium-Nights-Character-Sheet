@@ -407,8 +407,9 @@ EN.gmJobs = (function () {
     r.postingId = d.postingId || null;
     r.hook = d.hook || "";
     r.gmNotes = d.gmNotes || "";
-    r.status = d.status || "draft";
-    r.sentTo = (d.sentTo || []).slice();
+    // once there is a stored record it owns these (syncDraft): the card's copy can be behind, and saving it mustn't undo a posting
+    if (!own(r, "status")) r.status = d.status || "draft";
+    if (!Array.isArray(r.sentTo)) r.sentTo = (d.sentTo || []).slice();
     if (!own(r, "encounterId")) r.encounterId = d.encounterId || null;
     if (!own(r, "paydayId")) r.paydayId = d.paydayId || null;
     return r;

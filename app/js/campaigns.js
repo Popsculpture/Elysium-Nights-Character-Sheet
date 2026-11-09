@@ -282,11 +282,11 @@ EN.campaigns = (function () {
     if (want === NO_CAMPAIGN) return null;
     var hit = mine.filter(function (x) { return x.id === want; })[0];
     if (hit) return hit;
-    /* The answer sticks. The first in the list can change under a tab, when the account is made co-Admin on an
-       older campaign, and that must not swap the Table. It stays this tab's own: a new tab still opens on the
-       last one someone picked, not on this. */
-    tabPick = mine[0].id;
-    pinTab();
+    /* A tab with no pick pins this answer. The first in the list can change under a tab, when the account is made
+       co-Admin on an older campaign, and that must not swap the Table. It stays this tab's own: a new tab still
+       opens on the last one someone picked. A pick this account can't reach stays as it is, since it may be
+       another account's on this browser, and that account will want it back. */
+    if (!want) { tabPick = mine[0].id; pinTab(); }
     return mine[0];
   }
 

@@ -1036,21 +1036,21 @@ EN.gmStore = (function () {
      a redraw: the record has moved on and this copy has nothing unsaid, so open it again and show the news.
      This is this tab's business for as long as the editor is open, so it never reaches the document. */
   var heldCopies = Object.create(null);
-  // a stamp isn't a change: every save moves it, and an editor's copy of a record carries the one it found
-  function heldText(r) {
-    var c = {};
-    Object.keys(r).forEach(function (k) { if (k !== "updatedAt") c[k] = r[k]; });
-    return canon(c);
-  }
   function hold(bag, c) {
     if (!isObj(c) || typeof c.id !== "string" || !c.id) return;
     var live = rec(bag, c.id);
-    heldCopies[bag + "/" + c.id] = { mine: copy(c), text: heldText(c), live: live ? canon(live) : null };
+    heldCopies[bag + "/" + c.id] = { mine: copy(c), live: live ? canon(live) : null };
   }
+  /* A copy has something unsaid when a field of it matches neither what was held nor the record as it stands.
+     An editor's copy can start from the live record, so a field equal to the record is no edit, and the stamp
+     moves on every save, so it never counts. */
   function heldMoved(bag, c) {
     if (!isObj(c) || typeof c.id !== "string" || !own(heldCopies, bag + "/" + c.id)) return false;
     var h = heldCopies[bag + "/" + c.id], live = rec(bag, c.id);
-    return !!live && canon(live) !== h.live && heldText(c) === h.text;
+    if (!live || canon(live) === h.live) return false;
+    return Object.keys(c).concat(Object.keys(h.mine)).every(function (k) {
+      return k === "updatedAt" || canon(c[k]) === canon(h.mine[k]) || canon(c[k]) === canon(live[k]);
+    });
   }
   /* Stores a COPY, so a view holding the object it passed cannot change saved
      state behind the store's back. A record without an id is new and is given
@@ -1078,7 +1078,7 @@ EN.gmStore = (function () {
       c.updatedAt = now;
       s[bag][id] = c;
       // after a merge the record holds what the copy doesn't, so heldMoved says so, and the next draw shows it
-      if (isHeld) heldCopies[key] = { mine: mine, text: heldText(mine), live: merged ? null : canon(c) };
+      if (isHeld) heldCopies[key] = { mine: mine, live: merged ? null : canon(c) };
     }, opts);
     return id;
   }
