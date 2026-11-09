@@ -12874,6 +12874,10 @@ Run on the live site with two real accounts, with the rows read after each step.
 
 **Left open:** queued sends on the writing-tabs branch (`claude/funny-hermann-497402`) live in a ledger that now belongs to a campaign. Account sync, two tabs changing one list on one record at once, and a payday form saved from two tabs are in the build report.
 
+### The Admin desktop's live round, 2026-11-09
+
+Run on the live site with real Discord, reading the browser's storage after each step. All of it passed as built: no card on a browser with nothing to move, a campaign's Table in its own document, two tabs on one desktop, three tabs on three desktops, and a co-Admin's separate Table in Firefox. Not tried live: the card and the move. The author expected the co-Admin's Table to mirror the Admin's, and chose an additive SYNC button as the next build after the writing tabs. The build report has its rules and catches. The Pages deploy of `96bdb43` failed in a GitHub incident and was rerun by the empty commit `5fba2bc`.
+
 ### The writing tabs through the inbox, built 2026-11-08 on `claude/funny-hermann-497402`, rebuilt on `main` 2026-11-09
 
 **What changed, and why.** The next of the plan's later steps. Payroll with its Milestones panel, the XP award and the Job Board reach another player's character. `writeCrew` on a `row:` id sends a row in `character_inbox` and files the usual ledger record (THE FAR DOOR in `gmstore.js`), the courier files it (`cloud.js`, `deliverMail`), and the migration is `20261108210000_inbox_writes.sql`. Heat is not in it. The build report has the rest.

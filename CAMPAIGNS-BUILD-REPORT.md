@@ -780,14 +780,35 @@ Two independent reads, each given the code and not my conclusions.
 ## Still open
 
 - **With the writing tabs branch.** `claude/funny-hermann-497402` keeps its outbox in the ledger, and the ledger now belongs to a campaign. So a send queued for one campaign waits until that campaign is opened, unless whichever lands second makes it walk every document. The two branches conflict in `gmstore.js` and `campaigns.js`. `campaigns_table_1` needs both to pass all its checks, and `gmtabs_*` and `campaigns_writes_1` fail on the branch without them.
-- **Two devices or a co-Admin** see separate Tables. That is your choice 3, and account sync is its own build.
+- **Two devices or a co-Admin** see separate Tables, as the live round showed. That is your choice 3. You chose an additive SYNC button for it, next after the writing tabs: see below.
 - **Two tabs changing one list on one record inside a moment:** one change loses. So does changing one field in the same instant.
 - **A payday form saved from two tabs:** the last SAVE wins, as one form. A credited payday is protected, since it refuses a save.
 - **The one way left to lose a save:** the only tab holding it closes in the instant another tab's write lands over it, unheard. A person can't do that by hand.
 - **A tab frozen for over 7 days** can bring back something deleted, as on the roster.
 - **The copy from before a move** stays until you delete it in Settings, and it counts against the browser's storage.
 
-**Not checked:** the live site, real Discord and the real project. Two real tabs in a real browser were checked on localhost, with a stand-in account.
+## The live round
+
+Run on the live site on 9 Nov 2026, with real Discord and the real project, one step at a time. The desktop lives in the browser, not the database, so after each step I read the browser's storage (names and counts only).
+
+| Step | Result | Storage says |
+|---|---|---|
+| The Admin desktop opened on a browser with no old work | **Pass** | No card, and the account marked as asked |
+| A threat on a new campaign's Table, kept across a reload | **Pass** | In that campaign's own document only (Test) |
+| Two tabs on one desktop | **Pass** | A threat added in one tab and an edit made in the other each showed in the other tab without a reload. Both were in Test's document after reloading both |
+| Three tabs on three desktops | **Pass** | 5th flavor, Test and No campaign open at once, each with its own Table, each kept across a reload. No campaign's threat was in `en_gm_v1` only |
+| The co-Admin's browser (Firefox) | **Pass, as built** | 5th flavor's Table was empty there, with the crew offered. Each browser keeps its own desktop |
+
+**Not tried live:** the one-time card and the move, since no browser held Admin work from before. They pass locally. The picker's list in the co-Admin's browser wasn't read.
+
+**You expected the co-Admin's Table to mirror the Admin's.** It doesn't, by your choice 3. Co-Admins are rare, so you chose a cheaper fix over a live mirror: an additive **SYNC button**, the next build after the writing tabs. One press saves this campaign's desktop to the database and adds what the campaign's other Admins saved there. It never replaces or removes anything, and it reports what it kept as yours. It also covers one Admin on two computers. Its catches, agreed up front:
+
+- A delete doesn't travel: the next sync brings it back from someone who still has it.
+- An edit reaches only someone who doesn't have that record yet.
+- A sync in the middle of a fight adds the other person's Table rows.
+- Payroll's queued sends stay out, since they are money in flight.
+
+**The deploy:** GitHub's Pages build of `96bdb43` failed during a GitHub incident (Actions and Pages, 9 Nov 2026, 18:12 UTC). An empty commit, `5fba2bc`, ran it again, and the live files then matched `main`.
 
 # Campaigns build report: the writing tabs through the inbox
 
