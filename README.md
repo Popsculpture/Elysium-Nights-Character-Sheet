@@ -170,9 +170,9 @@ link, the roster, who is blocked, and each player's sheet, read-only.
 
 While an account runs a campaign, the Admin desktop's crew is that campaign's characters. The Table's Pull in the crew and the crew reader
 list them, each with its player's name, and a bank of characters on the browser stays out, the Admin's own included until they go in from
-Manage characters. With more than one campaign to run, the Table has the Campaign tab's picker. Payroll, Heat, the Job Board and the XP award
-count the whole crew but can only write to sheets on this device, and say who they can't reach. Jacked out or offline, the desktop uses the
-browser's records as it always did.
+Manage characters. With more than one campaign to run, the Table has the Campaign tab's picker. Payroll, the Job Board and the XP award reach
+every character in the campaign: another player's gets it through the inbox, below. Heat counts the whole crew but can only write to sheets on
+this device, and says who it can't reach. Jacked out or offline, the desktop uses the browser's records as it always did.
 
 The Admin and co-Admins can send in-game mail from the Campaign tab, to one character or the whole crew,
 signed as an NPC card from the People tab or any typed name, with items from the gear catalog attached.
@@ -187,6 +187,16 @@ Waiting, Delivered or Taken, and a send that is still waiting can be recalled.
 - `supabase/migrations/20261108180000_campaign_inbox.sql` holds the rules, and puts the table in the
   Realtime publication. The server only checks a package's shape, because it can't see the catalog: the
   player's app checks the names at Take it.
+
+A Job Board posting, a payday, a Milestone and the XP award go the same way when the character is another player's. A posting is plain mail. The
+others change numbers, so their row carries them: Glimmer, Nexus, XP and the two Milestone counters, and nothing else.
+
+- The player gets the numbers at once, with a line in their money Ledger, an unread #POST letter saying what came, and the usual toast. Same if they were away.
+- UNDO sends a correction: a second row with the numbers the other way, and a letter saying so. It can leave a wallet below zero, as UNDO always could. A posting
+  still waiting is recalled, and one that arrived gets a letter.
+- The Admin's ledger is the outbox (`EN.gmStore`, THE FAR DOOR), so the tabs work as they always did, and a send that can't reach the account yet waits and says so.
+  A send that can never land (the character left the campaign, say) stays on the undo strip until it's read, and doesn't count as paid.
+- `supabase/migrations/20261108210000_inbox_writes.sql` holds the rules. It has to be on the database before this app is live, or the inbox can't be read at all.
 
 ## Two tabs
 

@@ -12837,7 +12837,7 @@ The build report has the rest.
    **This reverses what the author was told before the build,** that these tabs would go on listing the browser's records. An independent review showed that paid the wrong people. The report says so.
 5. With no campaign (jacked out, offline, running none), everything is as it was, except that a `row:` row left on the Table stops the filed roster standing in for it.
 
-**Left open:** the writing tabs through the inbox, a Table per campaign, and the Table being per browser and not per account. VIEW SHEET from the Table comes back to the Campaign tab.
+**Left open:** Heat through the inbox (the rest of the writing tabs are done, below), a Table per campaign, and the Table being per browser and not per account. VIEW SHEET from the Table comes back to the Campaign tab.
 
 ### Two tabs work together, built 2026-11-08 on `campaigns-tabs`
 
@@ -12853,6 +12853,37 @@ The build report has the rest.
 5. The lock gives up after 20 seconds and runs anyway. The harness turns the lock off, because its virtual clock can't see the handshake: `pg/lock_probe.py` tests the real one on real time.
 
 **Left open:** the Admin desktop's `en_gm_v1` has the same two-tab problem and was not touched. BOLLARD-7's copied identity on the live project is unexplained, and the sheet is unrepaired. The build report lists the rare ones.
+
+### The writing tabs through the inbox, built 2026-11-08 on `claude/funny-hermann-497402`
+
+**What changed, and why.** The next of the plan's later steps. Payroll with its Milestones panel, the XP award and the Job Board reach another player's character. `writeCrew` on a `row:` id sends a row in `character_inbox` and files the usual ledger record (THE FAR DOOR in `gmstore.js`), the courier files it (`cloud.js`, `deliverMail`), and the migration is `20261108210000_inbox_writes.sql`. Heat is not in it. The build report has the rest.
+
+**The author's three rulings, 8 Nov 2026.** Job Board, Payroll and the XP award first, with Heat on its own pass. A player gets the numbers at once with a letter, not a Take it. UNDO sends a correction, it doesn't refuse.
+
+**Do not relitigate these. Each is what stops money landing twice or not at all:**
+
+1. A row with numbers has its own statuses, `due` and `applied`. A tab from before it only reads `waiting` and `delivered`, so it can't file one as plain mail and lose the numbers, and every older function stops at them unchanged. So a row with numbers can't be recalled: a recall racing a filing would have to take numbers back off a sheet.
+2. The ledger is the outbox. Four tabs' flows are built on `writeCrew` answering at once, and a reload has to keep what's owed. So the record goes to storage first, the row after.
+3. The record's id is the row's `send_key`, and the database answers a repeat with the row it made, first, before it asks anything else. So a lost answer, a reload or a second tab can all just send again, even after the character has left.
+4. A code from the database is an answer, and anything else is no answer. EN_SIGNED_OUT isn't one, and class 22 (data it can't store) is, or it would hold up everything behind it for good.
+5. The numbers and the row's id go on the record in one write, so a copy holds both or neither, and a copy that lost them files them again. Lost mail has a horizon for letters and none for numbers.
+6. In a tab merge a wallet and a tally add up, and `meta.inboxApplied` is both tabs'. Newer-wins could leave a letter saying paid with the money gone. This is the one change to the author's "the newer save wins where both changed one field", and only for those.
+
+**Readings taken where the rulings left room, smallest first:**
+
+- **Milestones go with Payroll.** Same tab, same door. **Vigor at the Table's END doesn't:** it depends on what the sheet holds, and it was never one of the four. `clearCrewVigor` still passes a far row over.
+- **A closed list: Glimmer, Nexus, XP and the two Milestone counters.** Up to four ops a row. Glimmer and XP whole, up to 10,000,000 either way. Nexus to the hundredth, up to 1,000,000. Milestones up to 99. A negative is how a correction works, so a hand-made call by those who run a campaign can dock a sheet. That is the trust a player gives by joining.
+- **`send_write` takes a posting as well,** with no ops, so one door has the key. `send_to_character` is as batch 3 left it. The Job Board's own When only comes through the new door.
+- **Payroll's pay stub is always on for another player's sheet,** whatever the chip says: the letter is how they hear about it. Unless it's a payday of nothing, which is nothing for everyone.
+- **The letter's From** is Payroll, XP Award, Milestones or JOB BOARD. A long field is cut to fit, never refused, and a cut can't halve an emoji.
+- **A send still on the device when it's taken back goes nowhere.** Once it has tried, it might have landed, so it goes first and the correction follows.
+- **A send only goes under the account that wrote it,** and only that account can take it back.
+- **The player's name is on the lists about to be written to** (`tag`), as it is on the Table.
+- **A queued write that came in with an imported file still goes.** The key makes that safe. It's marked as history, so it can't be undone from there.
+
+**Tests.** `pg/writes_body.js` is one story, told by `tests/campaigns_writes_1.js` against batch 3's stand-in and by `pg/writes_realdb.js` against the real migration. `tests/campaigns_writes_2.js` and `_3.js` are a real reload with a send queued. `pg/writes_tabs_realdb.js` is two real tabs, and needs the per-campaign Admin desktops. `pg/writes_mutants.py` breaks the code a line at a time, and `pg/mutants.mjs` the migration.
+
+**Left open:** Heat, and Vigor at the Table's END. Two different Admins can pay one fight twice, because "already paid" reads a ledger that is per browser. On this branch alone a second Admin tab can too, which the per-campaign desktops branch closes, so that branch goes first. The migration has to land before this code, or the inbox can't be read. The build report lists the rare ones.
 
 ### The real Discord round, 2026-11-08
 

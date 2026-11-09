@@ -124,9 +124,12 @@ card.
 - Two tabs share one roster (`store.js`, TWO TABS, ONE ROSTER). Change a record through the store's own calls: a stamp has to move forward (`nextStamp`), or another tab reads the copy as old news. Take a record out only through
   `remove`, which writes the delete down (`en_roster_gone_v1`), or the other tab puts it back. Anything that brings an id back on purpose has to `clearGone` it. `cloud.js` trusts the link book only after `hearTabs()`, and reads the book first. `en_gm_v1` is not covered.
 - The Admin's Table: `EN.campaigns.current()` is the campaign the desktop works on, `EN.campaigns.crew(id)` its characters (a 30 second cache, never in
-  the roster). A Table row with the `charId` `row:<row id>` is another player's character: `pruneCrew` keeps it, `writeCrew` refuses it, and anything reading
-  crew rows has to expect it. `EN.gmEngine.crew()` is still the one reader. Pass `{device:true}` from anything that writes to sheets: the numbers stay the whole
-  crew's and `members` holds only sheets on this device. Don't widen an empty list to the roster when `far` or `inCampaign` is set: that pays somebody's bank.
+  the roster). A Table row with the `charId` `row:<row id>` is another player's character: `pruneCrew` keeps it, `writeCrew` sends it through the inbox, and anything reading
+  crew rows has to expect it. `EN.gmEngine.crew()` is still the one reader, and `EN.gmEngine.sheetOf(charId)` reads a member's sheet wherever it is. `{device:true}` is Heat's alone: the numbers
+  stay the whole crew's and `members` holds only sheets on this device. Don't widen an empty list to the roster when `far` or `inCampaign` is set: that pays somebody's bank.
+- The far door: `EN.gmStore.writeCrew` on a `row:` character files the usual ledger record with a `far` tag and returns at once, and `flushSends` sends the row. The ledger is the outbox. The
+  record's id is the row's `send_key`, so sending again is always safe. A row with `ops` has its own two statuses, `due` and `applied`, so a tab older than it can't file it as plain mail and lose the
+  numbers, and it can't be recalled. UNDO sends a correcting row. Read THE FAR DOOR in gmstore.js and the `ops` part of THE INBOX in cloud.js first.
 - #POST from the Admin (batch 3) adds `character_inbox`, the courier. The same warning applies: a sender can
   read what they sent, so any read of it for "my mail" must ask by the account's own character ids, as
   `readRows()` in cloud.js does. A row becomes a message only through `EN.gmStore.deliverMail`, which writes
@@ -137,7 +140,7 @@ card.
   (`filing` in the link book), its push lands only on the row as this device last saw it, and a pull takes the
   row's copy whatever the clocks say. Read the INBOX comment in cloud.js before touching any of it: each rule
   there lost real work in some build. One more device key: `en_inbox_taken_v1`, the Take it reports still
-  waiting to go.
+  waiting to go. In a tab merge a wallet and a tally add up, and `meta.inboxApplied` is both tabs' (`tabBoth` in store.js), so a merge can't part a row's numbers from its id.
 - Held content lives in ONE place: `app/data/launch.js` (`EN.launch`, since 2026-10-16). It
   has three switches, `holds.lineup` (held lineages, subclasses, Talents, Backgrounds),
   `holds.availability` (rarity) and `holds.toolkit` (gear the Player's Handbook doesn't print:
