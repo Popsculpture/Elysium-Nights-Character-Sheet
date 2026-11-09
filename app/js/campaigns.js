@@ -357,7 +357,7 @@ EN.campaigns = (function () {
             done(moveWords(res));
           } };
         }).concat([
-          { label: "LEAVE IT ON THIS DEVICE", key: "move-leave", onClick: function () { done("It stays on this device. No campaign in the Table's picker opens it, and Settings can move it later."); } }
+          { label: "LEAVE IT ON THIS DEVICE", key: "move-leave", onClick: function () { done("It stays on this device. Pick \"No campaign\" in the Table's picker to open it, and Settings can move it later."); } }
         ])
       };
       if (p) p.show(o); else p = EN.gate.panel(o);

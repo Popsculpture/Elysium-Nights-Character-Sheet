@@ -742,7 +742,7 @@ You asked whether an Admin can run several campaigns. Creating, joining and the 
 
 ## What you'll notice
 
-- **Your first visit to the Admin desktop** brings up the card, if this browser holds work from before. Answer it once. Leaving it on the device is safe: No campaign opens it, and Settings can still move it.
+- **Your first visit to the Admin desktop** brings up the card, if this browser holds work from before. Answer it once. Leaving it on the device is safe: pick "No campaign" in the Table's picker to open it, and Settings can still move it.
 - **With no campaign,** nothing looks different, and two tabs now work.
 - **An empty Table on a campaign you've never used is right.** The work is on another desktop, not gone.
 
