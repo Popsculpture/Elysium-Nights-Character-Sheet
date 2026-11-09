@@ -19,6 +19,7 @@ declare
   w1 uuid; w2 uuid; w3 uuid;
   bad jsonb;
   n int;
+  n2 int;
   v text;
   f text;
   j jsonb;
@@ -899,6 +900,108 @@ begin
   select count(*) into n from public.character_inbox where id = w1 and status = 'applied';
   out := out || case when w3 = w1 and n = 1 then 'PASS' else 'FAIL' end || E' a repeat after it landed changes nothing\n';
 
+  -- taking a send back, decided here (take_back)
+  v := public.take_back(ch_d, 'tb1', '{"from": " Payroll ", "subj": "Taken back: Payday"}');
+  select count(*) into n from public.character_inbox i where i.send_key = 'tb1' and i.sender_id = a and i.status = 'recalled' and i.ops is null and i.campaign_id = camp3 and i.character_id = ch_d and i.mail ->> 'from' = 'Payroll';
+  out := out || case when v = 'cancelled' and n = 1 then 'PASS' else 'FAIL' end || ' a key with no row is taken back before it lands, and marked so (' || coalesce(v, 'null') || ', ' || n || E')\n';
+  err := null;
+  begin perform public.send_write(ch_d, 'tb1', '{"from": "Payroll", "subj": "Payday"}', '[{"op": "glimmer", "amount": 5}]'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_TAKEN_BACK' then 'PASS' else 'FAIL' end || ' a send under it afterwards is refused (' || coalesce(err, 'no error') || E')\n';
+  select count(*) into n from public.character_inbox where send_key = 'tb1' and status = 'recalled';
+  select count(*) into n2 from public.character_inbox where send_key = 'tb1';
+  out := out || case when n = 1 and n2 = 1 then 'PASS' else 'FAIL' end || ' and lands nothing (' || n || ', ' || n2 || E')\n';
+  v := public.take_back(ch_d, 'tb1', '{"from": "Payroll", "subj": "Taken back: Payday"}');
+  select count(*) into n from public.character_inbox where send_key like 'tb1%';
+  out := out || case when v = 'cancelled' and n = 1 then 'PASS' else 'FAIL' end || ' taken back again, the same answer and nothing new (' || coalesce(v, 'null') || ', ' || n || E')\n';
+
+  -- a row with ops that landed: the correction, the numbers the other way, once
+  v := public.take_back(ch_d, 'k1', '{"from": "Payroll", "subj": "Taken back: Payday: The Toll", "body": "The GM took this back"}');
+  select ops into j from public.character_inbox where send_key = 'k1:fix' and sender_id = a and status = 'due' and campaign_id = camp3 and character_id = ch_d;
+  out := out || case when v = 'corrected' and j = '[{"op": "glimmer", "amount": -1200}, {"op": "nexus", "amount": -2.5}, {"op": "xp", "amount": -500}, {"op": "milestone", "kind": "minor", "amount": -1}]'::jsonb then 'PASS' else 'FAIL' end || ' a landed row gets its correction, the numbers the other way (' || coalesce(v, 'null') || ', ' || coalesce(j::text, 'null') || E')\n';
+  select mail into j from public.character_inbox where send_key = 'k1:fix' and sender_id = a;
+  out := out || case when j = '{"from": "Payroll", "subj": "Taken back: Payday: The Toll", "body": "The GM took this back"}'::jsonb then 'PASS' else 'FAIL' end || ' with the letter given (' || coalesce(j::text, 'null') || E')\n';
+  v := public.take_back(ch_d, 'k1', '{"from": "Payroll", "subj": "Taken back: Payday: The Toll"}');
+  select count(*) into n from public.character_inbox where send_key = 'k1:fix' and sender_id = a;
+  out := out || case when v = 'corrected' and n = 1 then 'PASS' else 'FAIL' end || ' asked again, it is the same correction (' || coalesce(v, 'null') || ', ' || n || E')\n';
+  select count(*) into n from public.character_inbox where id = w1 and status = 'applied';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' and the row it corrects is left as it was (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  v := public.take_back(ch_d, 'k1', '{"from": "Payroll", "subj": "Taken back"}');
+  select ops into j from public.character_inbox where send_key = 'k1:fix' and sender_id = b;
+  out := out || case when v = 'corrected' and j = '[{"op": "xp", "amount": 30}]'::jsonb then 'PASS' else 'FAIL' end || ' a co-Admin takes back their own key, and a negative comes back positive (' || coalesce(j::text, 'null') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.send_write(ch_d, 'tb2', '{"from": "XP Award", "subj": "Award"}', '[{"op": "milestone", "kind": "major", "amount": 2}]');
+  v := public.take_back(ch_d, 'tb2', '{"from": "XP Award", "subj": "Taken back: Award"}');
+  select ops into j from public.character_inbox where send_key = 'tb2:fix';
+  out := out || case when v = 'corrected' and j = '[{"op": "milestone", "kind": "major", "amount": -2}]'::jsonb then 'PASS' else 'FAIL' end || ' a row still due is corrected the same way, its counter kept (' || coalesce(j::text, 'null') || E')\n';
+
+  -- a posting: recalled while it waits, a letter once it has arrived
+  perform public.send_write(ch_d, 'tb3', '{"from": "JOB BOARD", "subj": "Job"}');
+  v := public.take_back(ch_d, 'tb3', '{"from": "JOB BOARD", "subj": "Withdrawn: Job"}');
+  select count(*) into n from public.character_inbox where send_key = 'tb3' and status = 'recalled';
+  select count(*) into n2 from public.character_inbox where send_key = 'tb3:fix';
+  out := out || case when v = 'recalled' and n = 1 and n2 = 0 then 'PASS' else 'FAIL' end || ' a posting still waiting is recalled, with no letter (' || coalesce(v, 'null') || ', ' || n || ', ' || n2 || E')\n';
+  v := public.take_back(ch_d, 'tb3', '{"from": "JOB BOARD", "subj": "Withdrawn: Job"}');
+  out := out || case when v = 'cancelled' then 'PASS' else 'FAIL' end || ' asked again, it is gone already (' || coalesce(v, 'null') || E')\n';
+  err := null;
+  begin perform public.send_write(ch_d, 'tb3', '{"from": "JOB BOARD", "subj": "Job"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_TAKEN_BACK' then 'PASS' else 'FAIL' end || ' and a repeat of it is refused (' || coalesce(err, 'no error') || E')\n';
+  perform public.send_write(ch_d, 'tb4', '{"from": "JOB BOARD", "subj": "Job two"}');
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  perform public.mark_delivered((select i.id from public.character_inbox i where i.send_key = 'tb4' and i.sender_id = a));
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  v := public.take_back(ch_d, 'tb4', '{"from": "JOB BOARD", "subj": "Withdrawn: Job two", "body": "The GM withdrew this."}');
+  select count(*) into n from public.character_inbox where send_key = 'tb4:fix' and status = 'waiting' and ops is null and mail ->> 'subj' = 'Withdrawn: Job two';
+  select count(*) into n2 from public.character_inbox where send_key = 'tb4' and status = 'delivered';
+  out := out || case when v = 'corrected' and n = 1 and n2 = 1 then 'PASS' else 'FAIL' end || ' a posting that arrived stays, and gets a letter instead (' || coalesce(v, 'null') || ', ' || n || ', ' || n2 || E')\n';
+
+  -- who can take back, and what
+  err := null;
+  begin perform public.take_back(ch_a, 'k1', '{"from": "Payroll", "subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a key used for another character is refused (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.take_back(ch_d, 'tb5', '{"from": "Payroll", "subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot mark a key taken back (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.character_inbox where send_key = 'tb5';
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' and leaves no row (' || n || E')\n';
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.take_back(ch_d, null, '{"from": "Payroll", "subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_KEY' then 'PASS' else 'FAIL' end || ' take_back needs a key (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.take_back(ch_d, repeat('k', 81), '{"from": "Payroll", "subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_KEY' then 'PASS' else 'FAIL' end || ' one no longer than send_write takes (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.take_back(ch_d, 'tb6', '{"subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_MAIL' then 'PASS' else 'FAIL' end || ' and a letter clean_mail takes (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.take_back(ch_d, 'tb6', '{"from": "Kade", "subj": "x", "package": [{"name": "Rope", "qty": 1}]}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_MAIL' then 'PASS' else 'FAIL' end || ' with no package on it (' || coalesce(err, 'no error') || E')\n';
+
+  -- the character leaves: nothing new reaches them, a correction made already still answers, a waiting posting can still be recalled
+  perform public.send_write(ch_d, 'tb7', '{"from": "Payroll", "subj": "Pay"}', '[{"op": "xp", "amount": 7}]');
+  perform public.send_write(ch_d, 'tb8', '{"from": "JOB BOARD", "subj": "Job three"}');
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  update public.characters set campaign_id = null where id = ch_d;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.take_back(ch_d, 'tb9', '{"from": "Payroll", "subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a character that left: an unused key is refused (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.take_back(ch_d, 'tb7', '{"from": "Payroll", "subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' and so is a new correction (' || coalesce(err, 'no error') || E')\n';
+  v := public.take_back(ch_d, 'k1', '{"from": "Payroll", "subj": "x"}');
+  out := out || case when v = 'corrected' then 'PASS' else 'FAIL' end || ' a correction made already still answers (' || coalesce(v, 'null') || E')\n';
+  v := public.take_back(ch_d, 'tb8', '{"from": "JOB BOARD", "subj": "x"}');
+  select count(*) into n from public.character_inbox where send_key = 'tb8' and status = 'recalled';
+  out := out || case when v = 'recalled' and n = 1 then 'PASS' else 'FAIL' end || ' and a posting still waiting can still be recalled (' || coalesce(v, 'null') || ', ' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  update public.characters set campaign_id = camp3 where id = ch_d;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+
   -- nobody writes the new columns directly, and the database holds the rules
   err := null;
   begin update public.character_inbox set ops = '[]' where id = w1; exception when others then err := sqlstate; end;
@@ -959,7 +1062,7 @@ begin
     'remove_member(%1$L, %1$L)', 'unblock_member(%1$L, %1$L)', 'set_role(%1$L, %1$L, ''player'')',
     'transfer_leadership(%1$L, %1$L)', 'rename_campaign(%1$L, ''x'')', 'delete_campaign(%1$L)',
     'send_to_character(%1$L, ''{}'')', 'send_to_crew(%1$L, ''{}'')', 'recall_send(%1$L)', 'mark_delivered(%1$L)', 'mark_taken(%1$L)',
-    'send_write(%1$L, ''k'', ''{}'')', 'mark_applied(%1$L)'
+    'send_write(%1$L, ''k'', ''{}'')', 'take_back(%1$L, ''k'', ''{}'')', 'mark_applied(%1$L)'
   ] loop
     err := null;
     begin execute 'select * from public.' || format(f, a); exception when others then err := sqlerrm; end;
@@ -988,6 +1091,9 @@ begin
   err := null;
   begin perform public.mark_applied(camp4); exception when others then err := sqlstate; end;
   out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot mark one applied (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.take_back(camp4, 'k', '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot take a send back (' || coalesce(err, 'no error') || E')\n';
   err := null;
   begin select count(*) into n from public.character_inbox; exception when others then err := sqlstate; end;
   out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot read the inbox (' || coalesce(err, 'no error') || E')\n';

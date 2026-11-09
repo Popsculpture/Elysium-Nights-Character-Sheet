@@ -12884,11 +12884,13 @@ Run on the live site with two real accounts, with the rows read after each step.
 
 1. A row with numbers has its own statuses, `due` and `applied`. A tab from before it only reads `waiting` and `delivered`, so it can't file one as plain mail and lose the numbers, and every older function stops at them unchanged. So a row with numbers can't be recalled: a recall racing a filing would have to take numbers back off a sheet.
 2. The ledger is the outbox. Four tabs' flows are built on `writeCrew` answering at once, and a reload has to keep what's owed. So the record goes to storage first, the row after.
-3. The record's id is the row's `send_key`, and the database answers a repeat with the row it made, first, before it asks anything else. So a lost answer, a reload or a second tab can all just send again, even after the character has left.
+3. The record's id is the row's `send_key`, and the database answers a repeat with the row it made, first, before it asks anything else, or with EN_TAKEN_BACK if `take_back` got there first. So a lost answer, a reload or a second tab can all just send again, even after the character has left.
 4. A code from the database is an answer, and anything else is no answer. EN_SIGNED_OUT isn't one, and class 22 (data it can't store) is, or it would hold up everything behind it for good.
 5. The numbers and the row's id go on the record in one write, so a copy holds both or neither, and a copy that lost them files them again. Lost mail has a horizon for letters and none for numbers.
 6. In a tab merge a wallet and a tally add up, and `meta.inboxApplied` is both tabs'. Newer-wins could leave a letter saying paid with the money gone. This is the one change to the author's "the newer save wins where both changed one field", and only for those.
-7. A run reads every desktop on the device (EVERY DESKTOP'S OUTBOX), because a ledger belongs to a campaign. Each step reads the record again where it's kept, since a tab open there may have sent it or taken it back, and saves only the fields it changed, stamped in `rev`, so that tab hears it and keeps its own change. That it tried goes down before it goes, or it waits.
+7. A run reads every desktop on the device (EVERY DESKTOP'S OUTBOX), because a ledger belongs to a campaign. Each step reads the record again where it's kept, since a tab open there may have sent it or taken it back, and writes it back stamped in `rev`, so that tab hears it.
+8. UNDO is the database's to decide (`take_back`): no tab can know whether a send landed, with every Admin tab running every desktop's outbox. A key with no row is marked, and a send under it later is refused. Don't put the choice back in the app.
+9. What either copy of a far record knows stays known (`farJoin`, in a tab hearing another and in a run writing to another desktop). A send, a refusal, an UNDO and what came of it only move forward.
 
 **Readings taken where the rulings left room, smallest first:**
 
@@ -12904,4 +12906,4 @@ Run on the live site with two real accounts, with the rows read after each step.
 
 **Tests.** `pg/writes_body.js` is one story, told by `tests/campaigns_writes_1.js` against batch 3's stand-in and by `pg/writes_realdb.js` against the real migration. `tests/campaigns_writes_2.js` and `_3.js` are a real reload with a send queued. `pg/writes_tabs_realdb.js` is two real tabs, on one campaign and on two. `pg/writes_mutants.py` breaks the code a line at a time, and `pg/mutants.mjs` the migration.
 
-**Left open:** Heat, and Vigor at the Table's END. Two different Admins can pay one fight twice, because "already paid" reads a ledger that is per browser. The migration has to land before this code, or the inbox can't be read. The desktops' open item about queued sends is closed by rule 7. The build report lists the rare ones.
+**Left open:** Heat, and Vigor at the Table's END. Two different Admins can pay one fight twice, because "already paid" reads a ledger that is per browser. The migration has to land before this code, or the inbox can't be read. The desktops' open item about queued sends is closed by rule 7, and the review of that by rules 8 and 9. The build report lists the rare ones.

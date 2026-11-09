@@ -651,6 +651,11 @@ EN.gmStore = (function () {
         if (m === null) return;                    // deleted here: it stays deleted
         v = mergeParts(wasText, valueAt(state, p), v);
       }
+      // a far record keeps what either copy knows (THE FAR DOOR): a tab that hadn't heard can't unsay an UNDO
+      if (t !== null && m !== null && p.indexOf("b/ledger/") === 0) {
+        var joined = farJoin(valueAt(state, p), v);
+        if (joined !== v) { v = joined; if (canon(v) !== t) file.owes = true; }
+      }
       applyPart(p, v, orders);
       moved = true;
     });
@@ -1490,14 +1495,14 @@ EN.gmStore = (function () {
      tag, so "already paid", UNDO and every view that reads the ledger go on working without knowing.
 
      THE LEDGER IS THE OUTBOX. writeCrew answers at once, because every tab's flow is built on that, and the
-     row goes a moment later (flushSends). A record carries `far`: { by, row, state, tried, rowId, why, fix }.
-     state: queued, sent, refused, or skipped (taken back before it ever tried to leave). fix: what UNDO
-     still owes, queued, done, recalled or refused.
+     row goes a moment later (flushSends). A record carries `far`: { by, row, state, rowId, why, fix, told }.
+     state: queued, sent, refused, or skipped (taken back before it landed). fix: what UNDO still owes,
+     queued, done, recalled or refused.
 
      ONCE, WHATEVER THE NETWORK DOES. The record's id is the row's send key, and the database answers a
      repeat with the row it already made, so a send that lost its answer, a reload or a second tab can all
-     simply send again. They go oldest first, one at a time, and a failure stops the run, so a correction
-     can't overtake what it corrects. A run takes in every desktop on this device (EVERY DESKTOP'S OUTBOX).
+     simply send again. They go oldest first, one at a time, and no answer stops the run: it is the link.
+     A run takes in every desktop on this device (EVERY DESKTOP'S OUTBOX), and every Admin tab runs one.
 
      A REFUSAL IS AN ANSWER. A code from the database means it will never land: the character left the
      campaign, or this account stopped running it. The record is marked undone, so it doesn't read as paid,
@@ -1508,11 +1513,17 @@ EN.gmStore = (function () {
      door can carry, because the database has one: Heat and Vigor depend on what the sheet holds, so they
      aren't on it yet.
 
-     UNDO IS A CORRECTION. A player's app files a row in about a second, so what UNDO usually finds is
-     already on their sheet, and only that player's app can write it. A row with ops can't be recalled at all
-     (the migration says why), so UNDO sends a second row with the numbers the other way, and a letter
-     saying so. A posting is recalled if it's still waiting, and followed by a letter if it isn't. Both can
-     leave a wallet below zero, as the near door's UNDO can.
+     UNDO IS A CORRECTION, AND THE DATABASE DECIDES IT. A player's app files a row in about a second, so what
+     UNDO usually finds is already on their sheet, and only that player's app can write it. Whether a send
+     landed is something no tab can know: another tab, or a copy of the record on another desktop, may have
+     sent it. So UNDO asks take_back (the migration). A key with no row is marked taken back, and a send under it
+     later is refused, EN_TAKEN_BACK. A row with ops gets a second row with the numbers the other way and a
+     letter saying so. A posting is recalled if it's still waiting, and followed by a letter if it isn't. Both
+     can leave a wallet below zero, as the near door's UNDO can.
+
+     WHAT EITHER COPY KNOWS STAYS KNOWN (farJoin). Two tabs can each write one record, and storage between tabs
+     lags. A send, a refusal, an UNDO and what came of it only ever move forward, so wherever two copies meet,
+     in a tab hearing another or in a run writing to another desktop, the record keeps the furthest of each.
 
      WHOSE. The GM document is one per browser, and a campaign's rows aren't. A record goes only under the account
      that wrote it (`by`), so somebody else jacking in on this browser can't get it refused. */
@@ -1610,39 +1621,58 @@ EN.gmStore = (function () {
     var raw = parseOr(readKey(it.key), null), led = raw && isObj(raw.ledger) ? raw.ledger : null;
     return led && isObj(led[it.r.id]) && isObj(led[it.r.id].far) ? { raw: raw, rec: led[it.r.id] } : null;
   }
-  // what the record says now. Answers whether it's still there. The desktop in memory hears other tabs by itself
+  /* Two copies of one far record, as one: the furthest each part has gone. A send, a refusal or an UNDO can't
+     be unsaid by a copy that hadn't heard it. `undone` follows from the rest. Anything that isn't a far record
+     comes back as `b`, the same object. */
+  var FAR_RANK = { queued: 0, refused: 1, skipped: 2, sent: 3 }, FIX_RANK = { queued: 1, refused: 2, recalled: 3, done: 4 };
+  function farJoin(a, b) {
+    if (!isObj(a) || !isObj(b) || !isObj(a.far) || !isObj(b.far) || a.kind !== "write" || b.kind !== "write") return b;
+    var out = copy(b), f = out.far, af = a.far;
+    if ((FAR_RANK[af.state] || 0) > (FAR_RANK[f.state] || 0)) f.state = af.state;
+    if (af.rowId && !f.rowId) f.rowId = af.rowId;
+    if (af.why && !f.why) f.why = af.why;
+    if ((FIX_RANK[af.fix] || 0) > (FIX_RANK[f.fix] || 0)) f.fix = af.fix;
+    if (af.told) f.told = true;
+    out.undone = !!f.fix || f.state === "refused" || f.state === "skipped";
+    var at = [a.undoneAt, b.undoneAt].filter(function (x) { return typeof x === "number"; }).sort(function (x, y) { return x - y; })[0];
+    if (out.undone && at) out.undoneAt = at;
+    if (!out.undone) delete out.undoneAt;
+    return out;
+  }
+  // what the record says now, with what this run knows. Answers whether it's still there. The desktop in memory hears other tabs by itself
   function farFresh(it) {
     if (inMemory(it)) return true;
     var got = farStored(it);
     if (!got) return false;
     got.rec.id = it.r.id;
-    refill(it.r, got.rec);
+    refill(it.r, farJoin(it.r, got.rec));
     return true;
   }
-  // a change: { far: { field: value or undefined to drop it }, and the record's own fields }
+  // a change: { far: { field: value }, and the record's own fields }
   function farPut(r, ch) {
     Object.keys(ch).forEach(function (k) {
       if (k !== "far") { r[k] = ch[k]; return; }
-      Object.keys(ch.far).forEach(function (f) { if (ch.far[f] === undefined) delete r.far[f]; else r.far[f] = ch.far[f]; });
+      Object.keys(ch.far).forEach(function (f) { r.far[f] = ch.far[f]; });
     });
   }
-  // a step's change, where the record is kept. Answers whether it's said. Either way the run's copy has it
+  // a step's change, where the record is kept. The run's copy has it either way
   function farSave(it, ch) {
     var r = it.r;
-    if (inMemory(it)) { farPut(r, ch); return persist(true); }
+    farPut(r, ch);
+    if (inMemory(it)) { persist(true); return; }
     // a desktop this tab isn't on, or left while the send was out
     var got = farStored(it);
-    if (!got) { farPut(r, ch); return false; }               // gone from there: nowhere to say it
-    farPut(got.rec, ch);
-    got.rec.id = r.id;
-    var raw = got.raw, rev = isObj(raw.rev) ? raw.rev : (raw.rev = {}), at = Date.now();
+    if (!got) return;                                         // gone from there: nowhere to say it
+    var raw = got.raw, next = farJoin(r, got.rec);
+    next.id = r.id;
+    raw.ledger[r.id] = next;
+    var rev = isObj(raw.rev) ? raw.rev : (raw.rev = {}), at = Date.now();
     Object.keys(rev).forEach(function (p) { if (Number(rev[p]) >= at) at = Number(rev[p]) + 1; });
     rev["b/ledger/" + r.id] = at;
-    try { localStorage.setItem(it.key, JSON.stringify(raw)); } catch (e) { farPut(r, ch); return false; }
-    refill(r, copy(got.rec));
+    try { localStorage.setItem(it.key, JSON.stringify(raw)); } catch (e) { return; }
+    refill(r, copy(next));
     // a desktop this tab has open hears it the way it hears any other tab
     if (files.some(function (f) { return f.key === it.key; })) syncTabs();
-    return true;
   }
   function sendCrew(charId, label, ops, meta) {
     var who = farUser(), row = who ? EN.campaigns.crewRow(charId) : null;
@@ -1687,59 +1717,50 @@ EN.gmStore = (function () {
     if (/^22/.test(c)) return c;
     return /^EN_/.test(m) && m !== "EN_SIGNED_OUT" ? m : "";
   }
-  /* `r.far` is read where it is at every step: a save heard from another tab puts a new object there. */
-  function farFix(it, unfixed) {
-    var r = it.r, nums = farNums(r.ops);
-    function letter() {
-      return EN.campaigns.sendWrite(r.far.row, r.id + ":fix", farFixLetter(r), nums.length ? nums.map(function (o) {
-        var back = { op: o.op, amount: -o.amount };
-        if (o.kind) back.kind = o.kind;
-        return back;
-      }) : null).then(function () { farSave(it, { far: { fix: "done" } }); }, function (e) {
-        if (!farAnswer(e)) throw e;
-        unfixed.push(it);
-        farSave(it, { far: { fix: "refused" } });
-      });
-    }
-    function recalled() { farSave(it, { far: { fix: "recalled" } }); }
-    var rowId = r.far.rowId;
-    if (nums.length || !rowId) return letter();
-    return EN.campaigns.recallSend(rowId).then(recalled, function (e) {
-      if (farAnswer(e) === "EN_TOO_LATE") {
-        // too late can also mean an earlier try landed and lost its answer. A letter about that would be news of nothing
-        return EN.cloud.inboxStatus(rowId).then(function (st) {
-          if (st === null) throw e;
-          if (st === "recalled") return recalled();
-          return letter();
-        });
-      }
+  /* Another account signed in since the run began: its session must not send, or be refused, for this one. */
+  var NOT_MINE = { notMine: true };
+  function farMine(r) { if (farUser() !== r.far.by) throw NOT_MINE; }
+  // UNDO, as the database decides it. `r.far` is read where it is at every step: a save heard from another tab puts a new object there
+  function farBack(it, unfixed) {
+    var r = it.r, letter;
+    if (!farFresh(it) || r.far.fix !== "queued") return;   // gone from its desktop, or another tab has asked already
+    try { letter = farFixLetter(r); } catch (e) { try { console.warn("A queued UNDO can't be read, so it stays queued.", r.id, e); } catch (e2) {} return; }
+    farMine(r);
+    return EN.campaigns.takeBack(r.far.row, r.id, letter).then(function (said) {
+      if (said === "cancelled") farSave(it, { far: { state: r.far.state === "queued" ? "skipped" : r.far.state, fix: "done" } });
+      else farSave(it, { far: { state: "sent", fix: said === "recalled" ? "recalled" : "done" } });
+    }, function (e) {
       if (!farAnswer(e)) throw e;
-      farSave(it, { far: { fix: "done" } });   // the row is gone, and the letter went with it
+      if (!farFresh(it) || r.far.fix !== "queued") return;    // gone, or another tab has given the answer already
+      unfixed.push(it);
+      farSave(it, { far: { fix: "refused" } });
     });
   }
   function farStep(it, refused, unfixed) {
-    var r = it.r, nums = farNums(r.ops), held = false;
+    var r = it.r;
     return Promise.resolve().then(function () {
-      if (!farFresh(it)) { held = true; return; }   // gone from where it was kept: the ledger has no word of it
+      if (!farFresh(it)) return;                             // gone from where it was kept: the ledger has no word of it
+      if (r.undone) return;                                  // its UNDO, below, is all there is to do
       if (r.far.state !== "queued") return;
-      if (r.undone && !r.far.tried) { farSave(it, { far: { state: "skipped", fix: "done" } }); return; }
-      /* That it tried goes down first. Unsaid, a reload or a desktop opened later would read a send that may have landed as
-         one that never left, and an UNDO there would skip the correction. So a record that can't say so waits for the next run.
-         Memory keeps it: a try that didn't leave costs at worst a send and its correction, never a send with none. */
-      if (!farSave(it, { far: { tried: true } })) { held = true; return; }
-      return EN.campaigns.sendWrite(r.far.row, r.id, farLetter(r), nums.length ? nums : null).then(function (rowId) {
+      var nums, letter;
+      // a record this app can't read stays queued, and holds up nothing behind it
+      try { nums = farNums(r.ops); letter = farLetter(r); } catch (e) { try { console.warn("A queued send can't be read, so it stays queued.", r.id, e); } catch (e2) {} return; }
+      farMine(r);
+      return EN.campaigns.sendWrite(r.far.row, r.id, letter, nums.length ? nums : null).then(function (rowId) {
+        farFresh(it);
         farSave(it, { far: { state: "sent", rowId: rowId } });
       }, function (e) {
         var code = farAnswer(e);
         if (!code) throw e;
-        // taken back while it was out, somewhere else: then the refusal is all there is to say
-        farFresh(it);
+        if (!farFresh(it) || r.far.state !== "queued") return;   // gone, or another tab has given the answer already
+        if (code === "EN_TAKEN_BACK") { farSave(it, { undoneAt: r.undoneAt || Date.now(), far: { state: "skipped", fix: "done" } }); return; }
+        // taken back while it was out: nothing landed, so there's nothing to correct
         if (r.undone) { farSave(it, { far: { state: "refused", why: code, fix: "done" } }); return; }
         refused.push(it);
         farSave(it, { undone: true, undoneAt: Date.now(), far: { state: "refused", why: code } });
       });
     }).then(function () {
-      if (!held && r.undone && r.far.fix === "queued") return farFix(it, unfixed);
+      if (r.undone && r.far.fix === "queued") return farBack(it, unfixed);
     });
   }
   function farNames(items) {
@@ -1770,6 +1791,7 @@ EN.gmStore = (function () {
     _sending = todo.reduce(function (p, it) {
       return p.then(function () { return farStep(it, refused, unfixed); });
     }, Promise.resolve()).then(function () { _sendStuck = false; }, function (e) {
+      if (e === NOT_MINE) return;   // the account that signed in sends its own; this one's go when it's back
       failed = true;
       try { console.warn("A send to another player's sheet did not go. It stays queued.", e); } catch (e2) {}
       if (!_sendStuck) {
