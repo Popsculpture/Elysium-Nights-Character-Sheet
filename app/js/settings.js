@@ -1273,7 +1273,9 @@ EN.settings = (function () {
           onConfirm: function () { G.dropPremove(); rebuild(); } })
       ]));
     }
-    var left = G.leftBehind ? G.leftBehind(running.map(function (c) { return c.id; })) : [];
+    // jacked out, nothing says which campaigns this account runs, so nothing can be called left behind and offered for deleting
+    var signedIn = !!(EN.campaigns && EN.campaigns.enabled && EN.campaigns.enabled());
+    var left = signedIn && G.leftBehind ? G.leftBehind(running.map(function (c) { return c.id; })) : [];
     if (left.length) {
       kids.push(el("label.set-label", { style: { marginTop: "12px" }, text: "Other desktops on this device" }));
       kids.push(el("p.set-hint", { text: "From campaigns this account isn't running right now. Their work stays here until you delete it." }));

@@ -416,7 +416,7 @@ EN.gmJobs = (function () {
   function save(d, quiet) {
     // the Grade the card shows becomes the job's own, so a later crew change does not move a saved job
     d.grade = gradeOf(d);
-    var id = gm.put("jobs", recordOf(d));
+    var id = gm.put("jobs", recordOf(d), { held: true });
     if (id) {
       d.id = id;
       if (!quiet) toast(titleOf(d) + " saved to the job log.");
@@ -448,6 +448,7 @@ EN.gmJobs = (function () {
     _j.draft = d;
     _j.locks = Object.create(null);
     syncDraft();
+    gm.hold("jobs", recordOf(d));   // two tabs on one job (js/gmstore.js, AN EDITOR'S OPEN COPY)
     return true;
   }
   function setStatus(d, k) {
@@ -1272,6 +1273,12 @@ EN.gmJobs = (function () {
     // nothing hands a job here yet; a {jobId} opens it, so a later link back from Payroll costs nothing
     var h = EN.gmView && EN.gmView.takeHandoff ? EN.gmView.takeHandoff("jobs") : null;
     if (h && h.jobId) openJob(h.jobId);
+    // another tab changed the job open here, and nothing has been edited here since it was opened: show it, keeping the locks
+    if (_j.draft.id && gm.heldMoved("jobs", recordOf(_j.draft))) {
+      var keptLocks = _j.locks;
+      openJob(_j.draft.id);
+      _j.locks = keptLocks;
+    }
     syncDraft();
     // a Grade that follows the crew moves when the crew does, and the cryptid pull follows it
     if (_j.draft.grade == null) recheckCryptid(_j.draft);

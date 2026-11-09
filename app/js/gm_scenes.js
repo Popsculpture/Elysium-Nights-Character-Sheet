@@ -247,7 +247,18 @@ EN.gmScenes = (function () {
     if (!_v.d[kind]) { _v.d[kind] = fresh(kind); _v.base[kind] = sig(_v.d[kind]); }
     return _v.d[kind];
   }
-  function setDraft(kind, d) { _v.d[kind] = d; _v.base[kind] = sig(d); }
+  function setDraft(kind, d) {
+    _v.d[kind] = d;
+    _v.base[kind] = sig(d);
+    if (d && d.id) gm.hold("scenes", asRecord(kind, d));   // two tabs on one scene (js/gmstore.js, AN EDITOR'S OPEN COPY)
+  }
+  function asRecord(kind, d) { var r = copy(d); r.kind = kind; return r; }
+  // another tab changed the scene open here, and nothing typed here is still waiting: show it
+  function freshen(kind) {
+    var d = _v.d[kind];
+    if (!d || _keepT || !savedRec(d) || !gm.heldMoved("scenes", asRecord(kind, d))) return;
+    setDraft(kind, restore(kind, gm.rec("scenes", d.id)));
+  }
   // a saved scene whose record is still in the bag
   function savedRec(d) { return (d && typeof d.id === "string" && d.id) ? gm.rec("scenes", d.id) : null; }
   // an open scene that is not saved and holds changes: what NEW, OPEN and an example would throw away
@@ -340,9 +351,7 @@ EN.gmScenes = (function () {
   function putKeep(kind, now) {
     var d = _v.d[kind];
     if (!d || !savedRec(d)) return;
-    var rec = copy(d);
-    rec.kind = kind;
-    if (gm.put("scenes", rec, { silent: true, immediate: !!now })) _v.base[kind] = sig(d);
+    if (gm.put("scenes", asRecord(kind, d), { silent: true, immediate: !!now, held: true })) _v.base[kind] = sig(d);
   }
   /* `now` writes through at once rather than on gmStore's own debounce: the
      page is going away (pagehide), and gmStore's flush on the same event has
@@ -688,7 +697,7 @@ EN.gmScenes = (function () {
         var id = gm.put("scenes", rec);
         if (!id) { toast("Not saved: the GM data refused the write."); return; }
         d.id = id;
-        _v.base[kind] = sig(d);
+        setDraft(kind, d);
         toast("Saved " + d.name + ". Changes are kept as you go from here.");
       }, { primary: true }));
     } else {
@@ -2282,7 +2291,7 @@ EN.gmScenes = (function () {
     if (!savedRec(d)) {
       var rec = copy(d); rec.kind = kind;
       var id = gm.put("scenes", rec);
-      if (id) { d.id = id; _v.base[kind] = sig(d); toast("Saved " + d.name + ", so Payroll knows it again later."); }
+      if (id) { d.id = id; setDraft(kind, d); toast("Saved " + d.name + ", so Payroll knows it again later."); }
     } else { putKeep(kind); }
     var name = "Incursion: " + d.name.trim();
     var payload = {
@@ -2490,6 +2499,7 @@ EN.gmScenes = (function () {
     var h = null;
     try { h = (EN.gmView && EN.gmView.takeHandoff) ? EN.gmView.takeHandoff("scenes") : null; } catch (e) { h = null; }
     if (isObj(h)) receive(h);
+    if (pageOk(_v.page)) freshen(_v.page);
     if (!S() || !S().sitdown || !S().chase || !S().incursion) {
       mount.appendChild(el("div", null, [heading("Scenes", "// sit-downs, chases, incursions"), undoStrip(),
         el("div.muted-box", { style: { padding: "26px" }, text: "Scenes data did not load. Check app/data/gm_scenes.js." })].filter(Boolean)));

@@ -1027,11 +1027,37 @@ EN.gmStore = (function () {
     var src = get()[bag];
     return own(src, id) ? src[id] : null;
   }
+  /* AN EDITOR'S OPEN COPY. The merge below works on what a tab holds in memory, but an editor (a plan, a
+     scene, a job's card, a contact, a custom hazard) works on a copy of a record and saves the whole copy. Tab 1
+     has a scene open, tab 2 renames it, tab 1 types in another field: tab 1 has already heard the news, so
+     nothing merges, and its copy's old name goes straight back in. So an editor says what it opened (hold) and
+     saves with {held: true}: what the copy changed is saved, what it didn't change stays as the record has it
+     now, and where both changed one thing this save wins, being the newer. heldMoved is an editor's question on
+     a redraw: the record has moved on and this copy has nothing unsaid, so open it again and show the news.
+     This is this tab's business for as long as the editor is open, so it never reaches the document. */
+  var heldCopies = Object.create(null);
+  // a stamp isn't a change: every save moves it, and an editor's copy of a record carries the one it found
+  function heldText(r) {
+    var c = {};
+    Object.keys(r).forEach(function (k) { if (k !== "updatedAt") c[k] = r[k]; });
+    return canon(c);
+  }
+  function hold(bag, c) {
+    if (!isObj(c) || typeof c.id !== "string" || !c.id) return;
+    var live = rec(bag, c.id);
+    heldCopies[bag + "/" + c.id] = { mine: copy(c), text: heldText(c), live: live ? canon(live) : null };
+  }
+  function heldMoved(bag, c) {
+    if (!isObj(c) || typeof c.id !== "string" || !own(heldCopies, bag + "/" + c.id)) return false;
+    var h = heldCopies[bag + "/" + c.id], live = rec(bag, c.id);
+    return !!live && canon(live) !== h.live && heldText(c) === h.text;
+  }
   /* Stores a COPY, so a view holding the object it passed cannot change saved
      state behind the store's back. A record without an id is new and is given
      one; createdAt is set once and kept on every later put of the same id;
      updatedAt is stamped on every put. Returns the id, or null for a bag that
-     does not exist or a record that is not an object. */
+     does not exist or a record that is not an object. {held: true} says this is
+     an editor's open copy (above). */
   function put(bag, r, opts) {
     if (!isBag(bag) || !isObj(r)) {
       try { console.warn("GM: put() refused: unknown bag or not a record", bag); } catch (e) {}
@@ -1039,14 +1065,18 @@ EN.gmStore = (function () {
     }
     var c = copy(r);
     var id = (typeof c.id === "string" && c.id) ? c.id : uid();
-    var now = Date.now();
+    var now = Date.now(), isHeld = !!(opts && opts.held), key = bag + "/" + id;
+    c.id = id;
+    var mine = isHeld ? copy(c) : null;
     update(function (s) {
       var prev = own(s[bag], id) ? s[bag][id] : null;
-      c.id = id;
+      var was = isHeld && own(heldCopies, key) ? heldCopies[key] : null;
+      if (was && prev && canon(prev) !== was.live) c = JSON.parse(JSON.stringify(mergeKeys(was.mine, c, prev)));
       c.createdAt = (prev && typeof prev.createdAt === "number") ? prev.createdAt
         : (typeof c.createdAt === "number" ? c.createdAt : now);
       c.updatedAt = now;
       s[bag][id] = c;
+      if (isHeld) heldCopies[key] = { mine: mine, text: heldText(mine), live: canon(c) };
     }, opts);
     return id;
   }
@@ -1584,6 +1614,8 @@ EN.gmStore = (function () {
     if (c.scenes) parts.push(say(c.scenes, "saved scene", "saved scenes"));
     if (c.entries) parts.push(say(c.entries, "initiative row", "initiative rows"));
     if (c.room) parts.push(say(c.room, "Room hazard", "Room hazards"));
+    if (c.running) parts.push("a fight's clock or name");
+    if (c.lastFight) parts.push("the last fight's XP award");
     return parts.length ? parts.join(", ") : "nothing saved yet";
   }
   /* Every refusal is a thrown Error whose message is a sentence a toast can show
@@ -1629,12 +1661,12 @@ EN.gmStore = (function () {
     clearTimeout(saveTimer);
     saveTimer = null;
     /* On a campaign's desktop a file replaces that desktop and only adds to the library, which other
-       desktops are using too. Anything the document no longer holds reads as deleted here, so another tab
-       on this desktop takes the file whole. */
+       desktops are using too: a threat the library has already stays as the library has it. Anything the
+       document no longer holds reads as deleted here, so another tab on this desktop takes the file whole. */
     if (deskId) {
       LIB_BAGS.forEach(function (b) {
         var had = get()[b];
-        Object.keys(had).forEach(function (k) { if (!own(next[b], k)) next[b][k] = had[k]; });
+        Object.keys(had).forEach(function (k) { next[b][k] = had[k]; });
       });
       next.campaign = { id: deskId, name: state.campaign ? state.campaign.name : "" };
     } else delete next.campaign;
@@ -1690,6 +1722,8 @@ EN.gmStore = (function () {
     var doc;
     try { doc = migrate(parseOr(readKey(STATE_KEY), null)); } catch (e) { return null; }
     var c = counts(doc), any = tableBusy(doc.encounter) || !!doc.lastEncounter;
+    if (doc.lastEncounter) c.lastFight = true;
+    if (tableBusy(doc.encounter) && !c.entries && !c.room) c.running = true;
     MOVE_BAGS.forEach(function (b) { if (c[b]) any = true; });
     LIB_BAGS.forEach(function (b) { delete c[b]; });
     delete c.campaign;
@@ -1708,18 +1742,31 @@ EN.gmStore = (function () {
     if (!persist(true)) return { ok: false, why: "refused" };
     var text = readKey(STATE_KEY), doc;
     try { doc = migrate(parseOr(text, null)); } catch (e) { return { ok: false, why: "unreadable" }; }
-    try { localStorage.setItem(PREMOVE_KEY, JSON.stringify({ at: Date.now(), text: text })); }
-    catch (e) { return { ok: false, why: "refused" }; }
     var took = [], stayed = 0, res = { ok: true, moved: 0, stayed: 0, tableStayed: false, copied: false };
     MOVE_BAGS.forEach(function (b) {
       Object.keys(doc[b]).forEach(function (id) {
         var here = own(state[b], id) ? state[b][id] : null;
-        if (here && canon(here) !== canon(doc[b][id])) { stayed++; return; }
-        state[b][id] = doc[b][id];
-        took.push("b/" + b + "/" + id);
+        if (here && canon(here) !== canon(doc[b][id])) stayed++;
+        else took.push("b/" + b + "/" + id);
       });
     });
     var moveTable = tableBusy(doc.encounter) && !tableBusy(state.encounter);
+    var moveLast = !!doc.lastEncounter && !state.lastEncounter;
+    if (tableBusy(doc.encounter) && !moveTable) res.tableStayed = true;
+    if (doc.lastEncounter && !moveLast && canon(doc.lastEncounter) !== canon(state.lastEncounter)) stayed++;
+    res.stayed = stayed;
+    // nothing to take: a move that does nothing must not put an emptied document over the copy of the full one
+    if (!took.length && !moveTable && !moveLast) return res;
+    var oldCopy = readKey(PREMOVE_KEY);
+    function putCopyBack() {
+      try { if (oldCopy === null) localStorage.removeItem(PREMOVE_KEY); else localStorage.setItem(PREMOVE_KEY, oldCopy); } catch (e) {}
+    }
+    try { localStorage.setItem(PREMOVE_KEY, JSON.stringify({ at: Date.now(), text: text })); }
+    catch (e) { return { ok: false, why: "refused" }; }
+    took.forEach(function (p) {
+      var cut = p.indexOf("/", 2), b = p.slice(2, cut), id = p.slice(cut + 1);
+      state[b][id] = doc[b][id];
+    });
     var leftRows = [];
     if (moveTable) {
       var e = doc.encounter;
@@ -1728,11 +1775,10 @@ EN.gmStore = (function () {
       state.encounter = e;
       e.entries = rows;
       if (e.activeId && !rows.some(function (r) { return r.id === e.activeId; })) e.activeId = null;
-    } else if (tableBusy(doc.encounter)) res.tableStayed = true;
-    var moveLast = !!doc.lastEncounter && !state.lastEncounter;
+    }
     if (moveLast) state.lastEncounter = doc.lastEncounter;
-    else if (doc.lastEncounter && canon(doc.lastEncounter) !== canon(state.lastEncounter)) stayed++;
     if (!persist(true)) {
+      putCopyBack();
       readDesk({ id: deskId, name: state.campaign ? state.campaign.name : "" });
       emit();
       return { ok: false, why: "refused" };
@@ -1795,8 +1841,11 @@ EN.gmStore = (function () {
     } catch (e) {}
     return out.sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
   }
+  // with the library, like any export, so importing it where a file replaces everything can't empty the library
   function exportLeft(id) {
     var doc = migrate(parseOr(readKey(deskKey(id)), null));
+    var lib = migrate(parseOr(readKey(STATE_KEY), null));
+    LIB_BAGS.forEach(function (b) { doc[b] = lib[b]; });
     return JSON.stringify(doc, null, 2);
   }
   // a whole desktop, gone from this device: Settings asks first. Never the one a tab is on
@@ -1813,6 +1862,15 @@ EN.gmStore = (function () {
       if (!state) return;
       var mine = files.filter(function (f) { return f.key === e.key; });
       if (e.key !== null && !mine.length) return;
+      /* A campaign's document only ever goes on purpose, through Settings in another tab (dropLeft). This tab
+         hasn't heard the campaign went, so it stays here for now, on an empty desktop. It must not write it back. */
+      if (mine.length && mine[0].holds === "desk" && e.newValue === null) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+        readDesk({ id: deskId, name: state.campaign ? state.campaign.name : "" });
+        heard();
+        return;
+      }
       /* The announcement carries what was written. If a tab that hadn't heard has already written over it, and
          the tab that wrote it has since closed, this is the one copy left of that save. It goes in first, and
          the look at storage below then finds storage behind and puts it back. */
@@ -1842,8 +1900,8 @@ EN.gmStore = (function () {
     deliverMail: deliverMail, withdrawMail: withdrawMail,
     // the document as a file, and whether the last write of it landed
     exportDoc: exportDoc, importDoc: importDoc, inspectDoc: inspectDoc, countText: countText, flush: flush, saveOk: saveOk,
-    // which desktop this tab is on, and two tabs on one
-    desk: desk, follow: follow, perDesk: perDesk, syncTabs: syncTabs, onHeard: onHeard,
+    // which desktop this tab is on, and two tabs on one, and on one record
+    desk: desk, follow: follow, perDesk: perDesk, syncTabs: syncTabs, onHeard: onHeard, hold: hold, heldMoved: heldMoved,
     // work on this device beyond the desktop in memory
     deviceHolds: deviceHolds, moveDevice: moveDevice, premove: premove, dropPremove: dropPremove,
     leftBehind: leftBehind, exportLeft: exportLeft, dropLeft: dropLeft

@@ -952,8 +952,10 @@ EN.gmHazards = (function () {
   function startDraft(d) {
     _c = d;
     _cBase = d ? JSON.stringify(d) : null;
+    if (d && d.id) gm.hold("hazards", draftRecord(d, d.id));   // two tabs on one hazard (js/gmstore.js, AN EDITOR'S OPEN COPY)
     return d;
   }
+  function draftRecord(d, id) { var h = draftHazard(d); h.id = id; h.key = id; return h; }
   function draftDirty() { return !!_c && JSON.stringify(_c) !== _cBase; }
   function draftName() { return trim(_c && _c.name) || "the draft"; }
   /* A button that replaces the draft: plain while nothing would be lost, armed
@@ -1004,7 +1006,7 @@ EN.gmHazards = (function () {
     var id = _c.id || gm.uid();
     h.id = id;
     h.key = id;
-    gm.put("hazards", h);
+    gm.put("hazards", h, { held: true });
     delete _lib[id];   // the card picks up the saved Grade and price, not a stale pick
     startDraft(null);
     _ui.view = "library";

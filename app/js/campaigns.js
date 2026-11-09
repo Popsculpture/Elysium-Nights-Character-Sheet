@@ -256,18 +256,20 @@ EN.campaigns = (function () {
      browser's own desktop and crew, which is what an account with no campaign gets anyway. */
   var NO_CAMPAIGN = "none";
   var tabPick = null;
+  function pinTab() { try { sessionStorage.setItem(PICK_TAB, tabPick); } catch (e) {} }
   function pick() {
     if (tabPick === null) {
       var own = null;
       try { own = sessionStorage.getItem(PICK_TAB); } catch (e) {}
       tabPick = own || getKey(PICK) || "";
+      if (tabPick) pinTab();   // a reload comes back here, whatever another tab picks next
     }
     return tabPick;
   }
   function setPick(id) {
     tabPick = id || "";
     setKey(PICK, tabPick);
-    try { sessionStorage.setItem(PICK_TAB, tabPick); } catch (e) {}
+    pinTab();
     if (EN.gmStore && EN.gmStore.follow) EN.gmStore.follow();   // the desktop never lags the pick, so a write can't land on the one just left
   }
   /* The campaign this tab's Admin desktop belongs to, or null. This answers from what is remembered, with
@@ -278,7 +280,14 @@ EN.campaigns = (function () {
     if (!mine.length) return null;
     var want = pick();
     if (want === NO_CAMPAIGN) return null;
-    return mine.filter(function (x) { return x.id === want; })[0] || mine[0];
+    var hit = mine.filter(function (x) { return x.id === want; })[0];
+    if (hit) return hit;
+    /* The answer sticks. The first in the list can change under a tab, when the account is made co-Admin on an
+       older campaign, and that must not swap the Table. It stays this tab's own: a new tab still opens on the
+       last one someone picked, not on this. */
+    tabPick = mine[0].id;
+    pinTab();
+    return mine[0];
   }
 
   /* ---- what the device held from before a campaign had its own desktop -----------
@@ -332,19 +341,28 @@ EN.campaigns = (function () {
       if (EN.app) EN.app.render();
       if (words) EN.ui.toast(words);
     }
-    p = EN.gate.panel({
-      warn: "ADMIN DESKTOP",
-      label: "Admin work on this device",
-      lines: [
-        "Each campaign has its own Admin desktop now. This device holds work from before that: " + EN.gmStore.countText(held) + ".",
-        "Saved Threats and custom Hazards stay shared either way. Which campaign does the rest belong to?"
-      ],
-      actions: mine.map(function (c) {
-        return { label: "MOVE TO " + c.name.toUpperCase(), key: "move-" + c.id, onClick: function () { done(moveWords(moveInto(c.id))); } };
-      }).concat([
-        { label: "LEAVE IT ON THIS DEVICE", key: "move-leave", onClick: function () { done("It stays on this device. No campaign in the Table's picker opens it, and Settings can move it later."); } }
-      ])
-    });
+    function card(note) {
+      var o = {
+        warn: "ADMIN DESKTOP",
+        label: "Admin work on this device",
+        lines: [
+          "Each campaign has its own Admin desktop now. This device holds work from before that: " + EN.gmStore.countText(held) + ".",
+          "Saved Threats and custom Hazards stay shared either way. Which campaign does the rest belong to?"
+        ].concat(note ? [note] : []),
+        actions: mine.map(function (c) {
+          return { label: "MOVE TO " + c.name.toUpperCase(), key: "move-" + c.id, onClick: function () {
+            var res = moveInto(c.id);
+            // refused: the question still stands, and the answer isn't this one
+            if (!res.ok) { card(moveWords(res)); return; }
+            done(moveWords(res));
+          } };
+        }).concat([
+          { label: "LEAVE IT ON THIS DEVICE", key: "move-leave", onClick: function () { done("It stays on this device. No campaign in the Table's picker opens it, and Settings can move it later."); } }
+        ])
+      };
+      if (p) p.show(o); else p = EN.gate.panel(o);
+    }
+    card();
   }
 
   /* ---- + New campaign, drawn by Manage characters and the Campaign tab alike -----

@@ -335,7 +335,7 @@ EN.gmPeople = (function () {
   }
   function save(d, quiet) {
     if (!hasContent(d)) return null;
-    var id = gm.put(BAG, recordOf(d));
+    var id = gm.put(BAG, recordOf(d), { held: true });
     if (id) {
       d.id = id;
       if (!quiet) toast((trim(d.name) || "The card") + " saved to the contacts.");
@@ -352,12 +352,15 @@ EN.gmPeople = (function () {
     var r = gm.rec(BAG, id);
     if (!r) return false;
     setDraft(draftOf(r));
+    gm.hold(BAG, recordOf(_p.draft));   // two tabs on one card (js/gmstore.js, AN EDITOR'S OPEN COPY)
     return true;
   }
   // a card whose record was deleted elsewhere stays in the editor, as a card not yet saved
   function syncDraft() {
     var d = _p.draft;
     if (d.id && !gm.rec(BAG, d.id)) d.id = null;
+    // another tab changed the card open here, and nothing has been typed here since it was opened: show it
+    if (d.id && gm.heldMoved(BAG, recordOf(d))) openContact(d.id);
   }
 
   /* ---- the card as text ------------------------------------------------------
