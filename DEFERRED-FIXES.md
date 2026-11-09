@@ -12853,3 +12853,7 @@ The build report has the rest.
 5. The lock gives up after 20 seconds and runs anyway. The harness turns the lock off, because its virtual clock can't see the handshake: `pg/lock_probe.py` tests the real one on real time.
 
 **Left open:** the Admin desktop's `en_gm_v1` has the same two-tab problem and was not touched. BOLLARD-7's copied identity on the live project is unexplained, and the sheet is unrepaired. The build report lists the rare ones.
+
+### The real Discord round, 2026-11-08
+
+Run on the live site with two real accounts, with the rows read after each step. It passed, apart from the one failure that led to the two-tab fix above. The build report has the table. Not proven live: lost mail coming back, since the row went away with its sheet. Never explained: BOLLARD-7's sheet holding Nessa's identity, which didn't recur.

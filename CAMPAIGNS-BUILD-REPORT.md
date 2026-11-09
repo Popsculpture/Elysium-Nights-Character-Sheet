@@ -1,7 +1,6 @@
 # Campaigns build report: batch 1, one login and Gizmo
 
-Built 8 Nov 2026 on `campaigns-batch-1`, cut from `main` at `d550e22`. Not merged: `main` is the live
-site and waits for the author's sign-off. No database work in this batch.
+Built 8 Nov 2026 on `campaigns-batch-1`, cut from `main` at `d550e22`. **Merged to `main` on your word.** No database work in this batch.
 
 The reasoning behind every call is in the plan doc, "Elysium Nights: Campaigns and Characters Plan".
 Every decision taken where the spec left room is also logged under "Campaigns" in `DEFERRED-FIXES.md`.
@@ -94,8 +93,7 @@ headless Chrome on `file://`.
 
 ## Waiting for the author
 
-- **The real Jack in round trip** on the live site, after a merge: the card, Gizmo, Discord, and back
-  to the app with no card. Localhost is not on the sign-in redirect list, so I stubbed the call instead.
+- **The real Jack in round trip:** done. Two real accounts signed in through Discord on the live site during the real round, at the end of this report.
 - **The blink against the reference loops** (`gizmo-blink.gif`, `gizmo-blink-tour.gif`). They are not
   in this session, so the timing was built from the spec's numbers (with a 120 ms blink, not the
   loops' 160 ms). Tune by feel.
@@ -327,18 +325,9 @@ The dash and syntax sweeps are clean.
 
 ## Waiting for the author
 
-- **The two-account round with real Discord**: create, copy the link, fresh device with the second account, join,
-  two characters in, both on the roster, each sheet read-only, Gizmo's no, make co-Admin and they get in, remove
-  with Also block and their link fails, reset, transfer. All of it has passed locally, and the database half has
-  passed on the live project. **It needs a way for the branch to reach sign-in**, because localhost is not on the
-  redirect list and the live site is `main`. Two ways, both yours to choose:
-  - **Before merging (my pick):** add `http://localhost:8777/**` to Supabase's Auth redirect URLs, run the branch
-    locally on the `gridos` server (port 8777 unless it is taken), use a private window for the second account,
-    then take the entry out. Discord itself needs no change. The live site stays as it is until the round passes.
-  - **After merging,** on the live site, the way batch 1's Jack in round trip was done. No setting, but players
-    could reach campaigns before you have seen them work.
-- **A character moved between campaigns**, by hand, during that round.
-- **Gizmo's two lines** read as the spec has them; they are `NO` in `gate.js` if you want to change them.
+- **The two-account round with real Discord:** done on the live site. See the real round, at the end of this report.
+- **A character moved between campaigns:** done in the same round.
+- **Gizmo's two lines** read as the spec has them, and you saw them live and asked for no change. They are `NO` in `gate.js`.
 
 ## Decisions
 
@@ -500,24 +489,24 @@ The first full build passed every check. Then:
 | Gizmo: tour step 1, his bubble, eyes on the card, his blink | Pass | Headless Chrome, all three skins. He shows with his typed bubble and a `-3px` rest. Stepping his running animations through a whole 10 s cycle in 20 ms steps: pupils only at -3 and -1, eyes squashing at the blink. Not watched by eye, because the browser pane couldn't reach this branch. |
 | `campaign_checks.sql`: every line PASS | **Pass on the live project** | 168 PASS, 0 FAIL, nothing left behind. Locally too, where `entitlements_checks.sql` is 21 PASS before and after. |
 | The checks have teeth | Pass | 157 deliberately broken copies of the migrations, 88 of them new: all 157 caught. One survived at first (a quantity stored as `1.0`), so a check was added. |
-| Send from an NPC card with a package, to one character and the crew. Online toast within seconds, offline summary on next load | Pass locally, **waiting for you with real Discord**. The real Realtime has only taken the subscription | `pg/inbox_realdb.js`: the real app, the real supabase-js and the real realtime-js on the real SQL, 61 checks, three runs in a row. 15 ms or so from send to delivered on the bridge's clock, which says nothing about the real service. |
-| Take it adds the items once, with the record on two devices | Pass locally, **waiting for you** | Both chains. The second device is the account's own calls made while the page sits there, including its save landing in the gap between this device's pull and push. Not two real browsers. |
-| Recall works while waiting and fails after delivery. The Admin sees Taken | Pass locally, **waiting for you** | The real round, with the database's own rows checked after each step. |
+| Send from an NPC card with a package, to one character and the crew. Online toast within seconds, offline summary on next load | **Pass on the live project,** real Discord and real Realtime: 0.74 to 1.18 s online, and the summary on the way back | `pg/inbox_realdb.js`: the real app, the real supabase-js and the real realtime-js on the real SQL, 61 checks, three runs in a row. 15 ms or so from send to delivered on the bridge's clock, which says nothing about the real service. |
+| Take it adds the items once, with the record on two devices | **Pass on the live project,** with two real devices | The second device was told it was already taken, and its edit reached the account. Both chains as well. |
+| Recall works while waiting and fails after delivery. The Admin sees Taken | **Pass on the live project** | The real round, with the database's own rows checked after each step. No Recall button shows on a delivered or taken row. |
 | Checked in all three skins | Pass | Screenshots of the composer, the list, the inbox, the box and the toast on Classic, '98 and #GRIDroid. A true 375 px through an iframe, on all three: nothing overflows. |
 | Reduced motion | Pass | Chrome with `--force-prefers-reduced-motion`: the box animations are `none`, and the toast has no transition and no offset. Without the flag all of them are set. |
 
 The stand-in chain `campaigns_b3` is 226 checks. Batch 2's `campaigns_b2` stays at 163 and `pg/campaigns_realdb.js` at 144, with their pinned lists of panels updated for the new one.
 The full suite on the final code: **488 chains, 512 runs, 0 bad (round 211)**. Syntax and dash sweeps are clean.
 
-**What this still can't reach:** the app talking to the real server as a signed-in account, a real row arriving over real Realtime, Discord, and two sessions at once (the checks run in one transaction, and PGlite has one connection, so
-the row locks never contend). **The slide and the box-opening moment have not been watched.** Headless Chrome doesn't paint frames in virtual time, so I checked that the animations are set, not how they look.
+The real round has since covered the app on the real server, real Realtime and Discord. **What it didn't reach:** two sessions racing inside the database (the checks run in one transaction, and PGlite has one connection, so
+the row locks never contend). **I haven't watched the slide and the box-opening moment.** Headless Chrome doesn't paint frames in virtual time, so I checked that the animations are set, not how they look.
 
 ## Waiting for the author
 
-- **The round with real Discord,** on real Realtime, which this migration has now turned on: send from a card to one character and the crew, with a second account online and then offline, Take it on two real devices, Recall before and after. It runs on the live site now. So far two real accounts have signed in, made a campaign, joined it and moved characters in. No mail has been sent yet.
-- **Watch the slide and the box-opening moment,** and tune by feel. `postBoxHop`, `postBoxFlap` and `postBoxRise` in `theme.css`.
+- **The round with real Discord:** done. See the real round, at the end of this report.
+- **The slide and the box-opening moment, if you want to tune them by feel.** You've seen them live and asked for no change. `postBoxHop`, `postBoxFlap` and `postBoxRise` in `theme.css`.
 - **The package glyph is my drawing,** `ICON_PKG` in `face.js`, because the app has no art for a package. Swap in your own if you like; the moment wants its two flaps as separate paths.
-- **A ruling on a hidden tab,** item 5 above.
+- **A hidden tab:** you saw it wait 64.6 seconds and deliver on your return, and asked for no change, so item 5 above stands.
 
 ## Decisions
 
@@ -607,7 +596,7 @@ There has been no second review of these fixes. The tests below cover each one.
 - **Three skins, desktop and 375 px:** drawn and measured with `tests/campaigns_table_shot.js`. No sideways scroll, and the player's name fits on every row.
 - `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
 
-**Not checked:** the live site, real Discord and real latency. Your round is the first time a real read happens through the real policy with real accounts.
+**Since checked on the live site:** with real accounts, Popsculpture's Table offered only BOLLARD-7 and Nessa Vale, both under MyGalFRIDAY, with no bank. With two campaigns, the picker offered each campaign's own character.
 
 ## Decisions
 
@@ -651,14 +640,14 @@ from an edit, and pushed it over the newer row. You chose tabs that work togethe
 ## What you'll notice
 
 - Two tabs on two characters just work, side by side.
-- **Your lost message should come back.** MyGalFRIDAY's next sign-in should file `dd` and its Assault Rifle again on the sheet that was BOLLARD-7, with a toast. That hasn't been checked on the live site.
+- **Your lost message didn't get the chance to come back.** The sheet that was BOLLARD-7 was replaced before this went live, and its `dd` row went with it. So lost mail coming back is proven on the real rules locally, and has not happened on the live site.
 - **A toast shows in the tab that filed the mail,** which may not be the tab on that character. The other tab still gets the message and the unread count.
 
 ## Still unexplained: BOLLARD-7's identity
 
 That sheet is still a Fury with its own gear, but its name and entire identity block are now Nessa's, word for word. **I don't know how.** Nothing in the app copies an identity between records, and two tabs alone don't do it: names stayed correct in every two-tab test. The copied fields are exactly the
 inputs on the #PRINT Identity step, and I confirmed Chrome can restore those fields from another character through history, but it fires no events, so that alone doesn't save anything. That restore is now blocked, which removes the one way I found for those words to reach those fields.
-**If a sheet's name changes again, it's a separate bug,** and what that tab had just been doing is the clue. The sheet hasn't been repaired.
+**If a sheet's name changes again, it's a separate bug,** and what that tab had just been doing is the clue. That sheet has since been replaced by a new one with BOLLARD-7's own name and backstory, so the evidence is gone. It didn't recur in any later step of the round.
 
 ## How it was reviewed
 
@@ -679,7 +668,7 @@ Two independent reads, each given the code and not my conclusions.
 
 **The harness runs chains without the real lock.** Its virtual clock can't see the lock's handshake, so a timer runs out while a sync is still waiting for it, and five chains fail for that reason alone. I proved that by turning the lock off in the harness: they pass. So chains use no lock or a stand-in, and the real one is only proved by the probe above.
 
-**Not checked:** the live site, real Discord, and two real tabs in a real browser against the real project. The next round is the first time.
+**Since checked on the live site:** two real tabs on two characters, with real Discord. The real round, below, has the numbers. Whether a browser lock was held during that round can't be seen from the database, so the lock itself is still proved only by the probe.
 
 ## Decisions
 
@@ -696,3 +685,30 @@ Two independent reads, each given the code and not my conclusions.
 - **Rare ones the second review found:** two tabs deleting different characters within milliseconds, or full storage, can lose the delete note, so a delete comes back. A tab frozen for over 7 days can bring one back too. A pack-locked record pulled with a fast clock's stamp keeps it. A 20 second lock fallback during a stall can still insert twice.
 - **Older than this, in one tab too:** deleting a character while its first upload is in flight, or reloading during it, can leave a stray row or a duplicate.
 - **A record deleted while jacked out and re-imported with an older stamp:** the account's row now replaces it.
+
+# The real Discord round
+
+Run on the live site on 8 Nov 2026, with two real accounts, Popsculpture and MyGalFRIDAY, one step at a time. After each step I read the real rows, because the round's worst problem didn't show on screen.
+
+| Step | Result | The database says |
+|---|---|---|
+| A package to one character, online | **Pass** | Delivered in 0.74 s, on another account's sheet, one copy. One Pistol, and the Admin's list says Taken |
+| A package to the crew, online | **Pass** | 0.85 and 0.92 s. Three Flow Tonic Vials on each sheet, once |
+| The same with one account in two tabs, before the fix | **Fail, and found the bug** | `dd` said delivered, with no message and no Assault Rifle on the sheet. A stale tab had saved over it. Reproduced, then fixed: see the two-tab part of this report |
+| Recall | **Pass** | The row stayed recalled, and the Crossbow never reached Nessa |
+| Mail while away | **Pass** | The other copy waited 18.8 s, until the account came back, then delivered |
+| Two tabs on two characters, after the fix | **Pass** | 1.10 and 1.17 s. One message and one Knuckles on each sheet, taken 1.3 s apart in different tabs. Each tab's edit stayed on its own sheet |
+| A hidden tab | **Pass** | The row waited 64.6 s, then delivered on the way back |
+| Two devices | **Pass** | 1.18 s. One Dagger. The second device was told it was already taken, and its edit reached the account |
+| Read-only sheets, Gizmo's no, co-Admin both ways | **Pass, by your report** | MyGalFRIDAY was back to Player afterwards. The rest is on screen only |
+| Remove with block, unblock, reset, the old link dead, the new link joins | **Pass, by your report** | Back as it was afterwards: no blocks, roles right, both characters in the campaign, the mail untouched |
+| Transfer, both ways | **Pass** | MyGalFRIDAY Admin and Popsculpture co-Admin, then the reverse |
+| A second campaign, a character moved, the Table's picker, the campaign deleted | **Pass** | `Side job` gone, and BOLLARD-7 back in 5th flavor |
+
+**The test campaign now:** 5th flavor, with Popsculpture as Admin and MyGalFRIDAY as co-Admin (a transfer leaves the old Admin as a co-Admin), and Nessa and BOLLARD-7 in it.
+
+**Never pinned down:** how BOLLARD-7's sheet came to hold Nessa's identity. It didn't happen again.
+
+**Not proven on the live site:** lost mail coming back, because the row went away with its sheet. It passes against the real rules locally.
+
+**If you added `http://localhost:8777/**` to Supabase's redirect list,** it can come out now. I didn't touch that setting.
