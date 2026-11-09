@@ -1495,7 +1495,7 @@ EN.gmStore = (function () {
      tag, so "already paid", UNDO and every view that reads the ledger go on working without knowing.
 
      THE LEDGER IS THE OUTBOX. writeCrew answers at once, because every tab's flow is built on that, and the
-     row goes a moment later (flushSends). A record carries `far`: { by, row, state, rowId, why, fix, told }.
+     row goes a moment later (flushSends). A record carries `far`: { by, row, state, rowId, why, fix, told, gone }.
      state: queued, sent, refused, or skipped (taken back before it landed). fix: what UNDO still owes,
      queued, done, recalled or refused.
 
@@ -1597,9 +1597,11 @@ EN.gmStore = (function () {
     return out;
   }
   function campOf(raw) { return !isObj(raw) || !isObj(raw.campaign) ? "No campaign" : (typeof raw.campaign.name === "string" && raw.campaign.name) || "Unnamed campaign"; }
+  // the campaign a desktop's document belongs to, from its key, or null for en_gm_v1's own
+  function campIdOf(k) { return k.indexOf(CAMP_PRE) === 0 && k.slice(-CAMP_SUF.length) === CAMP_SUF ? k.slice(CAMP_PRE.length, -CAMP_SUF.length) : null; }
   function farTodo(who) {
     var here = deskKey(deskId), camp = campOf(state);
-    var out = farHere(who).map(function (r) { return { r: r, key: here, camp: camp }; });
+    var out = farHere(who).map(function (r) { return { r: r, key: here, camp: camp, campId: campIdOf(here) }; });
     farKeys().forEach(function (k) {
       if (k === here) return;
       var text = readKey(k);
@@ -1610,7 +1612,7 @@ EN.gmStore = (function () {
         var r = led[id];
         if (!isObj(r)) return;
         r.id = id;
-        if (farDue(r, who)) out.push({ r: r, key: k, camp: campOf(raw) });
+        if (farDue(r, who)) out.push({ r: r, key: k, camp: campOf(raw), campId: campIdOf(k) });
       });
     });
     return out.sort(function (a, b) { return (a.r.at || 0) - (b.r.at || 0); });
@@ -1633,6 +1635,7 @@ EN.gmStore = (function () {
     if (af.why && !f.why) f.why = af.why;
     if ((FIX_RANK[af.fix] || 0) > (FIX_RANK[f.fix] || 0)) f.fix = af.fix;
     if (af.told) f.told = true;
+    if (af.gone) f.gone = true;
     out.undone = !!f.fix || f.state === "refused" || f.state === "skipped";
     var at = [a.undoneAt, b.undoneAt].filter(function (x) { return typeof x === "number"; }).sort(function (x, y) { return x - y; })[0];
     if (out.undone && at) out.undoneAt = at;
@@ -1813,17 +1816,42 @@ EN.gmStore = (function () {
       EN.ui.toast(said(farNames(g.items), g.camp ? ", from " + g.camp + ": that campaign" : ": this campaign"));
     });
   }
+  /* A CAMPAIGN'S DESKTOP ENDS WITH IT (the author's word, 9 Nov 2026: "They end with it"). Deleted, left, or no longer
+     run by this account: what waits on its desktop doesn't go, a send or an UNDO, and the Admin is told once, in the
+     author's words (FAR_ENDED). Nothing is sent to the player.
+     The record stays as it was, in a desktop Settings lists as left behind. Which campaigns this account runs is read
+     fresh before a run with anything due on a campaign's desktop, since the list a tab remembers can be days old. */
+  function farRuns() {
+    var out = Object.create(null), C = EN.campaigns;
+    try { (C && C.running ? C.running() : []).forEach(function (c) { if (c && c.id) out[c.id] = true; }); } catch (e) {}
+    return out;
+  }
+  var FAR_ENDED = "Lost in #POST (This campaign has ended)";   // the author's wording, 9 Nov 2026
+  function farEnded(it, told) {
+    if (it.r.far.gone) return;   // said already
+    told.push(it);
+    farSave(it, { far: { gone: true } });
+  }
   function flushSends() {
     if (_sending) { _sendAgain = true; return _sending; }
     var who = farUser();
     if (!who) return Promise.resolve();
-    var todo = farTodo(who);
-    if (!todo.length) { _sendStuck = false; return Promise.resolve(); }
-    var refused = [], unfixed = [], failed = false, wasStuck = _sendStuck;
+    var first = farTodo(who);
+    if (!first.length) { _sendStuck = false; return Promise.resolve(); }
+    var C = EN.campaigns;
+    var fresh = first.some(function (it) { return !!it.campId; }) && C && C.refresh ? Promise.resolve(C.refresh()) : Promise.resolve();
+    var refused = [], unfixed = [], ended = [], failed = false, wasStuck = _sendStuck;
     clearTimeout(_sendRetry);
-    _sending = todo.reduce(function (p, it) {
-      return p.then(function () { return farStep(it, refused, unfixed); });
-    }, Promise.resolve()).then(function () { _sendStuck = false; }, function (e) {
+    _sending = fresh.then(null, function () {}).then(function () {
+      var runs = farRuns(), todo = [];
+      farTodo(who).forEach(function (it) {
+        if (it.campId && !runs[it.campId]) farEnded(it, ended);
+        else todo.push(it);
+      });
+      return todo.reduce(function (p, it) {
+        return p.then(function () { return farStep(it, refused, unfixed); });
+      }, Promise.resolve());
+    }).then(function () { _sendStuck = false; }, function (e) {
       if (e === NOT_MINE) return;   // the account that signed in sends its own; this one's go when it's back
       failed = true;
       try { console.warn("A send to another player's sheet did not go. It stays queued.", e); } catch (e2) {}
@@ -1839,6 +1867,7 @@ EN.gmStore = (function () {
       if (EN.ui && EN.ui.toast) {
         farTell(refused, function (names, which) { return "Not delivered to " + names + which + " can't reach them any more, so it doesn't count as paid."; });
         farTell(unfixed, function (names, which) { return "Could not send the correction to " + names + which + " can't reach them any more."; });
+        if (ended.length) EN.ui.toast(FAR_ENDED);
       }
       // the link back takes the note off the tab, unless somebody is typing there
       var el = document.activeElement, typing = !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);

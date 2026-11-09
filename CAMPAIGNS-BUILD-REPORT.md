@@ -812,7 +812,7 @@ Run on the live site on 9 Nov 2026, with real Discord and the real project, one 
 
 # Campaigns build report: the writing tabs through the inbox
 
-Built 8 Nov 2026 on `claude/funny-hermann-497402`, cut from `main` at `d93f722`, and rebuilt on 9 Nov on `main` at `96bdb43`, which has the Admin desktop per campaign. **Not merged, and the migration is not applied:** both wait for your go.
+Built 8 Nov 2026 on `claude/funny-hermann-497402`, cut from `main` at `d93f722`, and rebuilt on 9 Nov on `main` at `96bdb43`, which has the Admin desktop per campaign, then brought up to `main` at `1ee1387`. **Not merged, and the migration is not applied:** both wait for your go.
 
 ## What you decided
 
@@ -838,6 +838,8 @@ A pay stub always goes to another player's sheet, whatever the chip says, becaus
 **If the link is down,** the write still counts on your screen and goes when the link is back, whichever campaign's desktop is open by then: a payday made on Night Shift goes while you work on Day Shift. After 5 seconds the tab says "1 send is waiting for the link". It survives a reload.
 
 **If it can never land,** say the character left the campaign, it doesn't count as paid, and it stays on that campaign's undo strip, on every Admin tab, until you press OK. The toast alone would be gone before you saw it. Refused while you're on another campaign, the toast names the one it came from.
+
+**If the campaign has ended,** deleted, left, or no longer yours to run, what was waiting on its desktop doesn't go, a send or an UNDO, and a toast says so once, in your words: "Lost in #POST (This campaign has ended)". Nothing goes to the player. The record stays as it was, on a desktop Settings lists as left behind.
 
 Under the hood: one new migration and its checks, `writeCrew` going through THE FAR DOOR in `gmstore.js`, and the courier in `cloud.js` filing numbers along with the letter. Heat isn't touched. The asset stamp is `?v=20261109.1`. README, HANDOFF and DEFERRED-FIXES describe it.
 
@@ -906,7 +908,7 @@ That round had a review of its own, below.
 
 1. **A send refused as taken back still counted as paid** on the desktop it was on. Fixed.
 2. **A take back for a character who had left the campaign marked nothing,** so a second copy could land after they rejoined, with no correction. The marks now live in a table of their own (`inbox_taken_back`): a mark needs no character or campaign, and outlives a deleted campaign. Fixed.
-3. **Deleting a campaign deletes the rows that show which sends landed.** That is a choice about pay history, and it's under Still open.
+3. **Deleting a campaign deletes the rows that show which sends landed,** so an UNDO afterwards would find nothing to correct, and a send still waiting could go out elsewhere. You chose that a campaign's business ends with it: see Decisions.
 4. **The account could change between the app's own look and the request leaving,** with another tab signing in. The app now says which account it means (`p_sender`), and the database refuses anything else, EN_NOT_MINE, so it can't send or take back for the wrong account. Fixed.
 5. **Copies of one send on two desktops** could disagree, one paid and one taken back. Every answer now reaches the other copies too. Fixed.
 6. **A key ending `:fix` could stand in for a correction.** Those keys are `take_back`'s own now, and refused anywhere else. Fixed.
@@ -921,16 +923,16 @@ This last round hasn't had a review of its own.
 | --- | --- | --- |
 | The SQL | 269 PASS, 0 FAIL locally, nothing left behind | `campaign_checks.sql`, up from 168. Not yet on the live project |
 | The checks have teeth | 249 of 249 caught | Broken copies of the migrations, 92 of them for this one |
-| The story, on the stand-in | 368 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, the far door's rules, sends from another campaign's desktop, and every finding of the three reviews of that |
-| The same story, on the real SQL | 372 checks pass | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
+| The story, on the stand-in | 379 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, the far door's rules, sends from another campaign's desktop, every finding of the three reviews of that, and a campaign deleted with a send and an UNDO waiting on its desktop |
+| The same story, on the real SQL | 383 checks pass | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
 | Two real tabs | 36 checks pass | `pg/writes_tabs_realdb.js`: the double payment held back, the idle tab's send, both tabs agreeing, a send queued in one tab going from the other on another campaign, and a take back landing while the other tab's send of it was out |
 | A real reload with a send queued | Pass | `tests/campaigns_writes_2.js` and `_3.js`: it goes with nobody asking, under the same key |
-| Breaking the code on purpose | 115 of 115 caught. The first full run missed one, a check the story didn't have, so I added it and ran that one again | `pg/writes_mutants.py`, a line at a time, each failing its own check. The one that only two real tabs show runs on the real database |
-| Before each fix | On `d2eedcc`: 16 of the new SQL checks fail, 8 of the story's on the stand-in and 10 on the real database, finding 2's among them. Every finding but the one left to you has at least one | The same story and checks on the code before it |
+| Breaking the code on purpose | 124 of 124 caught | `pg/writes_mutants.py`, a line at a time, each failing its own check. The one that only two real tabs show runs on the real database |
+| Before each fix | Without the campaign ending with it, 6 of its new checks fail: the send on the deleted campaign's desktop lands, its UNDO is tried, nobody is told, and the remembered list still offers the campaign. Each earlier fix's checks failed on the code before it, as each round reported | The same story and checks on the code before it |
 | The other real rounds | All pass: batch 2 144, batch 3 61, the Table 159, two tabs 40, the same sequence in one window 21 | On the final code |
 | The two-tab fuzz | 400 random rounds of two and three tabs, nothing lost | `pg/gm_tabs_fuzz.mjs` on the final `gmstore.js` |
-| The whole suite | 498 chains, 523 runs, 0 bad, 0 skipped, `gmtabs_1` to `_4`, `campaigns_table_1`, `tabs_1` and `campaigns_b3_1` included. The story gained 2 checks after it, and its three chains ran again | `cx_integ_run.py`, round wr9, on the final code |
-| Three skins, desktop and 375 px | 30 of 30 measured, none scrolls sideways | `tests/campaigns_writes_shot.js` measured without a screenshot, so its numbers are read. Measured before the last two rounds, which changed no screen |
+| The whole suite | 498 chains, 523 runs, 0 bad, 0 skipped, `gmtabs_1` to `_4`, `campaigns_table_1`, `tabs_1` and `campaigns_b3_1` included | `cx_integ_run.py`, round wr12, on the final code |
+| Three skins, desktop and 375 px | 30 of 30 measured, none scrolls sideways | `tests/campaigns_writes_shot.js` measured without a screenshot, so its numbers are read. Measured before the last three rounds; the one screen they changed is a toast's words |
 
 `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
 
@@ -949,13 +951,13 @@ This last round hasn't had a review of its own.
 7. **A run reads every desktop on this browser,** under the account that wrote each send, and stops quietly if another account signs in. Each step reads the record again where it's kept, and what either copy knows stays known. A desktop with nothing queued isn't even read.
 8. **An UNDO's mark lives apart from the inbox** (`inbox_taken_back`). It needs no character or campaign, it outlives a deleted campaign, and it doesn't show in the Campaign tab's list of sends. Anyone can mark a key of their own, which delivers nothing to anyone.
 9. **The app says which account it means** with each send and take back, and the database refuses a session that changed under it. A run stops quietly on that, as it does when another account signs in.
+10. **A campaign's desktop ends with it** (your word, 9 Nov 2026: "They end with it"). Deleted, left, or no longer yours to run: what waits on its desktop doesn't go, and one toast tells you, in your words: "Lost in #POST (This campaign has ended)". The list of campaigns you run is read fresh before any run with something due on a campaign's desktop, because the list a tab remembers can be old. No screen offers UNDO on such a desktop once the list knows: the picker drops it, the tab moves off it on its next draw, and Settings shows it as left behind, to export or delete. The one gap is a tab whose list is still old, where an UNDO can queue: the run after it says the campaign has ended instead of doing nothing.
 
 ## Still open
 
 - **Heat through the inbox.** Next, on your word. **Vigor at the Table's END** doesn't reach another player's sheet either. It was never one of the four, and it depends on what the sheet holds, as Heat does.
 - **Two Admins paying one fight,** above.
 - **A removed player's rows still land on them,** as their mail does, and a correction after they've gone is refused, and says so on the strip.
-- **Deleting a campaign forgets which of its sends landed,** because its inbox rows go with it. An UNDO of one afterwards answers that nothing went, so it sends no correction, and the player keeps the money. A send still queued on that campaign's desktop can go after the delete, wherever the character is now, if this account runs that campaign. A taken back key stays refused. This one is yours to decide, so it isn't built.
 - **The lock between `send_write` and `take_back`** has never had two connections to work against. PGlite has one.
 - **RECALL on the Campaign tab's list leaves the Job Board saying "(posted)".** A later UNDO POSTING comes out right.
 - **A row still due goes with its campaign if the campaign is deleted,** and the Admin's ledger still reads as paid.

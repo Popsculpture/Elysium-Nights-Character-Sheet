@@ -196,6 +196,7 @@ others change numbers, so their row carries them: Glimmer, Nexus, XP and the two
   still waiting is recalled, and one that arrived gets a letter.
 - The Admin's ledger is the outbox (`EN.gmStore`, THE FAR DOOR), so the tabs work as they always did, and a send that can't reach the account yet waits and says so. It goes from whichever campaign's desktop is open.
   A send that can never land (the character left the campaign, say) stays on the undo strip until it's read, and doesn't count as paid.
+- A campaign's desktop ends with it: once the account no longer runs a campaign (deleted, left, no longer Admin), nothing waiting on that desktop goes, and the Admin is told once: "Lost in #POST (This campaign has ended)".
 - `supabase/migrations/20261108210000_inbox_writes.sql` holds the rules. It has to be on the database before this app is live, or the inbox can't be read at all.
 
 ## One Admin desktop per campaign
