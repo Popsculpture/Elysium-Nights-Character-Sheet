@@ -654,6 +654,7 @@ EN.gmStore = (function () {
     });
     Object.keys(orders).forEach(function (name) { applyOrder(name, orders[name]); });
     if (!isPast) file.lastText = text;
+    else if (moved) file.owes = true;              // storage doesn't hold it: that is how it got here
     return moved;
   }
   function revOf(file) {

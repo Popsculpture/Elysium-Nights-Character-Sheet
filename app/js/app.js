@@ -538,14 +538,14 @@ EN.app = (function () {
     if (portal === "admin") {
       var enc = null;
       try { enc = EN.gmStore && EN.gmStore.get && EN.gmStore.get().encounter; } catch (e) {}
-      // whose desktop this is, once there is more than one it could be
+      // whose desktop this is, once there is more than one it could be. After the round: a narrow bar cuts off the end, and the Table has the name
       var deskName = "";
       try {
         var here = EN.gmStore && EN.gmStore.desk ? EN.gmStore.desk() : null;
         if (here) deskName = here.name;
         else if (EN.campaigns && EN.campaigns.running && EN.campaigns.running().length) deskName = "No campaign";
       } catch (e) {}
-      node.appendChild(el("span.an-name", { dataset: { gm: "desk-name" }, text: (deskName ? deskName.toUpperCase() + " · " : "") + ((enc && enc.round > 0) ? ("ROUND " + enc.round) : "NO ENCOUNTER") }));
+      node.appendChild(el("span.an-name", { dataset: { gm: "desk-name" }, text: ((enc && enc.round > 0) ? ("ROUND " + enc.round) : "NO ENCOUNTER") + (deskName ? " · " + deskName.toUpperCase() : "") }));
       return;
     }
     var ch = store.active();
