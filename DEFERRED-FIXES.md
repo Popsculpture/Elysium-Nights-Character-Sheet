@@ -12853,3 +12853,19 @@ The build report has the rest.
 5. The lock gives up after 20 seconds and runs anyway. The harness turns the lock off, because its virtual clock can't see the handshake: `pg/lock_probe.py` tests the real one on real time.
 
 **Left open:** the Admin desktop's `en_gm_v1` has the same two-tab problem and was not touched. BOLLARD-7's copied identity on the live project is unexplained, and the sheet is unrepaired. The build report lists the rare ones.
+
+### One Admin desktop per campaign, built 2026-11-08 on `claude/distracted-haslett-65d404`
+
+**What changed, and why.** The author asked whether an Admin can run several campaigns. Everything on the desktop past creating and joining was one document per browser, and an Admin in two tabs overwrote their own work.
+`gmstore.js` now keeps a document per campaign (`en_gm_camp_<id>_v1`), with the library and the no-campaign desktop in `en_gm_v1` (which desktop), merges a document's parts between tabs with stamps and delete notes in `rev` (TWO TABS, ONE DESKTOP), merges an editor's whole-copy save (AN EDITOR'S OPEN COPY), and moves old work on the Admin's word (`moveDevice`). `campaigns.js` holds each tab's pick and `desktop()`. Each view's working state goes through `perDesk`.
+
+**Decisions.**
+
+1. The author's: Saved Threats and custom Hazards are shared and the rest belongs to a campaign; an existing document is asked about once, by a card; it stays on the device for now; the picker offers No campaign.
+2. `desktop()` answers from what is remembered and `current()` from the network. A dropped connection must not swap the Table, and at boot the desktop has to be right before the client answers. Offline, the crew is this browser's records on the campaign's Table, as it always was.
+3. A part's text for comparing has its keys in order (`canon`). Two tabs can hold the same thing in different orders after a merge, and reading that as a change stamps it again, which can bring back a delete.
+4. The storage event's `newValue` is heard as well as storage (`hear` with `past`), so a save written over by a tab that hadn't heard isn't lost when the tab that made it has closed.
+5. A move writes over nothing, and keeps a copy only when it takes something. An import on a campaign adds to the library without rolling a threat back. GM Controls and Optional Rules stay per device.
+6. An array counts as one thing in a merge, as on the roster. Table rows are their own parts, since two tabs on one fight is the ordinary case.
+
+**Left open:** queued sends on the writing-tabs branch (`claude/funny-hermann-497402`) live in a ledger that now belongs to a campaign. Account sync, two tabs changing one list on one record at once, and a payday form saved from two tabs are in the build report.
