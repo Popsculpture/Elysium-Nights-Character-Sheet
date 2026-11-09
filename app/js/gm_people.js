@@ -106,14 +106,19 @@ EN.gmPeople = (function () {
      `customProfile` is the Profile select sitting on "written in play".
      `promote.grade` null follows the crew's Caliber; `promote.type` and
      `promote.template` null follow the card's species ("none" is no template). */
-  var _p = {
-    draft: blankDraft(),
-    customProfile: false,
-    roll: { table: "humans", count: 3, results: [], showTable: false },
-    promote: { grade: null, designation: "standard", role: "gunhand", type: null, template: null },
-    fromThreat: "",
-    q: ""
-  };
+  function freshEditor() {
+    return {
+      draft: blankDraft(),
+      customProfile: false,
+      roll: { table: "humans", count: 3, results: [], showTable: false },
+      promote: { grade: null, designation: "standard", role: "gunhand", type: null, template: null },
+      fromThreat: "",
+      q: ""
+    };
+  }
+  var _p = freshEditor();
+  // a card being written belongs to the campaign it was started on (js/gmstore.js perDesk)
+  gm.perDesk(function () { return _p; }, function (k) { _p = k || freshEditor(); });
   var _crew = null;       // EN.gmEngine.crew(), read once per render
   /* What follows the GM's typing without a re-render (F19): the card's header
      tags and actions, its text, the Resolve line, the promote preview, the
@@ -330,7 +335,7 @@ EN.gmPeople = (function () {
   }
   function save(d, quiet) {
     if (!hasContent(d)) return null;
-    var id = gm.put(BAG, recordOf(d));
+    var id = gm.put(BAG, recordOf(d), { held: true });
     if (id) {
       d.id = id;
       if (!quiet) toast((trim(d.name) || "The card") + " saved to the contacts.");
@@ -347,12 +352,15 @@ EN.gmPeople = (function () {
     var r = gm.rec(BAG, id);
     if (!r) return false;
     setDraft(draftOf(r));
+    gm.hold(BAG, recordOf(_p.draft));   // two tabs on one card (js/gmstore.js, AN EDITOR'S OPEN COPY)
     return true;
   }
   // a card whose record was deleted elsewhere stays in the editor, as a card not yet saved
   function syncDraft() {
     var d = _p.draft;
     if (d.id && !gm.rec(BAG, d.id)) d.id = null;
+    // another tab changed the card open here, and nothing has been typed here since it was opened: show it
+    if (d.id && gm.heldMoved(BAG, recordOf(d))) openContact(d.id);
   }
 
   /* ---- the card as text ------------------------------------------------------

@@ -170,7 +170,7 @@ link, the roster, who is blocked, and each player's sheet, read-only.
 
 While an account runs a campaign, the Admin desktop's crew is that campaign's characters. The Table's Pull in the crew and the crew reader
 list them, each with its player's name, and a bank of characters on the browser stays out, the Admin's own included until they go in from
-Manage characters. With more than one campaign to run, the Table has the Campaign tab's picker. Payroll, Heat, the Job Board and the XP award
+Manage characters. Payroll, Heat, the Job Board and the XP award
 count the whole crew but can only write to sheets on this device, and say who they can't reach. Jacked out or offline, the desktop uses the
 browser's records as it always did.
 
@@ -188,10 +188,20 @@ Waiting, Delivered or Taken, and a send that is still waiting can be recalled.
   Realtime publication. The server only checks a package's shape, because it can't see the catalog: the
   player's app checks the names at Take it.
 
+## One Admin desktop per campaign
+
+Each campaign an account runs has its own Table and last fight, Encounters, Job Board, Payroll history, Heat log, People and Scenes. Saved Threats
+and custom Hazards are one library across every desktop. The picker above the Table switches all of it, for that tab. No campaign is this browser's
+own desktop, which is all an Admin with no campaign ever sees. A dropped connection stays on the campaign, and jacking out goes to the browser's own.
+
+It stays on the device: `en_gm_camp_<campaign id>_v1` for a campaign, and `en_gm_v1` for the library and the browser's own desktop. Settings exports and
+imports one desktop at a time. Work from before this stays in `en_gm_v1` until the Admin moves it. A one-time card asks, and Settings offers the same
+move later, with a copy of the old document kept first.
+
 ## Two tabs
 
-One account can be open in two tabs, each on its own character. A save reaches the other tab at once, and each tab keeps its character across
-a reload. The Admin desktop's own document isn't covered yet, so keep that to one tab.
+One account can be open in two tabs, each on its own character and its own campaign. A save reaches the other tab at once, and each tab keeps both
+across a reload. Two tabs on one Admin desktop merge part by part, and two tabs with one record open keep each other's changes.
 
 ## Install it on a phone
 

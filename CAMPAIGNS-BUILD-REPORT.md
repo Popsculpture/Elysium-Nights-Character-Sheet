@@ -600,14 +600,14 @@ There has been no second review of these fixes. The tests below cover each one.
 
 ## Decisions
 
-1. **The Table's rows stay in the one GM document.** A Table per campaign is the bigger change we talked about. Switching the picker marks the other campaign's rows; it doesn't swap the Table.
+1. **The Table's rows stay in the one GM document.** A Table per campaign is the bigger change we talked about. Switching the picker marks the other campaign's rows; it doesn't swap the Table. (Built since: see the last part of this report.)
 2. **The lists read when drawn,** at most every 30 seconds, plus ↻ and any change to who is in a campaign. There's no live feed of who joined.
 3. **A sheet that can't be read** is left off the picker, with a console warning. The Campaign tab's roster still lists it.
 
 ## Still open
 
 - **The writing tabs through the inbox.** Payroll, the XP award, Heat and the Job Board can't reach another player's sheet. It's the planned next step, and the reason for the line those tabs show.
-- **A Table per campaign.** The GM document is one per browser, so Encounters, Payroll history and so on are shared across campaigns too.
+- **A Table per campaign.** Built since: see the last part of this report.
 - **The next account on the same browser** sees the last account's Table rows, as it always has. A campaign's row carries a character name, a Discord name and a campaign id, no sheet, and is marked. The Table is one per browser, not per account.
 - **VIEW SHEET from the Table** comes back to the Campaign tab, not the Table.
 
@@ -679,7 +679,7 @@ Two independent reads, each given the code and not my conclusions.
 
 ## Still open
 
-- **The Admin desktop's document has the same problem.** `en_gm_v1` is one value, so an Admin in two tabs still overwrites their own Table, Payroll and so on. I didn't touch it. **Keep the Admin desktop to one tab for now.** It belongs with the Table-per-campaign work.
+- **The Admin desktop's document had the same problem.** Fixed since: see the last part of this report.
 - **One character in two tabs,** editing inside the same few milliseconds or changing the same list inside a moment: one change loses.
 - **A stale device** still overwrites a sheet under last write wins. Mail comes back. Other edits, and a package already taken, don't.
 - **Rare ones the second review found:** two tabs deleting different characters within milliseconds, or full storage, can lose the delete note, so a delete comes back. A tab frozen for over 7 days can bring one back too. A pack-locked record pulled with a fast clock's stamp keeps it. A 20 second lock fallback during a stall can still insert twice.
@@ -712,3 +712,79 @@ Run on the live site on 8 Nov 2026, with two real accounts, Popsculpture and MyG
 **Not proven on the live site:** lost mail coming back, because the row went away with its sheet. It passes against the real rules locally.
 
 **If you added `http://localhost:8777/**` to Supabase's redirect list,** it can come out now. I didn't touch that setting.
+
+# Campaigns build report: one Admin desktop per campaign
+
+Built 8 Nov 2026 on `claude/distracted-haslett-65d404`, cut from `main` at `089fd6c`. No SQL and no migration. **Not merged. It waits on your word.**
+
+## Why
+
+You asked whether an Admin can run several campaigns. Creating, joining and the Campaign tab's picker worked, but everything else on the desktop was one document per browser, `en_gm_v1`. Every campaign shared one Table, one set of encounters and one Payroll history, and switching the Table's picker only marked the other campaign's rows `OTHER CAMPAIGN`. An Admin in two tabs also overwrote their own work, because the whole document was written back on each save.
+
+## Your four choices
+
+1. **Shared across campaigns:** Saved Threats and custom Hazards. The Bestiary is built in, so it always was. Everything else belongs to a campaign.
+2. **The document people already have:** ask once. A one-time card says what the device holds and asks which campaign it belongs to.
+3. **Where it lives:** on the device for now, with export and import per desktop.
+4. **The picker:** it offers No campaign as well, so a one-shot on this browser's characters needs no jacking out.
+
+## What is built
+
+- **A campaign's document is its own,** `en_gm_camp_<id>_v1`. It holds the Table and last fight, encounters, jobs, the ledger, the Heat log, contacts and scenes.
+- **The library stays in `en_gm_v1`,** which is also the desktop of an Admin with no campaign. So nobody without a campaign has anything migrated, and an old copy of the app can still read the document.
+- **The picker switches everything, for that tab.** It sits above the fight now, not under Pull in the crew, because it decides whose fight this is. The top bar says `ROUND 2 · NIGHT SHIFT`.
+- **Each tab keeps its own campaign,** across a reload. A new tab opens on the last one picked anywhere.
+- **Two tabs on one desktop merge.** The document is taken apart into parts, each with its own stamp: a record, a Table row, the round. A save goes to the other tab at once. Where both tabs changed one part, it merges field by field and the newer save wins.
+- **Two tabs with one record open keep each other's changes.** Plans, scenes, job cards, contact cards and custom hazards each edit a copy and save the whole copy, so they now say what they opened, and a save writes only what that copy changed. A copy with nothing unsaid shows the news on the next draw. A posted job can't be un-posted by a stale card.
+- **Half-done work stays with its campaign.** A half-written contact, plan or payday doesn't follow you to another campaign, and it's there when you come back.
+- **The move.** It carries everything but the library. It never writes over anything: a record already here under the same id with different contents stays on the device, so does a Table when this campaign's is in use, and so does a row another campaign owns. A copy of the old document is kept first, and Settings can export or delete it.
+- **Settings' GM data** works on the desktop you're on, offers the same move later, and lists desktops left behind by a campaign you've left, to export or delete.
+
+## What you'll notice
+
+- **Your first visit to the Admin desktop** brings up the card, if this browser holds work from before. Answer it once. Leaving it on the device is safe: No campaign opens it, and Settings can still move it.
+- **With no campaign,** nothing looks different, and two tabs now work.
+- **An empty Table on a campaign you've never used is right.** The work is on another desktop, not gone.
+
+## How it was reviewed
+
+Two independent reads, each given the code and not my conclusions.
+
+**The first** found the biggest bug in the build: my merge was sound, but an editor's copy went straight back over it, so two tabs on one saved scene overwrote each other on every keystroke. That is why the open copy exists. It also found that importing a left-behind desktop's file emptied the shared library, that a second move replaced the good copy with an emptied one, that a refused move left a copy behind while saying nothing changed, that a deleted desktop came back from another tab, and six smaller ones. All fixed.
+
+**The second** read only the fixes. It found three more: a job's status going back when a card that had drawn it saved, news hidden on a record first saved in this tab, and a tab losing its pick when another account visited this browser. All fixed.
+
+**Lagging storage, simulated:** `pg/gm_tabs_fuzz.mjs` plays random rounds of two and three tabs on the real store. It found three things no chain had: a save written over and then lost when the only tab holding it closed, a key's order reading as a change (which could bring back a deleted record), and a save only the storage event still held not being put back. All fixed.
+
+## Checked, and how
+
+- **The whole suite:** 494 chains, 518 runs, 0 bad, on the final code. Run from a private copy of the suite, so the writing-tabs session's chains and hunks stayed out of it.
+- **The new chains:** `gmtabs_1` (99 checks, two tabs on one desktop), `gmtabs_2` (188, the desktops, across real reloads), `gmtabs_3` (147, the move), `gmtabs_4` (78, one record open in two tabs, through the real views). All are two live copies of the app on one storage.
+- **The fuzz:** 2,000 random rounds of two and three tabs on the real store, half of them with storage lagging as it does between a browser's pages: 15,510 records, 9,274 Table rows and 21,257 edits, nothing lost, nothing deleted came back, nothing crossed between campaigns. 150 edits under lag lost to another tab's edit of the same record in the same moment, the limit below.
+- **Breaking the new code on purpose:** 116 lines broken one at a time, all 116 caught (`pg/gmtabs_mutants.py`). Earlier passes caught fewer, and every miss tightened a check or took out a line that did nothing.
+- **The real rules on a local database:** all five rounds pass on the final code: two tabs 40, the same sequence in one window 21, the Table 157, batch 2 144, batch 3 61.
+- **Two real tabs in a real browser,** on real time and real storage events, on localhost with a stand-in account: a save heard with nobody asking, the card and the move, the other tab following it, each tab on its own campaign and staying there across a reload, and the library shared. An iframe shares its parent's per-tab storage, so the chains can't prove that part. While that stand-in was up, its reads went to the live project with no session and were refused. Nothing was written.
+- **Screens:** the Table, the card and Settings at desktop width, and the Table at 375 px.
+
+**A bug in an older test turned up:** `tabs_3` hung twice under full load. Its cleanup ran `delete navigator.locks`, which brought the real browser lock back, and virtual time can't see that handshake. Fixed in the test. That step now takes the same 2,170 virtual ms on the old code and the new, and the run above is with the fix.
+
+## Decisions beyond your four
+
+1. **A dropped connection stays on the campaign.** Only jacking out, for real, goes to the browser's own desktop. A wifi blip must not swap the Table in the middle of a fight.
+2. **A file imported on a campaign replaces that desktop and only adds to the library.** A threat the library already has stays as it is, because other desktops use it. On No campaign a file replaces everything, library too, as it always did, and the hint says so.
+3. **Export is one desktop at a time,** with the library in it. Moving three campaigns to a new device is three files.
+4. **GM Controls and Optional Rules stay per device,** not per campaign. I left them where they were. Say if you want them per campaign.
+5. **An array counts as one thing in a merge,** as it does on the roster: a plan's lines, a scene's lists. Table rows don't, since two tabs on one fight is the ordinary case.
+6. **Nothing can be deleted as left behind while jacked out,** because nothing then says which campaigns are yours.
+
+## Still open
+
+- **With the writing tabs branch.** `claude/funny-hermann-497402` keeps its outbox in the ledger, and the ledger now belongs to a campaign. So a send queued for one campaign waits until that campaign is opened, unless whichever lands second makes it walk every document. The two branches conflict in `gmstore.js` and `campaigns.js`. `campaigns_table_1` needs both to pass all its checks, and `gmtabs_*` and `campaigns_writes_1` fail on the branch without them.
+- **Two devices or a co-Admin** see separate Tables. That is your choice 3, and account sync is its own build.
+- **Two tabs changing one list on one record inside a moment:** one change loses. So does changing one field in the same instant.
+- **A payday form saved from two tabs:** the last SAVE wins, as one form. A credited payday is protected, since it refuses a save.
+- **The one way left to lose a save:** the only tab holding it closes in the instant another tab's write lands over it, unheard. A person can't do that by hand.
+- **A tab frozen for over 7 days** can bring back something deleted, as on the roster.
+- **The copy from before a move** stays until you delete it in Settings, and it counts against the browser's storage.
+
+**Not checked:** the live site, real Discord and the real project. Two real tabs in a real browser were checked on localhost, with a stand-in account.

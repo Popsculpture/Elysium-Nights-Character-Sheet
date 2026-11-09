@@ -73,14 +73,19 @@ EN.gmHeat = (function () {
      GM's choices on a fight's team. Maps keyed by ids or typed text are
      null-prototype. A missing pick means the default: on for Cooling Off
      (everyone who holds the Heat), off for ADD HEAT (whoever earned it). */
-  var _h = {
-    open: Object.create(null),
-    cool: { key: "", method: "dataScrub", pick: Object.create(null), amount: 1, flawless: false },
-    add: { key: "", typed: "", pick: Object.create(null), amount: 1 },
-    merge: { from: "", to: "" },  // the two board sources MERGE is about to join
-    team: Object.create(null),   // checkId + ":" + Bestiary name -> false when left out
-    cat: Object.create(null)     // checkId + ":" + team item index -> the Bestiary name picked
-  };
+  function freshForms() {
+    return {
+      open: Object.create(null),
+      cool: { key: "", method: "dataScrub", pick: Object.create(null), amount: 1, flawless: false },
+      add: { key: "", typed: "", pick: Object.create(null), amount: 1 },
+      merge: { from: "", to: "" },  // the two board sources MERGE is about to join
+      team: Object.create(null),   // checkId + ":" + Bestiary name -> false when left out
+      cat: Object.create(null)     // checkId + ":" + team item index -> the Bestiary name picked
+    };
+  }
+  var _h = freshForms();
+  // these forms belong to the campaign they were filled in on (js/gmstore.js perDesk)
+  gm.perDesk(function () { return _h; }, function (k) { _h = k || freshForms(); });
   var _crew = null, _board = null;
   // the parts the ADD HEAT form repaints in place while a source name is typed (F19)
   var _paint = null;

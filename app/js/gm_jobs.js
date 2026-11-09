@@ -77,15 +77,20 @@ EN.gmJobs = (function () {
      draft means "follow the crew's Caliber". `pick` holds the GM's recipient
      choices keyed by charId (null-prototype, the keys come from records);
      absent means the default, which is on. */
-  var _j = {
-    draft: blankDraft(),
-    locks: Object.create(null),
-    postN: null,          // the posting the d12 last landed on
-    pick: Object.create(null),
-    from: "JOB BOARD",
-    when: "",             // blank follows the clock
-    filter: "all"
-  };
+  function freshBoard() {
+    return {
+      draft: blankDraft(),
+      locks: Object.create(null),
+      postN: null,          // the posting the d12 last landed on
+      pick: Object.create(null),
+      from: "JOB BOARD",
+      when: "",             // blank follows the clock
+      filter: "all"
+    };
+  }
+  var _j = freshBoard();
+  // a card being drawn up belongs to the campaign it was started on (js/gmstore.js perDesk)
+  gm.perDesk(function () { return _j; }, function (k) { _j = k || freshBoard(); });
   var _crew = null;       // EN.gmEngine.crew(), read once per render
   /* What follows the GM's typing without a re-render (F19): the two text
      previews, the card's subtitle, header tags and buttons, the #POST buttons
@@ -402,8 +407,9 @@ EN.gmJobs = (function () {
     r.postingId = d.postingId || null;
     r.hook = d.hook || "";
     r.gmNotes = d.gmNotes || "";
-    r.status = d.status || "draft";
-    r.sentTo = (d.sentTo || []).slice();
+    // once there is a stored record it owns these (syncDraft): the card's copy can be behind, and saving it mustn't undo a posting
+    if (!own(r, "status")) r.status = d.status || "draft";
+    if (!Array.isArray(r.sentTo)) r.sentTo = (d.sentTo || []).slice();
     if (!own(r, "encounterId")) r.encounterId = d.encounterId || null;
     if (!own(r, "paydayId")) r.paydayId = d.paydayId || null;
     return r;
@@ -411,7 +417,7 @@ EN.gmJobs = (function () {
   function save(d, quiet) {
     // the Grade the card shows becomes the job's own, so a later crew change does not move a saved job
     d.grade = gradeOf(d);
-    var id = gm.put("jobs", recordOf(d));
+    var id = gm.put("jobs", recordOf(d), { held: true });
     if (id) {
       d.id = id;
       if (!quiet) toast(titleOf(d) + " saved to the job log.");
@@ -443,6 +449,7 @@ EN.gmJobs = (function () {
     _j.draft = d;
     _j.locks = Object.create(null);
     syncDraft();
+    gm.hold("jobs", recordOf(d));   // two tabs on one job (js/gmstore.js, AN EDITOR'S OPEN COPY)
     return true;
   }
   function setStatus(d, k) {
@@ -1267,6 +1274,12 @@ EN.gmJobs = (function () {
     // nothing hands a job here yet; a {jobId} opens it, so a later link back from Payroll costs nothing
     var h = EN.gmView && EN.gmView.takeHandoff ? EN.gmView.takeHandoff("jobs") : null;
     if (h && h.jobId) openJob(h.jobId);
+    // another tab changed the job open here, and nothing has been edited here since it was opened: show it, keeping the locks
+    if (_j.draft.id && gm.heldMoved("jobs", recordOf(_j.draft))) {
+      var keptLocks = _j.locks;
+      openJob(_j.draft.id);
+      _j.locks = keptLocks;
+    }
     syncDraft();
     // a Grade that follows the crew moves when the crew does, and the cryptid pull follows it
     if (_j.draft.grade == null) recheckCryptid(_j.draft);
