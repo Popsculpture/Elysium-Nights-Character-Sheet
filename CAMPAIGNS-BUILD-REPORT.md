@@ -1078,7 +1078,7 @@ Run on the live site on 10 Nov 2026, after the migration and the merge, with two
 
 # Campaigns build report: one Advancement Type per campaign, and Milestones through the payday
 
-Designed with you on 10 Nov 2026, on `claude/charming-goodall-7c4a28`, cut from `main` at `1159856`. **Built on this branch, and neither applied nor merged.** The first half of this part is the settled design, so the build had one place to read it from. The second half is what was built, how it was checked, and what wasn't.
+Designed with you on 10 Nov 2026, on `claude/charming-goodall-7c4a28`, cut from `main` at `1159856`. **Live since 10 Nov 2026:** the migration went onto the live project on your word (324 PASS, 0 FAIL there), and the code was merged to `main` on your "push it" the same day. The first half of this part is the settled design, so the build had one place to read it from. The second half is what was built, how it was checked, and what wasn't. The live round is at the end.
 
 ## What you asked for
 
@@ -1181,7 +1181,7 @@ Mine again, so overrule any of them. The first seven are the ones above.
 
 ## What was built
 
-On `claude/charming-goodall-7c4a28`, on top of the design: the migration and its checks, the app, a merge of `main` for its live-round notes, and the fixes the review asked for. Nothing is pushed, nothing is applied to the live project.
+On `claude/charming-goodall-7c4a28`, on top of the design: the migration and its checks, the app, a merge of `main` for its live-round notes, and the fixes the review asked for. All of it is on `main` now, and the migration is on the live project.
 
 - **The migration,** `supabase/migrations/20261110120000_advancement_type.sql`: `campaigns.advancement` (a check allows `xp` and `milestone`, or empty) and `set_advancement(p_campaign, p_type, p_mail)`, for those who run the campaign, with the row locked first, the letter cleaned by `clean_mail` whether or not the type changes, and one inbox row per character in the campaign in the same step. It answers how many letters went; the same type again answers 0. The two migrations already on the live project aren't touched.
 - **`campaigns.js`:** the type is cached with each campaign, read with the list (and without the column if the project doesn't have it yet), and `usesXp(ch)`, `advancementOf(ch)`, `lockedBy(ch)`, `advancementLetter` and `setAdvancement` answer for the rest of the app. A record on this device finds its campaign by its local id; a copy of somebody else's by the crew that was read or by View sheet.
@@ -1190,9 +1190,11 @@ On `claude/charming-goodall-7c4a28`, on top of the design: the migration and its
 - **`gmstore.js`:** the `advance` op, local only, with its undo; `sendCrew` refuses it.
 - **`gm_payroll.js`:** the Milestone is in the form, saved, restored and counted as an unsaved change; `numsFor` gives each sheet its own track; NO PAY THIS TIME; the track decides the panels; the summary and stubs say only what came; the hold names a Milestone the earlier payday carried; AWARD MILESTONE and its ticks are gone, and the card, the undo strip and "Already awarded for this job" still read the old awards.
 - **`builder.js`, `printsheet.js`, `pdfexport.js`, `gm_encounters.js`:** the Advance step, the printed sheet, the PDF and the Table's XP Award card ask the same question.
-- **Asset stamp** `20261110.1`, above `main`'s `20261109.3`. **`HANDOFF.md`** says where the type is read from.
+- **Asset stamp** `20261110.2`, above the `20261109.3` that `main` had before. **`HANDOFF.md`** says where the type is read from.
 
 ## Going live, in this order
+
+Both steps are done, on 10 Nov 2026. They stay here as the record of how it went.
 
 1. **The migration, on the live project, before the code,** on your word. The app's read of its campaigns names the new column, and reads without it if it isn't there, so the other order is safe too, but the Campaign tab's buttons need the function.
 2. **Then the merge,** on "push it".
@@ -1229,7 +1231,7 @@ The checks should say 324 PASS, 0 FAIL. The repair is there because `db query` a
 
 ## What was not checked
 
-- **Nothing was run against the live project.** Supabase's own PostgREST, Realtime and Discord sign-in aren't in any of these rounds: the bridge imitates them, as before.
+- **Nothing was run against the live project before it went live.** Supabase's own PostgREST, Realtime and Discord sign-in aren't in any of these rounds: the bridge imitates them, as before. The live round at the end of this part has since run the main paths on the live site, and lists what it left out.
 - **Two Admins pressing at once.** The row lock is there, and PGlite has one connection, so the mutant that removes it can't be caught.
 - **How it looks,** other than a measurement that the heads-up and the Campaign tab stay inside a 368 px width. Not seen by eye: '98, #GRIDroid, light and dark, and a phone.
 - **The printed sheet and the PDF** read the campaign's type through the same call, and no PDF was exported and looked at.
@@ -1241,3 +1243,25 @@ The checks should say 324 PASS, 0 FAIL. The repair is there because `db query` a
 1. **Every campaign starts with no type set,** so the first press sends the letters and a campaign that never presses keeps each sheet's own choice, split or not. The heads-up is how you find out.
 2. **The first press and a flip are the same act** (decision 7): both ask once more, both send the letter.
 3. **Two different Admins can still pay one fight twice,** as before; nothing here changes the ledger being per browser.
+
+## The live round
+
+Run on the live site on 10 Nov 2026, after the migration and the merge, with two real accounts on 5th flavor: Popsculpture as Admin in Chrome, and MyGalFRIDAY in Firefox. After each step I read the real rows, the campaign's setting and both sheets. You said each step looked as described on both screens.
+
+**The start:** 5th flavor had no type set, and its crew was split. Nessa's own switch was on XP and BOLLARD-7's on Milestones.
+
+| Step | Result | The database says |
+|---|---|---|
+| Setting the type to Milestone from Payroll's heads-up | **Pass** | The campaign reads milestone. One letter each, "Advancement Type: Milestone", delivered in 1.34 and 1.39 s. No number moved on either sheet |
+| A plain payday on the Milestone campaign, and its UNDO (your own extra) | **Pass** | 85 Glimmer on both sheets in 1.21 and 1.11 s, then off again under the payday's own keys in 0.97 s |
+| A payday carrying a Milestone | **Pass** | One write for each sheet, 85 Glimmer and 1 major Milestone together, in 0.65 and 0.61 s. Nessa got the Milestone and no XP, though her own switch says XP |
+| UNDO PAYDAY | **Pass** | One correction for each sheet, the Glimmer and the Milestone off together, in 0.87 and 0.79 s |
+| Flipping to XP from the Campaign tab | **Pass** | The campaign reads xp. One letter each, "Advancement Type: XP", in 0.69 and 0.75 s |
+| NO PAY THIS TIME, carrying 250 XP | **Pass** | One write for each sheet, 250 XP and no money, in 0.69 and 0.66 s. BOLLARD-7 got the XP, though its own switch says Milestone |
+| UNDO PAYDAY of it | **Pass** | 250 XP back off both sheets in 0.85 and 0.78 s |
+
+**What you saw, and said was as described:** the heads-up naming who was on which, with its two buttons; the second ask before a press acts; the heads-up gone and the Campaign tab's button lit afterwards; the letter in #POST; Nessa's Advance step changing tracks without a reload; her switch locked, with "Set by your Admin for 5th flavor."; a Milestones panel and no Experience panel on the Milestone campaign, and the other way round on XP; no AWARD MILESTONE button; "Gets it" listing both Freelancers; the Milestone on the pay stub under the money; and NO PAY THIS TIME folding the money away, with a stub that carried only the XP.
+
+**The sheets at the end:** Nessa has 1,784 Glimmer, 0.5 Nexus, 1,000 XP and no Milestones. BOLLARD-7 has 1,714 Glimmer, 0.5 Nexus, no XP and 1 major Milestone. Those are the starting numbers, to the unit. Neither sheet's own switch was written at any point: Nessa's still says XP and BOLLARD-7's still says Milestone. No row was marked delivered without reaching its sheet. 5th flavor was left on XP. Test has no type set and wasn't touched.
+
+**Not tried live:** a player leaving the campaign and getting their own choice back; a co-Admin setting the type; two Admins pressing at once; a letter that waits for a player who is away; the align switch on a crew with no campaign, and its undo; a payday for a split crew on a campaign that hasn't chosen; the Table's XP Award card; the hold naming a Milestone, and CREDIT ANYWAY; an old AWARD MILESTONE award's card and its undo; a campaign with nobody in it; a player on a cached older copy of the app; the printed sheet and the PDF; and '98, #GRIDroid and a phone.
