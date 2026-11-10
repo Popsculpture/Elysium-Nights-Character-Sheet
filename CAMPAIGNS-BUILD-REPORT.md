@@ -812,7 +812,7 @@ Run on the live site on 9 Nov 2026, with real Discord and the real project, one 
 
 # Campaigns build report: the writing tabs through the inbox
 
-Built 8 Nov 2026 on `claude/funny-hermann-497402`, cut from `main` at `d93f722`, and rebuilt on 9 Nov on `main` at `96bdb43`, which has the Admin desktop per campaign, then brought up to `main` at `1ee1387`. **Not merged, and the migration is not applied:** both wait for your go.
+Built 8 Nov 2026 on `claude/funny-hermann-497402`, cut from `main` at `d93f722`, and rebuilt on 9 Nov on `main` at `96bdb43`, which has the Admin desktop per campaign, then brought up to `main` at `b38dc88`. **Not merged, and the migration is not applied:** both wait for your go.
 
 ## What you decided
 
@@ -843,7 +843,7 @@ A pay stub always goes to another player's sheet, whatever the chip says, becaus
 
 **A campaign that's still there but no longer yours to run** (demoted, removed, or left) ends the same way, as you chose ("End like a delete"), and stays ended if you run it again later. Its toast reads "Lost in #POST (You no longer run this campaign)". That wording is a suggestion from the session running this build, not yours, so change it as you like.
 
-Under the hood: one new migration and its checks, `writeCrew` going through THE FAR DOOR in `gmstore.js`, and the courier in `cloud.js` filing numbers along with the letter. Heat isn't touched. The asset stamp is `?v=20261109.1`. README, HANDOFF and DEFERRED-FIXES describe it.
+Under the hood: one new migration and its checks, `writeCrew` going through THE FAR DOOR in `gmstore.js`, and the courier in `cloud.js` filing numbers along with the letter. Heat isn't touched. The asset stamp is `?v=20261109.3`, above `main`'s `20261109.2`. README, HANDOFF and DEFERRED-FIXES describe it.
 
 ## Going live, in this order
 
@@ -947,7 +947,7 @@ This last round hasn't had a review of its own.
 | Before each fix | On `cfc7089`, 4 of the new SQL checks fail and 2 of the story's: nothing was marked, closed or said. Each earlier round's checks failed on the code before it, as that round reported | The same story and checks on the code before it |
 | The other real rounds | All pass: batch 2 144, batch 3 61, the Table 159, two tabs 40, the same sequence in one window 21 | On the final code |
 | The two-tab fuzz | 400 random rounds of two and three tabs, nothing lost | `pg/gm_tabs_fuzz.mjs` on the final `gmstore.js` |
-| The whole suite | Before main's `b38dc88` was merged in: 499 chains, 524 runs, 1 bad, `sitdown_caught_snag`, main's new chain for that commit, which passes on `b38dc88` itself | `cx_integ_run.py`, round wr14 |
+| The whole suite | 499 chains, 524 runs, 0 bad, 0 skipped, `gmtabs_1` to `_4`, `campaigns_table_1`, `tabs_1`, `campaigns_b3_1` and main's new `sitdown_caught_snag` included. The real rounds and the fuzz ran again on the merge too, with the same numbers | `cx_integ_run.py`, round wr15, on the final code with main's `b38dc88` merged in |
 | Three skins, desktop and 375 px | 30 of 30 measured, none scrolls sideways | `tests/campaigns_writes_shot.js` measured without a screenshot, so its numbers are read. Measured before the last five rounds; the one screen they changed is a toast's words |
 
 `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
