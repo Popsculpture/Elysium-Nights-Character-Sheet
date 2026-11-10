@@ -121,12 +121,13 @@ EN.ui = (function () {
   }
 
   var toastTimer = null;
-  function toast(msg) {
+  // `ms` (optional) keeps a long one up longer, never shorter than the usual
+  function toast(msg, ms) {
     var t = document.getElementById("toast");
     if (!t) return;
     t.textContent = msg; t.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 1900);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, typeof ms === "number" && ms > 1900 ? ms : 1900);
   }
 
   function applyInline(parent, text) {

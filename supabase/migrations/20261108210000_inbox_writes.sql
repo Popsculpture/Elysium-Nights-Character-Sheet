@@ -28,7 +28,8 @@
 -- the sender no longer runs, "End like a delete"). The app names the campaign whose desktop a send or an UNDO was made
 -- on (p_desk). Deleted: send_write refuses EN_ENDED. Still there but no longer the sender's to run: EN_NOT_RUNNING.
 -- Either way take_back then marks the key and answers 'ended' or 'not_running', with no correction, so it stays ended
--- even if the sender runs that campaign again.
+-- even if the sender runs that campaign again. Where a row stands under the key, the send landed and the money stays:
+-- the answer is 'ended_landed' or 'not_running_landed', so the app keeps it as paid.
 
 alter table public.character_inbox
   add column ops jsonb,
@@ -105,6 +106,8 @@ set search_path = ''
 as $$
 begin
   if exists (select 1 from public.inbox_taken_back t where t.sender_id = p_sender and t.send_key = p_key) then return; end if;
+  -- one count at a time per sender, so two keys at once can't both be the 10,000th
+  perform pg_advisory_xact_lock(hashtextextended(p_sender::text || '/marks', 0));
   if (select count(*) from public.inbox_taken_back t where t.sender_id = p_sender) >= 10000 then raise exception 'EN_TOO_MANY'; end if;
   insert into public.inbox_taken_back (sender_id, send_key) values (p_sender, p_key);
 end;
@@ -233,29 +236,29 @@ begin
 
   select i.id, i.character_id, i.status, i.ops, i.campaign_id into v_id, v_for, v_status, v_ops, v_went
     from public.character_inbox i where i.sender_id = v_uid and i.send_key = p_key for update;
+  if v_id is not null and v_for is distinct from p_character then raise exception 'EN_NOT_ALLOWED'; end if;
+  -- asked again: the correction already went, whatever has changed since, the desktop included
+  if v_id is not null and exists (select 1 from public.character_inbox i where i.sender_id = v_uid and i.send_key = p_key || ':fix') then return 'corrected'; end if;
   -- made on the desktop of a campaign that has ended: nothing more goes, a correction included, and nothing sent under it ever will
   if p_desk is not null and not exists (select 1 from public.campaigns c where c.id = p_desk) then
-    if v_id is null then perform public.mark_taken_back(v_uid, p_key); end if;
-    return 'ended';
+    if v_id is null then perform public.mark_taken_back(v_uid, p_key); return 'ended'; end if;
+    return 'ended_landed';
   end if;
   -- no longer the sender's to run, though it's still there: it ends the same way
   if p_desk is not null and not public.runs_campaign(p_desk) then
-    if v_id is null then perform public.mark_taken_back(v_uid, p_key); end if;
-    return 'not_running';
+    if v_id is null then perform public.mark_taken_back(v_uid, p_key); return 'not_running'; end if;
+    return 'not_running_landed';
   end if;
   if v_id is null then
     -- nothing went under it: mark it, and nothing ever will
     perform public.mark_taken_back(v_uid, p_key);
     return 'cancelled';
   end if;
-  if v_for is distinct from p_character then raise exception 'EN_NOT_ALLOWED'; end if;
   if v_status = 'recalled' then return 'cancelled'; end if;
   if v_status = 'waiting' then
     update public.character_inbox set status = 'recalled' where id = v_id;
     return 'recalled';
   end if;
-  -- asked again: the correction already went, whatever has changed since
-  if exists (select 1 from public.character_inbox i where i.sender_id = v_uid and i.send_key = p_key || ':fix') then return 'corrected'; end if;
   if v_campaign is null or not public.runs_campaign(v_campaign) then raise exception 'EN_NOT_ALLOWED'; end if;
   if v_ops is not null then
     -- the landed row's numbers are clean already, so the other way round they are too

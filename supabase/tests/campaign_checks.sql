@@ -1089,7 +1089,10 @@ begin
   v := null; err := null;
   begin v := public.take_back(ch_d, 'kd2', '{"from": "Payroll", "subj": "x"}', p_desk => campx); exception when others then err := sqlerrm; end;
   select count(*) into n from public.character_inbox where send_key = 'kd2:fix';
-  out := out || case when v = 'ended' and n = 0 then 'PASS' else 'FAIL' end || ' an UNDO on an ended campaign''s desktop makes no correction: they end with it (' || coalesce(v, err) || ', ' || n || E')\n';
+  out := out || case when v = 'ended_landed' and n = 0 then 'PASS' else 'FAIL' end || ' an UNDO on an ended campaign''s desktop makes no correction, and says the send landed (' || coalesce(v, err) || ', ' || n || E')\n';
+  err := null;
+  begin perform public.take_back(ch_a, 'kd2', '{"from": "Payroll", "subj": "x"}', p_desk => campx); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a key with a row still has to name its character, ended desktop or not (' || coalesce(err, 'no error') || E')\n';
   perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
   campy := public.create_campaign('Theirs');
   select token into t5 from public.campaign_invites where campaign_id = campy;
@@ -1115,7 +1118,7 @@ begin
   v := null; err := null;
   begin v := public.take_back(ch_d, 'kd6', '{"from": "Payroll", "subj": "x"}', p_desk => campy); exception when others then err := sqlerrm; end;
   select count(*) into n from public.character_inbox where send_key = 'kd6:fix';
-  out := out || case when v = 'not_running' and n = 0 then 'PASS' else 'FAIL' end || ' an UNDO on that desktop makes no correction (' || coalesce(v, err) || ', ' || n || E')\n';
+  out := out || case when v = 'not_running_landed' and n = 0 then 'PASS' else 'FAIL' end || ' an UNDO on that desktop makes no correction, and says the send landed (' || coalesce(v, err) || ', ' || n || E')\n';
   perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
   perform public.set_role(campy, a, 'coadmin');
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
@@ -1137,6 +1140,9 @@ begin
   v := public.take_back(ch_d, 'kd5', '{"from": "Payroll", "subj": "Taken back"}');
   select count(*) into n from public.character_inbox where send_key = 'kd5:fix' and campaign_id = camp3;
   out := out || case when v = 'corrected' and n = 1 then 'PASS' else 'FAIL' end || ' a correction is filed in the campaign the money went through, not where the character is now (' || coalesce(v, 'null') || ', ' || n || E')\n';
+  v := null; err := null;
+  begin v := public.take_back(ch_d, 'kd5', '{"from": "Payroll", "subj": "Taken back"}', p_desk => campx); exception when others then err := sqlerrm; end;
+  out := out || case when v = 'corrected' then 'PASS' else 'FAIL' end || ' asked again from an ended desktop, a correction that went still answers corrected (' || coalesce(v, err) || E')\n';
   perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
   update public.characters set campaign_id = camp3 where id = ch_d;
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);

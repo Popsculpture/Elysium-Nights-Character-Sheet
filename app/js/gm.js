@@ -2215,10 +2215,11 @@ EN.gmView = (function () {
     var kids = [];
     // what the inbox refused, until it's been read: a toast is gone long before anyone looks
     farNo.forEach(function (r) {
-      var who = r.charName || "a Freelancer", fixing = r.far.fix === "refused";
+      var who = r.charName || "a Freelancer", fixing = r.far.fix === "refused", limit = r.far.fix === "limit";
       kids.push(el("div.row.between.wrap", { dataset: { gm: "far-refused" }, style: { gap: "8px", alignItems: "center", marginBottom: "6px" } }, [
         el("span.help", { style: { margin: 0, color: "var(--warn)", flex: "1 1 220px", minWidth: 0 },
-          text: (fixing ? "The correction for " + (r.label || "a GM write") + " did not reach " + who + ": this campaign can't reach them any more."
+          text: limit ? "Taking back " + (r.label || "a GM write") + " for " + who + " didn't go: this account has taken back too many sends that never went."
+              : (fixing ? "The correction for " + (r.label || "a GM write") + " did not reach " + who + ": this campaign can't reach them any more."
                         : (r.label || "A GM write") + " did not reach " + who + ": this campaign can't reach them any more, so it doesn't count as paid.") }),
         el("button.btn.sm", { dataset: { gm: "far-refused-ok" }, onclick: function () { gm.farNoticeRead(r.id); EN.app.render(); } }, "OK")
       ]));

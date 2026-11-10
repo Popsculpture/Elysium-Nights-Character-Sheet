@@ -1495,9 +1495,9 @@ EN.gmStore = (function () {
      tag, so "already paid", UNDO and every view that reads the ledger go on working without knowing.
 
      THE LEDGER IS THE OUTBOX. writeCrew answers at once, because every tab's flow is built on that, and the
-     row goes a moment later (flushSends). A record carries `far`: { by, row, state, rowId, why, fix, told }.
+     row goes a moment later (flushSends). A record carries `far`: { by, row, desk, state, rowId, why, fix, told, ending }.
      state: queued, sent, refused, or skipped (taken back before it landed). fix: what UNDO still owes,
-     queued, done, recalled or refused.
+     queued, done, recalled, refused, limit (the marks' limit), or lost (its campaign ended, and what landed stays).
 
      ONCE, WHATEVER THE NETWORK DOES. The record's id is the row's send key, and the database answers a
      repeat with the row it already made, so a send that lost its answer, a reload or a second tab can all
@@ -1572,7 +1572,7 @@ EN.gmStore = (function () {
   function farDue(r, who) {
     // imported or not: it still owes what it owes, and the key means a browser holding the same one can't make it two
     return isObj(r) && r.kind === "write" && isObj(r.far) && r.far.by === who &&
-           (r.far.state === "queued" || (r.undone === true && r.far.fix === "queued"));
+           ((r.far.state === "queued" && r.undone !== true) || (r.undone === true && r.far.fix === "queued"));
   }
   // what this account still owes on the desktop in memory, oldest first
   function farHere(who) {
@@ -1597,11 +1597,12 @@ EN.gmStore = (function () {
     return out;
   }
   function campOf(raw) { return !isObj(raw) || !isObj(raw.campaign) ? "No campaign" : (typeof raw.campaign.name === "string" && raw.campaign.name) || "Unnamed campaign"; }
-  // the campaign a desktop's document belongs to, from its key, or null for en_gm_v1's own
-  function campIdOf(k) { return k.indexOf(CAMP_PRE) === 0 && k.slice(-CAMP_SUF.length) === CAMP_SUF ? k.slice(CAMP_PRE.length, -CAMP_SUF.length) : null; }
+  /* the campaign the send was made on, which every copy of it names, wherever the copy is kept now. None for one made on
+     the browser's own desktop, even once a move has put it on a campaign's */
+  function farDeskOf(r) { return isObj(r.far) && typeof r.far.desk === "string" ? r.far.desk : null; }
   function farTodo(who) {
     var here = deskKey(deskId), camp = campOf(state);
-    var out = farHere(who).map(function (r) { return { r: r, key: here, camp: camp, campId: campIdOf(here) }; });
+    var out = farHere(who).map(function (r) { return { r: r, key: here, camp: camp, campId: farDeskOf(r) }; });
     farKeys().forEach(function (k) {
       if (k === here) return;
       var text = readKey(k);
@@ -1612,7 +1613,7 @@ EN.gmStore = (function () {
         var r = led[id];
         if (!isObj(r)) return;
         r.id = id;
-        if (farDue(r, who)) out.push({ r: r, key: k, camp: campOf(raw), campId: campIdOf(k) });
+        if (farDue(r, who)) out.push({ r: r, key: k, camp: campOf(raw), campId: farDeskOf(r) });
       });
     });
     return out.sort(function (a, b) { return (a.r.at || 0) - (b.r.at || 0); });
@@ -1626,7 +1627,7 @@ EN.gmStore = (function () {
   /* Two copies of one far record, as one: the furthest each part has gone. A send, a refusal or an UNDO can't
      be unsaid by a copy that hadn't heard it. `undone` follows from the rest. Anything that isn't a far record
      comes back as `b`, the same object. */
-  var FAR_RANK = { queued: 0, refused: 1, skipped: 2, sent: 3 }, FIX_RANK = { queued: 1, refused: 2, recalled: 3, done: 4 };
+  var FAR_RANK = { queued: 0, refused: 1, skipped: 2, sent: 3 }, FIX_RANK = { queued: 1, refused: 2, limit: 2, lost: 2.5, recalled: 3, done: 4 };
   function farJoin(a, b) {
     if (!isObj(a) || !isObj(b) || !isObj(a.far) || !isObj(b.far) || a.kind !== "write" || b.kind !== "write") return b;
     var out = copy(b), f = out.far, af = a.far;
@@ -1635,7 +1636,9 @@ EN.gmStore = (function () {
     if (af.why && !f.why) f.why = af.why;
     if ((FIX_RANK[af.fix] || 0) > (FIX_RANK[f.fix] || 0)) f.fix = af.fix;
     if (af.told) f.told = true;
-    out.undone = !!f.fix || f.state === "refused" || f.state === "skipped";
+    if (af.ending && !f.ending) f.ending = af.ending;
+    // an UNDO that couldn't go leaves what landed as paid
+    out.undone = (!!f.fix && f.fix !== "lost") || f.state === "refused" || f.state === "skipped";
     var at = [a.undoneAt, b.undoneAt].filter(function (x) { return typeof x === "number"; }).sort(function (x, y) { return x - y; })[0];
     if (out.undone && at) out.undoneAt = at;
     if (!out.undone) delete out.undoneAt;
@@ -1712,7 +1715,7 @@ EN.gmStore = (function () {
     if (!clean.length || clean.some(function (o) { return o.op === "heat" || o.op === "vigor"; })) return false;
     var s = get(), id = uid(), at = nextAt(s);
     var r = { id: id, kind: "write", at: at, label: String(label == null ? "" : label), charId: charId, charName: row.name || "",
-              ops: clean, undone: false, createdAt: at, updatedAt: at, far: { by: who, row: row.rowId, state: "queued" } };
+              ops: clean, undone: false, createdAt: at, updatedAt: at, far: { by: who, row: row.rowId, state: "queued", desk: deskId || null } };
     if (isObj(meta)) { try { r.meta = copy(meta); } catch (e) {} }
     s.ledger[id] = r;
     // on this device first, or a reload could send a write the ledger has no word of
@@ -1755,17 +1758,51 @@ EN.gmStore = (function () {
   function farNotMine(e) { if (e && String(e.message || "") === "EN_NOT_MINE") throw NOT_MINE; }
   // UNDO, as the database decides it. `r.far` is read where it is at every step: a save heard from another tab puts a new object there
   /* A CAMPAIGN'S DESKTOP ENDS WITH IT (the author, 9 Nov 2026: "They end with it", and for a campaign still there that this
-     account no longer runs, "End like a delete"). Each send and UNDO names the campaign of the desktop it was made on, and
-     the database answers. Deleted, or no longer this account's to run: the record closes for good, its key is marked through
-     take_back so no copy anywhere can send it, even if the account runs that campaign again, and the Admin is told once
-     (FAR_ENDED, FAR_NOT_RUNNING). Nothing is sent to the player. */
-  var FAR_ENDED = "Lost in #POST (This campaign has ended)";              // the author's wording, 9 Nov 2026
-  var FAR_NOT_RUNNING = "Lost in #POST (You no longer run this campaign)"; // suggested, not the author's: theirs to change
-  // closed for good, so it is never due again, and the Admin hears of it once
-  function farEnd(it, told) {
+     account no longer runs, "End like a delete"). Each send and UNDO names the campaign of the desktop it was made on
+     (`far.desk`, the same for every copy, wherever it's kept), and the database answers. Deleted, or no longer this account's
+     to run: the record closes for good, its key is marked through take_back so no copy anywhere can send it, even if the
+     account runs that campaign again, and the Admin is told once (farSaid). A send that landed stays paid, since its money
+     is on the sheet: what's lost is its UNDO, told as such. Nothing is sent to the player. */
+  /* The author's words, 9 Nov 2026, with the campaign named ("Yes, name it"): "Lost in #POST (5th flavor has ended)" and
+     "Lost in #POST (You no longer run 5th flavor)". One notice for several names each, and with no name known the words
+     are as they were, "This campaign has ended" and "You no longer run this campaign". The UNDO lines on what landed are
+     suggested, not the author's. */
+  function farSaid(items, paid, ended) {
+    var c = farCamps(items);
+    var what = ended ? (c ? c.list + (c.many ? " have ended" : " has ended") : "This campaign has ended")
+                     : "You no longer run " + (c ? c.list : "this campaign");
+    return paid ? "UNDO lost in #POST (" + what + "): what landed stays paid." : "Lost in #POST (" + what + ")";
+  }
+  // the names the desktops' documents hold for the campaigns these were made on: "Fifth", "Fifth and Sixth",
+  // "Fifth, Sixth and another campaign". Null when none is known
+  function farCamps(items) {
+    var ids = Object.create(null), names = [], unnamed = 0;
+    items.forEach(function (it) {
+      var id = it.campId || "";
+      if (id in ids) return;
+      ids[id] = true;
+      var n = farCampName(it.campId);
+      if (!n) unnamed++;
+      else if (names.indexOf(n) === -1) names.push(n);
+    });
+    if (!names.length) return null;
+    if (unnamed) names.push(unnamed === 1 ? "another campaign" : unnamed + " other campaigns");
+    return { list: names.length === 1 ? names[0] : names.slice(0, -1).join(", ") + " and " + names[names.length - 1], many: names.length > 1 };
+  }
+  // the name a campaign's own desktop holds for it, or "" when none is known
+  function farCampName(id) {
+    if (!id) return "";
+    var raw = id === deskId && state ? state : parseOr(readKey(deskKey(id)), null);
+    return isObj(raw) && isObj(raw.campaign) && typeof raw.campaign.name === "string" ? raw.campaign.name.trim() : "";
+  }
+  function FAR_LIMIT_SAID(names) { return "Could not take back the send to " + names + ": this account has taken back too many sends that never went."; }
+  /* Closed for good, so it is never due again, and the Admin hears of it once. A send that landed stays paid: the money is
+     on the sheet, so the ledger must not say it was taken back, and paying again would pay twice. */
+  function farEnd(it, run, why, landed) {
     var r = it.r;
-    told.push(it);
-    farSave(it, { undone: true, undoneAt: r.undoneAt || Date.now(), far: { state: r.far.state === "queued" ? "skipped" : r.far.state, fix: "done" } });
+    run[landed ? why + "Paid" : why].push(it);
+    if (landed) farSave(it, { undone: false, undoneAt: undefined, far: { state: "sent", fix: "lost" } });
+    else farSave(it, { undone: true, undoneAt: r.undoneAt || Date.now(), far: { state: r.far.state === "queued" ? "skipped" : r.far.state, fix: "done" } });
   }
   // UNDO, as the database decides it. `r.far` is read where it is at every step: a save heard from another tab puts a new object there
   function farBack(it, run) {
@@ -1774,8 +1811,11 @@ EN.gmStore = (function () {
     try { letter = farFixLetter(r); } catch (e) { try { console.warn("A queued UNDO can't be read, so it stays queued.", r.id, e); } catch (e2) {} return; }
     farMine(r);
     return EN.campaigns.takeBack(r.far.row, r.id, letter, r.far.by, it.campId).then(function (said) {
-      if (said === "ended") farEnd(it, run.ended);
-      else if (said === "not_running") farEnd(it, run.notRunning);
+      var sent = r.far.state === "sent";
+      if (said === "ended" || said === "ended_landed") farEnd(it, run, "ended", sent || said === "ended_landed");
+      else if (said === "not_running" || said === "not_running_landed") farEnd(it, run, "notRunning", sent || said === "not_running_landed");
+      // a send refused as ended or not run, whose campaign came back before this: it ends all the same, and is said
+      else if (said === "cancelled" && r.far.ending) farEnd(it, run, r.far.ending === "EN_ENDED" ? "ended" : "notRunning", false);
       else if (said === "cancelled") farSave(it, { far: { state: r.far.state === "queued" ? "skipped" : r.far.state, fix: "done" } });
       else farSave(it, { far: { state: "sent", fix: said === "recalled" ? "recalled" : "done" } });
     }, function (e) {
@@ -1783,6 +1823,8 @@ EN.gmStore = (function () {
       var code = farAnswer(e);
       if (!code) throw e;
       if (!farFresh(it) || r.far.fix !== "queued") return;    // gone, or another tab has given the answer already
+      // the marks' limit: words of its own, and nothing more owed
+      if (code === "EN_TOO_MANY") { run.limited.push(it); farSave(it, { far: { fix: "limit", why: code } }); return; }
       run.unfixed.push(it);
       farSave(it, { far: { fix: "refused" } });
     });
@@ -1806,7 +1848,7 @@ EN.gmStore = (function () {
         if (!code) throw e;
         if (!farFresh(it) || r.far.state !== "queued") return;   // gone, or another tab has given the answer already
         // its campaign has ended, or isn't this account's to run: take_back below closes it for good, and marks the key
-        if (code === "EN_ENDED" || code === "EN_NOT_RUNNING") { farSave(it, { undone: true, undoneAt: r.undoneAt || Date.now(), far: { fix: "queued" } }); return; }
+        if (code === "EN_ENDED" || code === "EN_NOT_RUNNING") { farSave(it, { undone: true, undoneAt: r.undoneAt || Date.now(), far: { fix: "queued", ending: code } }); return; }
         if (code === "EN_TAKEN_BACK") { farSave(it, { undone: true, undoneAt: r.undoneAt || Date.now(), far: { state: "skipped", fix: "done" } }); return; }
         // taken back while it was out: nothing landed, and the UNDO below marks the key, so no copy that hadn't heard can land it
         if (r.undone) { farSave(it, { far: { state: "refused", why: code } }); return; }
@@ -1822,7 +1864,7 @@ EN.gmStore = (function () {
     items.forEach(function (it) { var n = it.r.charName || "a Freelancer"; if (names.indexOf(n) === -1) names.push(n); });
     return names.join(", ");
   }
-  // one toast for the desktop in memory, and one for each other desktop, which it names
+  // one sentence for the desktop in memory, and one for each other desktop, which it names
   function farTell(items, said) {
     var here = deskKey(deskId), groups = [], by = Object.create(null);
     items.forEach(function (it) {
@@ -1830,17 +1872,26 @@ EN.gmStore = (function () {
       if (!(g in by)) { by[g] = { camp: g ? it.camp : "", items: [] }; groups.push(by[g]); }
       by[g].items.push(it);
     });
-    groups.forEach(function (g) {
-      EN.ui.toast(said(farNames(g.items), g.camp ? ", from " + g.camp + ": that campaign" : ": this campaign"));
-    });
+    return groups.map(function (g) { return said(farNames(g.items), g.camp ? ", from " + g.camp + ": that campaign" : ": this campaign"); });
+  }
+  /* A run says what it has to in one toast, since a toast has one slot and a second would hide the first. Only to the account
+     it's about: if another has signed in since, it waits until that account is back. */
+  var _unsaid = Object.create(null);
+  function farSay(who, lines) {
+    if (!lines.length) return;
+    if (farUser() !== who || !EN.ui || !EN.ui.toast) { _unsaid[who] = (_unsaid[who] || []).concat(lines); return; }
+    var text = lines.length === 1 ? lines[0] : lines.map(function (l) { return /[.!?]$/.test(l) ? l : l + "."; }).join(" ");
+    // up long enough to read, since some of it is said nowhere else
+    EN.ui.toast(text, Math.min(12000, text.length * 55));
   }
   function flushSends() {
     if (_sending) { _sendAgain = true; return _sending; }
     var who = farUser();
     if (!who) return Promise.resolve();
+    if (_unsaid[who]) { var waiting = _unsaid[who]; delete _unsaid[who]; farSay(who, waiting); }
     var todo = farTodo(who);
     if (!todo.length) { _sendStuck = false; return Promise.resolve(); }
-    var run = { refused: [], unfixed: [], ended: [], notRunning: [] }, failed = false, wasStuck = _sendStuck;
+    var run = { refused: [], unfixed: [], ended: [], endedPaid: [], notRunning: [], notRunningPaid: [], limited: [] }, failed = false, wasStuck = _sendStuck, lines = [];
     clearTimeout(_sendRetry);
     _sending = todo.reduce(function (p, it) {
       return p.then(function () { return farStep(it, run); });
@@ -1850,19 +1901,21 @@ EN.gmStore = (function () {
       try { console.warn("A send to another player's sheet did not go. It stays queued.", e); } catch (e2) {}
       if (!_sendStuck) {
         _sendStuck = true;
-        if (EN.ui && EN.ui.toast) EN.ui.toast("Could not reach your account. What you sent goes when the link is back.");
+        lines.push("Could not reach your account. What you sent goes when the link is back.");
       }
       _sendRetry = setTimeout(function () { flushSends(); }, FAR_RETRY);
     }).then(function () {
       _sending = null;
       var again = _sendAgain;
       _sendAgain = false;
-      if (EN.ui && EN.ui.toast) {
-        farTell(run.refused, function (names, which) { return "Not delivered to " + names + which + " can't reach them any more, so it doesn't count as paid."; });
-        farTell(run.unfixed, function (names, which) { return "Could not send the correction to " + names + which + " can't reach them any more."; });
-        if (run.ended.length) EN.ui.toast(FAR_ENDED);
-        if (run.notRunning.length) EN.ui.toast(FAR_NOT_RUNNING);
-      }
+      lines = lines.concat(farTell(run.refused, function (names, which) { return "Not delivered to " + names + which + " can't reach them any more, so it doesn't count as paid."; }));
+      lines = lines.concat(farTell(run.unfixed, function (names, which) { return "Could not send the correction to " + names + which + " can't reach them any more."; }));
+      if (run.limited.length) lines.push(FAR_LIMIT_SAID(farNames(run.limited)));
+      if (run.ended.length) lines.push(farSaid(run.ended, false, true));
+      if (run.endedPaid.length) lines.push(farSaid(run.endedPaid, true, true));
+      if (run.notRunning.length) lines.push(farSaid(run.notRunning, false, false));
+      if (run.notRunningPaid.length) lines.push(farSaid(run.notRunningPaid, true, false));
+      farSay(who, lines);
       // the link back takes the note off the tab, unless somebody is typing there
       var el = document.activeElement, typing = !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
       if ((run.refused.length || run.unfixed.length || (wasStuck && !failed && !typing)) && EN.app && EN.app.render) EN.app.render();
@@ -1884,7 +1937,7 @@ EN.gmStore = (function () {
   function farNotices() {
     var who = farOwner();
     return list("ledger").filter(function (r) {
-      return isObj(r) && isObj(r.far) && r.far.by === who && !r.far.told && ((r.far.state === "refused" && r.far.fix !== "done") || r.far.fix === "refused");
+      return isObj(r) && isObj(r.far) && r.far.by === who && !r.far.told && ((r.far.state === "refused" && r.far.fix !== "done") || r.far.fix === "refused" || r.far.fix === "limit");
     });
   }
   function farNoticeRead(id) {
@@ -2179,8 +2232,11 @@ EN.gmStore = (function () {
     var text = readKey(STATE_KEY), doc;
     try { doc = migrate(parseOr(text, null)); } catch (e) { return { ok: false, why: "unreadable" }; }
     var took = [], stayed = 0, res = { ok: true, moved: 0, stayed: 0, tableStayed: false, copied: false };
+    var me = farOwner();
     MOVE_BAGS.forEach(function (b) {
       Object.keys(doc[b]).forEach(function (id) {
+        // another account's send on this browser isn't this account's to carry into its campaign
+        if (b === "ledger" && isObj(doc[b][id].far) && doc[b][id].far.by !== me) return;
         var here = own(state[b], id) ? state[b][id] : null;
         if (here && canon(here) !== canon(doc[b][id])) stayed++;
         else took.push("b/" + b + "/" + id);

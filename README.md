@@ -196,7 +196,7 @@ others change numbers, so their row carries them: Glimmer, Nexus, XP and the two
   still waiting is recalled, and one that arrived gets a letter.
 - The Admin's ledger is the outbox (`EN.gmStore`, THE FAR DOOR), so the tabs work as they always did, and a send that can't reach the account yet waits and says so. It goes from whichever campaign's desktop is open.
   A send that can never land (the character left the campaign, say) stays on the undo strip until it's read, and doesn't count as paid.
-- A campaign's desktop ends with it: once a campaign is deleted, what was waiting on its desktop closes for good, and the Admin is told once: "Lost in #POST (This campaign has ended)". So does a campaign still there that the account no longer runs, told once as "Lost in #POST (You no longer run this campaign)".
+- A campaign's desktop ends with it: once a campaign is deleted, what was waiting on its desktop closes for good, and the Admin is told once, naming it: "Lost in #POST (5th flavor has ended)". So does a campaign still there that the account no longer runs, told once as "Lost in #POST (You no longer run 5th flavor)". A payday that had already landed stays paid, and the toast says its UNDO was lost.
 - `supabase/migrations/20261108210000_inbox_writes.sql` holds the rules. It has to be on the database before this app is live, or the inbox can't be read at all.
 
 ## One Admin desktop per campaign
