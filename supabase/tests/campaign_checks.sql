@@ -1119,6 +1119,15 @@ begin
   begin v := public.take_back(ch_d, 'kd6', '{"from": "Payroll", "subj": "x"}', p_desk => campy); exception when others then err := sqlerrm; end;
   select count(*) into n from public.character_inbox where send_key = 'kd6:fix';
   out := out || case when v = 'not_running_landed' and n = 0 then 'PASS' else 'FAIL' end || ' an UNDO on that desktop makes no correction, and says the send landed (' || coalesce(v, err) || ', ' || n || E')\n';
+  -- a posting recalled before (its answer lost), asked again from a desktop no longer run, or ended: still taken back
+  perform public.send_write(ch_d, 'kd7', '{"from": "JOB BOARD", "subj": "x"}');
+  perform public.take_back(ch_d, 'kd7', '{"from": "JOB BOARD", "subj": "Withdrawn: x"}');
+  v := null; err := null;
+  begin v := public.take_back(ch_d, 'kd7', '{"from": "JOB BOARD", "subj": "Withdrawn: x"}', p_desk => campy); exception when others then err := sqlerrm; end;
+  out := out || case when v = 'cancelled' then 'PASS' else 'FAIL' end || ' a posting recalled before, asked again on a desktop no longer run, is still taken back, not landed (' || coalesce(v, err) || E')\n';
+  v := null; err := null;
+  begin v := public.take_back(ch_d, 'kd7', '{"from": "JOB BOARD", "subj": "Withdrawn: x"}', p_desk => campx); exception when others then err := sqlerrm; end;
+  out := out || case when v = 'cancelled' then 'PASS' else 'FAIL' end || ' and on an ended one (' || coalesce(v, err) || E')\n';
   perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
   perform public.set_role(campy, a, 'coadmin');
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);

@@ -2253,13 +2253,15 @@ EN.gmPayroll = (function () {
   function reconcile() {
     var standing = null;
     gm.list("ledger").forEach(function (pd) {
-      if (!isObj(pd) || pd.kind !== "payday" || !pd.credited || pd.undone) return;
+      if (!isObj(pd) || pd.kind !== "payday") return;
       var ids = Array.isArray(pd.writeIds) ? pd.writeIds : [];
       if (!ids.length) return;
       if (!standing) {
         standing = Object.create(null);
         liveWrites().forEach(function (w) { standing[w.id] = true; });
       }
+      if (pd.undone) { relive(pd, ids, standing); return; }
+      if (!pd.credited) return;
       var undone = 0, keep = false;
       ids.forEach(function (id) {
         var w = gm.rec("ledger", id);
@@ -2274,6 +2276,30 @@ EN.gmPayroll = (function () {
       unmarkJob(pd);
       gm.put("ledger", next, { silent: true });
     });
+  }
+
+  /* AN UNDO THAT CAME BACK LANDED. UNDO PAYDAY marks the payday undone at once, while another player's write still waits for
+     its answer. When the answer is that the send landed and its campaign took the UNDO with it (far.fix "lost"), the money
+     is on their sheet: the payday is credited again and its job paid again, so nothing offers to pay it twice. */
+  function relive(pd, ids, standing) {
+    var back = ids.some(function (id) { var w = gm.rec("ledger", id); return own(standing, id) && !!w && isObj(w.far) && w.far.fix === "lost"; });
+    if (!back) return;
+    var next = copy(pd);
+    next.undone = false;
+    delete next.undoneAt;
+    next.credited = true;
+    remarkJob(pd);
+    gm.put("ledger", next, { silent: true });
+  }
+  // the job paid by this payday again, unless another payday has claimed it since unmarkJob put it back
+  function remarkJob(pd) {
+    if (typeof pd.jobId !== "string" || !pd.jobId) return;
+    var j = gm.rec("jobs", pd.jobId), was = isObj(pd.jobPrev) && pd.jobPrev.paydayId ? pd.jobPrev.paydayId : null;
+    if (!j || (j.paydayId || null) !== was) return;
+    var next = copy(j);
+    next.status = "paid";
+    next.paydayId = pd.id;
+    gm.put("jobs", next, { silent: true });
   }
 
   function render(mount) {

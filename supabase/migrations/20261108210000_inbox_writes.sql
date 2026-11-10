@@ -239,6 +239,8 @@ begin
   if v_id is not null and v_for is distinct from p_character then raise exception 'EN_NOT_ALLOWED'; end if;
   -- asked again: the correction already went, whatever has changed since, the desktop included
   if v_id is not null and exists (select 1 from public.character_inbox i where i.sender_id = v_uid and i.send_key = p_key || ':fix') then return 'corrected'; end if;
+  -- a posting recalled already: taken back, whatever the desktop is now, since it never reached them
+  if v_id is not null and v_status = 'recalled' then return 'cancelled'; end if;
   -- made on the desktop of a campaign that has ended: nothing more goes, a correction included, and nothing sent under it ever will
   if p_desk is not null and not exists (select 1 from public.campaigns c where c.id = p_desk) then
     if v_id is null then perform public.mark_taken_back(v_uid, p_key); return 'ended'; end if;
@@ -254,7 +256,6 @@ begin
     perform public.mark_taken_back(v_uid, p_key);
     return 'cancelled';
   end if;
-  if v_status = 'recalled' then return 'cancelled'; end if;
   if v_status = 'waiting' then
     update public.character_inbox set status = 'recalled' where id = v_id;
     return 'recalled';

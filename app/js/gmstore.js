@@ -1597,12 +1597,19 @@ EN.gmStore = (function () {
     return out;
   }
   function campOf(raw) { return !isObj(raw) || !isObj(raw.campaign) ? "No campaign" : (typeof raw.campaign.name === "string" && raw.campaign.name) || "Unnamed campaign"; }
+  // the campaign a desktop's document belongs to, from its key, or null for en_gm_v1's own
+  function campIdOf(k) { return k.indexOf(CAMP_PRE) === 0 && k.slice(-CAMP_SUF.length) === CAMP_SUF ? k.slice(CAMP_PRE.length, -CAMP_SUF.length) : null; }
   /* the campaign the send was made on, which every copy of it names, wherever the copy is kept now. None for one made on
-     the browser's own desktop, even once a move has put it on a campaign's */
-  function farDeskOf(r) { return isObj(r.far) && typeof r.far.desk === "string" ? r.far.desk : null; }
+     the browser's own desktop (desk: null), even once a move has put it on a campaign's. A record from before far.desk
+     has none at all, and is judged by the desktop it's kept on, as it was then */
+  function farDeskOf(r, k) {
+    if (!isObj(r.far)) return null;
+    if (typeof r.far.desk === "string") return r.far.desk;
+    return r.far.desk === undefined ? campIdOf(k) : null;
+  }
   function farTodo(who) {
     var here = deskKey(deskId), camp = campOf(state);
-    var out = farHere(who).map(function (r) { return { r: r, key: here, camp: camp, campId: farDeskOf(r) }; });
+    var out = farHere(who).map(function (r) { return { r: r, key: here, camp: camp, campId: farDeskOf(r, here) }; });
     farKeys().forEach(function (k) {
       if (k === here) return;
       var text = readKey(k);
@@ -1613,7 +1620,7 @@ EN.gmStore = (function () {
         var r = led[id];
         if (!isObj(r)) return;
         r.id = id;
-        if (farDue(r, who)) out.push({ r: r, key: k, camp: campOf(raw), campId: farDeskOf(r) });
+        if (farDue(r, who)) out.push({ r: r, key: k, camp: campOf(raw), campId: farDeskOf(r, k) });
       });
     });
     return out.sort(function (a, b) { return (a.r.at || 0) - (b.r.at || 0); });
@@ -1874,13 +1881,14 @@ EN.gmStore = (function () {
     });
     return groups.map(function (g) { return said(farNames(g.items), g.camp ? ", from " + g.camp + ": that campaign" : ": this campaign"); });
   }
-  /* A run says what it has to in one toast, since a toast has one slot and a second would hide the first. Only to the account
-     it's about: if another has signed in since, it waits until that account is back. */
+  /* A run says what it has to in one toast, since a toast has one slot and a second would hide the first, one notice to a
+     line (the toast keeps line breaks). Only to the account it's about: if another has signed in since, it waits until
+     that account is back, and then goes in front of what its next run says. */
   var _unsaid = Object.create(null);
   function farSay(who, lines) {
     if (!lines.length) return;
-    if (farUser() !== who || !EN.ui || !EN.ui.toast) { _unsaid[who] = (_unsaid[who] || []).concat(lines); return; }
-    var text = lines.length === 1 ? lines[0] : lines.map(function (l) { return /[.!?]$/.test(l) ? l : l + "."; }).join(" ");
+    if (farOwner() !== who || !EN.ui || !EN.ui.toast) { _unsaid[who] = (_unsaid[who] || []).concat(lines); return; }
+    var text = lines.join("\n");
     // up long enough to read, since some of it is said nowhere else
     EN.ui.toast(text, Math.min(12000, text.length * 55));
   }
@@ -1888,10 +1896,11 @@ EN.gmStore = (function () {
     if (_sending) { _sendAgain = true; return _sending; }
     var who = farUser();
     if (!who) return Promise.resolve();
-    if (_unsaid[who]) { var waiting = _unsaid[who]; delete _unsaid[who]; farSay(who, waiting); }
+    var waiting = _unsaid[who] || [];
+    delete _unsaid[who];
     var todo = farTodo(who);
-    if (!todo.length) { _sendStuck = false; return Promise.resolve(); }
-    var run = { refused: [], unfixed: [], ended: [], endedPaid: [], notRunning: [], notRunningPaid: [], limited: [] }, failed = false, wasStuck = _sendStuck, lines = [];
+    if (!todo.length) { farSay(who, waiting); _sendStuck = false; return Promise.resolve(); }
+    var run = { refused: [], unfixed: [], ended: [], endedPaid: [], notRunning: [], notRunningPaid: [], limited: [] }, failed = false, wasStuck = _sendStuck, lines = waiting;
     clearTimeout(_sendRetry);
     _sending = todo.reduce(function (p, it) {
       return p.then(function () { return farStep(it, run); });

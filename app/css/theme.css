@@ -603,7 +603,8 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 .hr{ height:1px; background:linear-gradient(90deg,var(--border),transparent); margin:18px 0; border:0; }
 .muted-box{ background:var(--bg1); border:1px dashed var(--border2); border-radius:var(--r); padding:16px; color:var(--text3); font-family:var(--mono); font-size:12px; text-align:center; }
 .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--bg3); border:1px solid var(--accent);
-  color:var(--text); padding:10px 18px; border-radius:var(--r); font-family:var(--mono); font-size:13px; box-shadow:var(--glow-cyan); z-index:2000; opacity:0; transition:opacity .2s, transform .2s; pointer-events:none; }
+  color:var(--text); padding:10px 18px; border-radius:var(--r); font-family:var(--mono); font-size:13px; box-shadow:var(--glow-cyan); z-index:2000; opacity:0; transition:opacity .2s, transform .2s; pointer-events:none;
+  white-space:pre-line; }   /* a toast of several notices keeps one to a line */
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
 .row{ display:flex; gap:10px; align-items:center; } .wrap{ flex-wrap:wrap; } .between{ justify-content:space-between; }
 /* The growing name in a card head whose button leads it. flex-basis 0 rather than auto is the
