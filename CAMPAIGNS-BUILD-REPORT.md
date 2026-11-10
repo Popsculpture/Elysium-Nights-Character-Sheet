@@ -1078,7 +1078,7 @@ Run on the live site on 10 Nov 2026, after the migration and the merge, with two
 
 # Campaigns build report: one Advancement Type per campaign, and Milestones through the payday
 
-Designed with you on 10 Nov 2026, on `claude/charming-goodall-7c4a28`, cut from `main` at `1159856`. **Nothing is built yet.** This part is the settled design, so the build has one place to read it from.
+Designed with you on 10 Nov 2026, on `claude/charming-goodall-7c4a28`, cut from `main` at `1159856`. **Built on this branch, and neither applied nor merged.** The first half of this part is the settled design, so the build had one place to read it from. The second half is what was built, how it was checked, and what wasn't.
 
 ## What you asked for
 
@@ -1164,9 +1164,80 @@ Mine, so overrule any of them.
 6. **Offline,** a sheet follows the type its campaign had when the app last read it.
 7. **The first press and a later flip are the same act:** both ask once more, both send the letter.
 
+## Decisions I made while building
+
+Mine again, so overrule any of them. The first seven are the ones above.
+
+8. **The Campaign tab's heads-up has no buttons of its own,** since the setting with the same two buttons sits right under it. Payroll's heads-up carries them, because that is where it changes what gets paid.
+9. **The heads-up on a campaign lists the whole campaign,** not only who is on the Table, because pressing a button sets the whole campaign. With no campaign it lists the crew Payroll reads.
+10. **A payday with NO PAY THIS TIME doesn't mark its job paid, and doesn't hold it.** Its money was set aside, so the job's money is still owed and PAY THIS JOB still starts the job's own payday. The fight it paid still holds, for its XP, and the hold names a Milestone it carried.
+11. **How many Milestones is 1 to 99.** The database takes 99 at most on a write to another player's sheet, so the form refuses more instead of sending a write that would be refused.
+12. **A sheet whose type a campaign decides is left alone by the switch with no campaign.** The heads-up says how many were set by their campaign and won't change there. Nobody is split inside one campaign, so this only shows when a campaign's sheet is on a desktop that has no campaign picked.
+13. **The player's app reads its campaigns again whenever mail arrives for one of its characters,** any mail, not only the letter. That is the whole price of a letter that switches an open sheet at once.
+14. **A project that hasn't had the migration yet** is read without the new column, so every campaign reads as not set, and the campaign list can't go blank whichever order things go live in. The migration still goes first.
+15. **A Milestone that a payday wrote isn't one of the old awards.** It has no UNDO MILESTONE card of its own: UNDO PAYDAY takes it back. The card and the undo strip are for awards the old button left in a ledger.
+16. **Past Paydays says "no pay" for a payday with no pay,** and names the Milestone a payday carried.
+17. **An older saved payday opens as it was:** NO PAY off and no Milestone picked.
+
+## What was built
+
+On `claude/charming-goodall-7c4a28`, on top of the design: the migration and its checks, the app, a merge of `main` for its live-round notes, and the fixes the review asked for. Nothing is pushed, nothing is applied to the live project.
+
+- **The migration,** `supabase/migrations/20261110120000_advancement_type.sql`: `campaigns.advancement` (a check allows `xp` and `milestone`, or empty) and `set_advancement(p_campaign, p_type, p_mail)`, for those who run the campaign, with the row locked first, the letter cleaned by `clean_mail` whether or not the type changes, and one inbox row per character in the campaign in the same step. It answers how many letters went; the same type again answers 0. The two migrations already on the live project aren't touched.
+- **`campaigns.js`:** the type is cached with each campaign, read with the list (and without the column if the project doesn't have it yet), and `usesXp(ch)`, `advancementOf(ch)`, `lockedBy(ch)`, `advancementLetter` and `setAdvancement` answer for the rest of the app. A record on this device finds its campaign by its local id; a copy of somebody else's by the crew that was read or by View sheet.
+- **`cloud.js`:** mail arriving reads the campaign list again.
+- **`gm_campaign.js`:** ADVANCEMENT TYPE on the Campaign tab, and the heads-up that Payroll draws too. **`gmengine.js`:** `advancePicture`, who is on which.
+- **`gmstore.js`:** the `advance` op, local only, with its undo; `sendCrew` refuses it.
+- **`gm_payroll.js`:** the Milestone is in the form, saved, restored and counted as an unsaved change; `numsFor` gives each sheet its own track; NO PAY THIS TIME; the track decides the panels; the summary and stubs say only what came; the hold names a Milestone the earlier payday carried; AWARD MILESTONE and its ticks are gone, and the card, the undo strip and "Already awarded for this job" still read the old awards.
+- **`builder.js`, `printsheet.js`, `pdfexport.js`, `gm_encounters.js`:** the Advance step, the printed sheet, the PDF and the Table's XP Award card ask the same question.
+- **Asset stamp** `20261110.1`, above `main`'s `20261109.3`. **`HANDOFF.md`** says where the type is read from.
+
 ## Going live, in this order
 
-1. **The migration, on the live project, before the code,** on your word. The app's read of its campaigns will name the new column. The other way round is safe: today's app never asks for it.
+1. **The migration, on the live project, before the code,** on your word. The app's read of its campaigns names the new column, and reads without it if it isn't there, so the other order is safe too, but the Campaign tab's buttons need the function.
 2. **Then the merge,** on "push it".
 
-The commands, the checks' count and what was and wasn't tested go here once it's built.
+From a worktree, which has no `supabase link` of its own:
+
+```bash
+npx supabase@2 migration list --project-ref ggjgkcnhfpjwyrhakqun
+```
+
+```bash
+npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/migrations/20261110120000_advancement_type.sql
+```
+
+```bash
+npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/campaign_checks.sql
+```
+
+```bash
+npx supabase@2 migration repair --status applied 20261110120000 --project-ref ggjgkcnhfpjwyrhakqun
+```
+
+The checks should say 324 PASS, 0 FAIL. The repair is there because `db query` applies a file and records nothing.
+
+## How it was checked
+
+- **SQL:** 324 checks pass (31 new). 284 SQL mutants, 19 of them new, all caught or crashed a fixture step, none survived.
+- **The story,** `pg/advance_body.js`, told against the stand-in (`tests/campaigns_advance_1.js`, 164 checks) and against the real app on the real SQL (`pg/advance_realdb.js`, 168 checks): the heads-up on Payroll and the Campaign tab, a press that asks once more, the letters word for word, nothing written to any sheet's own switch, a payday with a Milestone for a split crew and for a Milestone campaign, UNDO PAYDAY, NO PAY THIS TIME (and OPEN of it, and a job it leaves unpaid), the hold naming a Milestone, CREDIT ANYWAY, the XP campaign, the Table's XP Award card, a project without the column, a campaign with nobody in it, the align switch with no campaign and its undo, an old award and an old payday, and the player's Advance step locked, switching on mail with the tab hidden, and the player's own choice coming back on leaving.
+- **Code mutants:** 57 one-line breaks of the new client code, all caught (`pg/advance_mutants.py`).
+- **Every other real-database round** passes on the new migration: Campaigns, Inbox, the Table, the writing tabs, two tabs, lost mail and the writing tabs on two campaigns.
+- **The whole suite:** 525 runs in 500 chains on this branch's final code, and every one passed except that the new story gave no result, because the runner's list of long tests didn't have it and it ran out of virtual time at the default budget. It is on the list now (in the suite's runner) and passes with its 164 checks. An earlier pass had `r21_companion` time out under load; it passed in this one and alone.
+- **Older tests that assumed the button or its ticks** now run on both builds (`NEWPAY` picks the branch), and still pass on `main`'s app: `qol_payroll.js` and its reload twin, `integ_cross.js`, the writing tabs' story, `cx_gm_play.js`, and the section lists in Campaigns batches 2 and 3 and their real-database rounds. On the new build an award the button would have made is written straight to the ledger with the old tag, so what the old button left behind is still read and undone.
+- **One independent review,** given the diff and the design and none of my conclusions. It found nine things. One mattered: a campaign that hadn't chosen lit a button whenever every sheet happened to agree, and a lit button can't be pressed, so you couldn't set the type the whole crew was already on. All nine are fixed except one it called plausible and I could only reason about: a row sitting in two stale crew caches now takes the campaign on screen first. The others: an old Milestone award lost its card and UNDO MILESTONE on an XP track (it has its own small panel now), a split crew on NO PAY got a blank stub on the sheets that got nothing (now no write at all), a campaign with nobody in it said "already" (now says no letters went), a player flipping their own switch didn't reach the heads-up, a NO PAY payday blocked PAY THIS JOB for its job (decision 10), a Milestone was recorded on a track that took none, and every status change re-read the campaign list (only a new row does now). Each of the first five has a check and a mutant. The recorded-Milestone gate, the cache order and the new-rows-only read have neither, so a break there would not be caught.
+
+## What was not checked
+
+- **Nothing was run against the live project.** Supabase's own PostgREST, Realtime and Discord sign-in aren't in any of these rounds: the bridge imitates them, as before.
+- **Two Admins pressing at once.** The row lock is there, and PGlite has one connection, so the mutant that removes it can't be caught.
+- **How it looks,** other than a measurement that the heads-up and the Campaign tab stay inside a 368 px width. Not seen by eye: '98, #GRIDroid, light and dark, and a phone.
+- **The printed sheet and the PDF** read the campaign's type through the same call, and no PDF was exported and looked at.
+- **A player on an older copy of the app** (a cached page) still shows its own switch and ignores the column. The letter reaches it, but its sheet keeps its own type until it updates.
+- **Heat, the SYNC button, `gate.js`'s drawing and `tour.js`** weren't touched.
+
+## Worth your eye
+
+1. **Every campaign starts with no type set,** so the first press sends the letters and a campaign that never presses keeps each sheet's own choice, split or not. The heads-up is how you find out.
+2. **The first press and a flip are the same act** (decision 7): both ask once more, both send the letter.
+3. **Two different Admins can still pay one fight twice,** as before; nothing here changes the ledger being per browser.

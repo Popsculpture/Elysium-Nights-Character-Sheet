@@ -12924,3 +12924,9 @@ Run on the live site with real Discord, reading the browser's storage after each
 ### The writing tabs' live round, 2026-11-10
 
 Run on the live site with two real accounts, after the migration and the merge, with the rows and both sheets read after each step. All of it passed: a payday online and away, UNDO PAYDAY, a Milestone and its UNDO, XP through a payday and its UNDO, a split party, a posting withdrawn after it arrived, and one recalled while the player was away. Both sheets came out as their starting numbers plus every row that landed. Not tried live: the Table's AWARD XP, a send waiting for the link or sent from another campaign's desktop, a refusal, and an ended campaign. The author found Payroll's two award doors unintuitive, and proposed Milestones through the payday and one Advancement Type for a campaign: that build has its own session, ahead of the SYNC button. The build report has the table.
+
+### One Advancement Type per campaign, and Milestones through the payday, 2026-11-10
+
+Designed with the author the same day, built on `claude/charming-goodall-7c4a28`, not merged and not applied to the live project. The design, the decisions beyond the author's twelve rulings, what was checked and what wasn't are the last part of `CAMPAIGNS-BUILD-REPORT.md`.
+
+**Left open:** a recorded-Milestone gate, the order a copy of a sheet looks through crew caches, and "only a new row re-reads the campaigns" have no check that would catch a break (the review found them, they are fixed). A player on a cached older copy of the app keeps its own switch until it updates. Two Admins pressing the same type at once rely on a row lock that no local round can contend. Nothing was looked at by eye in '98 or #GRIDroid; the heads-up and the Campaign tab were only measured at 368 px. The migration goes on the live project before the code, on the author's word.
