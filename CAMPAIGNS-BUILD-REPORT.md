@@ -1283,7 +1283,7 @@ Run on 10 Nov 2026, after the live round, on `main`'s app at stamp `20261110.2`,
 | Nessa | XP | Milestones | Progression: Milestones 0 maj, 1 min | Milestones 0 maj, 1 min |
 | Bollard | Milestones | XP | Progression: XP 400 / 300 | XP 400 / 300 |
 
-**What is wrong, in every skin. None of it is fixed yet.**
+**What was wrong, in every skin.** The first two are fixed, and the fix covers most of the third: see "The look fix" below.
 
 1. **On the Campaign tab, the button in force reads as the dead one.** It is drawn disabled, and each skin's paint for a disabled button overrides the lit fill (`theme.css`, the `.btn:disabled` rules). So with the campaign on Milestones, MILESTONE is dim and XP MODE is bright, and the eye reads XP MODE as the one chosen. In '98 and #GRIDroid on a light palette the button in force is close to invisible. The live round's "lit" was my word for it, and it overstates what is on screen.
 2. **On the player's locked Advance step, the two buttons are painted the same.** Both are disabled, so nothing shows which is in force. In '98 and #GRIDroid their labels are hard to read at all.
@@ -1291,9 +1291,28 @@ Run on 10 Nov 2026, after the live round, on `main`'s app at stamp `20261110.2`,
 
 **Smaller, and written down so they aren't lost:**
 
-- With NO PAY THIS TIME on, the Milestones panel still says "CREDIT THE CREW writes it with the money". There is no money in that payday.
+- With NO PAY THIS TIME on, the Milestones panel still said "CREDIT THE CREW writes it with the money". There is no money in that payday. Fixed below.
 - '98 in its own palette paints placeholder text the same grey as the box it sits in, so "What the milestone was for" and the "1" in How many show as blank boxes. This is older than this build.
 - The help lines that carry the meaning here ("Set by your Admin for ...", the Campaign tab's state line, the NO PAY note) are in the app's faint help style. Readable, and the faintest text on these surfaces.
 - '98 at 375 px wraps a long title bar onto two rows. Nothing is cut.
 
 **What the look check could not see:** motion (the stage runs on virtual time), the toasts after a press, a real phone (touch, real pixel density, a mobile browser, the on-screen keyboard), palettes beyond the seven except in a strip of lit against unlit buttons, custom palettes, a print from the Admin's View sheet, and the live database. The pictures were shown to you in the session and aren't kept in the repo.
+
+## The look fix
+
+Made on 10 Nov 2026, on your word, after the look check. Asset stamp `20261110.3`.
+
+- **The button in force keeps its fill while it can't be pressed.** It carries a new class, `.lit`. `theme.css` gives a lit, disabled button the same fill as a chosen button that can still be pressed, at full strength, in Classic, '98 and #GRIDroid. In '98 it is also drawn pressed in, the way a toolbar there shows the mode that is on. `gm_campaign.js` puts the class on the Campaign tab's button and `builder.js` on the player's switch.
+- **The folded Advance panel now shows which type is in force,** because its header holds the switch. "Set by your Admin for ..." is still inside the panel, and the panel still opens folded like the others on that step.
+- **With NO PAY THIS TIME on, the Milestones panel no longer mentions money.** It says "CREDIT THE CREW writes it to each Freelancer in one write, and UNDO PAYDAY takes it back."
+
+**How it was checked:**
+
+- **The story has six new checks,** and passes: 170 on the stand-in and 174 on the real SQL, none failed. They check that the button in force is marked on the Campaign tab and on the locked switch for either type, that in each of the three skins it has the fill of a chosen button at full strength and is painted unlike the other one, and that the NO PAY line is the new one. They run only once the stylesheet knows `.lit`, so the story still passes on a branch cut before this.
+- **Eight one-line breaks of the fix, all caught.** Three got past my first version of the checks: "painted unlike the other" was satisfied by opacity alone, so a skin could lose its fill unnoticed, and the locked switch was only checked with XP in force. The checks were tightened until all eight were caught.
+- **Rendered again:** the lit button against the other one in all ten palettes and three skins, on both surfaces. None of the 60 is painted alike now, where all 30 on the Advance step were before. Then the changed surfaces in the seven looks at both widths, 70 runs. I looked at the three sheets of palettes, the Campaign tab, the folded panel at phone width and '98's title bar.
+- **The whole suite** on the fixed code: 525 runs in 500 chains, none bad, with the story's 170 checks among them. The app's syntax check is clean.
+
+**Not checked:** the fix on the live site, on a real phone, or in a custom palette. A custom palette sets its own accent and the fill follows it, but none was rendered.
+
+**Left as it was:** '98's placeholder grey, the faint help style, and the panel opening folded. On a locked switch the type not in force is still a ghost, at 35% in '98 and #GRIDroid. It can't be pressed and isn't in force, so dim is right, but its label is hard to read there.
