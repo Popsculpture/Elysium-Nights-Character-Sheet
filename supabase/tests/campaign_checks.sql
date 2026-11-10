@@ -20,6 +20,8 @@ declare
   bad jsonb;
   n int;
   n2 int;
+  campx uuid; campy uuid; campz uuid;
+  t5 text;
   v text;
   f text;
   j jsonb;
@@ -1067,6 +1069,92 @@ begin
   select count(*) into n from public.character_inbox where send_key = 'tb9';
   out := out || case when err = 'EN_TAKEN_BACK' and n = 0 then 'PASS' else 'FAIL' end || ' so a copy of it sent after they rejoin lands nothing (' || coalesce(err, 'no error') || ', ' || n || E')\n';
 
+  -- the campaign a send was made on, as the app names it (p_desk): deleted, it has ended; still there and not the sender's to run, it waits
+  campx := public.create_campaign('Ended');
+  perform public.delete_campaign(campx);
+  err := null;
+  begin perform public.send_write(ch_d, 'kd1', '{"from": "Payroll", "subj": "x"}', '[{"op": "xp", "amount": 1}]', p_desk => campx); exception when others then err := sqlerrm; end;
+  select count(*) into n from public.character_inbox where send_key = 'kd1';
+  out := out || case when err = 'EN_ENDED' and n = 0 then 'PASS' else 'FAIL' end || ' a send made on a campaign since deleted is refused as ended, though the character is in one the sender runs (' || coalesce(err, 'no error') || ', ' || n || E')\n';
+  v := null; err := null;
+  begin v := public.take_back(ch_d, 'kd1', '{"from": "Payroll", "subj": "x"}', p_desk => campx); exception when others then err := sqlerrm; end;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n2 from public.inbox_taken_back t where t.sender_id = a and t.send_key = 'kd1';
+  perform set_config('role', 'authenticated', true);
+  out := out || case when v = 'ended' and n2 = 1 then 'PASS' else 'FAIL' end || ' taking it back there answers ended, and marks its key (' || coalesce(v, err) || ', ' || n2 || E')\n';
+  err := null;
+  begin perform public.send_write(ch_d, 'kd1', '{"from": "Payroll", "subj": "x"}', '[{"op": "xp", "amount": 1}]', p_desk => camp3); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_TAKEN_BACK' then 'PASS' else 'FAIL' end || ' so no copy of it can send it from anywhere (' || coalesce(err, 'no error') || E')\n';
+  perform public.send_write(ch_d, 'kd2', '{"from": "Payroll", "subj": "x"}', '[{"op": "xp", "amount": 2}]');
+  v := null; err := null;
+  begin v := public.take_back(ch_d, 'kd2', '{"from": "Payroll", "subj": "x"}', p_desk => campx); exception when others then err := sqlerrm; end;
+  select count(*) into n from public.character_inbox where send_key = 'kd2:fix';
+  out := out || case when v = 'ended' and n = 0 then 'PASS' else 'FAIL' end || ' an UNDO on an ended campaign''s desktop makes no correction: they end with it (' || coalesce(v, err) || ', ' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  campy := public.create_campaign('Theirs');
+  select token into t5 from public.campaign_invites where campaign_id = campy;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(t5);
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  perform public.set_role(campy, a, 'coadmin');
+  perform public.set_role(campy, a, 'player');
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.send_write(ch_d, 'kd3', '{"from": "Payroll", "subj": "x"}', '[{"op": "xp", "amount": 3}]', p_desk => campy); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_RUNNING' then 'PASS' else 'FAIL' end || ' a send from the desktop of a campaign that still is, but the sender no longer runs, is refused as such (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.take_back(ch_d, 'kd3', '{"from": "Payroll", "subj": "x"}', p_desk => campy); exception when others then err := sqlerrm; end;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n2 from public.inbox_taken_back t where t.sender_id = a and t.send_key = 'kd3';
+  perform set_config('role', 'authenticated', true);
+  out := out || case when err = 'EN_NOT_RUNNING' and n2 = 0 then 'PASS' else 'FAIL' end || ' and so is a take back, which marks nothing (' || coalesce(err, 'no error') || ', ' || n2 || E')\n';
+  w3 := null; err := null;
+  begin w3 := public.send_write(ch_d, 'kd4', '{"from": "Payroll", "subj": "x"}', '[{"op": "xp", "amount": 4}]', p_desk => camp3); exception when others then err := sqlerrm; end;
+  out := out || case when w3 is not null then 'PASS' else 'FAIL' end || ' a send from a desktop the sender runs goes (' || coalesce(err, 'no error') || E')\n';
+
+  -- a correction is filed where the money went, so it goes with that campaign, even after the character moves
+  campz := public.create_campaign('Next Door');
+  select token into t5 from public.campaign_invites where campaign_id = campz;
+  perform public.send_write(ch_d, 'kd5', '{"from": "Payroll", "subj": "x"}', '[{"op": "glimmer", "amount": 50}]');
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(t5);
+  update public.characters set campaign_id = campz where id = ch_d;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  v := public.take_back(ch_d, 'kd5', '{"from": "Payroll", "subj": "Taken back"}');
+  select count(*) into n from public.character_inbox where send_key = 'kd5:fix' and campaign_id = camp3;
+  out := out || case when v = 'corrected' and n = 1 then 'PASS' else 'FAIL' end || ' a correction is filed in the campaign the money went through, not where the character is now (' || coalesce(v, 'null') || ', ' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  update public.characters set campaign_id = camp3 where id = ch_d;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+
+  -- a mark names no character: one with none, or none known, still marks the sender's own key
+  v := public.take_back(null, 'kn1', '{"from": "Payroll", "subj": "x"}');
+  perform set_config('role', 'postgres', true);
+  select count(*) into n2 from public.inbox_taken_back t where t.sender_id = a and t.send_key = 'kn1';
+  perform set_config('role', 'authenticated', true);
+  out := out || case when v = 'cancelled' and n2 = 1 then 'PASS' else 'FAIL' end || ' take_back with no character marks the key (' || coalesce(v, 'null') || ', ' || n2 || E')\n';
+  v := public.take_back(gen_random_uuid(), 'kn2', '{"from": "Payroll", "subj": "x"}');
+  out := out || case when v = 'cancelled' then 'PASS' else 'FAIL' end || ' and so does one with a character nobody has (' || coalesce(v, 'null') || E')\n';
+  err := null;
+  begin perform public.take_back(null, 'k1', '{"from": "Payroll", "subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' but a key that has a row has to name its character (' || coalesce(err, 'no error') || E')\n';
+
+  -- marks have a limit per sender
+  perform set_config('role', 'postgres', true);
+  insert into public.inbox_taken_back (sender_id, send_key) select c, 'cap' || g from generate_series(1, 9999) g;
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  v := null; err := null;
+  begin v := public.take_back(null, 'cap-last', '{"from": "Payroll", "subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when v = 'cancelled' then 'PASS' else 'FAIL' end || ' the 10,000th mark is made (' || coalesce(v, err) || E')\n';
+  err := null;
+  begin perform public.take_back(null, 'cap-over', '{"from": "Payroll", "subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_TOO_MANY' then 'PASS' else 'FAIL' end || ' and the next is refused (' || coalesce(err, 'no error') || E')\n';
+  v := null; err := null;
+  begin v := public.take_back(null, 'cap-last', '{"from": "Payroll", "subj": "x"}'); exception when others then err := sqlerrm; end;
+  out := out || case when v = 'cancelled' then 'PASS' else 'FAIL' end || ' while one made already still answers (' || coalesce(v, err) || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+
   -- nobody writes the new columns directly, and the database holds the rules
   err := null;
   begin update public.character_inbox set ops = '[]' where id = w1; exception when others then err := sqlstate; end;
@@ -1126,6 +1214,12 @@ begin
   err := null;
   begin insert into public.inbox_taken_back (sender_id, send_key) values (a, 'mine'); exception when others then err := sqlstate; end;
   out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or write one (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.inbox_taken_back set send_key = 'other' where sender_id = a; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or change one (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin delete from public.inbox_taken_back where sender_id = a; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or delete one (' || coalesce(err, 'no error') || E')\n';
   perform set_config('role', 'postgres', true);
 
   -- clean_mail stays private
@@ -1137,6 +1231,9 @@ begin
   err := null;
   begin perform public.clean_ops('[{"op": "xp", "amount": 5}]'); exception when others then err := sqlstate; end;
   out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a client cannot call clean_ops (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.mark_taken_back(b, 'not theirs'); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or mark_taken_back, to mark a key for someone else (' || coalesce(err, 'no error') || E')\n';
 
   -- a session with no user, for every function a client can call
   perform set_config('request.jwt.claims', '', true);

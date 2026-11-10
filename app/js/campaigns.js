@@ -246,9 +246,10 @@ EN.campaigns = (function () {
   function recallSend(id) { return rpc("recall_send", { p_id: id }); }
   // the Admin desktop's writing tabs, for EN.gmStore's far door: safe to repeat with the same key
   // `sender` is the account the app means to send as: the database refuses EN_NOT_MINE if the session changed under it
-  function sendWrite(rowId, key, mail, ops, sender) { return rpc("send_write", { p_character: rowId, p_key: key, p_mail: mail, p_ops: ops || null, p_sender: sender || null }); }
+  // `desk` is the campaign whose desktop it was made on: the database answers EN_ENDED or EN_NOT_RUNNING for one that is gone or not this account's
+  function sendWrite(rowId, key, mail, ops, sender, desk) { return rpc("send_write", { p_character: rowId, p_key: key, p_mail: mail, p_ops: ops || null, p_sender: sender || null, p_desk: desk || null }); }
   // UNDO of a send_write: answers "cancelled", "recalled" or "corrected" (the migration says what each means)
-  function takeBack(rowId, key, mail, sender) { return rpc("take_back", { p_character: rowId, p_key: key, p_mail: mail, p_sender: sender || null }); }
+  function takeBack(rowId, key, mail, sender, desk) { return rpc("take_back", { p_character: rowId, p_key: key, p_mail: mail, p_sender: sender || null, p_desk: desk || null }); }
   function sends(id) {
     return client().from("character_inbox").select("id, character_id, mail, status, created_at")
       .eq("campaign_id", id).eq("sender_id", me()).order("created_at", { ascending: false }).limit(50).then(check);

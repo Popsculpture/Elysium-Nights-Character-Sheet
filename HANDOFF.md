@@ -134,8 +134,8 @@ card.
   record's id is the row's `send_key`, so sending again is always safe. A row with `ops` has its own two statuses, `due` and `applied`, so a tab older than it can't file it as plain mail and lose the
   numbers, and it can't be recalled. UNDO sends a correcting row. A ledger belongs to a campaign's desktop, so `flushSends` reads every desktop on the device and writes a record
   back where it's kept (`farSave`, EVERY DESKTOP'S OUTBOX). UNDO is `take_back` in the database, never a guess in the app, two copies of a far record
-  meet through `farJoin`, an answer reaches every copy (`farSpread`), each call says whose it is (`p_sender`), and a desktop
-  of a campaign this account no longer runs is skipped (`farRuns`, A CAMPAIGN'S DESKTOP ENDS WITH IT). Read THE FAR DOOR in gmstore.js and the `ops` part of THE INBOX in cloud.js first.
+  meet through `farJoin`, an answer reaches every copy (`farSpread`), each call says whose it is (`p_sender`), and each names
+  the campaign of its desktop (`p_desk`, A CAMPAIGN'S DESKTOP ENDS WITH IT), so the database says when that campaign has ended. Read THE FAR DOOR in gmstore.js and the `ops` part of THE INBOX in cloud.js first.
 - #POST from the Admin (batch 3) adds `character_inbox`, the courier. The same warning applies: a sender can
   read what they sent, so any read of it for "my mail" must ask by the account's own character ids, as
   `readRows()` in cloud.js does. A row becomes a message only through `EN.gmStore.deliverMail`, which writes

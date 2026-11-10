@@ -21,7 +21,13 @@
 -- waiting. send_write and take_back take one lock per sender and key, so whichever comes first decides.
 --
 -- THE MARKS LIVE APART FROM THE INBOX (inbox_taken_back). A mark needs no character or campaign, so it can be
--- made for a character who has left, and it outlives a campaign that is deleted. Only the two functions touch it.
+-- made for a character who has left, and it outlives a campaign that is deleted. Only the two functions touch it,
+-- and a sender has at most 10,000.
+--
+-- A CAMPAIGN'S DESKTOP ENDS WITH IT (the author, 9 Nov 2026: "They end with it"). The app names the campaign whose
+-- desktop a send or an UNDO was made on (p_desk). Deleted, that campaign has ended: send_write refuses EN_ENDED, and
+-- take_back marks the key and answers 'ended', with no correction. Still there but no longer the sender's to run,
+-- both refuse EN_NOT_RUNNING, and the app holds the send until the author decides what that case should do.
 
 alter table public.character_inbox
   add column ops jsonb,
@@ -90,8 +96,21 @@ begin
 end;
 $$;
 
+-- Marks a key taken back for a sender, once, within the limit. Never granted to clients.
+create or replace function public.mark_taken_back(p_sender uuid, p_key text)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.inbox_taken_back t where t.sender_id = p_sender and t.send_key = p_key) then return; end if;
+  if (select count(*) from public.inbox_taken_back t where t.sender_id = p_sender) >= 10000 then raise exception 'EN_TOO_MANY'; end if;
+  insert into public.inbox_taken_back (sender_id, send_key) values (p_sender, p_key);
+end;
+$$;
+
 /* ---- the functions the app calls ----------------------------------------------------------
-   Each checks auth.uid(). New refusals: EN_BAD_OPS, EN_BAD_KEY, EN_TAKEN_BACK, EN_NOT_MINE. p_sender is the account the app
+   Each checks auth.uid(). New refusals: EN_BAD_OPS, EN_BAD_KEY, EN_TAKEN_BACK, EN_NOT_MINE, EN_ENDED, EN_NOT_RUNNING, EN_TOO_MANY. p_sender is the account the app
    means to send as: a session that changed under it, between the app's own look and the request, is refused with EN_NOT_MINE,
    so it can neither send nor take back for the wrong account. A key ending ':fix' is take_back's own, and refused. */
 
@@ -101,7 +120,7 @@ $$;
 -- list stays as batch 3 left it, and a row with no When shows the time it was sent.
 -- A key already used answers with its row before anything else is asked: whoever sent it, it was sent.
 -- A key take_back got to first is refused, EN_TAKEN_BACK.
-create or replace function public.send_write(p_character uuid, p_key text, p_mail jsonb, p_ops jsonb default null, p_sender uuid default null)
+create or replace function public.send_write(p_character uuid, p_key text, p_mail jsonb, p_ops jsonb default null, p_sender uuid default null, p_desk uuid default null)
 returns uuid
 language plpgsql
 security definer
@@ -128,6 +147,11 @@ begin
     if v_for is distinct from p_character then raise exception 'EN_NOT_ALLOWED'; end if;
     if v_was = 'recalled' then raise exception 'EN_TAKEN_BACK'; end if;
     return v_had;
+  end if;
+  -- the campaign whose desktop it was sent from (A CAMPAIGN'S DESKTOP ENDS WITH IT)
+  if p_desk is not null then
+    if not exists (select 1 from public.campaigns c where c.id = p_desk) then raise exception 'EN_ENDED'; end if;
+    if not public.runs_campaign(p_desk) then raise exception 'EN_NOT_RUNNING'; end if;
   end if;
   select c.campaign_id into v_campaign from public.characters c where c.id = p_character;
   if v_campaign is null or not public.runs_campaign(v_campaign) then raise exception 'EN_NOT_ALLOWED'; end if;
@@ -181,7 +205,7 @@ $$;
 -- waiting) or corrected (it landed, and the correction is on its way, once). The correction is the key with ':fix',
 -- its numbers the landed row's the other way. Marking a key asks nothing of the character: it is the sender's own key,
 -- and it delivers nothing. EN_NOT_ALLOWED where a correction can't go now, or the key was another character's.
-create or replace function public.take_back(p_character uuid, p_key text, p_mail jsonb, p_sender uuid default null)
+create or replace function public.take_back(p_character uuid, p_key text, p_mail jsonb, p_sender uuid default null, p_desk uuid default null)
 returns text
 language plpgsql
 security definer
@@ -194,6 +218,7 @@ declare
   v_status text;
   v_ops jsonb;
   v_campaign uuid;
+  v_went uuid;
   v_mail jsonb;
   v_back jsonb;
 begin
@@ -205,11 +230,17 @@ begin
   perform pg_advisory_xact_lock(hashtextextended(v_uid::text || '/' || p_key, 0));
   select c.campaign_id into v_campaign from public.characters c where c.id = p_character;
 
-  select i.id, i.character_id, i.status, i.ops into v_id, v_for, v_status, v_ops
+  select i.id, i.character_id, i.status, i.ops, i.campaign_id into v_id, v_for, v_status, v_ops, v_went
     from public.character_inbox i where i.sender_id = v_uid and i.send_key = p_key for update;
+  -- made on the desktop of a campaign that has ended: nothing more goes, a correction included, and nothing sent under it ever will
+  if p_desk is not null and not exists (select 1 from public.campaigns c where c.id = p_desk) then
+    if v_id is null then perform public.mark_taken_back(v_uid, p_key); end if;
+    return 'ended';
+  end if;
+  if p_desk is not null and not public.runs_campaign(p_desk) then raise exception 'EN_NOT_RUNNING'; end if;
   if v_id is null then
     -- nothing went under it: mark it, and nothing ever will
-    insert into public.inbox_taken_back (sender_id, send_key) values (v_uid, p_key) on conflict do nothing;
+    perform public.mark_taken_back(v_uid, p_key);
     return 'cancelled';
   end if;
   if v_for is distinct from p_character then raise exception 'EN_NOT_ALLOWED'; end if;
@@ -225,8 +256,9 @@ begin
     -- the landed row's numbers are clean already, so the other way round they are too
     select jsonb_agg(o || jsonb_build_object('amount', -((o ->> 'amount')::numeric))) into v_back from jsonb_array_elements(v_ops) o;
   end if;
+  -- filed where the money went, so it goes with that campaign if that campaign goes. Whether the sender can still reach them is where they are now
   insert into public.character_inbox (character_id, campaign_id, sender_id, mail, ops, status, send_key)
-    values (p_character, v_campaign, v_uid, v_mail, v_back, case when v_back is null then 'waiting' else 'due' end, p_key || ':fix');
+    values (p_character, v_went, v_uid, v_mail, v_back, case when v_back is null then 'waiting' else 'due' end, p_key || ':fix');
   return 'corrected';
 end;
 $$;
@@ -234,12 +266,13 @@ $$;
 /* ---- who may call what ---- */
 
 revoke all on function public.clean_ops(jsonb) from public, anon, authenticated;
+revoke all on function public.mark_taken_back(uuid, text) from public, anon, authenticated;
 
 do $$
 declare
   f text;
 begin
-  foreach f in array array['public.send_write(uuid, text, jsonb, jsonb, uuid)', 'public.take_back(uuid, text, jsonb, uuid)', 'public.mark_applied(uuid)'] loop
+  foreach f in array array['public.send_write(uuid, text, jsonb, jsonb, uuid, uuid)', 'public.take_back(uuid, text, jsonb, uuid, uuid)', 'public.mark_applied(uuid)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to authenticated', f);
   end loop;
