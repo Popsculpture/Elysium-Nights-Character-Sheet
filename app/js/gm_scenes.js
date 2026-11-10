@@ -39,10 +39,16 @@
        Pressure, never below 0. Veil's 1d4 is rolled then; Counter takes
        nothing, since it is a contested roll. A Posture is spent only on a
        result that deals Pressure (it deflects a successful Press), once a
-       Round, and Stonewall puts Cornered on the target. The Sit-Down
-       Conditions (EN.social.sitDown.conditions) the tracker marks, Rattled,
-       Cornered and Exposed, are reminders: Exposed's extra Resolve a Round is
-       taken BY HAND, and nothing is rolled for Rattled's Snag.
+       Round, and Stonewall puts Cornered on the target. Of the Sit-Down
+       Conditions (EN.social.sitDown.conditions) the tracker marks, Rattled
+       is applied (author ruling, 9 Nov 2026): while it is on, a Posture takes
+       its `less` (1) off short, never below 0, so Deflect and Compose take
+       nothing and Stonewall 1; Veil, a Posture too, takes its roll less 1.
+       A Counter takes nothing either way and rolls with Snag instead, which
+       the GM rolls at the table, so LOG only notes it. Cornered bars the
+       Postures it names; Exposed's extra Resolve a Round is taken BY HAND.
+       Disrupt is a Play the tracker doesn't follow: its 1 off the next
+       Posture is taken BY HAND.
      - A chase's Lead is moved by hand. A check reports the winner, the margin,
        whether it reaches the chase's own Dominant Victory threshold, and a
        tie as a Stalemate, then prints what the PHB says that result does to
@@ -198,7 +204,9 @@ EN.gmScenes = (function () {
      one Posture this Round; `conds` the Sit-Down Conditions on the target. A
      log line is { id, round, approach, result, pressure (what it took off
      Resolve, after any Posture), gain, why, posture (the Posture's key, or ""),
-     cut (what that Posture took off), roll (Veil's 1d4, or 0) }. */
+     cut (what that Posture took off), roll (Veil's 1d4, or 0), less (what
+     Rattled kept that Posture from taking off), snag (true when Rattled had
+     a Counter roll with Snag), gave (the condition the Posture gave, or "") }. */
   function blankSdTrack() {
     return { round: 1, posture: false, adj: 0, log: [], conds: { rattled: false, cornered: false, exposed: false } };
   }
@@ -305,6 +313,7 @@ EN.gmScenes = (function () {
                  approach: typeof x.approach === "string" ? x.approach : "", result: typeof x.result === "string" ? (x.result === "strong" ? "costly" : x.result) : "",
                  pressure: Math.max(0, int(x.pressure) || 0), gain: Math.max(0, int(x.gain) || 0), why: typeof x.why === "string" ? x.why : "",
                  posture: typeof x.posture === "string" ? x.posture : "", cut: Math.max(0, int(x.cut) || 0), roll: Math.max(0, int(x.roll) || 0),
+                 less: Math.max(0, int(x.less) || 0), snag: x.snag === true,
                  gave: (typeof x.gave === "string" && SD_CONDS.indexOf(x.gave) !== -1) ? x.gave : "" };
       });
       d.track.adj = int(d.track.adj) || 0;
@@ -832,21 +841,30 @@ EN.gmScenes = (function () {
     return !!(c && p && p.name && new RegExp("\\b" + p.name + "\\b", "i").test(str(c.text)));
   }
   /* What a Posture takes off `p` Pressure: its `reduce`, a number, or dice
-     ("1d4") rolled now. Returns { cut, roll }; cut never takes more than p. */
-  function postureCut(row, p) {
+     ("1d4") rolled now, less `less` (Rattled's Snag on a Posture, or 0).
+     Returns { cut, roll, less }; cut never takes more than p or less than 0,
+     and `less` is what the shortfall actually kept off this result. */
+  function postureCut(row, p, less) {
     var r = row ? row.reduce : 0, roll = 0, n = 0;
     if (typeof r === "number") n = r;
     else {
       var m = /^(\d*)d(\d+)$/i.exec(str(r).trim());
       if (m) { for (var i = 0; i < (int(m[1]) || 1); i++) roll += die(int(m[2])); n = roll; }
     }
-    return { cut: Math.max(0, Math.min(p, n)), roll: roll };
+    var full = Math.max(0, Math.min(p, n)), cut = Math.max(0, Math.min(p, n - (int(less) || 0)));
+    return { cut: cut, roll: roll, less: full - cut };
   }
-  // what a log line's Posture did, as words: "Stonewall took 2", "Veil rolled 3, took 2", "Counter took nothing"
+  // Rattled, while it is on the target: the row, whose `less` each Posture takes off short
+  function rattledOn(d) { return d.track.conds.rattled ? byKey(condRows(), "rattled") : null; }
+  /* what a log line's Posture did, as words: "Stonewall took 2", "Veil rolled 3, took 2",
+     "Counter took nothing", and under Rattled "Stonewall took 1 (Rattled: 1 less)",
+     "Counter took nothing (Rattled: rolled with Snag)" */
   function postureSaid(x) {
     if (!x || !x.posture) return "";
     var row = byKey(postureRows(), x.posture), name = row ? row.name : x.posture;
-    return name + (x.roll ? " rolled " + x.roll + "," : "") + " took " + (x.cut ? x.cut : "nothing");
+    var rt = byKey(condRows(), "rattled"), why = rt ? rt.name + ": " : "";
+    return name + (x.roll ? " rolled " + x.roll + "," : "") + " took " + (x.cut ? x.cut : "nothing") +
+      (x.less ? " (" + why + x.less + " less)" : x.snag ? " (" + why + "rolled with Snag)" : "");
   }
   // a log line as the Pressure log and COPY print it
   function logSaid(x) {
@@ -1153,7 +1171,10 @@ EN.gmScenes = (function () {
         kids.push(help("Their Posture is spent this Round, so the next result logs in full." + (PD.recharge ? " " + PD.recharge : ""),
           { color: "var(--text3)" }));
       } else if (pk) {
+        // under Rattled the note says what changes for this Posture: its 1 less, or a Counter's Snag
+        var rtp = rattledOn(d);
         kids.push(el("div", { dataset: { sc: "sd-posture-note" } }, [rhelp(pk.name + ": " + pk.text + (/[.!?]$/.test(str(pk.text)) ? "" : ".") +
+          (rtp ? " " + rtp.name + ": " + (pk.contested ? "it rolls with Snag." : (int(rtp.less) || 0) + " less.") : "") +
           " LOG takes it off the next result that deals Pressure.", { color: "var(--text2)" })]));
         if (cn && cornerBars(pk.key)) kids.push(el("div", { dataset: { sc: "sd-posture-barred" } }, [help(cn.name + ": " + cn.text +
           " LOG will not take " + pk.name + " off, and logs the result in full.", { color: "var(--warn)" })]));
@@ -1171,7 +1192,8 @@ EN.gmScenes = (function () {
       CR.forEach(function (c) {
         if (!d.track.conds[c.key]) return;
         kids.push(el("div", { dataset: { sc: "sd-cond-note-" + c.key } }, [help(c.name + ": " + c.text +
-          (c.key === "exposed" ? " Take it BY HAND at the start of each Round." : ""), { color: "var(--warn)" })]));
+          (c.key === "exposed" ? " Take it BY HAND at the start of each Round." :
+           c.key === "rattled" ? " LOG applies the " + (int(c.less) || 0) + " less to each Posture; roll a Counter with Snag at the table." : ""), { color: "var(--warn)" })]));
       });
     }
     if (d.clock.round) kids.push(help(d.clock.round, { color: "var(--text2)" }));
@@ -1222,7 +1244,7 @@ EN.gmScenes = (function () {
           if (broke) { toast("Resolve is already at 0: the Opposition has broken."); return false; }
           var mm = multOf(d, _v.approach), p = r.pressure * mm.mult;
           var line = { id: lid("sl"), round: d.track.round, approach: _v.approach, result: r.key,
-            pressure: p, gain: r.resolveGain || 0, why: mm.why, posture: "", cut: 0, roll: 0, gave: "" };
+            pressure: p, gain: r.resolveGain || 0, why: mm.why, posture: "", cut: 0, roll: 0, less: 0, snag: false, gave: "" };
           // their Posture deflects a result that deals Pressure, once a Round
           var po = byKey(postureRows(), _v.posture);
           // a Cornered target can't take the Postures its rule names: nothing off, the Posture stays unspent
@@ -1231,8 +1253,11 @@ EN.gmScenes = (function () {
             _v.posture = "";
             toast(cr.name + ": " + str(cr.text).replace(/\*/g, "") + " Logged in full.");
           } else if (po && p > 0 && !d.track.posture) {
-            var c = postureCut(po, p);
+            // Rattled: the Posture takes its `less` off short, and a Counter (contested) rolls with Snag instead
+            var rt = rattledOn(d);
+            var c = postureCut(po, p, rt ? rt.less : 0);
             line.posture = po.key; line.cut = c.cut; line.roll = c.roll; line.pressure = p - c.cut;
+            line.less = c.less; line.snag = !!(rt && po.contested);
             d.track.posture = true;
             _v.posture = "";
             // a Posture whose effect gives the target a condition ("takes the *Cornered* condition")
