@@ -1056,3 +1056,98 @@ The migration file didn't change this round.
 - **After an UNDO is answered, a payday's DELETE comes back with the next redraw,** not at once.
 - **Importing an older GM file drops queued sends it doesn't hold,** because an import replaces the document. The ledger then has no word of them, so it doesn't read as paid either.
 - **A letter can be lost in the rarest two-tab race,** two filings at once after the lock gives up at 20 seconds. The numbers stay right.
+
+# Campaigns build report: one Advancement Type per campaign, and Milestones through the payday
+
+Designed with you on 10 Nov 2026, on `claude/charming-goodall-7c4a28`, cut from `main` at `1159856`. **Nothing is built yet.** This part is the settled design, so the build has one place to read it from.
+
+## What you asked for
+
+After using the writing tabs on the live site, in your words:
+
+> Milestone and Xp seem to award differently and it's not intuitive. Xp and milestone both have their own panel, however, milestone has an award milestone button, where as xp sits in a panel above milestone and to award it, you actually go down to the payday panel to award Xp. I propose that either both xp and milestone send separately from pay day or both of them are sent through payday. my preference is that they are both sent through payday since that generates a receipt. Additionally, i like that i can send both xp and milestone to a split party, however it's not realistic, either a party is ALL xp or ALL milestone. i think the GM should get a heads up if the Advancement types miss match and have have the ability to force all players in the campaign to align to one or the other with the flip of a toggle.
+
+Two changes, then: a Milestone goes through the payday, like XP, and a campaign is all XP or all Milestone.
+
+## What you decided
+
+Twelve questions, each with your pick in quotes.
+
+**The campaign's Advancement Type**
+
+1. **Where it's kept: "On the campaign".** One setting on the campaign in the database. Every sheet follows it while it's in that campaign, a character who joins later included. Nothing is written to anyone's sheet, so there's nothing to undo.
+2. **Converting: "Nothing converts".** Each sheet only switches track. Its XP, its Major and Minor counters and its Level stay as they are, so flipping back shows the old numbers again.
+3. **The player's own switch: "Locked, own choice returns".** The XP MODE / MILESTONE switch on the #PRINT Advance step shows the campaign's type and can't be changed, with the line "Set by your Admin for 5th flavor." The sheet's own earlier choice is kept underneath and comes back when the character leaves.
+4. **No campaign: "Heads-up and an align switch".** On the browser's own desktop Payroll shows the same heads-up, and the switch changes each record on this device directly, logged in the ledger and undoable from the UNDO strip like any other write. Nothing is locked afterwards, since they're your own records.
+5. **Where the heads-up shows: "Payroll and Campaign tab".** At the top of Payroll, where it changes what gets paid, and on the Campaign tab, where the setting sits beside the roster. The Table's XP Award card already names anyone on Milestones and stays as it is.
+6. **The words: "The fuller draft".**
+
+   > HEADS UP: ADVANCEMENT TYPES DON'T MATCH
+   >
+   > On XP: Nessa Vale, Gil.
+   > On Milestones: Bo.
+   >
+   > A campaign runs on one or the other. Set it here and every sheet in 5th flavor follows. Nothing converts: each sheet keeps its XP and its Milestones.
+   >
+   > [ XP MODE ] [ MILESTONE ]
+
+   The two buttons carry the sheet's own labels, and each asks once more before it acts: "ALL 3 TO XP?".
+7. **Who may set or flip it: "Admin and co-Admins".** Anyone who runs the campaign and can pay it.
+8. **Telling the players: "A #POST letter each".** Every character in the campaign gets a short letter, for example "5th flavor now levels on Milestones. Your XP is kept as it is." It also makes a sheet that's open switch at once, where otherwise it switches at its next sync.
+
+**The payday**
+
+9. **The AWARD MILESTONE button: "It goes away".** A Milestone only goes through a payday. Awards made with the old button that are still in a ledger keep showing as the last award, with their UNDO MILESTONE, until undone.
+10. **A payday with no money: "Yes, with a NO PAY switch".** A chip at the top of the payday form, NO PAY THIS TIME, sets the money aside and folds the contract, bounty, salvage and split panels away, so the payday carries just the award. The pay stub lists only what came, with no "Your share: 𝒢0" line.
+11. **One track: "Only its own track".** A Milestone campaign's payday has the Milestones panel and no Experience panel, and its summary and pay stubs don't mention XP. An XP campaign's has Experience and no Milestones. While a crew is still split, both show and each sheet gets what its own type takes. Bounties still price off a Target's XP either way.
+12. **The Table's AWARD XP: "Keep it as a quick award".** It stays as it is on an XP campaign: one press after a fight, a letter for the player, no payday. On a Milestone campaign the card offers only COPY and SEND TO PAYROLL. Payroll and the Table go on holding each other from paying one fight's XP twice.
+
+## The design
+
+**A sheet's Advancement Type is its campaign's, where the campaign has one.** Otherwise it's the sheet's own, as today. Every place that reads a sheet's type asks that one question: the Advance step, the printed sheet and the PDF, View sheet, Payroll and the Table's XP Award card. The sheet's own `useXp` is never changed by a campaign, which is how the player's choice comes back when the character leaves, or moves to a campaign that hasn't set one.
+
+**In the database: one new migration, and nothing applied until you say go.** The two migrations already on the live project aren't edited.
+
+- `campaigns` gains one column, `advancement`: `xp`, `milestone`, or empty for a campaign that hasn't chosen.
+- One new function, `set_advancement`, for those who run the campaign. It sets the type and, when the type really changed, sends the letter to every character in the campaign in the same step, so a change and its letters can't part. Setting it to what it already is sends nothing.
+- No new kind of write. A payday row may already carry Glimmer, Nexus and a Milestone together: the closed list from the writing tabs allows it, up to four to a row.
+
+**On the Admin desktop.**
+
+- **The Campaign tab** always shows the setting: ADVANCEMENT TYPE, with XP MODE and MILESTONE, the one in force lit, or neither while it isn't set. A press asks once more, then sets it. While the crew's sheets don't match and nothing is set, the heads-up sits above it.
+- **Payroll** shows the heads-up at the top while the crew is split, with the same two buttons. Once the campaign has a type, nobody in it can be split from it, so the heads-up doesn't come back.
+- **With no campaign,** the heads-up shows on Payroll alone, and its two buttons write to the records on this device: one logged, undoable write for each record that has to change. A record another player holds is never written this way.
+
+**On the player's sheet.** The Advance step shows the campaign's track, XP or the Milestone tracker, with the switch locked and "Set by your Admin for 5th flavor." under it. The app reads its campaigns again whenever mail arrives, so the letter itself is what makes an open sheet switch.
+
+**A Milestone in the payday.**
+
+- The Milestones panel is part of the payday form now: the two lists, Something else, How many, and what the payday suggests. It's saved with the payday, and counts as an unsaved change like any other field.
+- It has no "Who it is for" ticks and no button of its own. Credit the crew's ticks say who is paid, and CREDIT THE CREW writes it.
+- Each Freelancer still gets one write: their Glimmer, their Nexus, and the XP or the Milestone their type takes, with the pay stub. It carries the payday's tag like the money, so UNDO PAYDAY takes all of it back together, and whether a payday stands is still read off its writes.
+- The pay stub and the summary gain a line: "Milestone: 1 Major, Completing a major contract."
+- **NO PAY THIS TIME** sets the money aside. The contract, bounties, salvage, split and Nexus count for nothing and fold away. The stub lists only what came.
+- **A split crew** (no type set yet, or no campaign) sees both panels. A sheet on XP gets the XP and no Milestone, and a sheet on Milestones gets the Milestone and no XP.
+
+**What's already in a ledger.** An old payday reads and undoes exactly as it did. An old Milestone award is still found by its own tag: the last one standing keeps its card and its UNDO MILESTONE, the undo strip still reaches it, and "Already awarded for this job" still names it.
+
+**Not touched:** Heat, the SYNC button, `gate.js`'s drawing, and `tour.js`.
+
+## Decisions beyond your twelve
+
+Mine, so overrule any of them.
+
+1. **Once set, a campaign stays on one or the other.** There's no way back to "not set", since you said a party is all one or all the other.
+2. **One Milestone to a payday:** one kind and a count, as the old button gave. A Major and a Minor for one job are two paydays, the second with NO PAY THIS TIME.
+3. **A Milestone isn't held on its own.** A payday for a job or a fight already paid is held as it is today, the notice names a Milestone the earlier payday carried, and CREDIT ANYWAY writes what the form holds. XP keeps its stricter rule: one fight's XP is never written twice.
+4. **An award-only payday with no award can't be credited.** NO PAY THIS TIME with no Milestone picked and no XP has nothing to give.
+5. **The letter's subject and signature** are suggested words: from "Campaign", subject "Advancement Type: Milestone". The body is your example. For a flip to XP: "5th flavor now levels on XP. Your Milestones are kept as they are."
+6. **Offline,** a sheet follows the type its campaign had when the app last read it.
+7. **The first press and a later flip are the same act:** both ask once more, both send the letter.
+
+## Going live, in this order
+
+1. **The migration, on the live project, before the code,** on your word. The app's read of its campaigns will name the new column. The other way round is safe: today's app never asks for it.
+2. **Then the merge,** on "push it".
+
+The commands, the checks' count and what was and wasn't tested go here once it's built.
