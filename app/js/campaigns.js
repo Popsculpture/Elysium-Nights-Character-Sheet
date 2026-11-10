@@ -262,7 +262,10 @@ EN.campaigns = (function () {
     EN_BAD_ROLE: "That role isn't one of the choices.",
     EN_BAD_MAIL: "A message needs a From, and a subject, a message or a package.",
     EN_BAD_TYPE: "A campaign levels on XP or on Milestones.",
-    EN_TOO_LATE: "Too late to recall that one."
+    EN_TOO_LATE: "Too late to recall that one.",
+    EN_BAD_DESK: "This desktop could not be saved to your account.",
+    EN_TOO_BIG: "This desktop is too big to save to your account.",
+    EN_MOVED: "Another of your devices saved at the same moment."
   };
   function code(e) {
     var m = e && e.message ? String(e.message) : "";
@@ -321,6 +324,12 @@ EN.campaigns = (function () {
   function sendWrite(rowId, key, mail, ops, sender, desk) { return rpc("send_write", { p_character: rowId, p_key: key, p_mail: mail, p_ops: ops || null, p_sender: sender || null, p_desk: desk || null }); }
   // UNDO of a send_write: answers "cancelled", "recalled" or "corrected" (the migration says what each means)
   function takeBack(rowId, key, mail, sender, desk) { return rpc("take_back", { p_character: rowId, p_key: key, p_mail: mail, p_sender: sender || null, p_desk: desk || null }); }
+  /* THE SYNC BUTTON (js/gmstore.js sync). deskRead answers the saved Admin desktops of everyone who runs the campaign
+     now, newest save first, each { mine, rev, saved_at, doc }. deskSave stores this account's: `rev` is the number of
+     the copy it read (0 for none), and the database refuses EN_MOVED if that copy has changed since. `sender` is the
+     account the app means to save as, as with sendWrite. Only those who run the campaign can do either. */
+  function deskRead(id) { return rpc("desk_read", { p_campaign: id }); }
+  function deskSave(id, doc, rev, sender) { return rpc("desk_save", { p_campaign: id, p_doc: doc, p_rev: rev || 0, p_sender: sender || null }); }
   function sends(id) {
     return client().from("character_inbox").select("id, character_id, mail, status, created_at")
       .eq("campaign_id", id).eq("sender_id", me()).order("created_at", { ascending: false }).limit(50).then(check);
@@ -734,6 +743,7 @@ EN.campaigns = (function () {
     setAdvancement: setAdvancement, advancementOf: advancementOf, advancementOfCampaign: typeOf, usesXp: usesXp, lockedBy: lockedBy, advancementLetter: advancementLetter,
     inviteUrl: inviteUrl, viewSheet: viewSheet, refreshView: refreshView, backToCampaign: backToCampaign,
     sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sendWrite: sendWrite, takeBack: takeBack, sends: sends,
+    deskRead: deskRead, deskSave: deskSave,
     current: current, crew: crew, crewRow: crewRow,
     // which Admin desktop this tab is on, and the device's work from before each campaign had one
     desktop: desktop, NO_CAMPAIGN: NO_CAMPAIGN, checkMove: checkMove, moveInto: moveInto, moveWords: moveWords

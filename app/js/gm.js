@@ -1156,12 +1156,72 @@ EN.gmView = (function () {
     var C = EN.campaigns, mine = C && C.running ? C.running() : [];
     if (!mine.length) return null;
     var now = C.desktop();
-    return el("div.camp-line.camp-pick", { dataset: { gm: "desk-bar" } }, [
+    var line = el("div.camp-line.camp-pick", { dataset: { gm: "desk-bar" } }, [
       el("label.fl", { style: { margin: 0 }, text: "Campaign" }),
       el("select.camp-input.gm-crew-pick", { "aria-label": "Campaign", dataset: { gm: "crew-pick" }, onchange: function (e) { C.setPick(e.target.value); EN.app.render(); } },
         mine.map(function (x) { return el("option", { value: x.id, selected: !!now && x.id === now.id, text: x.name }); })
-          .concat([el("option", { value: C.NO_CAMPAIGN, selected: !now, text: "No campaign" })]))
+          .concat([el("option", { value: C.NO_CAMPAIGN, selected: !now, text: "No campaign" })])),
+      now ? syncButton(now) : null
     ]);
+    if (!now || !_sync.said) return line;
+    line.style.marginBottom = "6px";
+    return el("div", { dataset: { gm: "desk" } }, [line,
+      el("div.row.between.wrap", { dataset: { gm: "sync-said" }, style: { gap: "8px", alignItems: "center", marginBottom: "12px" } }, [
+        el("span.help", { style: { margin: 0, flex: "1 1 220px", minWidth: 0, whiteSpace: "pre-line" }, text: _sync.said }),
+        el("button.btn.sm", { dataset: { gm: "sync-ok" }, onclick: function () { _sync.said = null; EN.app.render(); } }, "OK")
+      ])]);
+  }
+
+  /* THE SYNC BUTTON (js/gmstore.js). A desktop lives in one browser, so one press saves this campaign's to the account
+     and adds what the others who run the campaign saved. It only ever adds. It asks once more, because what it adds
+     can't be taken back in one press. What it then says stays under the picker until OK, on the desktop it is about:
+     a toast would be gone before anyone had read a list. The words are suggested, not the author's. */
+  var _sync = { said: null };
+  gm.perDesk(function () { return _sync.said; }, function (kept) { _sync.said = kept || null; });
+  function syncAny(c) { return Object.keys(c || {}).some(function (k) { return !!c[k]; }); }
+  function syncWords(rep, name) {
+    var added = syncAny(rep.added), kept = syncAny(rep.kept), out = [];
+    if (rep.why === "offline") return "SYNC needs the link. Nothing was saved or added.";
+    if (rep.why === "moved") return "The desktop changed before the sync came back. Nothing was added.";
+    if (rep.why === "no-desktop") return "This browser's own desktop has nothing to sync. Pick a campaign.";
+    if (rep.ok) {
+      out.push(added ? "Synced. Added: " + gm.countText(rep.added) + (rep.fight ? ", with the fight's round, turn and clock." : ".")
+        : (rep.others ? "Synced. Nothing new to add." : "Synced. Nobody else has saved a desktop for " + name + " yet."));
+    } else {
+      var word = rep.why === "link" || rep.why === "error" ? "Could not reach your account." : EN.campaigns.errText(rep.error, "The account refused it.");
+      if (!added) return word + " Nothing was saved or added.";
+      out.push("Added: " + gm.countText(rep.added) + (rep.fight ? ", with the fight's round, turn and clock." : "."));
+      out.push("This desktop was not saved to your account. " + word + " Press SYNC again.");
+    }
+    if (kept) out.push("Kept as yours, where the two differ: " + gm.countText(rep.kept) + ".");
+    if (rep.skipped) out.push(rep.skipped === 1 ? "One saved desktop is from a newer version of the app and was left out. Reload to update."
+                                                : rep.skipped + " saved desktops are from a newer version of the app and were left out. Reload to update.");
+    return out.join("\n");
+  }
+  function runSync(c) {
+    var p = gm.sync();
+    EN.app.render();
+    p.then(function (rep) {
+      var words = syncWords(rep, c.name), d = gm.desk();
+      // still on the desktop it is about: the line stays. Otherwise a toast names the campaign
+      if (d && d.id === c.id) { if (rep.ok || syncAny(rep.added)) _sync.said = words; toast(words, Math.min(12000, words.length * 55)); }
+      else toast(c.name + ": " + words, Math.min(12000, words.length * 55));
+      EN.app.render();
+    });
+  }
+  function syncButton(c) {
+    var b;
+    if (gm.syncBusy()) b = el("button.btn.sm", { disabled: true, title: "Reading what the others who run " + c.name + " have saved, and saving this desktop." }, "SYNCING…");
+    // jacked out or offline there is nothing to arm: one press says so
+    else if (!campaignOf()) b = el("button.btn.sm", { title: "SYNC needs the link.", onclick: function () { toast(syncWords({ why: "offline" }, c.name)); } }, "SYNC");
+    else b = EN.ui.armButton("gm:sync:" + c.id, {
+      cls: ".btn.sm", label: "SYNC", armedLabel: "SYNC NOW?",
+      title: "Save this desktop to your account, and add what the others who run " + c.name + " have saved. Nothing of yours is replaced or removed.",
+      armedTitle: "It only adds, and it can't be taken back in one press: a record you deleted comes back if someone else still has it, and the other Admin's Table rows join yours. Click again to sync.",
+      onConfirm: function () { runSync(c); }
+    });
+    b.dataset.gm = "sync";
+    return b;
   }
   /* Pull in the crew while this account runs a campaign: that campaign's characters and nobody else's,
      each with its player's name. */

@@ -58,6 +58,9 @@
 
    WORK FROM BEFORE ALL THIS is in en_gm_v1 too, and nothing moves it unasked. moveDevice() moves it into
    the campaign this tab is on, on the Admin's word (js/campaigns.js's one-time card, or Settings).
+
+   BETWEEN BROWSERS there is one way, and it only adds: THE SYNC BUTTON, near the end of this file. A press
+   saves a campaign's desktop to the account and adds what the others who run the campaign saved.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -107,7 +110,8 @@ EN.gmStore = (function () {
       stamps: Object.create(null),
       encounter: blankEncounter(),
       updatedAt: 0,
-      lastEncounter: null
+      lastEncounter: null,
+      synced: Object.create(null)   // account id -> which saved copy this desktop last matched (THE SYNC BUTTON)
     };
     // every bag is keyed on ids and on strings a GM typed, so null-prototype at
     // EVERY creation site. A GM will name something __proto__ eventually.
@@ -346,6 +350,12 @@ EN.gmStore = (function () {
     if (isObj(raw.campaign) && typeof raw.campaign.id === "string") {
       s.campaign = { id: raw.campaign.id, name: typeof raw.campaign.name === "string" ? raw.campaign.name : "" };
     }
+    if (isObj(raw.synced)) {
+      Object.keys(raw.synced).forEach(function (k) {
+        var n = Number(raw.synced[k]);
+        if (isFinite(n) && n > 0) s.synced[k] = n;
+      });
+    }
     return s;
   }
 
@@ -458,6 +468,7 @@ EN.gmStore = (function () {
        e/<field>          the encounter's other fields (round, activeId, name, sourceId, clock)
        lastEncounter      what clearEncounter() kept
        stamps             the v1 field, carried along
+       synced             which saved copy this desktop last matched (THE SYNC BUTTON)
 
      Stored beside the parts is `rev`, path -> stamp. A path in `rev` with no part is a DELETE NOTE, so
      a delete travels in the same write as everything else, and is forgotten after GONE_KEEP. A part
@@ -527,6 +538,7 @@ EN.gmStore = (function () {
     });
     add("lastEncounter", doc.lastEncounter === undefined ? null : doc.lastEncounter);
     add("stamps", doc.stamps || {});
+    add("synced", doc.synced || {});
     return out;
   }
   function noteLoaded(file, text, raw) {
@@ -566,6 +578,7 @@ EN.gmStore = (function () {
   function valueAt(doc, p) {
     if (p === "lastEncounter") return doc.lastEncounter;
     if (p === "stamps") return doc.stamps;
+    if (p === "synced") return doc.synced;
     var kind = p.charAt(0), rest = p.slice(2), e = doc.encounter || {};
     if (kind === "e") return e[rest];
     if (kind === "o") return (Array.isArray(e[rest]) ? e[rest] : []).map(function (r) { return r && r.id; });
@@ -583,6 +596,7 @@ EN.gmStore = (function () {
     var gone = v === undefined;
     if (p === "lastEncounter") { state.lastEncounter = gone ? null : v; return; }
     if (p === "stamps") { state.stamps = Object.create(null); if (isObj(v)) Object.keys(v).forEach(function (k) { state.stamps[k] = v[k]; }); return; }
+    if (p === "synced") { state.synced = Object.create(null); if (isObj(v)) Object.keys(v).forEach(function (k) { state.synced[k] = v[k]; }); return; }
     var kind = p.charAt(0), rest = p.slice(2);
     if (kind === "e") { if (gone) delete state.encounter[rest]; else state.encounter[rest] = v; return; }
     if (kind === "o") { orders[rest] = Array.isArray(v) ? v : []; return; }
@@ -2151,6 +2165,7 @@ EN.gmStore = (function () {
     if (c.contacts) parts.push(say(c.contacts, "contact card", "contact cards"));
     if (c.scenes) parts.push(say(c.scenes, "saved scene", "saved scenes"));
     if (c.entries) parts.push(say(c.entries, "initiative row", "initiative rows"));
+    if (c.defeated) parts.push(say(c.defeated, "defeated threat", "defeated threats"));   // only a sync counts these apart
     if (c.room) parts.push(say(c.room, "Room hazard", "Room hazards"));
     if (c.running) parts.push("a fight's clock or name");
     if (c.lastFight) parts.push("the last fight's XP award");
@@ -2190,6 +2205,8 @@ EN.gmStore = (function () {
      the file says was paid is never offered for payment again. */
   function importDoc(text) {
     var next = parseDoc(text);
+    // a file is not this browser's last save, whatever note it carries: the next press adds from the account's copy (THE SYNC BUTTON)
+    next.synced = Object.create(null);
     var importedWrites = 0;
     Object.keys(next.ledger).forEach(function (k) {
       var r = next.ledger[k];
@@ -2395,6 +2412,253 @@ EN.gmStore = (function () {
     try { localStorage.removeItem(deskKey(id)); return true; } catch (e) { return false; }
   }
 
+  /* ---- THE SYNC BUTTON (10 Nov 2026) --------------------------------------------------------
+     A desktop lives in one browser, so a co-Admin's Table is blank while the Admin's is full, and so is the
+     Admin's own on a second computer. The author chose one button over a mirror: a press saves this campaign's
+     desktop to the database and ADDS what the others who run the campaign saved there (the campaign desks
+     migration: one saved desktop to a campaign and an account, read and written only by those who run it).
+
+     ADDITIVE, AND NOTHING ELSE (the author's rules, 9 Nov 2026). A press never replaces and never removes. A
+     record this desktop lacks is added whole. One it has is left exactly as it is, however the other copy
+     differs, and counted as kept. So a delete doesn't travel (the next press brings it back from someone who
+     still has it), and an edit reaches only someone who doesn't have the record yet. That holds for a far
+     record too: farJoin is for two copies on ONE browser, and is deliberately not used here.
+
+     READ, ADD, SAVE, in that order (sync). The save goes last so that it holds what was just added: a second
+     computer's empty desktop takes in the account's own copy before it saves over it. A save names the copy it
+     read, and the database refuses it if that copy has moved (EN_MOVED). Then the press reads again.
+
+     THIS BROWSER'S OWN LAST SAVE IS NEVER ADDED BACK. `synced` in the document is account id -> the number of
+     the saved copy this desktop last matched: the one it saved, holding everything it had. While the stored copy
+     still has that number it holds nothing this desktop hasn't had, so what was deleted here since stays deleted.
+     A copy saved from another computer has another number, and is added like anyone's. The note is a part like
+     any other (TWO TABS, ONE DESKTOP), it goes when the document goes, and an import clears it.
+
+     WHAT TRAVELS (syncOut) is the campaign's own document: the Table, the last fight and every bag but the
+     library, which belongs to the browser (the author, 10 Nov 2026). Two things change on the way out:
+       a crew row names its character by the database row ("row:<row id>"), which means the same character on
+         every browser, where a local id means nothing anywhere else. One for a record with no row stays behind.
+       the ledger goes without the far door's unfinished business (syncCarries).
+     WHAT ARRIVES (syncIn) is read the way a file is, through migrate(), so one bad record costs that record. A
+     write arrives as history, exactly as from an imported file (F6): it counts as paid here, and it can't be
+     undone here (the author, 10 Nov 2026).
+
+     THE TABLE. One not in use takes the other fight whole: rows, Room, round, turn, clock and name. One in use
+     gains only rows, after its own: a threat by its row id, the crew by character, and never a row that is
+     already here in either list (a threat one Admin has defeated and the other still has up is one row). */
+  var SYNC_TRIES = 3;
+  /* A ledger record that travels. A send to another player's sheet does once it has landed and nothing more is
+     owed on it. Still queued, an UNDO still queued, never landed, or ended with its campaign: it stays where it
+     is, like any other record the sync doesn't carry (the author: money in flight, and ended sends, stay out). */
+  function syncCarries(r) {
+    if (!isObj(r)) return false;
+    if (r.kind !== "write" || !isObj(r.far)) return true;
+    var f = r.far;
+    return f.state === "sent" && f.fix !== "queued" && f.fix !== "lost" && !f.ending;
+  }
+  function rowOfLocal(lid) { var c = EN.cloud; return (c && c.rowOf && c.rowOf(lid)) || null; }
+  function localOfRow(rowId) {
+    var roster = rosterNow(), hit = null;
+    Object.keys(roster).forEach(function (k) { if (!hit && rowOfLocal(k) === rowId) hit = k; });
+    return hit;
+  }
+  // a crew row as it travels, or null when its character has no row to be named by. Any other row as it is
+  function rowOut(r) {
+    if (!isObj(r) || r.kind !== "crew" || isCampaignRow(r.charId)) return r;
+    var row = rowOfLocal(r.charId);
+    if (!row) return null;
+    var c = copy(r);
+    c.charId = "row:" + row;
+    return c;
+  }
+  function rowsOut(list) { return (Array.isArray(list) ? list : []).map(rowOut).filter(Boolean); }
+  // and as it arrives: this account's own character is the record on this device. One under another browser's id is dropped
+  function rowIn(r) {
+    if (!isObj(r) || r.kind !== "crew") return r;
+    if (!isCampaignRow(r.charId)) return null;
+    var lid = localOfRow(r.charId.slice(4));
+    if (lid) r.charId = lid;
+    return r;
+  }
+  // who a crew row is, wherever it was made
+  function crewKey(r) {
+    if (isCampaignRow(r.charId)) return r.charId.slice(4);
+    return rowOfLocal(r.charId) || "local:" + r.charId;
+  }
+  function lastOut(l) {
+    if (!isObj(l)) return null;
+    var c = copy(l);
+    c.entries = rowsOut(c.entries);
+    return c;
+  }
+  // this desktop as it is saved
+  function syncOut() {
+    var s = get(), e = s.encounter, out = { v: SCHEMA };
+    MOVE_BAGS.forEach(function (b) {
+      out[b] = Object.create(null);
+      Object.keys(s[b]).forEach(function (id) { if (b !== "ledger" || syncCarries(s[b][id])) out[b][id] = s[b][id]; });
+    });
+    out.encounter = { round: e.round | 0, activeId: e.activeId || null, name: e.name || "", sourceId: e.sourceId || null, clock: e.clock || null,
+                      entries: rowsOut(e.entries), room: Array.isArray(e.room) ? e.room : [], defeated: rowsOut(e.defeated) };
+    out.lastEncounter = lastOut(s.lastEncounter);
+    return copy(out);
+  }
+  // a record as it arrives. A write is history here, and has told its own desktop whatever it had to tell
+  function syncArrive(bag, r) {
+    var c = copy(r);
+    if (bag === "ledger" && c.kind === "write") {
+      c.imported = true;
+      if (isObj(c.far)) c.far.told = true;
+    }
+    return c;
+  }
+  function syncCounts() {
+    var c = { entries: 0, room: 0, defeated: 0 };
+    MOVE_BAGS.forEach(function (b) { c[b] = 0; });
+    return c;
+  }
+  /* One copy into the document. `keep(what, key)` counts a record both hold that differs, once. Rows from the
+     copy are in the form they travel in, and one of this desktop's is put in that form to compare. */
+  function syncAdd(s, doc, rep, keep) {
+    MOVE_BAGS.forEach(function (b) {
+      Object.keys(doc[b]).forEach(function (id) {
+        if (b === "ledger" && !syncCarries(doc[b][id])) return;
+        var theirs = syncArrive(b, doc[b][id]);
+        if (own(s[b], id)) {
+          // the marks arriving leaves are not a difference
+          if (canon(syncArrive(b, s[b][id])) !== canon(theirs)) keep(b, id);
+          return;
+        }
+        s[b][id] = theirs;
+        rep.added[b]++;
+      });
+    });
+    var e = s.encounter, t = doc.encounter, whole = !tableBusy(e) && tableBusy(t);
+    if (!Array.isArray(e.defeated)) e.defeated = [];
+    if (whole) {
+      e.round = t.round;
+      e.name = t.name;
+      e.sourceId = t.sourceId;
+      e.clock = t.clock ? copy(t.clock) : null;
+      if (t.round > 0 || t.clock || t.name || t.sourceId) rep.fight = true;
+    }
+    var have = Object.create(null), crew = Object.create(null);
+    e.entries.concat(e.defeated).forEach(function (r) { if (r && typeof r.id === "string") have[r.id] = r; });
+    e.entries.forEach(function (r) { if (r && r.kind === "crew") crew[crewKey(r)] = r; });
+    function addRows(theirs, list, what) {
+      theirs.forEach(function (r) {
+        var mine = (r.kind === "crew" && crew[crewKey(r)]) || have[r.id];
+        if (mine) {
+          if (canon(rowOut(mine)) !== canon(r)) keep("entries", mine.id);
+          return;
+        }
+        var c = rowIn(copy(r));
+        if (!c) return;
+        list.push(c);
+        have[c.id] = c;
+        if (c.kind === "crew") crew[crewKey(c)] = c;
+        rep.added[what]++;
+      });
+    }
+    addRows(t.entries, e.entries, "entries");
+    addRows((t.defeated || []).filter(function (r) { return r.kind === "threat"; }), e.defeated, "defeated");
+    var room = Object.create(null);
+    e.room.forEach(function (h) { if (h && typeof h.id === "string") room[h.id] = h; });
+    t.room.forEach(function (h) {
+      if (own(room, h.id)) { if (canon(room[h.id]) !== canon(h)) keep("room", h.id); return; }
+      var c = copy(h);
+      e.room.push(c);
+      room[c.id] = c;
+      rep.added.room++;
+    });
+    if (whole && typeof t.activeId === "string" && e.entries.some(function (r) { return r.id === t.activeId; })) e.activeId = t.activeId;
+    if (doc.lastEncounter) {
+      if (!s.lastEncounter) {
+        var l = copy(doc.lastEncounter);
+        l.entries = (l.entries || []).map(rowIn).filter(Boolean);
+        s.lastEncounter = l;
+        rep.added.lastFight = true;
+      } else if (canon(lastOut(s.lastEncounter)) !== canon(doc.lastEncounter)) rep.kept.lastFight = true;
+    }
+  }
+  /* Adds what these saved desktops hold and this one lacks, the first of them first. Answers the report:
+     { added, kept, skipped, fight }, the two lists as counts countText can say. Nothing here is ever replaced. */
+  function syncIn(copies) {
+    var rep = { added: syncCounts(), kept: syncCounts(), skipped: 0, fight: false }, docs = [], seen = Object.create(null);
+    (Array.isArray(copies) ? copies : []).forEach(function (raw) {
+      // not a desktop, or one saved by a newer version of this app: left out, as an import refuses such a file
+      if (!isObj(raw) || typeof raw.v !== "number" || raw.v > SCHEMA) { rep.skipped++; return; }
+      try { docs.push(migrate(copy(raw))); } catch (e) { rep.skipped++; }
+    });
+    if (!docs.length) return rep;
+    function keep(what, key) {
+      if (seen[what + "/" + key]) return;
+      seen[what + "/" + key] = true;
+      rep.kept[what]++;
+    }
+    update(function (s) { docs.forEach(function (doc) { syncAdd(s, doc, rep, keep); }); }, { immediate: true });
+    return rep;
+  }
+  var _syncing = null;
+  function syncBusy() { return !!_syncing; }
+  // an earlier try's report and a later one's: what either added, and what the later one kept
+  function syncJoin(a, b) {
+    if (!a) return b;
+    Object.keys(a.added).forEach(function (k) {
+      b.added[k] = typeof a.added[k] === "boolean" ? (a.added[k] || !!b.added[k]) : (a.added[k] || 0) + (b.added[k] || 0);
+    });
+    b.fight = a.fight || b.fight;
+    return b;
+  }
+  /* One press. Answers a promise of the report, which never rejects: { ok, saved, why, error, others, added, kept,
+     skipped, fight }. `why` is "no-desktop" (the browser's own desktop has nothing to sync), "offline", "moved" (the
+     tab left this desktop, or the account changed, while the read was out: nothing is added anywhere), "link" (no
+     answer), or the database's code. What a press added stays added when its save then fails: it only ever adds,
+     and the next press saves. Two presses at once are one. */
+  function sync() {
+    if (_syncing) return _syncing;
+    var C = EN.campaigns, cl = EN.cloud, id = deskId, who = farOwner();
+    function none(why, e) { return { ok: false, why: why, error: e || null, added: syncCounts(), kept: syncCounts(), skipped: 0, fight: false }; }
+    if (!id || !state) return Promise.resolve(none("no-desktop"));
+    if (!who || (cl && cl.offline && cl.offline()) || !C || !C.deskRead || !C.deskSave) return Promise.resolve(none("offline"));
+    var total = null;
+    function here() { return deskId === id && farOwner() === who; }
+    function codeOf(e) { var m = e && e.message ? String(e.message) : ""; return /^EN_/.test(m) ? m : "link"; }
+    function failed(e) {
+      var r = total || none("");
+      r.ok = false; r.why = codeOf(e); r.error = e;
+      return r;
+    }
+    function attempt(n) {
+      return C.deskRead(id).then(function (rows) {
+        if (!here()) return none("moved");
+        syncTabs();
+        rows = (Array.isArray(rows) ? rows : []).filter(isObj);
+        var mine = rows.filter(function (r) { return r.mine === true; })[0] || null;
+        var known = isObj(state.synced) ? state.synced[who] : undefined;
+        var rep = syncIn(rows.filter(function (r) { return r.mine !== true || Number(r.rev) !== known; }).map(function (r) { return r.doc; }));
+        total = syncJoin(total, rep);
+        total.others = rows.length - (mine ? 1 : 0);
+        return C.deskSave(id, syncOut(), mine ? Number(mine.rev) : 0, who).then(function (rev) {
+          // the stored copy is now this desktop, so the next press has nothing of its own to take back in
+          if (here()) update(function (s) { if (!isObj(s.synced)) s.synced = Object.create(null); s.synced[who] = Number(rev); }, { immediate: true, silent: true });
+          total.ok = true; total.saved = true;
+          return total;
+        }, function (e) {
+          if (codeOf(e) === "EN_MOVED" && n < SYNC_TRIES) return attempt(n + 1);
+          return failed(e);
+        });
+      }, failed);
+    }
+    _syncing = Promise.resolve().then(function () { return attempt(1); }).then(null, function (e) {
+      try { console.error("GM: SYNC failed", e); } catch (e2) {}
+      var r = failed(e);
+      r.why = "error";
+      return r;
+    }).then(function (rep) { _syncing = null; return rep; });
+    return _syncing;
+  }
+
   try {
     window.addEventListener("pagehide", function () { flush(); });
     // a timer in a hidden tab can wait a second or more, and the Admin has just gone to the other tab
@@ -2447,6 +2711,8 @@ EN.gmStore = (function () {
     desk: desk, follow: follow, perDesk: perDesk, syncTabs: syncTabs, onHeard: onHeard, hold: hold, heldMoved: heldMoved,
     // work on this device beyond the desktop in memory
     deviceHolds: deviceHolds, moveDevice: moveDevice, premove: premove, dropPremove: dropPremove,
-    leftBehind: leftBehind, exportLeft: exportLeft, dropLeft: dropLeft
+    leftBehind: leftBehind, exportLeft: exportLeft, dropLeft: dropLeft,
+    // between browsers: one press saves this campaign's desktop and adds what the others who run it saved
+    sync: sync, syncBusy: syncBusy, syncOut: syncOut, syncIn: syncIn
   };
 })();
