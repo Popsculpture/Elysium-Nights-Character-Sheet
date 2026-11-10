@@ -522,7 +522,8 @@ EN.printSheet = (function () {
     var id = ch.identity || {}, body = [];
     var classLine = [d.classInfo ? d.classInfo.name : "-", d.subclassInfo ? d.subclassInfo.name + bookTag("subclass", d.subclassInfo.key) : null].filter(Boolean).join(" · ");
     var speciesLine = [d.speciesInfo ? d.speciesInfo.name : "-", d.lineageInfo ? d.lineageInfo.name + bookTag("lineage", d.lineageInfo.key) : null].filter(Boolean).join(" · ");
-    var progression = ch.useXp ? ("XP " + (d.xp || 0) + (d.xpForNext ? " / " + d.xpForNext : "")) : ("Milestones " + ((ch.milestones && ch.milestones.major) || 0) + " maj, " + ((ch.milestones && ch.milestones.minor) || 0) + " min");
+    // a campaign that has chosen its Advancement Type decides (js/campaigns.js); otherwise the sheet's own switch does
+    var progression = (EN.campaigns && EN.campaigns.usesXp ? EN.campaigns.usesXp(ch) : ch.useXp) ? ("XP " + (d.xp || 0) + (d.xpForNext ? " / " + d.xpForNext : "")) : ("Milestones " + ((ch.milestones && ch.milestones.major) || 0) + " maj, " + ((ch.milestones && ch.milestones.minor) || 0) + " min");
 
     body.push(el("div.ps-grid2", null, [field("Handle / alias", id.handle || ch.name), field("Name on record", ch.name)]));
     body.push(el("div.ps-row", null, [

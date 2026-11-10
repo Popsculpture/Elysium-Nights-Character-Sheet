@@ -96,6 +96,52 @@ EN.campaigns = (function () {
   function runs(c) { return c.role === "admin" || c.role === "coadmin"; }
   function running() { return data().list.filter(runs); }
 
+  /* ---- THE ADVANCEMENT TYPE (the author, 10 Nov 2026) ---------------------------------------
+     A campaign levels on XP or on Milestones, all of it or none. The setting lives on the campaign in the
+     database (campaigns.advancement: "xp", "milestone", or empty for one that has not chosen), and a sheet in
+     it follows. Nothing is ever written to a sheet's own useXp by a campaign, so the player's own choice is
+     still there underneath and comes back when the character leaves. Every place that reads a sheet's type
+     asks usesXp(ch): the campaign's where it has one, the sheet's own where it has not. Offline, a sheet
+     follows the type its campaign had when it was last read, which is what the cache above keeps. */
+  function typeOf(campaignId) {
+    var c = campaignId ? find(campaignId) : null;
+    return c && (c.advancement === "xp" || c.advancement === "milestone") ? c.advancement : "";
+  }
+  /* The campaign a sheet sits in. A record on this device is found by its local id; a copy of somebody else's
+     (View sheet, the Admin desktop's crew) carries "view_<row id>", and is found in the crew that was read, or
+     in what View sheet is showing. */
+  function campaignOf(ch) {
+    var id = ch && ch.meta && ch.meta.id ? String(ch.meta.id) : "";
+    if (!id) return "";
+    // a record on this device answers from what this account has read of its own characters, never from a crew that may be stale
+    if (id.indexOf("view_") !== 0) return recordCampaign(id) || "";
+    var hit = "";
+    Object.keys(crewCache).forEach(function (cid) {
+      ((crewCache[cid] && crewCache[cid].rows) || []).forEach(function (r) { if (!hit && "view_" + r.rowId === id) hit = cid; });
+    });
+    if (hit) return hit;
+    var vi = EN.store && EN.store.viewingInfo ? EN.store.viewingInfo() : null;
+    return vi && vi.campaign && "view_" + vi.rowId === id ? vi.campaign : "";
+  }
+  // "xp", "milestone", or "" when the sheet's campaign has not chosen (or it is in none): then its own switch decides
+  function advancementOf(ch) { return typeOf(campaignOf(ch)); }
+  function usesXp(ch) {
+    var t = advancementOf(ch);
+    return t ? t === "xp" : !!(ch && ch.useXp === true);
+  }
+  // the campaign's name where it has set the type, for "Set by your Admin for <name>."; "" otherwise
+  function lockedBy(ch) {
+    var cid = campaignOf(ch);
+    return cid && typeOf(cid) ? (find(cid) || {}).name || "" : "";
+  }
+  // the letter every character in the campaign gets when the type is set or flipped
+  function advancementLetter(name, type) {
+    var n = String(name || "Your campaign");
+    return type === "xp"
+      ? { from: "Campaign", subj: "Advancement Type: XP", body: n + " now levels on XP. Your Milestones are kept as they are." }
+      : { from: "Campaign", subj: "Advancement Type: Milestone", body: n + " now levels on Milestones. Your XP is kept as it is." };
+  }
+
   /* GIZMO SAYS NO. An account that is crew in at least one campaign and runs none gets his ACCESS
      DENIED page instead of the Admin desktop: this answers with the campaign to name, or null for
      everyone else (no campaigns, offline, or running any campaign). It is a polite fence, like the
@@ -144,6 +190,16 @@ EN.campaigns = (function () {
 
   /* ---- reading it fresh ---------------------------------------------------- */
   var running_ = null, again = false, lastRead = 0;
+  /* The campaigns this account can read, with their Advancement Type. A project that has not had the
+     advancement migration yet refuses the column by name: ask again without it, so going live in either
+     order can never blank the campaign list. Every campaign then reads as having no type set. */
+  function readCampaigns(c) {
+    return c.from("campaigns").select("id, name, advancement").then(function (res) {
+      var e = res && res.error;
+      if (e && (e.code === "42703" || /advancement/i.test(String(e.message || "")))) return c.from("campaigns").select("id, name").then(check);
+      return check(res);
+    });
+  }
   function refresh() {
     var c = client(), id = c && enabled() ? me() : null;
     if (!id || (cloud().offline && cloud().offline())) return Promise.resolve(false);
@@ -151,15 +207,15 @@ EN.campaigns = (function () {
     lastRead = Date.now();
     running_ = Promise.all([
       c.from("campaign_members").select("campaign_id, role, joined_at").eq("user_id", id).then(check),
-      c.from("campaigns").select("id, name").then(check),
+      readCampaigns(c),
       c.from("characters").select("id, campaign_id").eq("owner_id", id).then(check)
     ]).then(function (all) {
       if (me() !== id) return false;
-      var names = {}, rows = {};
-      (all[1] || []).forEach(function (x) { names[x.id] = x.name; });
+      var names = {}, types = {}, rows = {};
+      (all[1] || []).forEach(function (x) { names[x.id] = x.name; types[x.id] = x.advancement === "xp" || x.advancement === "milestone" ? x.advancement : ""; });
       (all[2] || []).forEach(function (x) { if (x.campaign_id) rows[x.id] = x.campaign_id; });
       var next = (all[0] || []).map(function (m) {
-        return { id: m.campaign_id, name: names[m.campaign_id] || "Unnamed campaign", role: m.role, joined_at: m.joined_at };
+        return { id: m.campaign_id, name: names[m.campaign_id] || "Unnamed campaign", role: m.role, joined_at: m.joined_at, advancement: types[m.campaign_id] || "" };
       }).sort(function (a, b) { return a.joined_at < b.joined_at ? -1 : a.joined_at > b.joined_at ? 1 : 0; });
       var d = data(), changed = JSON.stringify(d.list) !== JSON.stringify(next) || JSON.stringify(d.rows) !== JSON.stringify(rows);
       d.list = next; d.rows = rows;
@@ -202,6 +258,7 @@ EN.campaigns = (function () {
     EN_ADMIN_ONLY: "Only the Admin can do that.",
     EN_BAD_ROLE: "That role isn't one of the choices.",
     EN_BAD_MAIL: "A message needs a From, and a subject, a message or a package.",
+    EN_BAD_TYPE: "A campaign levels on XP or on Milestones.",
     EN_TOO_LATE: "Too late to recall that one."
   };
   function code(e) {
@@ -237,6 +294,17 @@ EN.campaigns = (function () {
   function transfer(id, user) { return rpc("transfer_leadership", { p_campaign: id, p_user: user }).then(afterRoster); }
   function rename(id, name) { return rpc("rename_campaign", { p_campaign: id, p_name: name }).then(afterRoster); }
   function remove(id) { return rpc("delete_campaign", { p_campaign: id }).then(afterRoster); }
+  /* Sets the campaign's Advancement Type and sends every character the letter in the same step (the
+     database does both or neither). Answers how many letters went: 0 when it was already that type. The
+     cache follows at once, then the list is read again. */
+  function setAdvancement(id, type) {
+    var c = find(id), mail = advancementLetter(c ? c.name : "", type);
+    return rpc("set_advancement", { p_campaign: id, p_type: type, p_mail: mail }).then(function (n) {
+      var c2 = find(id);
+      if (c2 && c2.advancement !== type) { c2.advancement = type; save(); repaint(); }
+      return afterRoster(n);
+    });
+  }
   function inviteUrl(token) { return cloud().appUrl() + "?join=" + encodeURIComponent(token); }
 
   /* #POST from the Admin (batch 3). The sends list asks by sender_id and by campaign: the read policy
@@ -603,7 +671,10 @@ EN.campaigns = (function () {
     return slot;
   }
   function repaintCrew() {
-    if (EN.app && EN.app.portal && EN.app.portal() === "admin" && EN.app.activeTab() !== "campaign") EN.app.render();
+    if (!(EN.app && EN.app.portal && EN.app.portal() === "admin")) return;
+    if (EN.app.activeTab() !== "campaign") { EN.app.render(); return; }
+    // the Campaign tab is not redrawn under a message being written; the advancement panel redraws in its own node
+    if (EN.gmCampaign && EN.gmCampaign.crewRead) EN.gmCampaign.crewRead();
   }
   // what is known of a campaign's crew: asking starts a read if there is none, or the last is old
   function crew(id, force) {
@@ -656,6 +727,7 @@ EN.campaigns = (function () {
     pendingJoin: pendingJoin, newForm: newForm, errText: errText,
     create: create, leave: leave, roster: roster, blocked: blocked, invite: invite, resetInvite: resetInvite,
     removeMember: removeMember, unblock: unblock, setRole: setRole, transfer: transfer, rename: rename, remove: remove,
+    setAdvancement: setAdvancement, advancementOf: advancementOf, advancementOfCampaign: typeOf, usesXp: usesXp, lockedBy: lockedBy, advancementLetter: advancementLetter,
     inviteUrl: inviteUrl, viewSheet: viewSheet, refreshView: refreshView, backToCampaign: backToCampaign,
     sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sendWrite: sendWrite, takeBack: takeBack, sends: sends,
     current: current, crew: crew, crewRow: crewRow,

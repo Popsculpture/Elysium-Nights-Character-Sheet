@@ -20,19 +20,24 @@
          same content is always on offer as copyable text. Another player's
          character in a campaign is reached through the inbox (gmStore's far
          door), and undoing that sends a correction.
-     D5  every Freelancer gets the full encounter XP; only records with
-         useXp take it, and the milestone ones are named and skipped.
+     D5  every Freelancer gets the full encounter XP; only sheets on XP take it
+         (a campaign's Advancement Type decides, js/campaigns.js usesXp), and a
+         sheet on Milestones gets the payday's Milestone instead.
      D6  the printed band is shown and its midpoint prefilled as an editable
          total; clause shifts stack and clamp at the grid edges, with a note.
      And the defaults: bounties show the 3 to 5 range with a rate picker and
      double for alive; the Crew Kit comes off the post-fixer remainder (that
      is splitPayout's own order); the payday checklist is the book's order.
 
-   MILESTONES (the author's quality of life pick, 2026-10). Milestone tables
-   level on the book's Major and Minor Milestones, not XP, so the Milestones
-   panel awards one: the two lists from Milestones and Pacing
-   (EN.gmBook.payroll.milestones) or the GM's own reason, to any crew member,
-   through writeCrew's milestone op. See section 8.
+   MILESTONES (the author, 10 Nov 2026). A party levels on XP or on Milestones, all
+   of it or none (a campaign's Advancement Type, js/campaigns.js), and a Milestone
+   goes through the payday exactly as XP does: the Milestones panel is part of the
+   form, saved with the payday, written by CREDIT THE CREW in the same write as
+   the money and the pay stub, and taken back by UNDO PAYDAY. The AWARD MILESTONE
+   button of 2026-10 is gone; awards it made stay in the ledger and still read and
+   undo. NO PAY THIS TIME sets the money aside for a payday that carries only the
+   award. When the crew's sheets don't match, a heads-up sits at the top. See
+   section 8.
 
    AN APP READING, not book text: the fixer's cut comes off the CLIENT'S money,
    the contract and any bounties, because the page prices those as "totals,
@@ -129,6 +134,11 @@ EN.gmPayroll = (function () {
       noXp: [],                    // encounter entry ids NOT counted as defeated
       objXp: "",
       xpAgain: false,              // write XP even though the Table already awarded this fight's (tableAward)
+      noPay: false,                // NO PAY THIS TIME: the money is set aside, and the payday carries only the award
+      msKey: null,                 // the payday's Milestone: an item's key from the book's lists, "other", or null
+      msKind: "major",             // the kind of the GM's own reason
+      msReason: "",                // the GM's own reason, as typed
+      msAmount: "",                // how many, as typed; blank is one
       cred: "", heat: "",
       stub: true,                  // send a #POST pay stub with the credit
       noCredit: [],                // charIds left out of the credit
@@ -169,7 +179,7 @@ EN.gmPayroll = (function () {
     var p = fresh();
     if (!isObj(f)) return p;
     ["title", "hc", "cal", "diff", "nexus", "inc", "bSrc", "bEnc", "bBest", "bName", "bXp",
-     "sName", "sValue", "awValue", "awPct", "objXp", "cred", "heat"].forEach(function (k) {
+     "sName", "sValue", "awValue", "awPct", "objXp", "cred", "heat", "msReason", "msAmount"].forEach(function (k) {
       if (typeof f[k] === "string") p[k] = f[k];
     });
     if (typeof f.jobId === "string" && f.jobId) p.jobId = f.jobId;
@@ -178,6 +188,9 @@ EN.gmPayroll = (function () {
     if (typeof f.kit === "string" || typeof f.kit === "number") p.kit = f.kit;
     p.stub = f.stub !== false;
     p.xpAgain = f.xpAgain === true;
+    p.noPay = f.noPay === true;
+    if (typeof f.msKey === "string" && f.msKey) p.msKey = f.msKey;
+    p.msKind = f.msKind === "minor" ? "minor" : "major";
     if (isObj(f.enc) && Array.isArray(f.enc.entries)) p.enc = f.enc;
     if (isObj(f.shifts)) Object.keys(f.shifts).forEach(function (k) {
       var v = Number(f.shifts[k]);
@@ -400,8 +413,13 @@ EN.gmPayroll = (function () {
       if (!ws.length) return;
       // in the order written (paidWrites is newest first)
       var xpNames = ws.filter(function (w) { return xpOfWrite(w) > 0; }).reverse().map(function (w) { return w.charName || "a Freelancer"; });
+      // a Milestone it carried: the notice names it, and CREDIT ANYWAY is the GM's word to write another
+      var msWs = ws.filter(function (w) { return !!msOp(w); }).reverse();
+      var msFirst = msWs.length ? msOp(msWs[0]) : null;
       // `imported`: none of its writes can be undone here, so the hold cannot say "undo that payday"
       hits.push({ pd: pd, fight: fight, job: jobHit, xpNames: xpNames,
+                  msNames: msWs.map(function (w) { return w.charName || "a Freelancer"; }),
+                  ms: msFirst ? { kind: msFirst.kind, amount: Number(msFirst.amount) || 1, reason: (isObj(pd.milestone) && typeof pd.milestone.reason === "string") ? pd.milestone.reason : "" } : null,
                   imported: !ws.some(function (w) { return !w.imported; }) });
     });
     if (!hits.length) return null;
@@ -483,6 +501,11 @@ EN.gmPayroll = (function () {
     return c;
   }
 
+  // a sheet's Advancement Type: its campaign's where the campaign has chosen, else its own switch (js/campaigns.js)
+  function onXpOf(ch) {
+    return !!ch && (EN.campaigns && EN.campaigns.usesXp ? EN.campaigns.usesXp(ch) : ch.useXp === true);
+  }
+
   /* ---- the model: every number on the page, computed once a render ------ */
   function job() { return _p.jobId ? gm.rec("jobs", _p.jobId) : null; }
   /* The title when none is typed (F20): the job's, else the name of the fight
@@ -507,10 +530,11 @@ EN.gmPayroll = (function () {
     var c = crewNow();
     var q = quote(c.caliber, _p.diff, _p.shifts);
     var typed = _p.total !== null;
-    var contract = typed ? glim(_p.total) : (q.mid || 0);
-    var nexus = nex(_p.nexus);
+    // NO PAY THIS TIME sets the money aside: what is typed stays in the form, and counts for nothing
+    var contract = _p.noPay ? 0 : typed ? glim(_p.total) : (q.mid || 0);
+    var nexus = _p.noPay ? 0 : nex(_p.nexus);
 
-    var bl = _p.bounties.map(function (b) {
+    var bl = (_p.noPay ? [] : _p.bounties).map(function (b) {
       return { id: b.id, name: b.name, xp: glim(b.xp), rate: Number(b.rate) || defRate(), alive: !!b.alive,
                value: bountyValue(b.xp, b.rate, b.alive) };
     });
@@ -526,6 +550,7 @@ EN.gmPayroll = (function () {
       var v = glim(s.value);
       if (v > 0) sl.push({ name: (s.name || "").trim() || "Salvage", value: v });
     });
+    if (_p.noPay) sl = [];
     var sTotal = sl.reduce(function (a, s) { return a + s.value; }, 0);
 
     // the one splitter, twice: the client's money through the fixer, the salvage without
@@ -554,8 +579,20 @@ EN.gmPayroll = (function () {
       return _p.noCredit.indexOf(x.charId) === -1 && !!EN.gmEngine.sheetOf(x.charId);
     }).map(function (x) {
       var ch = EN.gmEngine.sheetOf(x.charId);
-      return { charId: x.charId, name: x.name, caliber: x.caliber, useXp: !!(ch && ch.useXp === true) };
+      return { charId: x.charId, name: x.name, tag: x.tag || x.name, caliber: x.caliber, useXp: onXpOf(ch) };
     });
+
+    /* THE TRACK. A party is all XP or all Milestones, so a payday shows only the panel its sheets take: a campaign
+       that has chosen decides, otherwise the crew's own sheets do, and a crew that is still split (or has no sheet
+       to read) sees both. Each sheet gets only its own: XP to a sheet on XP, the Milestone to one on Milestones. */
+    var withSheet = c.members.filter(function (x) { return !!EN.gmEngine.sheetOf(x.charId); });
+    var xpN = withSheet.filter(function (x) { return onXpOf(EN.gmEngine.sheetOf(x.charId)); }).length, msN = withSheet.length - xpN;
+    var C = EN.campaigns && EN.campaigns.current ? EN.campaigns.current() : null;
+    var set = C && EN.campaigns.advancementOfCampaign ? EN.campaigns.advancementOfCampaign(C.id) : "";
+    var track = { set: set,
+                  xp: set ? set === "xp" : (xpN > 0 || !withSheet.length),
+                  ms: set ? set === "milestone" : (msN > 0 || !withSheet.length) };
+    var pick = pickOf();
 
     var rec = _p.paydayId ? gm.rec("ledger", _p.paydayId) : null;
     return {
@@ -565,6 +602,9 @@ EN.gmPayroll = (function () {
       nexEach: eachC / 100, nexOver: (cents - eachC * hc) / 100,
       xpRows: xpRows, xpObj: xpObj, xpTotal: xpTotal, tAward: tAward, xpPaid: xpPaid, xpWrite: xpWrite,
       credit: credit, title: (_p.title || "").trim() || defaultTitle(),
+      track: track, msPick: pick, noPay: !!_p.noPay,
+      // a payday with no pay and no award for any sheet credited writes nothing, so it can't be credited
+      nothing: !!_p.noPay && !credit.some(function (x) { return x.useXp ? xpWrite > 0 : pick.ok; }),
       encAt: encAt, dup: dup,
       // by its writes, or by its own word: a payday from another device's backup has no write that counts here, and was paid
       rec: rec, paid: !!(rec && ((rec.credited && !rec.undone) || paidOf(rec).length))
@@ -693,6 +733,13 @@ EN.gmPayroll = (function () {
       kids.push(help(j ? "For the job " + (j.title || "untitled") + DOT + "status " + String(j.status || "draft") + "."
                        : "The job this payday was opened for is no longer in the log.", { color: "var(--text2)" }));
     }
+    // a payday with no money: the award alone. The contract, bounties, salvage and split fold away while it is on
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
+      chip("NO PAY THIS TIME", _p.noPay, "no-pay", function () { _p.noPay = !_p.noPay; refresh(); },
+        "Set the money aside. This payday then carries only the XP or the Milestone, and the contract, bounties, salvage and split fold away."),
+      _p.noPay ? el("span.help", { dataset: { pay: "no-pay-note" }, style: { margin: 0 },
+        text: "The money is set aside for this payday. It carries only the award. Press the chip again to bring the money back." }) : null
+    ]));
 
     // the encounter being paid
     var last = gm.get().lastEncounter;
@@ -732,8 +779,7 @@ EN.gmPayroll = (function () {
     ]));
     if (c.members.length) {
       kids.push(el("div.row.wrap", { style: { gap: "6px", marginTop: "6px" } }, c.members.map(function (x) {
-        var ch = EN.gmEngine.sheetOf(x.charId);
-        var onXp = !!(ch && ch.useXp === true);
+        var onXp = onXpOf(EN.gmEngine.sheetOf(x.charId));
         return el("span.chip", { style: { fontSize: "10px" },
           text: (x.tag || x.name) + DOT + (x.caliber ? "C" + x.caliber : "C?") + DOT + (onXp ? "XP" : "MILESTONE") });
       })));
@@ -1235,36 +1281,24 @@ EN.gmPayroll = (function () {
   }
 
   /* ---- 8. milestones ---------------------------------------------------- */
-  /* AWARD MILESTONE (D1). The book's two lists from Milestones and Pacing to
-     pick from, or the GM's own reason, for any crew member: the records on
-     Milestone advancement are ticked first, and a record on XP can be ticked
-     too. One writeCrew per Freelancer through the milestone op, which adds to
-     ch.milestones.major or .minor, the counters the #PRINT tab's Milestone
-     tracker keeps. Behind an armed confirm, logged in the ledger, tagged
-     {source: "milestone", awardId, ...}, undoable, and on offer as copyable
-     text for the crews whose records live on other devices.
+  /* A MILESTONE GOES THROUGH THE PAYDAY (the author, 10 Nov 2026), the way XP does: the two lists from Milestones and
+     Pacing to pick from, or the GM's own reason, and how many. The pick is part of the form (_p.msKey, msKind, msReason,
+     msAmount), so it is saved with the payday, counts as an unsaved change, and comes back on OPEN. It has no button of
+     its own and no ticks for who it is for: Credit the crew says who is paid, CREDIT THE CREW writes it in each
+     Freelancer's one write with their money and pay stub, tagged with the payday's id, and UNDO PAYDAY takes it back
+     with the rest. A sheet gets only its own track: the Milestone if it is on Milestones, the XP if it is on XP.
 
-     The pick is its own transient state (_ms), outside the payday form: an
-     award is a write of its own, so it never makes the form read as unsaved
-     and is never saved with a payday. What the form is paying only SUGGESTS a
-     pick: an Incursion being priced suggests clearing one, and a job or a fight
-     being paid suggests the item whose words name its difficulty column (the
-     base column: a clause moves the price, not the job), through the book's
-     byDifficulty. A Milk Run suggests nothing, because the page calls it rent.
-     The last award and its UNDO MILESTONE are read off the ledger (liveWrites,
-     by meta.awardId), so they survive a reload like every other undo here. */
-  function freshMs() {
-    return { key: null,                  // the picked item's key, "other" for the GM's own reason, or null
-             kind: "major",             // the kind of the GM's own reason
-             reason: "",                // the GM's own reason, as typed
-             amount: "",                // how many, as typed; blank is one
-             who: Object.create(null) };  // charId -> true or false, the GM's own ticks over the default
-  }
-  var _ms = freshMs();
+     What the form is paying only SUGGESTS a pick: an Incursion being priced suggests clearing one, and a job or a fight
+     being paid suggests the item whose words name its difficulty column (the base column: a clause moves the price,
+     not the job), through the book's byDifficulty. A Milk Run suggests nothing, because the page calls it rent.
+
+     AWARDS MADE BEFORE THIS (the AWARD MILESTONE button of 2026-10) are in ledgers still: writes tagged
+     {source: "milestone", awardId, ...}. They read and undo as they did. The last one standing keeps its card and its
+     UNDO MILESTONE, the undo strip reaches it, and "Already awarded for this job" still names it. */
   // a payday half filled in belongs to the campaign it was started on (js/gmstore.js perDesk)
-  gm.perDesk(function () { return { p: _p, base: _base, pend: _pend, ms: _ms }; }, function (k) {
-    if (k) { _p = k.p; _base = k.base; _pend = k.pend; _ms = k.ms; return; }
-    _p = fresh(); settle(); _pend = null; _ms = freshMs();
+  gm.perDesk(function () { return { p: _p, base: _base, pend: _pend }; }, function (k) {
+    if (k) { _p = k.p; _base = k.base; _pend = k.pend; return; }
+    _p = fresh(); settle(); _pend = null;
   });
   function MS() { return (P() && P().milestones) || null; }
   function msItems() { var M = MS(); return M ? (M.major || []).concat(M.minor || []) : []; }
@@ -1301,31 +1335,35 @@ EN.gmPayroll = (function () {
     return hit ? { key: hit.key, why: why } : null;
   }
 
-  /* Everything the panel shows, from _ms and the records. `amount` is null
-     when what is typed is not a whole number of 1 or more (blank is one).
-     A person's `next` is what their counters will read after the award. */
-  function msModel(m) {
-    var M = MS();
-    var item = msItem(_ms.key), other = _ms.key === "other";
-    var kind = item ? item.kind : other ? (_ms.kind === "minor" ? "minor" : "major") : null;
-    var reason = item ? item.text : other ? String(_ms.reason || "").trim() : "";
-    var raw = String(_ms.amount == null ? "" : _ms.amount).trim();
+  /* The pick as the form holds it. `amount` is null when what is typed is not a whole number from 1 to 99 (blank is
+     one; the database takes 99 at most on a write to another player's sheet). ok: there is a kind, a reason and a count. */
+  function pickOf() {
+    var item = msItem(_p.msKey), other = _p.msKey === "other";
+    var kind = item ? item.kind : other ? (_p.msKind === "minor" ? "minor" : "major") : null;
+    var reason = item ? item.text : other ? String(_p.msReason || "").trim() : "";
+    var raw = String(_p.msAmount == null ? "" : _p.msAmount).trim();
     var n = raw === "" ? 1 : Number(raw);
-    var amount = (isFinite(n) && n >= 1 && Math.floor(n) === n) ? n : null;
-    var above = Number(M.majorOnlyAbove);
-    var people = m.crew.members.filter(function (x) { return isObj(EN.gmEngine.sheetOf(x.charId)); }).map(function (x) {
-      var ch = EN.gmEngine.sheetOf(x.charId), ms = isObj(ch.milestones) ? ch.milestones : {};
-      var useXp = ch.useXp === true;
-      var on = own(_ms.who, x.charId) ? !!_ms.who[x.charId] : !useXp;
+    var amount = (isFinite(n) && n >= 1 && n <= 99 && Math.floor(n) === n) ? n : null;
+    return { item: item, other: other, kind: kind, reason: reason, amount: amount, ok: !!kind && !!reason && amount !== null };
+  }
+  // "1 Major", "2 Minor": the count a stub and the summary quote
+  function msCountKind(kind, amount) { return amount + " " + kindName(kind); }
+
+  /* Everything the panel shows, from the form and the records. A person's `next` is what their counters will read
+     after the payday. Only the credited Freelancers on Milestones are listed: they are who gets it. */
+  function msModel(m) {
+    var M = MS(), pk = m.msPick, above = Number(M.majorOnlyAbove);
+    var people = m.credit.filter(function (x) { return !x.useXp; }).map(function (x) {
+      var ch = EN.gmEngine.sheetOf(x.charId) || {}, ms = isObj(ch.milestones) ? ch.milestones : {};
       var cur = { major: msCount(ms.major), minor: msCount(ms.minor) };
       var next = { major: cur.major, minor: cur.minor };
-      if (on && kind && amount) next[kind] += amount;
-      return { charId: x.charId, name: x.name, tag: x.tag || x.name, caliber: x.caliber, level: Number(ch.level) || 0, useXp: useXp, on: on,
+      if (pk.ok) next[pk.kind] += pk.amount;
+      return { charId: x.charId, name: x.name, tag: x.tag || x.name, caliber: x.caliber, level: Number(ch.level) || 0,
                cur: cur, next: next, readyNow: msReady(cur), readyNext: msReady(next),
                pastCal: isFinite(above) && typeof x.caliber === "number" && x.caliber > above };
     });
-    return { kind: kind, reason: reason, amount: amount, item: item, other: other, people: people,
-             to: people.filter(function (p) { return p.on; }), ok: !!kind && !!reason && amount !== null, sugg: msSuggest() };
+    return { kind: pk.kind, reason: pk.reason, amount: pk.amount, item: pk.item, other: pk.other, people: people, to: people,
+             ok: pk.ok, sugg: msSuggest() };
   }
 
   function msLabel(kind, amount, reason) {
@@ -1336,7 +1374,7 @@ EN.gmPayroll = (function () {
   function msHead(kind, amount) {
     return "MILESTONE: " + (amount > 1 ? amount + " " : "") + kindName(kind).toUpperCase() + (amount > 1 ? " MILESTONES" : "");
   }
-  // the award as text, before it is made: each ticked Freelancer's counter, from and to
+  // the Milestone as text, before it is written: each Freelancer's counter on Milestones, from and to
   function msText(mm) {
     var other = mm.kind === "major" ? "minor" : "major";
     var L = [msHead(mm.kind, mm.amount), "For: " + stop(mm.reason)];
@@ -1348,9 +1386,9 @@ EN.gmPayroll = (function () {
     return L.join("\n");
   }
 
-  /* THE AWARDS STILL STANDING, read off the ledger. An award is the writes
-     sharing one awardId; its kind and amount are read from the ops written,
-     and its reason from the tag. */
+  /* THE AWARDS STILL STANDING that the old button made, read off the ledger. An award is the writes sharing one awardId;
+     its kind and amount are read from the ops written, and its reason from the tag. A Milestone a payday wrote is not
+     one of these: it is the payday's, and UNDO PAYDAY takes it back. */
   function msOp(w) { return (Array.isArray(w.ops) ? w.ops : []).filter(function (o) { return o && o.op === "milestone"; })[0] || null; }
   function msGroups(ws) {
     var by = Object.create(null), out = [];
@@ -1385,32 +1423,7 @@ EN.gmPayroll = (function () {
     return L.join("\n");
   }
 
-  function awardMilestone() {
-    var mm = msModel(model());
-    if (!mm.ok || !mm.to.length) { toast("Pick a milestone and tick who it is for first."); refresh(); return; }
-    var meta = { source: "milestone", awardId: gm.uid(), kind: mm.kind, amount: mm.amount,
-                 key: mm.item ? mm.item.key : "other", reason: mm.reason,
-                 jobId: _p.jobId || null, paydayId: _p.paydayId || null };
-    var label = msLabel(mm.kind, mm.amount, mm.reason), done = [], refused = [];
-    mm.to.forEach(function (p) {
-      var id = gm.writeCrew(p.charId, label, { op: "milestone", kind: mm.kind, amount: mm.amount }, meta);
-      if (id) done.push(p.name); else refused.push(p.name);
-    });
-    if (!done.length) {
-      toast(refused.length ? "Nothing was written: the records refused it." : "Nothing to award.");
-      EN.app.render();
-      return;
-    }
-    // the pick is spent; who is ticked stays for the next award
-    var who = _ms.who;
-    _ms = freshMs();
-    _ms.who = who;
-    toast("Milestone awarded: " + (mm.amount > 1 ? mm.amount + " " : "") + kindName(mm.kind) + " to " + joinNames(done) + "." +
-      (refused.length ? " Refused: " + refused.join(", ") + "." : "") + " UNDO MILESTONE takes it back.");
-    EN.app.render();
-  }
-
-  /* UNDO MILESTONE walks the award's writes back newest first, while the
+  /* UNDO MILESTONE walks an old award's writes back newest first, while the
      newest undoable write is one of them; a newer write on top stops it, the
      same rule UNDO PAYDAY keeps. */
   function undoAward(id) {
@@ -1430,28 +1443,25 @@ EN.gmPayroll = (function () {
   }
 
   function msRow(it, suggested) {
-    var on = _ms.key === it.key;
+    var on = _p.msKey === it.key;
     return el("label", { style: { display: "flex", gap: "8px", alignItems: "flex-start", padding: "4px 0", cursor: "pointer",
                                   borderBottom: "1px solid var(--border)" } }, [
       el("input", { type: "radio", name: "pay-ms-pick", checked: on, dataset: { pay: "ms-pick-" + it.key }, style: { marginTop: "3px" },
-        onchange: function () { _ms.key = it.key; refresh(); } }),
+        onchange: function () { _p.msKey = it.key; refresh(); } }),
       el("span", { style: { flex: "1 1 auto", minWidth: 0, color: on ? "var(--accent)" : "var(--text)", fontWeight: on ? 600 : 400 }, text: it.text }),
       suggested ? el("span.chip", { dataset: { pay: "ms-suggested" },
         style: { fontSize: "9.5px", color: "var(--gold)", borderColor: "var(--gold)", flex: "0 0 auto" }, text: "SUGGESTED" }) : null
     ]);
   }
 
+  // who gets it, and where it leaves them: read only, since Credit the crew below says who is paid
   function msPersonRow(p, mm) {
     var counts = "Major " + p.cur.major + DOT + "Minor " + p.cur.minor;
-    var moves = p.on && mm.kind && mm.amount !== null;
+    var moves = mm.kind && mm.amount !== null;
     var ready = moves ? p.readyNext : p.readyNow;
-    return el("label", { style: { display: "flex", gap: "8px", alignItems: "center", padding: "3px 0", cursor: "pointer", flexWrap: "wrap" } }, [
-      el("input", { type: "checkbox", checked: p.on, dataset: { pay: "ms-who-" + p.charId }, onchange: function () {
-        _ms.who[p.charId] = !p.on;
-        refresh();
-      } }),
-      el("span", { style: { fontWeight: 600, color: p.on ? "var(--text)" : "var(--text3)" }, text: p.tag }),
-      el("span.chip", { style: { fontSize: "9.5px" }, text: (p.useXp ? "XP" : "MILESTONES") + DOT + (p.caliber ? "C" + p.caliber : "C?") + DOT + "L" + (p.level || "?") }),
+    return el("div", { dataset: { pay: "ms-who-" + p.charId }, style: { display: "flex", gap: "8px", alignItems: "center", padding: "3px 0", flexWrap: "wrap" } }, [
+      el("span", { style: { fontWeight: 600 }, text: p.tag }),
+      el("span.chip", { style: { fontSize: "9.5px" }, text: "MILESTONES" + DOT + (p.caliber ? "C" + p.caliber : "C?") + DOT + "L" + (p.level || "?") }),
       el("span.help", { dataset: { pay: "ms-count-" + p.charId }, style: { margin: 0 },
         text: counts + (moves ? " → " + kindName(mm.kind) + " " + p.next[mm.kind] : "") }),
       ready ? el("span.chip.on", { dataset: { pay: "ms-ready-" + p.charId }, style: { fontSize: "9.5px" }, text: "READY TO LEVEL" }) : null
@@ -1470,7 +1480,7 @@ EN.gmPayroll = (function () {
       kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginBottom: "8px" } }, [
         el("span.help", { dataset: { pay: "ms-suggest" }, style: { margin: 0, color: "var(--gold)", flex: "1 1 220px", minWidth: 0 },
           text: sg.why + " Suggested from the " + kindName(si.kind) + " list: \"" + si.text + "\"." }),
-        _ms.key !== si.key ? el("button.btn.sm", { dataset: { pay: "ms-use-suggest" }, onclick: function () { _ms.key = si.key; refresh(); } }, "PICK IT") : null
+        _p.msKey !== si.key ? el("button.btn.sm", { dataset: { pay: "ms-use-suggest" }, onclick: function () { _p.msKey = si.key; refresh(); } }, "PICK IT") : null
       ]));
     }
 
@@ -1491,25 +1501,22 @@ EN.gmPayroll = (function () {
     kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "8px" } }, [
       el("label", { style: { display: "flex", gap: "6px", alignItems: "center", cursor: "pointer", flex: "0 0 auto" } }, [
         el("input", { type: "radio", name: "pay-ms-pick", checked: otherOn, dataset: { pay: "ms-pick-other" },
-          onchange: function () { _ms.key = "other"; refresh(); } }),
+          onchange: function () { _p.msKey = "other"; refresh(); } }),
         el("span", { text: "Something else" })
       ]),
       el("div", { style: { flex: "1 1 200px", minWidth: 0 } }, [
-        textIn("msReason", _ms.reason, "What the milestone was for", function (v) { _ms.reason = v; _ms.key = "other"; })
+        textIn("msReason", _p.msReason, "What the milestone was for", function (v) { _p.msReason = v; _p.msKey = "other"; })
       ]),
-      chip("MAJOR", otherOn && _ms.kind !== "minor", "ms-kind-major", function () { _ms.kind = "major"; _ms.key = "other"; refresh(); }),
-      chip("MINOR", otherOn && _ms.kind === "minor", "ms-kind-minor", function () { _ms.kind = "minor"; _ms.key = "other"; refresh(); })
+      chip("MAJOR", otherOn && _p.msKind !== "minor", "ms-kind-major", function () { _p.msKind = "major"; _p.msKey = "other"; refresh(); }),
+      chip("MINOR", otherOn && _p.msKind === "minor", "ms-kind-minor", function () { _p.msKind = "minor"; _p.msKey = "other"; refresh(); })
     ]));
 
-    // who it is for
-    kids.push(EN.ui.sectionTitle("Who it is for"));
-    if (!mm.people.length) kids.push(help("No Freelancer records on this device. Copy the milestone to the crew instead.", { margin: 0 }));
-    mm.people.forEach(function (p) { kids.push(msPersonRow(p, mm)); });
-    var onXp = mm.to.filter(function (p) { return p.useXp; });
-    if (onXp.length) {
-      kids.push(el("p.help", { dataset: { pay: "ms-onxp" }, style: { margin: "4px 0 0", color: "var(--text2)" },
-        text: "On XP, so their #PRINT tab shows milestone counts only once the record is switched to Milestone mode: " +
-              joinNames(onXp.map(function (p) { return p.name; })) + "." }));
+    // who gets it: the credited Freelancers on Milestones, as Credit the crew below has them
+    if (mm.people.length) {
+      kids.push(EN.ui.sectionTitle("Gets it"));
+      mm.people.forEach(function (p) { kids.push(msPersonRow(p, mm)); });
+    } else if (m.credit.length) {
+      kids.push(help("Nobody credited here is on Milestones.", { margin: "8px 0 0" }));
     }
     var slow = msNote("slowDown"), past = mm.to.filter(function (p) { return p.pastCal; });
     if (slow && mm.kind === "minor" && past.length) {
@@ -1533,44 +1540,26 @@ EN.gmPayroll = (function () {
       });
     }
 
-    // how many, the award, and the same award as text
+    // how many, and the same Milestone as text
     var text = mm.ok ? msText(mm) : "";
-    var awardBtn;
-    if (mm.ok && mm.to.length) {
-      // keyed on the whole award, so changing any part of it disarms the button instead of confirming the new one
-      var key = "pay:ms-award:" + mm.kind + ":" + _ms.key + ":" + mm.amount + ":" + mm.to.map(function (p) { return p.charId; }).join(",") + ":" + mm.reason;
-      var many = mm.amount > 1 ? mm.amount + " " + kindName(mm.kind) + " Milestones" : "1 " + kindName(mm.kind) + " Milestone";
-      awardBtn = EN.ui.armButton(key, {
-        cls: ".btn.sm", label: "AWARD MILESTONE", armedLabel: "AWARD TO " + mm.to.length + "?",
-        title: "Add this milestone to each ticked record",
-        armedTitle: "Adds " + many + " to " + joinNames(mm.to.map(function (p) { return p.name; })) + ". UNDO MILESTONE takes it back.",
-        onConfirm: awardMilestone
-      });
-      awardBtn.setAttribute("data-pay", "ms-award");
-      if (!EN.ui.isArmed(key)) { awardBtn.style.color = "var(--accent)"; awardBtn.style.borderColor = "var(--accent)"; }
-    } else {
-      awardBtn = el("button.btn.sm", { disabled: true, dataset: { pay: "ms-award" },
-        title: !mm.kind ? "Pick a milestone first" : !mm.reason ? "Say what the milestone was for" : mm.amount === null ? "How many is a whole number, 1 or more"
-          : "Tick who it is for" }, "AWARD MILESTONE");
-    }
     kids.push(el("div.row.wrap", { style: { gap: "10px", alignItems: "flex-end", marginTop: "10px" } }, [
-      field("How many", numIn("msAmt", _ms.amount, "70px", function (v) { _ms.amount = v; }, { min: "1", step: "1", placeholder: "1" })),
-      awardBtn,
+      field("How many", numIn("msAmt", _p.msAmount, "70px", function (v) { _p.msAmount = v; }, { min: "1", max: "99", step: "1", placeholder: "1" })),
       el("button.btn.sm", { dataset: { pay: "ms-copy" }, disabled: !mm.ok, title: mm.ok ? "Copy this milestone as text" : "Pick a milestone first",
         onclick: function () { copyText(text, "The milestone"); } }, "COPY")
     ]));
-    if (mm.amount === null) kids.push(help("How many is a whole number, 1 or more.", { color: "var(--warn)" }));
+    if (mm.amount === null) kids.push(help("How many is a whole number, 1 to 99.", { color: "var(--warn)" }));
     if (mm.ok) {
+      kids.push(help("CREDIT THE CREW writes it with the money, in each Freelancer's one write, and UNDO PAYDAY takes it back with the rest.", { margin: "8px 0 0" }));
       kids.push(el("div.mono", { dataset: { pay: "ms-text" },
         style: { whiteSpace: "pre-wrap", fontSize: "12px", lineHeight: "1.5", background: "var(--bg2)", border: "1px solid var(--border2)",
                  borderRadius: "4px", padding: "10px 12px", marginTop: "8px", userSelect: "text", overflowWrap: "anywhere" }, text: text }));
     } else if (mm.other && !mm.reason) {
-      kids.push(help("Type what the milestone was for to award it."));
+      kids.push(help("Type what the milestone was for to add it to this payday."));
     } else if (!mm.kind) {
-      kids.push(help("Pick a milestone from the lists, or type your own, to award it."));
+      kids.push(help("Pick a milestone from the lists, or type your own, to add it to this payday."));
     }
 
-    // the last award still standing, with its own undo
+    // the last award the old button made, still standing, with its own undo
     var la = lastAward();
     if (la) {
       var lt = awardText(la), lbl = msLabel(la.kind, la.amount, la.reason);
@@ -1605,25 +1594,34 @@ EN.gmPayroll = (function () {
     L.push(titled("PAYDAY", m.title));
     var names = m.crew.members.map(function (x) { return x.name; });
     L.push("Crew: " + m.crew.headcount + " at Caliber " + m.crew.caliber + (names.length ? " (" + names.join(", ") + ")" : "") + ".");
-    L.push("Contract: " + q.name + " at Caliber " + q.caliber +
-      (q.shift ? " (from " + q.baseName + ", clauses " + signed(q.shift) + (q.clamped ? ", held at the grid's edge" : "") + ")" : "") +
-      ", printed " + q.band + ". Total " + fmtG(m.contract) + ".");
-    if (m.nexus > 0) L.push("Nexus: " + fmtNx(m.nexus) + ".");
-    m.bounties.forEach(function (b) {
-      L.push("Bounty: " + b.name + ", " + commas(b.xp) + " XP at " + fmtG(b.rate) + " per XP" + (b.alive ? ", alive" : "") + ": " + fmtG(b.value) + ".");
-    });
-    m.salvage.forEach(function (s) { L.push("Salvage: " + s.name + ": " + fmtG(s.value) + "."); });
-    L.push("Split: " + fmtG(sp.total) + " through the fixer. Fixer " + sp.fixerPct + " percent, " + fmtG(sp.fixer) +
-      ". Crew Kit " + sp.kitPct + " percent, " + fmtG(sp.kit) + ". " + fmtG(sp.each) + " each, " + fmtG(sp.over) + " left over.");
-    if (m.sTotal > 0) {
-      L.push("Salvage split: " + fmtG(ss.total) + (ss.kit ? ", Crew Kit " + fmtG(ss.kit) : "") + ". " +
-        fmtG(ss.each) + " each, " + fmtG(ss.over) + " left over.");
+    if (m.noPay) {
+      L.push("No pay this time.");
+    } else {
+      L.push("Contract: " + q.name + " at Caliber " + q.caliber +
+        (q.shift ? " (from " + q.baseName + ", clauses " + signed(q.shift) + (q.clamped ? ", held at the grid's edge" : "") + ")" : "") +
+        ", printed " + q.band + ". Total " + fmtG(m.contract) + ".");
+      if (m.nexus > 0) L.push("Nexus: " + fmtNx(m.nexus) + ".");
+      m.bounties.forEach(function (b) {
+        L.push("Bounty: " + b.name + ", " + commas(b.xp) + " XP at " + fmtG(b.rate) + " per XP" + (b.alive ? ", alive" : "") + ": " + fmtG(b.value) + ".");
+      });
+      m.salvage.forEach(function (s) { L.push("Salvage: " + s.name + ": " + fmtG(s.value) + "."); });
+      L.push("Split: " + fmtG(sp.total) + " through the fixer. Fixer " + sp.fixerPct + " percent, " + fmtG(sp.fixer) +
+        ". Crew Kit " + sp.kitPct + " percent, " + fmtG(sp.kit) + ". " + fmtG(sp.each) + " each, " + fmtG(sp.over) + " left over.");
+      if (m.sTotal > 0) {
+        L.push("Salvage split: " + fmtG(ss.total) + (ss.kit ? ", Crew Kit " + fmtG(ss.kit) : "") + ". " +
+          fmtG(ss.each) + " each, " + fmtG(ss.over) + " left over.");
+      }
+      L.push("Each Freelancer: " + fmtG(m.eachG) + (m.nexEach > 0 ? " and " + fmtNx(m.nexEach) : "") + ".");
     }
-    L.push("Each Freelancer: " + fmtG(m.eachG) + (m.nexEach > 0 ? " and " + fmtNx(m.nexEach) : "") + ".");
-    if (m.xpTotal > 0) {
+    // only the track the crew's sheets take: a Milestone campaign's payday doesn't mention XP, nor an XP campaign's a Milestone
+    if (m.track.xp && m.xpTotal > 0) {
       L.push("XP: " + commas(m.xpTotal) + " to every Freelancer on XP" +
         (m.xpPaid && !m.xpWrite ? ", already paid with " + titled("Payday", m.xpPaid.pd.title) + "."
-          : m.tAward && !m.xpWrite ? ", already awarded at the Table." : ". Milestone tables skip it."));
+          : m.tAward && !m.xpWrite ? ", already awarded at the Table." : "."));
+    }
+    if (m.track.ms && m.msPick.ok) {
+      L.push("Milestone: " + msCountKind(m.msPick.kind, m.msPick.amount) + ", " + stop(m.msPick.reason) +
+        (m.track.xp ? " Only Freelancers on Milestones get it." : ""));
     }
     if ((_p.cred || "").trim()) L.push("Cred: " + _p.cred.trim());
     if ((_p.heat || "").trim()) L.push("Heat: " + _p.heat.trim());
@@ -1631,13 +1629,18 @@ EN.gmPayroll = (function () {
   }
   // the #POST pay stub: what this one Freelancer got, in their own inbox
   function stubText(m, x) {
-    var L = [titled("Payday", m.title), "Your share: " + fmtG(m.eachG)];
+    // the stub lists only what came: no share line on a payday with no pay, XP only for a sheet on XP, the Milestone only for one on Milestones
+    var L = [titled("Payday", m.title)];
+    if (!m.noPay) L.push("Your share: " + fmtG(m.eachG));
     if (m.nexEach > 0) L.push("Nexus: " + fmtNx(m.nexEach));
-    if (m.xpTotal > 0) {
-      L.push(!x.useXp ? "XP: none, you level on milestones"
-        : m.xpWrite > 0 ? "XP: " + commas(m.xpWrite)
-        : m.xpPaid ? "XP: " + commas(m.xpTotal) + ", paid with an earlier payday"
-        : "XP: " + commas(m.xpTotal) + ", awarded at the Table");
+    if (x.useXp) {
+      if (m.xpTotal > 0) {
+        L.push(m.xpWrite > 0 ? "XP: " + commas(m.xpWrite)
+          : m.xpPaid ? "XP: " + commas(m.xpTotal) + ", paid with an earlier payday"
+          : "XP: " + commas(m.xpTotal) + ", awarded at the Table");
+      }
+    } else if (m.msPick.ok) {
+      L.push("Milestone: " + msCountKind(m.msPick.kind, m.msPick.amount) + ", " + stop(m.msPick.reason));
     }
     if ((_p.cred || "").trim()) L.push("Cred: " + _p.cred.trim());
     if ((_p.heat || "").trim()) L.push("Heat: " + _p.heat.trim());
@@ -1647,20 +1650,27 @@ EN.gmPayroll = (function () {
   function farFixNote(ws) {
     return ws.some(function (w) { return !!(w && w.far); }) ? " Another player's sheet gets a correction through #POST." : "";
   }
-  function opsFor(m, x, now) {
+  // what lands on the sheet: Glimmer, Nexus, and the XP or the Milestone its type takes (a row may carry up to four ops with the stub)
+  function numsFor(m, x) {
     var ops = [];
     if (m.eachG > 0) ops.push({ op: "glimmer", amount: m.eachG });
     if (m.nexEach > 0) ops.push({ op: "nexus", amount: m.nexEach });
-    // D5, and only on an XP table: a milestone record never takes XP. xpWrite is
+    // D5, and only on a sheet on XP: one on Milestones never takes XP. xpWrite is
     // 0 when the Table's AWARD XP already paid this fight's (see tableAward)
     if (x.useXp && m.xpWrite > 0) ops.push({ op: "xp", amount: m.xpWrite });
+    // and a sheet on Milestones takes the payday's Milestone, never XP
+    if (!x.useXp && m.msPick.ok) ops.push({ op: "milestone", kind: m.msPick.kind, amount: m.msPick.amount });
+    return ops;
+  }
+  function opsFor(m, x, now) {
+    var ops = numsFor(m, x);
     // another player's sheet always gets the stub: a letter is how they hear what just landed on it
     if (_p.stub || (ops.length && gm.isCampaignRow(x.charId))) ops.push({ op: "post", mail: { from: "Payroll", subj: titled("Payday", m.title), when: clock(now), body: stubText(m, x) } });
     return ops;
   }
   function recordFrom(m) {
     return {
-      kind: "payday", at: Date.now(), jobId: _p.jobId || null, title: m.title,
+      kind: "payday", at: Date.now(), jobId: _p.jobId || null, title: m.title, noPay: !!m.noPay,
       // the fight this payday paid, by its snapshot's stamp: the Table's XP award reads it to avoid paying XP twice
       encounterAt: (_p.enc && typeof _p.enc.at === "number") ? _p.enc.at : null,
       crew: m.credit.map(function (x) { return { charId: x.charId, name: x.name }; }),
@@ -1675,6 +1685,8 @@ EN.gmPayroll = (function () {
       each: { glimmer: m.eachG, nexus: m.nexEach },
       xp: { total: m.xpTotal, each: m.xpTotal, objective: m.xpObj, written: m.xpWrite,
             tableAward: m.tAward ? m.tAward.total : 0 },
+      // the Milestone this payday carried, or null (an older payday has none)
+      milestone: m.msPick.ok ? { kind: m.msPick.kind, amount: m.msPick.amount, reason: m.msPick.reason, key: m.msPick.item ? m.msPick.item.key : "other" } : null,
       ledgerLines: { cred: (_p.cred || "").trim(), heat: (_p.heat || "").trim() },
       writeIds: [], credited: false, undone: false,
       summary: summaryText(m),
@@ -1726,6 +1738,7 @@ EN.gmPayroll = (function () {
     var m = model();
     if (m.paid) { toast("This payday is already credited."); return; }
     if (!m.credit.length) { toast("Nobody to credit. Copy the summary instead."); return; }
+    if (m.nothing) { toast("Nothing to credit: no pay this time, and no XP or Milestone for the crew's sheets."); return; }
     if (m.dup && again !== true) {
       toast("Held: " + titled("Payday", m.dup.pd.title) + " already paid this " + (m.dup.fight ? "fight" : "job") + ". CREDIT ANYWAY pays it again.");
       EN.app.render();
@@ -1747,7 +1760,8 @@ EN.gmPayroll = (function () {
       return;
     }
     _p.paydayId = pdId;
-    var jobPrev = markJobPaid(pdId);
+    // a payday with no pay didn't pay the job: it stays as it was, and the earlier-payday hold still finds this one by its job
+    var jobPrev = m.noPay ? null : markJobPaid(pdId);
     var r = recordFrom(m);
     r.id = pdId;
     r.crew = paid.map(function (x) { return { charId: x.charId, name: x.name }; });
@@ -1757,10 +1771,13 @@ EN.gmPayroll = (function () {
     r.jobPrev = jobPrev;
     gm.put("ledger", r, { silent: true });
     settle();
-    var xpN = paid.filter(function (x) { return x.useXp; }).length;
-    toast("Credited " + paid.length + " " + plural(paid.length, "Freelancer") + ": " + fmtG(m.eachG) + " each" +
-      (m.nexEach > 0 ? ", " + fmtNx(m.nexEach) + " Nexus" : "") +
-      (m.xpWrite > 0 && xpN ? ", " + commas(m.xpWrite) + " XP to " + xpN + " on XP" : "") +
+    var xpN = paid.filter(function (x) { return x.useXp; }).length, msN = paid.length - xpN;
+    var bits = [];
+    if (!m.noPay) bits.push(fmtG(m.eachG) + " each");
+    if (m.nexEach > 0) bits.push(fmtNx(m.nexEach) + " Nexus");
+    if (m.xpWrite > 0 && xpN) bits.push(commas(m.xpWrite) + " XP to " + xpN + " on XP");
+    if (m.msPick.ok && msN) bits.push(msCountKind(m.msPick.kind, m.msPick.amount) + " Milestone to " + msN + " on Milestones");
+    toast("Credited " + paid.length + " " + plural(paid.length, "Freelancer") + (bits.length ? ": " + bits.join(", ") : "") +
       (_p.stub ? ", and a pay stub" : "") + (refused.length ? ". Refused: " + refused.join(", ") : "") + ".");
     EN.app.render();
   }
@@ -1861,10 +1878,13 @@ EN.gmPayroll = (function () {
     if (!all.length) kids.push(help("No Freelancer records on this device. Copy the summary to the crew instead.", { margin: 0 }));
     all.forEach(function (x) {
       var on = _p.noCredit.indexOf(x.charId) === -1;
-      var ch = EN.gmEngine.sheetOf(x.charId), onXp = !!(ch && ch.useXp === true);
-      var gets = fmtG(m.eachG) + (m.nexEach > 0 ? DOT + fmtNx(m.nexEach) : "") +
-        (m.xpTotal > 0 ? DOT + (!onXp ? "milestones, no XP" : m.xpWrite > 0 ? commas(m.xpWrite) + " XP"
-          : m.xpPaid ? "XP already paid" : "XP already awarded") : "");
+      var onXp = onXpOf(EN.gmEngine.sheetOf(x.charId));
+      var gets = [];
+      if (!m.noPay) gets.push(fmtG(m.eachG));
+      if (m.nexEach > 0) gets.push(fmtNx(m.nexEach));
+      if (onXp) { if (m.xpTotal > 0) gets.push(m.xpWrite > 0 ? commas(m.xpWrite) + " XP" : m.xpPaid ? "XP already paid" : "XP already awarded"); }
+      else if (m.msPick.ok) gets.push(msCountKind(m.msPick.kind, m.msPick.amount) + " Milestone");
+      gets = gets.join(DOT);
       kids.push(el("label", { style: { display: "flex", gap: "8px", alignItems: "center", padding: "3px 0", cursor: "pointer", flexWrap: "wrap" } }, [
         el("input", { type: "checkbox", checked: on, dataset: { pay: "cc-" + x.charId }, onchange: function () {
           if (on) _p.noCredit.push(x.charId); else _p.noCredit = _p.noCredit.filter(function (k) { return k !== x.charId; });
@@ -1886,7 +1906,7 @@ EN.gmPayroll = (function () {
     /* AN EARLIER PAYDAY STILL STANDS for this fight or job (F8): it is named,
        CREDIT THE CREW is held, and paying again takes the GM's own armed CREDIT
        ANYWAY, a separate button, so the usual two clicks cannot pay twice. */
-    var canCredit = !m.paid && m.credit.length > 0;
+    var canCredit = !m.paid && m.credit.length > 0 && !m.nothing;
     var held = canCredit && !!m.dup;
     if (held) {
       /* every earlier payday that matches is named, the newest first, so an
@@ -1912,6 +1932,13 @@ EN.gmPayroll = (function () {
       (d.others || []).forEach(function (h) {
         dupKids.push(el("p", { style: { margin: "2px 0 0", color: "var(--warn)", fontWeight: 600 }, text: "Also paid: " + lineOf(h) }));
       });
+      // a Milestone it carried: CREDIT ANYWAY writes what this form holds, a Milestone included
+      all.forEach(function (h) {
+        if (!h.ms || !h.msNames.length) return;
+        dupKids.push(el("p", { dataset: { pay: "dup-ms" }, style: { margin: "2px 0 0", color: "var(--warn)" },
+          text: titled("Payday", h.pd.title) + " carried " + msCountKind(h.ms.kind, h.ms.amount) + " Milestone" + (h.ms.reason ? " (" + h.ms.reason + ")" : "") +
+                " to " + joinNames(h.msNames) + "." }));
+      });
       dupKids.push(help("CREDIT THE CREW is held so the crew is not paid twice. " +
         (allImported
           ? (many ? "Those paydays" : "That payday") + " came in with an imported GM backup, so " + (many ? "they" : "it") +
@@ -1925,7 +1952,7 @@ EN.gmPayroll = (function () {
     if (canCredit && !held) {
       creditBtn = EN.ui.armButton("pay:credit", {
         cls: ".btn.sm", label: "CREDIT THE CREW", armedLabel: "CREDIT " + m.credit.length + "?",
-        title: "Write each share to the crew's records", armedTitle: "Writes Glimmer, Nexus, XP and the pay stub to " + m.credit.length +
+        title: "Write each share to the crew's records", armedTitle: "Writes Glimmer, Nexus, the XP or the Milestone, and the pay stub to " + m.credit.length +
           " " + plural(m.credit.length, "record") + ". UNDO PAYDAY puts them back.",
         onConfirm: function () { credit(false); }
       });
@@ -1933,7 +1960,7 @@ EN.gmPayroll = (function () {
       if (!EN.ui.isArmed("pay:credit")) { creditBtn.style.color = "var(--success)"; creditBtn.style.borderColor = "var(--success)"; }
     } else {
       creditBtn = el("button.btn.sm", { disabled: true, dataset: { pay: "credit" },
-        title: m.paid ? "Already credited" : held ? "Held: an earlier payday already paid this" : "Nobody to credit" },
+        title: m.paid ? "Already credited" : held ? "Held: an earlier payday already paid this" : m.nothing ? "Nothing to credit: no pay this time, and no award picked" : "Nobody to credit" },
         m.paid ? "CREDITED" : "CREDIT THE CREW");
     }
     // a new payday keeps the GM's fixer and Crew Kit percentages and the stub choice
@@ -1988,8 +2015,9 @@ EN.gmPayroll = (function () {
           el("span", { style: { fontWeight: 600 }, text: pd.title || "Payday" }),
           el("span.chip", { style: { fontSize: "9.5px", color: st[1], borderColor: st[1] }, text: st[0] }),
           current ? el("span.chip", { style: { fontSize: "9.5px" }, text: "OPEN" }) : null,
-          el("span.help", { style: { margin: 0 }, text: stamp(pd.at) + DOT + "contract " + fmtG(c.total) + DOT +
-            fmtG(each.glimmer) + " each" + DOT + (pd.crew || []).length + " credited" })
+          el("span.help", { style: { margin: 0 }, text: stamp(pd.at) + DOT + (pd.noPay ? "no pay" : "contract " + fmtG(c.total) + DOT +
+            fmtG(each.glimmer) + " each") + (isObj(pd.milestone) ? DOT + msCountKind(pd.milestone.kind, pd.milestone.amount) + " Milestone" : "") +
+            DOT + (pd.crew || []).length + " credited" })
         ]),
         el("div.row", { style: { gap: "6px" } }, [
           current ? null : openButton(pd, "pd-open-" + pd.id, "OPEN"),
@@ -2267,13 +2295,21 @@ EN.gmPayroll = (function () {
     if (strip && strip.nodeType) blocks.push(strip);
     var pend = pendPanel();
     if (pend) { blocks.push(pend); blocks.push(gap()); }
-    blocks = blocks.concat([
-      headPanel(m), gap(), contractPanel(m), gap(), bountyPanel(m), gap(), salvagePanel(m), gap(), splitPanel(m), gap(),
-      el("div.row.wrap", { style: { gap: "12px", alignItems: "stretch" } }, [
-        el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [xpPanel(m)]),
-        el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [ledgerPanel()])
-      ]),
-      gap(), msPanel(m), gap(), summaryPanel(m)]);
+    /* HEADS UP while the crew's sheets don't match (the author, 10 Nov 2026): a party is all XP or all Milestones, and this is
+       where it changes what gets paid. The Campaign tab draws the same words above its setting. */
+    var heads = null;
+    try { heads = (EN.gmCampaign && EN.gmCampaign.headsUp) ? EN.gmCampaign.headsUp(EN.gmEngine.advancePicture({ crew: m.crew })) : null; } catch (e) { heads = null; }
+    if (heads) { blocks.push(heads); blocks.push(gap()); }
+    blocks.push(headPanel(m)); blocks.push(gap());
+    // NO PAY THIS TIME folds the money panels away: the payday carries only the award
+    if (!m.noPay) blocks = blocks.concat([contractPanel(m), gap(), bountyPanel(m), gap(), salvagePanel(m), gap(), splitPanel(m), gap()]);
+    // a party is all XP or all Milestones: a payday shows only the panel its sheets take (both while the crew is split)
+    var lower = [];
+    if (m.track.xp) lower.push(el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [xpPanel(m)]));
+    lower.push(el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [ledgerPanel()]));
+    blocks.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "stretch" } }, lower));
+    if (m.track.ms) { blocks.push(gap()); blocks.push(msPanel(m)); }
+    blocks.push(gap()); blocks.push(summaryPanel(m));
     var past = pastPanel();
     if (past) { blocks.push(gap()); blocks.push(past); }
     return el("div", null, blocks);
@@ -2344,7 +2380,7 @@ EN.gmPayroll = (function () {
       // a payload that carries only a milestone pick is for the Milestones panel and leaves the form as it is
       var hm = payloadMs(h);
       if (!own(h, "milestone") || payloadForm(h)) receive(h);
-      if (hm) _ms.key = hm;
+      if (hm) _p.msKey = hm;
     }
     if (!P() || !EN.gmEngine || !EN.engine.splitPayout) {
       mount.appendChild(el("div", null, [heading("Payroll", "// paying the crew"),

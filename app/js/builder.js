@@ -2861,17 +2861,25 @@ EN.builder = (function () {
     // Advancement Type, mode toggle lives in the header (XP MODE / MILESTONE)
     blocks.push(el("div", { style: { height: "14px" } }));
     var advCollapsed = isCollapsed("advType");
+    /* A campaign that has chosen its Advancement Type decides it (js/campaigns.js): the switch shows that type, can't be
+       pressed, and says who set it. The sheet's own useXp is left alone underneath, so its choice is back when the
+       character leaves. A campaign that has not chosen leaves the switch the player's own. */
+    var camp = EN.campaigns, onXp = camp && camp.usesXp ? camp.usesXp(ch) : !!ch.useXp;
+    var lockName = camp && camp.lockedBy ? camp.lockedBy(ch) : "";
     var modeToggle = el("div.row", { style: { gap: "4px" } }, [
-      el("button.btn.sm" + (ch.useXp ? ".primary" : ""), { onclick: function (e) { e.stopPropagation(); store.update(function (c) { c.useXp = true; }); } }, "XP MODE"),
-      el("button.btn.sm" + (!ch.useXp ? ".primary" : ""), { onclick: function (e) { e.stopPropagation(); store.update(function (c) { c.useXp = false; }); } }, "MILESTONE")
+      el("button.btn.sm" + (onXp ? ".primary" : ""), { disabled: !!lockName, "data-adv": "xp", onclick: function (e) { e.stopPropagation(); store.update(function (c) { c.useXp = true; }); } }, "XP MODE"),
+      el("button.btn.sm" + (!onXp ? ".primary" : ""), { disabled: !!lockName, "data-adv": "milestone", onclick: function (e) { e.stopPropagation(); store.update(function (c) { c.useXp = false; }); } }, "MILESTONE")
     ]);
-    var advBody = ch.useXp
+    var advTrack = onXp
       ? el("div.row.wrap", { style: { gap: "12px", alignItems: "flex-end" } }, [
           el("div.field", { style: { margin: 0, minWidth: "160px" } }, [el("label.fl", { text: "Current XP" }),
             el("input", { type: "number", value: ch.xp || 0, oninput: function (e) { store.update(function (c) { c.xp = Number(e.target.value) || 0; }, { silent: true }); } })]),
           d.xpForNext != null ? el("span.help", { text: "Next level at " + d.xpForNext + " XP" }) : el("span.help", { text: "Max level." })
         ])
       : milestoneTracker(ch);
+    var advBody = lockName
+      ? el("div", null, [el("p.help", { "data-adv": "locked", style: { marginTop: 0, marginBottom: "10px" }, text: "Set by your Admin for " + lockName + "." }), advTrack])
+      : advTrack;
     var advPanel = el("div.panel", null, [
       el("div.panel-h.clickable", { onclick: function () { toggleCollapse("advType"); } }, [
         el("h3", { text: "Advancement Type" }), el("span.collapse-caret", { text: advCollapsed ? "▸" : "▾" }), EN.ui.ruleChip("sk-advance/levels-and-xp"), el("span.attn-spacer"), modeToggle

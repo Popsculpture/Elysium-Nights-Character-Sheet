@@ -20,6 +20,13 @@
    the gear catalog attached. A message can go alone, and so can a package. The list below it shows
    this account's own sends: the read policy gives them to the sender and the character's owner,
    and nobody else. It is the player's app that files a message on the record (js/cloud.js).
+
+   ADVANCEMENT TYPE (the author, 10 Nov 2026). A campaign levels on XP or on Milestones, all of it or none. The
+   setting sits on the campaign (campaigns.advancement), and the Admin and co-Admins set it here: a press
+   asks once more, then the database stores it and sends every character a letter in the same step. While the
+   crew's sheets don't match and nothing is set, a heads-up sits above it. The heads-up and its buttons are
+   also drawn by Payroll (headsUp below), where it changes what gets paid; with no campaign its buttons align
+   the records on this device instead, one undoable write each, and never touch a record another player holds.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -109,6 +116,83 @@ EN.gmCampaign = (function () {
     } catch (e) {}
     failed();
   }
+
+  /* ---- ADVANCEMENT TYPE ------------------------------------------------------- */
+  var _advHost = null, _advFor = null;
+  function typeWord(t) { return t === "xp" ? "XP" : "Milestones"; }
+  function nameList(names) { return names.join(", "); }
+  /* What a press does. On a campaign: the database sets the type and sends the letters. With none: one
+     logged, undoable write on each record on this device whose type is its own and has to change. A record
+     another player holds ("row:") is never written this way, and neither is one a campaign decides. */
+  function pressType(pic, type) {
+    if (pic.campaign) {
+      var name = pic.campaign.name;
+      return C().setAdvancement(pic.campaign.id, type).then(function (n) {
+        toast(n ? name + " now levels on " + typeWord(type) + ". " + (n === 1 ? "1 letter sent." : n + " letters sent.") : name + " already levels on " + typeWord(type) + ".");
+      }, function (e) { console.warn("Could not set the Advancement Type", e); toast(C().errText(e)); });
+    }
+    var done = 0, held = 0;
+    pic.members.forEach(function (m) {
+      if (m.xp === (type === "xp")) return;
+      if (!m.own || !EN.gmStore || m.charId.indexOf("row:") === 0) { held++; return; }
+      if (EN.gmStore.writeCrew(m.charId, "Advancement Type: " + (type === "xp" ? "XP" : "Milestone"), [{ op: "advance", type: type }], { source: "advance" })) done++; else held++;
+    });
+    toast((done === 1 ? "1 sheet is" : done + " sheets are") + " on " + typeWord(type) + " now. Each is in the ledger and can be undone."
+      + (held ? " " + (held === 1 ? "1 couldn't change here." : held + " couldn't change here.") : ""));
+    if (EN.app) EN.app.render();
+    return Promise.resolve();
+  }
+  /* The two buttons, with the sheet's own labels. Each asks once more: "ALL 3 TO XP?". The one in force is lit and
+     stays put; a crew that is split lights neither. */
+  function typeButtons(pic) {
+    var scope = pic.campaign ? pic.campaign.id : "local";
+    var all = pic.total > 0 && !pic.split ? (pic.xp.length ? "xp" : "milestone") : "";
+    return el("div.camp-line", { dataset: { adv: "buttons" } }, ["xp", "milestone"].map(function (t) {
+      var lit = (pic.set || all) === t;
+      var label = t === "xp" ? "XP MODE" : "MILESTONE";
+      var sure = (pic.total > 0 ? "ALL " + pic.total + " TO " : "SET TO ") + (t === "xp" ? "XP?" : "MILESTONE?");
+      return el("span", { dataset: { adv: t, lit: lit ? "1" : "0" } }, [lit
+        ? el("button.btn.sm.primary", { type: "button", disabled: true }, label)
+        : EN.ui.armButton("advtype:" + scope + ":" + t, { cls: ".btn.sm", label: label, armedLabel: sure,
+            title: pic.campaign ? "Set " + pic.campaign.name + " to " + typeWord(t) + ". Every character in it is sent a letter." : "Put every sheet in this crew on " + typeWord(t) + ".",
+            armedTitle: "Click again to confirm.", onConfirm: function () { pressType(pic, t); } })]);
+    }));
+  }
+  /* The heads-up, or null while the sheets agree. Payroll draws it with its buttons, where it changes what gets
+     paid; the Campaign tab draws it without, since the setting sits right under it. */
+  function headsUp(pic, opts) {
+    if (!pic || !pic.split) return null;
+    opts = opts || {};
+    var who = pic.campaign ? pic.campaign.name : "this crew";
+    var kids = [
+      el("div", { style: { fontWeight: "700", letterSpacing: ".04em" }, text: "HEADS UP: ADVANCEMENT TYPES DON'T MATCH" }),
+      el("p", { dataset: { adv: "on-xp" }, style: { margin: "6px 0 0" }, text: "On XP: " + nameList(pic.xp) + "." }),
+      el("p", { dataset: { adv: "on-ms" }, style: { margin: "0" }, text: "On Milestones: " + nameList(pic.ms) + "." }),
+      el("p.help", { style: { margin: "8px 0 0" }, text: "A " + (pic.campaign ? "campaign" : "crew") + " runs on one or the other. Set it here and every sheet in " + who
+        + " follows. Nothing converts: each sheet keeps its XP and its Milestones."
+        + (!pic.campaign && pic.own < pic.total ? " " + (pic.total - pic.own) + " of them are set by their campaign and won't change here." : "") })
+    ];
+    if (opts.buttons !== false) kids.push(el("div", { style: { marginTop: "8px" } }, [typeButtons(pic)]));
+    return el("div.feature", { dataset: { adv: "headsup" }, style: { borderLeftColor: "var(--warn)", marginBottom: "10px" } }, kids);
+  }
+  function drawAdvancement(host, c) {
+    EN.ui.clear(host);
+    var pic = EN.gmEngine.advancePicture({ campaign: c });
+    var hu = headsUp(pic, { buttons: false });
+    if (hu) host.appendChild(hu);
+    host.appendChild(el("p.help", { dataset: { adv: "state" }, style: { margin: "0 0 8px" }, text: pic.set
+      ? c.name + " levels on " + typeWord(pic.set) + ". Every sheet in it follows, and each keeps its XP and its Milestones."
+      : "Not set yet. Each sheet uses the type its player chose." }));
+    host.appendChild(typeButtons(pic));
+  }
+  function advancementSection(c) {
+    var host = el("div", { dataset: { camp: "advancement" } });
+    _advHost = host; _advFor = c;
+    drawAdvancement(host, c);
+    return EN.ui.panel("Advancement Type", null, [host]);
+  }
+  // the campaign's crew arrived or changed: the panel draws again in its own node, so nothing being typed is touched
+  function crewRead() { if (_advHost && _advHost.isConnected && _advFor) drawAdvancement(_advHost, _advFor); }
 
   /* ---- the sections ---------------------------------------------------------- */
   function inviteSection(c, d) {
@@ -512,6 +596,7 @@ EN.gmCampaign = (function () {
     if (_send && (_send.uid !== me() || _send.campaign !== c.id)) _send = null;
     mount.appendChild(el("div.camp-sections", null, [
       inviteSection(c, d),
+      advancementSection(c),
       rosterSection(c, d, isAdmin),
       sendsSection(c, d),
       blockedSection(c, d),
@@ -519,5 +604,5 @@ EN.gmCampaign = (function () {
     ]));
   }
 
-  return { render: render, stale: stale, invalidate: invalidate, sendsChanged: sendsChanged };
+  return { render: render, stale: stale, invalidate: invalidate, sendsChanged: sendsChanged, headsUp: headsUp, typeButtons: typeButtons, crewRead: crewRead };
 })();

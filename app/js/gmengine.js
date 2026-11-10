@@ -224,6 +224,44 @@ EN.gmEngine = (function () {
     var hit = EN.campaigns && EN.campaigns.crewRow ? EN.campaigns.crewRow(charId) : null;
     return hit ? hit.ch : null;
   }
+  /* ---- THE ADVANCEMENT PICTURE (the author, 10 Nov 2026) ---------------------------------
+     A party is all XP or all Milestones. This reads who is on which, for the heads-up on Payroll and the
+     Campaign tab (js/gm_campaign.js headsUp) and the align switch that goes with it.
+
+     On a campaign (opts.campaign, else the desktop's own) the picture is the campaign's WHOLE crew, not the
+     Table's: the type is the campaign's, one setting for everybody, and that is what a press would change. Once
+     the campaign has chosen, every sheet follows it, so nobody can be split from it and `split` is false. With no
+     campaign it is the crew (opts.crew, else crew()), and the type is each record's own.
+
+     { campaign: {id, name} | null, set: "xp" | "milestone" | "" (what the campaign chose),
+       ready: false while the campaign's crew is still being read,
+       members: [{charId, name, xp, own}], xp: [names], ms: [names], total, split,
+       own: how many members' type is their own to change (the rest are set by a campaign, which a local switch can't touch) } */
+  function advancePicture(opts) {
+    opts = opts || {};
+    var camps = EN.campaigns, C = opts.campaign || (camps && camps.current ? camps.current() : null);
+    var pic = { campaign: C ? { id: C.id, name: C.name } : null, set: "", ready: true, members: [], xp: [], ms: [], total: 0, split: false, own: 0 };
+    function add(charId, name, ch) {
+      if (!ch) return;
+      var xp = camps && camps.usesXp ? camps.usesXp(ch) : ch.useXp === true;
+      var mine = !(camps && camps.advancementOf && camps.advancementOf(ch));
+      pic.members.push({ charId: charId, name: name, xp: xp, own: mine });
+      (xp ? pic.xp : pic.ms).push(name);
+      if (mine) pic.own++;
+    }
+    if (C) {
+      pic.set = camps.advancementOfCampaign ? camps.advancementOfCampaign(C.id) : "";
+      var slot = camps.crew(C.id);
+      if (!slot.rows) pic.ready = false;
+      else slot.rows.forEach(function (r) { add(r.charId, r.name, r.ch); });
+    } else {
+      var cr = opts.crew || crew();
+      cr.members.forEach(function (m) { add(m.charId, m.name, sheetOf(m.charId)); });
+    }
+    pic.total = pic.members.length;
+    pic.split = !pic.set && pic.xp.length > 0 && pic.ms.length > 0;
+    return pic;
+  }
   /* The line a tab that writes to sheets shows when some of the Table is out of its reach, or when something it
      already sent is still waiting for the link (EN.gmStore's far door). */
   function crewFarNote(c) {
@@ -650,6 +688,8 @@ EN.gmEngine = (function () {
     // threat initiative from the book's formula, and the one roll for it
     threatInit: threatInit, rollInit: rollInit,
     // XP, the crew, and the encounter budget
-    xpOf: xpOf, crew: crew, sheetOf: sheetOf, crewFarNote: crewFarNote, share: share, budget: budget, tierFor: tierFor
+    xpOf: xpOf, crew: crew, sheetOf: sheetOf, crewFarNote: crewFarNote, share: share, budget: budget, tierFor: tierFor,
+    // who is on XP and who is on Milestones, for the heads-up
+    advancePicture: advancePicture
   };
 })();

@@ -659,6 +659,9 @@ EN.cloud = (function () {
     var mine = linkedTo(book(), row.character_id);
     if (mine && (row.status === "waiting" || row.status === "delivered" || row.status === "due" || row.status === "applied")) {
       hearTabs();   // the tab that filed this may have said so already
+      /* Any mail may be the letter that says the campaign changed its Advancement Type. The campaign list is
+         read again whenever mail arrives, so an open sheet follows at once, where it would otherwise wait for its next sync. */
+      if (EN.campaigns && EN.campaigns.refresh) EN.campaigns.refresh();
       var ch = roster()[mine];
       if (!filed(ch, row.id)) {
         wanted[row.id] = 1;

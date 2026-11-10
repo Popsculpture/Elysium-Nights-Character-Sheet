@@ -1125,6 +1125,7 @@ EN.gmStore = (function () {
        {op: "milestone", kind: "major"|"minor", amount}
        {op: "heat", source, delta}
        {op: "vigor"}
+       {op: "advance", type: "xp"|"milestone"}
      Amounts are applied as given, positive or negative, and are not clamped:
      clamping would make the inverse inexact. Nexus is rounded to hundredths, the
      way the Inventory's wallet rounds it. A posting is filed at the top of the
@@ -1153,7 +1154,15 @@ EN.gmStore = (function () {
      puts it back. Vigor never stacks (the higher value is kept), so undo keeps
      any higher Vigor the record has gained since. A record holding no Vigor
      gets no vigor op at all (vigorHeld below), so an END never files a write
-     that changed nothing. */
+     that changed nothing.
+
+     ADVANCE switches a record's OWN Advancement Type (ch.useXp) and nothing
+     else. It is the Admin desktop's align switch for a crew that is split and
+     belongs to no campaign (Payroll's heads-up, 10 Nov 2026), so it is local
+     only: sendCrew refuses it, because a campaign decides its sheets' type
+     with set_advancement and never writes anyone's useXp. Applying keeps what
+     it found on the ledger's copy of the op (`applied`: whether the record
+     held a useXp at all, and its value), and undo puts exactly that back. */
   function whole(v) {
     var n = Number(v);
     return (isFinite(n) && n !== 0 && Math.floor(n) === n) ? n : null;
@@ -1189,6 +1198,9 @@ EN.gmStore = (function () {
         out.push({ op: "heat", source: src, delta: d });
       } else if (o.op === "vigor") {
         out.push({ op: "vigor" });
+      } else if (o.op === "advance") {
+        if (o.type !== "xp" && o.type !== "milestone") return;
+        out.push({ op: "advance", type: o.type });
       }
     });
     return out;
@@ -1202,6 +1214,8 @@ EN.gmStore = (function () {
     if (o.op === "heat") return typeof o.source === "string" && isObj(o.applied);
     // so is a vigor op, from the Vigor it found
     if (o.op === "vigor") return isObj(o.applied) && isFinite(Number(o.applied.prev));
+    // and an advance, from what the record held
+    if (o.op === "advance") return isObj(o.applied) && typeof o.applied.had === "boolean";
     return o.op === "post" && isObj(o.mail) && typeof o.mail.id === "string" && !!o.mail.id;
   }
 
@@ -1369,11 +1383,24 @@ EN.gmStore = (function () {
     if (done.made && !m.major && !m.minor && !m.notes) delete ch.milestones;
   }
 
+  function advanceOp(ch, o, sign) {
+    if (sign > 0) {
+      o.applied = { had: own(ch, "useXp") };
+      if (o.applied.had) o.applied.prev = ch.useXp;
+      ch.useXp = o.type === "xp";
+      return;
+    }
+    var a = o.applied;
+    if (!isObj(a)) return;
+    if (a.had) ch.useXp = a.prev; else delete ch.useXp;
+  }
+
   // sign 1 applies the op, -1 inverts it
   function applyOp(ch, o, sign) {
     if (o.op === "milestone") { milestoneOp(ch, o, sign); return; }
     if (o.op === "heat") { if (sign > 0) heatUp(ch, o); else heatBack(ch, o); return; }
     if (o.op === "vigor") { vigorOp(ch, o, sign); return; }
+    if (o.op === "advance") { advanceOp(ch, o, sign); return; }
     if (o.op === "post") {
       if (!isObj(ch.face)) ch.face = {};
       if (!Array.isArray(ch.face.post)) ch.face.post = [];
@@ -1444,6 +1471,7 @@ EN.gmStore = (function () {
        {source: "payday", paydayId, encounterAt, jobId}
        {source: "milestone"}   (Payroll's AWARD MILESTONE)
        {source: "vigor"}       (the Table's END, clearing the crew's Vigor)
+       {source: "advance"}     (Payroll's align switch on a crew that belongs to no campaign)
 
      A character another player holds has the charId "row:<row id>", and goes through the far door below. */
   function writeCrew(charId, label, ops, meta) {
@@ -1722,7 +1750,7 @@ EN.gmStore = (function () {
     var who = farUser(), row = who ? EN.campaigns.crewRow(charId) : null;
     if (!row) return false;
     var clean = cleanOps(ops);
-    if (!clean.length || clean.some(function (o) { return o.op === "heat" || o.op === "vigor"; })) return false;
+    if (!clean.length || clean.some(function (o) { return o.op === "heat" || o.op === "vigor" || o.op === "advance"; })) return false;
     var s = get(), id = uid(), at = nextAt(s);
     var r = { id: id, kind: "write", at: at, label: String(label == null ? "" : label), charId: charId, charName: row.name || "",
               ops: clean, undone: false, createdAt: at, updatedAt: at, far: { by: who, row: row.rowId, state: "queued", desk: deskId || null } };

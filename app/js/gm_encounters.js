@@ -2188,7 +2188,8 @@ EN.gmEncounters = (function () {
     try { crew = EN.gmEngine.crew({ encounter: last }); } catch (e) { crew = { members: [] }; }
     var members = crew.members.map(function (m) {
       var ch = EN.gmEngine.sheetOf(m.charId);
-      return { charId: m.charId, name: m.name, tag: m.tag || m.name, useXp: !!(ch && ch.useXp) };
+      // a campaign that has chosen its Advancement Type decides (js/campaigns.js); otherwise the sheet's own switch does
+      return { charId: m.charId, name: m.name, tag: m.tag || m.name, useXp: !!(ch && (EN.campaigns && EN.campaigns.usesXp ? EN.campaigns.usesXp(ch) : ch.useXp)) };
     });
     var xpCrew = members.filter(function (m) { return m.useXp; });
     var label = "XP award: " + (last.name || "the last encounter");

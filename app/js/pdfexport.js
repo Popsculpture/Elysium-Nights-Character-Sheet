@@ -631,7 +631,8 @@ EN.pdfExport = (function () {
     var ctx = makeCtx(doc, form, fonts, { title: "FREELANCER FIELD DOSSIER", tag: "01 · FRONT", serial: idSerial(ch), fieldPrefix: "front" });
     var classLine = [d.classInfo ? d.classInfo.name : "-", d.subclassInfo ? d.subclassInfo.name + bookTag("subclass", d.subclassInfo.key) : null].filter(Boolean).join(" · ");
     var speciesLine = [d.speciesInfo ? d.speciesInfo.name : "-", d.lineageInfo ? d.lineageInfo.name + bookTag("lineage", d.lineageInfo.key) : null].filter(Boolean).join(" · ");
-    var progression = ch.useXp ? ("XP " + (d.xp || 0) + (d.xpForNext ? " / " + d.xpForNext : "")) : ("Milestones " + ((ch.milestones && ch.milestones.major) || 0) + " maj, " + ((ch.milestones && ch.milestones.minor) || 0) + " min");
+    // a campaign that has chosen its Advancement Type decides (js/campaigns.js); otherwise the sheet's own switch does
+    var progression = (EN.campaigns && EN.campaigns.usesXp ? EN.campaigns.usesXp(ch) : ch.useXp) ? ("XP " + (d.xp || 0) + (d.xpForNext ? " / " + d.xpForNext : "")) : ("Milestones " + ((ch.milestones && ch.milestones.major) || 0) + " maj, " + ((ch.milestones && ch.milestones.minor) || 0) + " min");
 
     ctx.row([{ label: "Handle / alias", name: "handle", value: id.handle || ch.name, w: 1 }, { label: "Name on record", name: "name", value: ch.name, w: 1 }]);
     if (ch.editFreely === true) ctx.row([{ label: "Retraining", name: "editFreely", value: "EDIT FREELY: Talents and Lineage Evolutions change outside the one retrain per level", w: 1 }]);
