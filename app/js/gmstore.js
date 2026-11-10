@@ -1754,37 +1754,34 @@ EN.gmStore = (function () {
   // the same, said by the database: the session changed between that look and the request (EN_NOT_MINE in the migration)
   function farNotMine(e) { if (e && String(e.message || "") === "EN_NOT_MINE") throw NOT_MINE; }
   // UNDO, as the database decides it. `r.far` is read where it is at every step: a save heard from another tab puts a new object there
-  /* A CAMPAIGN'S DESKTOP ENDS WITH IT (the author, 9 Nov 2026: "They end with it"). Each send and UNDO names the campaign
-     of the desktop it was made on, and the database answers. Ended (the campaign was deleted): the record closes for good,
-     its key is marked through take_back so no copy anywhere can send it, and the Admin is told once, in the author's words
-     (FAR_ENDED). Nothing is sent to the player. Not running (the campaign is still there, this account no longer runs it):
-     the send waits, and this tab doesn't ask about that desktop again for FAR_HOLD, until the author decides that case. */
-  var FAR_ENDED = "Lost in #POST (This campaign has ended)";   // the author's wording, 9 Nov 2026
-  var FAR_HOLD = 600000, _held = Object.create(null);
-  function farHold(it) { if (it.campId) _held[it.campId] = Date.now() + FAR_HOLD; }
-  function farHeld(it) { return !!it.campId && (_held[it.campId] || 0) > Date.now(); }
+  /* A CAMPAIGN'S DESKTOP ENDS WITH IT (the author, 9 Nov 2026: "They end with it", and for a campaign still there that this
+     account no longer runs, "End like a delete"). Each send and UNDO names the campaign of the desktop it was made on, and
+     the database answers. Deleted, or no longer this account's to run: the record closes for good, its key is marked through
+     take_back so no copy anywhere can send it, even if the account runs that campaign again, and the Admin is told once
+     (FAR_ENDED, FAR_NOT_RUNNING). Nothing is sent to the player. */
+  var FAR_ENDED = "Lost in #POST (This campaign has ended)";              // the author's wording, 9 Nov 2026
+  var FAR_NOT_RUNNING = "Lost in #POST (You no longer run this campaign)"; // suggested, not the author's: theirs to change
   // closed for good, so it is never due again, and the Admin hears of it once
-  function farEnd(it, run) {
+  function farEnd(it, told) {
     var r = it.r;
-    run.ended.push(it);
+    told.push(it);
     farSave(it, { undone: true, undoneAt: r.undoneAt || Date.now(), far: { state: r.far.state === "queued" ? "skipped" : r.far.state, fix: "done" } });
   }
   // UNDO, as the database decides it. `r.far` is read where it is at every step: a save heard from another tab puts a new object there
   function farBack(it, run) {
     var r = it.r, letter;
     if (!farFresh(it) || r.far.fix !== "queued") return;   // gone from its desktop, or another tab has asked already
-    if (farHeld(it)) return;
     try { letter = farFixLetter(r); } catch (e) { try { console.warn("A queued UNDO can't be read, so it stays queued.", r.id, e); } catch (e2) {} return; }
     farMine(r);
     return EN.campaigns.takeBack(r.far.row, r.id, letter, r.far.by, it.campId).then(function (said) {
-      if (said === "ended") farEnd(it, run);
+      if (said === "ended") farEnd(it, run.ended);
+      else if (said === "not_running") farEnd(it, run.notRunning);
       else if (said === "cancelled") farSave(it, { far: { state: r.far.state === "queued" ? "skipped" : r.far.state, fix: "done" } });
       else farSave(it, { far: { state: "sent", fix: said === "recalled" ? "recalled" : "done" } });
     }, function (e) {
       farNotMine(e);
       var code = farAnswer(e);
       if (!code) throw e;
-      if (code === "EN_NOT_RUNNING") { farHold(it); return; }
       if (!farFresh(it) || r.far.fix !== "queued") return;    // gone, or another tab has given the answer already
       run.unfixed.push(it);
       farSave(it, { far: { fix: "refused" } });
@@ -1794,7 +1791,6 @@ EN.gmStore = (function () {
     var r = it.r;
     return Promise.resolve().then(function () {
       if (!farFresh(it)) return;                             // gone from where it was kept: the ledger has no word of it
-      if (farHeld(it)) return;
       if (r.undone) return;                                  // its UNDO, below, is all there is to do
       if (r.far.state !== "queued") return;
       var nums, letter;
@@ -1808,10 +1804,9 @@ EN.gmStore = (function () {
         farNotMine(e);
         var code = farAnswer(e);
         if (!code) throw e;
-        if (code === "EN_NOT_RUNNING") { farHold(it); return; }
         if (!farFresh(it) || r.far.state !== "queued") return;   // gone, or another tab has given the answer already
-        // its campaign has ended: take_back below closes it for good, and marks the key
-        if (code === "EN_ENDED") { farSave(it, { undone: true, undoneAt: r.undoneAt || Date.now(), far: { fix: "queued" } }); return; }
+        // its campaign has ended, or isn't this account's to run: take_back below closes it for good, and marks the key
+        if (code === "EN_ENDED" || code === "EN_NOT_RUNNING") { farSave(it, { undone: true, undoneAt: r.undoneAt || Date.now(), far: { fix: "queued" } }); return; }
         if (code === "EN_TAKEN_BACK") { farSave(it, { undone: true, undoneAt: r.undoneAt || Date.now(), far: { state: "skipped", fix: "done" } }); return; }
         // taken back while it was out: nothing landed, and the UNDO below marks the key, so no copy that hadn't heard can land it
         if (r.undone) { farSave(it, { far: { state: "refused", why: code } }); return; }
@@ -1845,7 +1840,7 @@ EN.gmStore = (function () {
     if (!who) return Promise.resolve();
     var todo = farTodo(who);
     if (!todo.length) { _sendStuck = false; return Promise.resolve(); }
-    var run = { refused: [], unfixed: [], ended: [] }, failed = false, wasStuck = _sendStuck;
+    var run = { refused: [], unfixed: [], ended: [], notRunning: [] }, failed = false, wasStuck = _sendStuck;
     clearTimeout(_sendRetry);
     _sending = todo.reduce(function (p, it) {
       return p.then(function () { return farStep(it, run); });
@@ -1866,6 +1861,7 @@ EN.gmStore = (function () {
         farTell(run.refused, function (names, which) { return "Not delivered to " + names + which + " can't reach them any more, so it doesn't count as paid."; });
         farTell(run.unfixed, function (names, which) { return "Could not send the correction to " + names + which + " can't reach them any more."; });
         if (run.ended.length) EN.ui.toast(FAR_ENDED);
+        if (run.notRunning.length) EN.ui.toast(FAR_NOT_RUNNING);
       }
       // the link back takes the note off the tab, unless somebody is typing there
       var el = document.activeElement, typing = !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);

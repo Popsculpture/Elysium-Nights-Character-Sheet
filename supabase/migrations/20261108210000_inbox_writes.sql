@@ -24,10 +24,11 @@
 -- made for a character who has left, and it outlives a campaign that is deleted. Only the two functions touch it,
 -- and a sender has at most 10,000.
 --
--- A CAMPAIGN'S DESKTOP ENDS WITH IT (the author, 9 Nov 2026: "They end with it"). The app names the campaign whose
--- desktop a send or an UNDO was made on (p_desk). Deleted, that campaign has ended: send_write refuses EN_ENDED, and
--- take_back marks the key and answers 'ended', with no correction. Still there but no longer the sender's to run,
--- both refuse EN_NOT_RUNNING, and the app holds the send until the author decides what that case should do.
+-- A CAMPAIGN'S DESKTOP ENDS WITH IT (the author, 9 Nov 2026: "They end with it", and for a campaign still there that
+-- the sender no longer runs, "End like a delete"). The app names the campaign whose desktop a send or an UNDO was made
+-- on (p_desk). Deleted: send_write refuses EN_ENDED. Still there but no longer the sender's to run: EN_NOT_RUNNING.
+-- Either way take_back then marks the key and answers 'ended' or 'not_running', with no correction, so it stays ended
+-- even if the sender runs that campaign again.
 
 alter table public.character_inbox
   add column ops jsonb,
@@ -237,7 +238,11 @@ begin
     if v_id is null then perform public.mark_taken_back(v_uid, p_key); end if;
     return 'ended';
   end if;
-  if p_desk is not null and not public.runs_campaign(p_desk) then raise exception 'EN_NOT_RUNNING'; end if;
+  -- no longer the sender's to run, though it's still there: it ends the same way
+  if p_desk is not null and not public.runs_campaign(p_desk) then
+    if v_id is null then perform public.mark_taken_back(v_uid, p_key); end if;
+    return 'not_running';
+  end if;
   if v_id is null then
     -- nothing went under it: mark it, and nothing ever will
     perform public.mark_taken_back(v_uid, p_key);
