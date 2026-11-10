@@ -145,7 +145,8 @@ EN.gmCampaign = (function () {
     return Promise.resolve();
   }
   /* The two buttons, with the sheet's own labels. Each asks once more: "ALL 3 TO XP?". The one in force is lit and
-     stays put; a crew that is split lights neither. */
+     stays put; a crew that is split lights neither. It can't be pressed, and ".lit" keeps its fill while it is disabled:
+     without it every skin greys it out, and the other button reads as the one chosen (the look check, 10 Nov 2026). */
   function typeButtons(pic) {
     var scope = pic.campaign ? pic.campaign.id : "local";
     // with a campaign, only its own setting is in force: sheets that happen to agree don't set it. Without one, a crew that agrees has nothing left to switch
@@ -155,7 +156,7 @@ EN.gmCampaign = (function () {
       var label = t === "xp" ? "XP MODE" : "MILESTONE";
       var sure = (pic.total > 0 ? "ALL " + pic.total + " TO " : "SET TO ") + (t === "xp" ? "XP?" : "MILESTONE?");
       return el("span", { dataset: { adv: t, lit: lit ? "1" : "0" } }, [lit
-        ? el("button.btn.sm.primary", { type: "button", disabled: true }, label)
+        ? el("button.btn.sm.primary.lit", { type: "button", disabled: true }, label)
         : EN.ui.armButton("advtype:" + scope + ":" + t, { cls: ".btn.sm", label: label, armedLabel: sure,
             title: pic.campaign ? "Set " + pic.campaign.name + " to " + typeWord(t) + ". Every character in it is sent a letter." : "Put every sheet in this crew on " + typeWord(t) + ".",
             armedTitle: "Click again to confirm.", onConfirm: function () { pressType(pic, t); } })]);

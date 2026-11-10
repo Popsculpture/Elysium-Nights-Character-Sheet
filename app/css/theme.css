@@ -352,6 +352,9 @@ a{ color:var(--accent); text-decoration:none; }
 .btn.danger:hover{ color:var(--danger); border-color:var(--danger); box-shadow:0 0 18px rgba(255,77,94,.25); }
 .btn.sm{ padding:5px 10px; font-size:11px; }
 .btn:disabled{ opacity:.35; cursor:not-allowed; box-shadow:none; border-color:var(--border); color:var(--text3); }
+/* A choice in force that can't be pressed again (the Advancement Type's two buttons). It has to read as the chosen one, so it
+   keeps its fill at full strength. Each skin restates the fill below, because each skin's :disabled paint would grey it out. */
+.btn.lit:disabled{ opacity:1; cursor:default; color:var(--accent); border-color:var(--accent); }
 
 /* ===== forms ============================================================ */
 label.fl{ display:block; font-family:var(--disp); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
@@ -829,6 +832,7 @@ html:not(.skin-98):not(.skin-droid) .btn.danger:hover{ color:var(--danger); bord
 html:not(.skin-98):not(.skin-droid) .btn.ghost{ border-color:transparent; background:transparent; color:var(--text2); clip-path:none; }
 html:not(.skin-98):not(.skin-droid) .btn.ghost:hover{ border-color:var(--border2); background:transparent; color:var(--text); }
 html:not(.skin-98):not(.skin-droid) .btn:disabled{ opacity:1; color:var(--text3); border-color:var(--border); background:var(--bg1); box-shadow:none; }
+html:not(.skin-98):not(.skin-droid) .btn.lit:disabled{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
 
 html:not(.skin-98):not(.skin-droid) :is(input[type=text], input[type=number], textarea, select){
   border:1px solid var(--accent-dim); background:var(--bg2); border-radius:0;
@@ -1295,6 +1299,8 @@ html.skin-98 .btn.ghost{ border-color:transparent; box-shadow:none; background:t
 html.skin-98 .btn.danger:hover{ background:var(--danger); color:#000; box-shadow:1px 1px 0 var(--bev-lo); border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); }
 html.skin-98 .btn.sm{ padding:3px 9px; font-size:11px; }
 html.skin-98 .btn:disabled{ color:var(--text3); text-shadow:1px 1px 0 var(--bev-hi); background:var(--bg3); box-shadow:none; }
+/* pressed in, the way a '98 toolbar shows the mode that is on */
+html.skin-98 .btn.lit:disabled{ color:var(--accent-ink); text-shadow:none; background:var(--accent); border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); }
 html.skin-98 .stepper button{ background:var(--bg3); border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); color:var(--text); }
 html.skin-98 .stepper button:active{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); }
 
@@ -1995,6 +2001,7 @@ html.skin-droid .btn.primary:hover{ background:var(--accent); filter:brightness(
 html.skin-droid .btn.flow{ color:var(--dr-two); border-color:var(--dr-two); }
 html.skin-droid .btn.ghost{ border-color:transparent; background:transparent; clip-path:none; }
 html.skin-droid .btn:disabled{ color:var(--text3); border-color:var(--border); background:var(--bg1); }
+html.skin-droid .btn.lit:disabled{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
 html.skin-droid input[type=text], html.skin-droid input[type=number], html.skin-droid textarea, html.skin-droid select{
   min-height:42px; font-size:16px; border:1px solid var(--accent-dim); background:var(--bg2); color:var(--text); border-radius:0;
 }
