@@ -1233,8 +1233,8 @@ The checks should say 324 PASS, 0 FAIL. The repair is there because `db query` a
 
 - **Nothing was run against the live project before it went live.** Supabase's own PostgREST, Realtime and Discord sign-in aren't in any of these rounds: the bridge imitates them, as before. The live round at the end of this part has since run the main paths on the live site, and lists what it left out.
 - **Two Admins pressing at once.** The row lock is there, and PGlite has one connection, so the mutant that removes it can't be caught.
-- **How it looks,** other than a measurement that the heads-up and the Campaign tab stay inside a 368 px width. Not seen by eye: '98, #GRIDroid, light and dark, and a phone.
-- **The printed sheet and the PDF** read the campaign's type through the same call, and no PDF was exported and looked at.
+- **How it looks,** other than a measurement that the heads-up and the Campaign tab stay inside a 368 px width. Not seen by eye: '98, #GRIDroid, light and dark, and a phone. The look check at the end of this part has since looked at all of them, and found three things wrong.
+- **The printed sheet and the PDF** read the campaign's type through the same call, and no PDF was exported and looked at. The look check has since printed and exported both, and they are right.
 - **A player on an older copy of the app** (a cached page) still shows its own switch and ignores the column. The letter reaches it, but its sheet keeps its own type until it updates.
 - **Heat, the SYNC button, `gate.js`'s drawing and `tour.js`** weren't touched.
 
@@ -1264,6 +1264,36 @@ Run on the live site on 10 Nov 2026, after the migration and the merge, with two
 
 **The sheets at the end:** Nessa has 1,784 Glimmer, 0.5 Nexus, 1,000 XP and no Milestones. BOLLARD-7 has 1,714 Glimmer, 0.5 Nexus, no XP and 1 major Milestone. Those are the starting numbers, to the unit. Neither sheet's own switch was written at any point: Nessa's still says XP and BOLLARD-7's still says Milestone. No row was marked delivered without reaching its sheet. 5th flavor was left on XP. Test has no type set and wasn't touched.
 
-**Not tried live:** a payday for a split crew on a campaign that hasn't chosen; the Table's XP Award card; the hold naming a Milestone, and CREDIT ANYWAY; an old AWARD MILESTONE award's card and its undo; a campaign with nobody in it; a player on a cached older copy of the app; the printed sheet and the PDF; and '98, #GRIDroid and a phone.
+**Not tried live:** a payday for a split crew on a campaign that hasn't chosen; the Table's XP Award card; the hold naming a Milestone, and CREDIT ANYWAY; an old AWARD MILESTONE award's card and its undo; a campaign with nobody in it; and a player on a cached older copy of the app. The printed sheet, the PDF, the other skins and a phone's width were looked at locally afterwards, in the look check below.
 
 **Not tried live, and closed on your word (10 Nov 2026):** you said these aren't important to test, so they aren't waiting on anyone. A player leaving the campaign and getting their own choice back; a co-Admin setting the type, or two Admins pressing at once; a letter waiting for a player who is away; and the align switch on a crew with no campaign.
+
+## The look check
+
+Run on 10 Nov 2026, after the live round, on `main`'s app at stamp `20261110.2`, against the stand-in for the database and not the live project. A separate agent did it, given the surfaces to capture and none of my conclusions. I then checked its three findings against its own pictures and the code, and they hold.
+
+**What was looked at:** seven looks (Classic dark and light, '98 in its own palette and in a light and a dark one, #GRIDroid dark and light), ten surfaces, each at 1,400 px and at a true 375 px: 140 runs, every picture opened. The surfaces were Payroll's heads-up and its armed button, the Campaign tab not set and set, the Milestones panel with an item picked, NO PAY THIS TIME on, the Experience panel, and the player's Advance step on both tracks, folded and open.
+
+**What is right.** The layout holds in every look and at both widths: nothing clipped, nothing overlapping, nothing wider than the screen at 375 px. The heads-up, its warning edge, the armed button, the Campaign tab before a type is set, the Milestones panel, NO PAY THIS TIME and the Experience panel are fine everywhere.
+
+**The printed sheet and the PDF follow the campaign,** for a sheet that disagrees with it either way round:
+
+| Sheet | Its own switch | Its campaign | The printed sheet says | The PDF says |
+|---|---|---|---|---|
+| Nessa | XP | Milestones | Progression: Milestones 0 maj, 1 min | Milestones 0 maj, 1 min |
+| Bollard | Milestones | XP | Progression: XP 400 / 300 | XP 400 / 300 |
+
+**What is wrong, in every skin. None of it is fixed yet.**
+
+1. **On the Campaign tab, the button in force reads as the dead one.** It is drawn disabled, and each skin's paint for a disabled button overrides the lit fill (`theme.css`, the `.btn:disabled` rules). So with the campaign on Milestones, MILESTONE is dim and XP MODE is bright, and the eye reads XP MODE as the one chosen. In '98 and #GRIDroid on a light palette the button in force is close to invisible. The live round's "lit" was my word for it, and it overstates what is on screen.
+2. **On the player's locked Advance step, the two buttons are painted the same.** Both are disabled, so nothing shows which is in force. In '98 and #GRIDroid their labels are hard to read at all.
+3. **That panel opens folded,** like every section on the Advance step, so "Set by your Admin for 5th flavor." and the track are hidden until the player opens it. What shows first is the header with the two identical buttons. Fixing 2 would let the header say which is in force without opening anything.
+
+**Smaller, and written down so they aren't lost:**
+
+- With NO PAY THIS TIME on, the Milestones panel still says "CREDIT THE CREW writes it with the money". There is no money in that payday.
+- '98 in its own palette paints placeholder text the same grey as the box it sits in, so "What the milestone was for" and the "1" in How many show as blank boxes. This is older than this build.
+- The help lines that carry the meaning here ("Set by your Admin for ...", the Campaign tab's state line, the NO PAY note) are in the app's faint help style. Readable, and the faintest text on these surfaces.
+- '98 at 375 px wraps a long title bar onto two rows. Nothing is cut.
+
+**What the look check could not see:** motion (the stage runs on virtual time), the toasts after a press, a real phone (touch, real pixel density, a mobile browser, the on-screen keyboard), palettes beyond the seven except in a strip of lit against unlit buttons, custom palettes, a print from the Admin's View sheet, and the live database. The pictures were shown to you in the session and aren't kept in the repo.
