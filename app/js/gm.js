@@ -1182,13 +1182,13 @@ EN.gmView = (function () {
   function syncWords(rep, name) {
     var added = syncAny(rep.added), kept = syncAny(rep.kept), out = [];
     if (rep.why === "offline") return "SYNC needs the link. Nothing was saved or added.";
-    if (rep.why === "moved") return "The desktop changed before the sync came back. Nothing was added.";
     if (rep.why === "no-desktop") return "This browser's own desktop has nothing to sync. Pick a campaign.";
     if (rep.ok) {
       out.push(added ? "Synced. Added: " + gm.countText(rep.added) + (rep.fight ? ", with the fight's round, turn and clock." : ".")
         : (rep.others ? "Synced. Nothing new to add." : "Synced. Nobody else has saved a desktop for " + name + " yet."));
     } else {
-      var word = rep.why === "link" || rep.why === "error" ? "Could not reach your account." : EN.campaigns.errText(rep.error, "The account refused it.");
+      var word = rep.why === "moved" ? "The desktop changed before the sync came back."
+        : rep.why === "link" || rep.why === "error" ? "Could not reach your account." : EN.campaigns.errText(rep.error, "The account refused it.");
       if (!added) return word + " Nothing was saved or added.";
       out.push("Added: " + gm.countText(rep.added) + (rep.fight ? ", with the fight's round, turn and clock." : "."));
       out.push("This desktop was not saved to your account. " + word + " Press SYNC again.");

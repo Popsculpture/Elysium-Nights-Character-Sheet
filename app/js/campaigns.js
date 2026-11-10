@@ -265,7 +265,8 @@ EN.campaigns = (function () {
     EN_TOO_LATE: "Too late to recall that one.",
     EN_BAD_DESK: "This desktop could not be saved to your account.",
     EN_TOO_BIG: "This desktop is too big to save to your account.",
-    EN_MOVED: "Another of your devices saved at the same moment."
+    EN_MOVED: "Another of your devices saved at the same moment.",
+    EN_NOT_MINE: "Another account jacked in on this browser while that was on its way."
   };
   function code(e) {
     var m = e && e.message ? String(e.message) : "";

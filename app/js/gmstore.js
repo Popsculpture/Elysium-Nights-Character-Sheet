@@ -2572,6 +2572,8 @@ EN.gmStore = (function () {
       rep.added.room++;
     });
     if (whole && typeof t.activeId === "string" && e.entries.some(function (r) { return r.id === t.activeId; })) e.activeId = t.activeId;
+    // a round with nobody in the order isn't a fight: none of its rows could be attributed here
+    if (whole && !e.entries.length) { e.round = 0; e.activeId = null; }
     if (doc.lastEncounter) {
       if (!s.lastEncounter) {
         var l = copy(doc.lastEncounter);
@@ -2631,7 +2633,8 @@ EN.gmStore = (function () {
     }
     function attempt(n) {
       return C.deskRead(id).then(function (rows) {
-        if (!here()) return none("moved");
+        // an earlier try may have added, on the desktop it was pressed on: the report still says so
+        if (!here()) { var left = total || none(""); left.ok = false; left.why = "moved"; return left; }
         syncTabs();
         rows = (Array.isArray(rows) ? rows : []).filter(isObj);
         var mine = rows.filter(function (r) { return r.mine === true; })[0] || null;
