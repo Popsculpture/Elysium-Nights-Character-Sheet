@@ -21,6 +21,7 @@ declare
   n int;
   n2 int;
   campx uuid; campy uuid; campz uuid;
+  adv uuid; adv_t text; adv_a uuid; adv_c uuid; adv_d uuid;
   t5 text;
   v text;
   f text;
@@ -1251,6 +1252,139 @@ begin
   out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or delete one (' || coalesce(err, 'no error') || E')\n';
   perform set_config('role', 'postgres', true);
 
+  /* ---- Advancement Type (the advancement migration) ----
+     a runs a fresh campaign with their own character, b is a co-Admin, c and d are players with one
+     character each, e is outside it, and ch_c2 is c's second character, in no campaign. */
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  adv := public.create_campaign('Advancement Table');
+  select token into adv_t from public.campaign_invites where campaign_id = adv;
+  insert into public.characters (name, data, campaign_id) values ('Adv Ada', '{"name": "Adv Ada"}', adv) returning id into adv_a;
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(adv_t);
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(adv_t);
+  insert into public.characters (name, data, campaign_id) values ('Adv Cee', '{"name": "Adv Cee"}', adv) returning id into adv_c;
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(adv_t);
+  insert into public.characters (name, data, campaign_id) values ('Adv Dee', '{"name": "Adv Dee"}', adv) returning id into adv_d;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.set_role(adv, b, 'coadmin');
+
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.campaigns where id = adv and advancement is null;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a new campaign has not chosen a type, and a player reads that (' || n || E')\n';
+
+  -- who may set it
+  err := null;
+  begin perform public.set_advancement(adv, 'xp', '{"from": "Campaign", "subj": "Advancement Type: XP"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot set it (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.campaigns set advancement = 'xp' where id = adv; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a client cannot write the column directly (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.set_advancement(adv, 'xp', '{"from": "Campaign", "subj": "Advancement Type: XP"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' someone outside the campaign cannot set it (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.set_advancement(gen_random_uuid(), 'xp', '{"from": "Campaign", "subj": "Advancement Type: XP"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a campaign that does not exist answers the same way (' || coalesce(err, 'no error') || E')\n';
+
+  -- only the two types are accepted, and not "not set" again
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  v := '';
+  foreach f in array array['both', '', ' xp', 'XP', 'Milestone', 'milestones', 'none'] loop
+    err := null;
+    begin perform public.set_advancement(adv, f, '{"from": "Campaign", "subj": "Advancement Type"}'); exception when others then err := sqlerrm; end;
+    if err is distinct from 'EN_BAD_TYPE' then v := v || '"' || f || '" = ' || coalesce(err, 'no error') || '; '; end if;
+  end loop;
+  out := out || case when v = '' then 'PASS' else 'FAIL' end || ' any other type is refused as EN_BAD_TYPE (' || v || E')\n';
+  err := null;
+  begin perform public.set_advancement(adv, null, '{"from": "Campaign", "subj": "Advancement Type"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_TYPE' then 'PASS' else 'FAIL' end || ' "not set" is not a type (' || coalesce(err, 'no error') || E')\n';
+
+  -- a bad letter refuses the whole change
+  v := '';
+  foreach bad in array array[
+    'null'::jsonb, '[]'::jsonb, '{}'::jsonb, '{"subj": "No from"}'::jsonb, '{"from": "Campaign"}'::jsonb,
+    '{"from": "Campaign", "subj": "Hi", "op": "xp"}'::jsonb, '{"from": "Campaign", "subj": 7}'::jsonb
+  ] loop
+    err := null;
+    begin perform public.set_advancement(adv, 'milestone', bad); exception when others then err := sqlerrm; end;
+    if err is distinct from 'EN_BAD_MAIL' then v := v || left(bad::text, 50) || ' = ' || coalesce(err, 'no error') || '; '; end if;
+  end loop;
+  out := out || case when v = '' then 'PASS' else 'FAIL' end || ' a malformed letter is refused as EN_BAD_MAIL (' || v || E')\n';
+  err := null;
+  begin perform public.set_advancement(adv, 'milestone', null); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_MAIL' then 'PASS' else 'FAIL' end || ' no letter at all is refused (' || coalesce(err, 'no error') || E')\n';
+  select count(*) into n from public.campaigns where id = adv and advancement is null;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' none of the refusals changed the type (' || n || E')\n';
+  select count(*) into n from public.character_inbox where campaign_id = adv;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' none of the refusals sent a letter (' || n || E')\n';
+
+  -- the first press: a co-Admin sets Milestones, and every character in the campaign is written to
+  n := public.set_advancement(adv, 'milestone', '{"from": "  Campaign  ", "subj": " Advancement Type: Milestone ", "body": "Advancement Table now levels on Milestones. Your XP is kept as it is."}');
+  out := out || case when n = 3 then 'PASS' else 'FAIL' end || ' a co-Admin can set the type, and three letters go (' || n || E')\n';
+  select advancement into v from public.campaigns where id = adv;
+  out := out || case when v = 'milestone' then 'PASS' else 'FAIL' end || ' the type is stored (' || coalesce(v, 'null') || E')\n';
+  select count(*) into n from public.character_inbox i
+    where i.campaign_id = adv and i.sender_id = b and i.status = 'waiting' and i.ops is null and i.send_key is null
+      and i.character_id in (adv_a, adv_c, adv_d)
+      and i.mail = '{"from": "Campaign", "subj": "Advancement Type: Milestone", "body": "Advancement Table now levels on Milestones. Your XP is kept as it is."}'::jsonb;
+  out := out || case when n = 3 then 'PASS' else 'FAIL' end || ' one plain letter each, stored trimmed, to the Admin''s character and both players'' (' || n || E')\n';
+  select count(*) into n from public.character_inbox where character_id = ch_c2 and mail ->> 'subj' like 'Advancement Type%';
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a character in no campaign gets nothing (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.character_inbox where character_id = adv_c and mail ->> 'subj' = 'Advancement Type: Milestone';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the player reads their own letter (' || n || E')\n';
+  select count(*) into n from public.character_inbox where character_id = adv_d;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' and not another player''s (' || n || E')\n';
+  select advancement into v from public.campaigns where id = adv;
+  out := out || case when v = 'milestone' then 'PASS' else 'FAIL' end || ' a player reads the type (' || coalesce(v, 'null') || E')\n';
+
+  -- setting it to what it already is changes nothing, whatever the letter says
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  n := public.set_advancement(adv, 'milestone', '{"from": "Campaign", "subj": "A second letter"}');
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' setting the same type sends nothing (' || n || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.character_inbox where campaign_id = adv;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = 3 then 'PASS' else 'FAIL' end || ' and leaves the three letters as they were (' || n || E')\n';
+  err := null;
+  begin perform public.set_advancement(adv, 'milestone', '{"from": "Campaign", "subj": "Hi", "op": "xp"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_MAIL' then 'PASS' else 'FAIL' end || ' even then, a malformed letter is refused (' || coalesce(err, 'no error') || E')\n';
+
+  -- a later flip is the same act: the Admin flips to XP, and only characters still in the campaign are written to
+  update public.characters set campaign_id = null where id = adv_a;
+  n := public.set_advancement(adv, 'xp', '{"from": "Campaign", "subj": "Advancement Type: XP", "body": "Advancement Table now levels on XP. Your Milestones are kept as they are."}');
+  out := out || case when n = 2 then 'PASS' else 'FAIL' end || ' the Admin can flip it, and a character who has left is not written to (' || n || E')\n';
+  select advancement into v from public.campaigns where id = adv;
+  out := out || case when v = 'xp' then 'PASS' else 'FAIL' end || ' the flip is stored (' || coalesce(v, 'null') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.campaigns where id <> adv and advancement is not null;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' no other campaign took the type (' || n || E')\n';
+  select count(*) into n from public.character_inbox where campaign_id = adv and mail ->> 'subj' = 'Advancement Type: XP' and character_id in (adv_c, adv_d);
+  out := out || case when n = 2 then 'PASS' else 'FAIL' end || ' both players got the flip''s letter (' || n || E')\n';
+  select count(*) into n from public.character_inbox where character_id = adv_a and mail ->> 'subj' = 'Advancement Type: XP';
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' and the one who left did not (' || n || E')\n';
+  err := null;
+  begin perform public.set_advancement(adv, null, '{"from": "Campaign", "subj": "Advancement Type"}'); exception when others then err := sqlerrm; end;
+  select advancement into v from public.campaigns where id = adv;
+  out := out || case when err = 'EN_BAD_TYPE' and v = 'xp' then 'PASS' else 'FAIL' end || ' once set, there is no way back to not set (' || coalesce(err, 'no error') || ' ' || coalesce(v, 'null') || E')\n';
+
+  -- the database holds the rule too
+  perform set_config('role', 'postgres', true);
+  err := null;
+  begin update public.campaigns set advancement = 'both' where id = adv; exception when others then err := sqlstate; end;
+  out := out || case when err = '23514' then 'PASS' else 'FAIL' end || ' the column itself allows only the two types (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.campaigns set advancement = '' where id = adv; exception when others then err := sqlstate; end;
+  out := out || case when err = '23514' then 'PASS' else 'FAIL' end || ' and not a blank (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.campaigns set advancement = null where id = adv; exception when others then err := sqlstate; end;
+  out := out || case when err is null then 'PASS' else 'FAIL' end || ' but the database owner can clear it (' || coalesce(err, 'no error') || E')\n';
+
   -- clean_mail stays private
   perform set_config('role', 'authenticated', true);
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
@@ -1274,7 +1408,8 @@ begin
     'remove_member(%1$L, %1$L)', 'unblock_member(%1$L, %1$L)', 'set_role(%1$L, %1$L, ''player'')',
     'transfer_leadership(%1$L, %1$L)', 'rename_campaign(%1$L, ''x'')', 'delete_campaign(%1$L)',
     'send_to_character(%1$L, ''{}'')', 'send_to_crew(%1$L, ''{}'')', 'recall_send(%1$L)', 'mark_delivered(%1$L)', 'mark_taken(%1$L)',
-    'send_write(%1$L, ''k'', ''{}'')', 'take_back(%1$L, ''k'', ''{}'')', 'mark_applied(%1$L)'
+    'send_write(%1$L, ''k'', ''{}'')', 'take_back(%1$L, ''k'', ''{}'')', 'mark_applied(%1$L)',
+    'set_advancement(%1$L, ''xp'', ''{}'')'
   ] loop
     err := null;
     begin execute 'select * from public.' || format(f, a); exception when others then err := sqlerrm; end;
@@ -1306,6 +1441,9 @@ begin
   err := null;
   begin perform public.take_back(camp4, 'k', '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlstate; end;
   out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot take a send back (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.set_advancement(camp4, 'xp', '{"from": "Kade", "subj": "Hi"}'); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot set an Advancement Type (' || coalesce(err, 'no error') || E')\n';
   err := null;
   begin select count(*) into n from public.character_inbox; exception when others then err := sqlstate; end;
   out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot read the inbox (' || coalesce(err, 'no error') || E')\n';
