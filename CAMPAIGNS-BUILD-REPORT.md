@@ -1013,9 +1013,7 @@ The migration file didn't change this round.
 
 `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
 
-**Not checked:** the live site, real Discord, real Realtime carrying numbers, and two sessions racing inside the database. PGlite has one connection, so the fallback for two tabs sending one write in the same instant has never contended. It's the same one-row rule the database enforces either way.
-
-**Waiting for you, once it's live:** a round with a second account. Pay them online and offline, award XP, post a job, and take each back. The sheet and the row should agree after each step.
+**Since checked on the live site:** real Discord, and real Realtime carrying numbers, in the live round at the end of this part. **Still not checked:** two sessions racing inside the database. PGlite has one connection, so the fallback for two tabs sending one write in the same instant has never contended. It's the same one-row rule the database enforces either way.
 
 ## Decisions
 
@@ -1056,6 +1054,27 @@ The migration file didn't change this round.
 - **After an UNDO is answered, a payday's DELETE comes back with the next redraw,** not at once.
 - **Importing an older GM file drops queued sends it doesn't hold,** because an import replaces the document. The ledger then has no word of them, so it doesn't read as paid either.
 - **A letter can be lost in the rarest two-tab race,** two filings at once after the lock gives up at 20 seconds. The numbers stay right.
+
+## The live round
+
+Run on the live site on 10 Nov 2026, after the migration and the merge, with two real accounts on 5th flavor: Popsculpture as Admin in Chrome, and MyGalFRIDAY in Firefox. After each step I read the real rows and both sheets.
+
+| Step | Result | The database says |
+|---|---|---|
+| A payday, both online | **Pass** | Glimmer and Nexus on both sheets, once each, with a letter, in 0.85 and 0.99 s. The first payday of the round waited 45 s for the player's browser, then landed once |
+| UNDO PAYDAY | **Pass** | One correction for each sheet, under the payday's own key, in 0.63 and 0.66 s. The numbers came back off exactly |
+| A payday while the player was away | **Pass** | The rows waited 137.7 s as due, then landed once each when the player came back |
+| A Milestone, and UNDO MILESTONE | **Pass** | One major on both sheets, then off again, each in under a second |
+| XP through a payday, and its UNDO | **Pass** | 1,090 XP with the Glimmer on both sheets, then all of it back off |
+| A split party | **Pass** | One payday gave Nessa 1,000 XP and BOLLARD-7 none, and a Milestone went to BOLLARD-7 alone |
+| A posting, and UNDO POSTING after it arrived | **Pass** | Delivered in 0.9 s, then "Withdrawn: Claim work" to both |
+| A posting recalled while the player was away | **Pass** | Both rows read recalled, and nothing reached either sheet |
+
+**The sheets at the end:** Nessa has 1,784 Glimmer, 0.5 Nexus, 1,000 XP and no Milestones. BOLLARD-7 has 1,714 Glimmer, 0.5 Nexus, no XP and 1 major Milestone. Each is its starting number plus every row that landed, to the unit. No row was marked delivered without reaching its sheet.
+
+**Not tried live:** the Table's own AWARD XP, a send waiting for the link, a send from another campaign's desktop, anything refused, and a campaign ended or no longer run, so none of the "Lost in #POST" notices has been seen on the live site. Two sessions racing inside the database is still unproven anywhere.
+
+**What you found, using it.** XP and Milestones are awarded differently, and it isn't intuitive: Milestones have their own button, and XP goes out with the payday below it. You proposed sending both through the payday, since that gives a receipt. You also want a campaign to be all XP or all Milestone, with a heads-up when the crew's Advancement Types don't match and a toggle that aligns every player. That is its own build, started the same day in its own session, where its open questions are settled with you first. It goes ahead of the SYNC button.
 
 # Campaigns build report: one Advancement Type per campaign, and Milestones through the payday
 
