@@ -287,12 +287,15 @@ EN.social = {
       { key: "press", name: "Press", text: "Make a social attack roll. Choose an Approach. Roll the Pool. Margin becomes Pressure." },
       { key: "support", name: "Support", text: "Spend the Round backing a teammate. Grant +1 Edge Die to one ally's next Press roll this scene. Multiple supporters stack, capped at the normal +3 Edge Die ceiling." },
       { key: "read", name: "Read", text: "Make an Insight roll. On a Costly or Flawless Success, the GM reveals one of the target's vulnerabilities, resistances, or current emotional weight. On a Mixed Result, the GM reveals one detail of your choice (Profile, Debt, faction tie)." },
-      { key: "disrupt", name: "Disrupt", text: "Spend the Round acting on the environment to shift the math. Requires a relevant non-social Skill check. On a success, impose +1 Snag Die on the target's next Posture, or remove +1 Snag Die from one ally's next Press roll." },
+      { key: "disrupt", name: "Disrupt", text: "Spend the Round acting on the environment to shift the math. Requires a relevant non-social Skill check. On a success, shave 1 off the target's next Posture (a Counter rolls with +1 Snag Die instead), or remove +1 Snag Die from one ally's next Press roll." },
       { key: "hold", name: "Hold", text: "A Character who has no business being in this room can Hold. They stay silent and avoid making the scene worse. Their presence still counts toward the Floor. A Character who Holds well grants +1 Edge Die to one ally's Press roll this Round." }
     ],
 
     /* Postures. `reduce` is the Pressure a Posture takes off as a number
-       (Veil's is a 1d4 roll, carried as its dice); Counter reduces nothing. */
+       (Veil's is a 1d4 roll, carried as its dice); Counter reduces nothing.
+       `contested` marks the one Posture that rolls (Counter): with Snag a
+       Posture takes Rattled's `less` off short, and a Counter rolls with
+       Snag instead (conditions below). */
     postures: {
       intro: "The Opposition can spend an **Impulse Action** to deflect a successful Press. They get one per Round, just like a Freelancer's defensive Impulse in combat.",
       perRound: 1,
@@ -302,7 +305,7 @@ EN.social = {
         { key: "compose", name: "Compose", looks: "A visible breath, recovered posture, the smile they practiced in the mirror", text: "Reduce Pressure by 1", reduce: 1 },
         { key: "stonewall", name: "Stonewall", looks: "Refuse to engage, fall back on script, demand a lawyer", text: "Reduce Pressure by 2. The target takes the *Cornered* condition.", reduce: 2 },
         { key: "veil", name: "Veil", looks: "Become unreadable, retreat behind ritual or pose, project Mystique", text: "Reduce Pressure by 1d4 (Mystique-aligned targets only)", reduce: "1d4" },
-        { key: "counter", name: "Counter", looks: "**Push back:** attempt their own social attack against the Character who just pressed them", text: "Resolve as a contested social roll. On a Costly or Flawless margin against the Character, the Character takes Social Fallout.", reduce: 0 }
+        { key: "counter", name: "Counter", looks: "**Push back:** attempt their own social attack against the Character who just pressed them", text: "Resolve as a contested social roll. On a Costly or Flawless margin against the Character, the Character takes Social Fallout.", reduce: 0, contested: true }
       ],
       recharge: "Opposition Postures recharge at the start of each Round."
     },
@@ -321,18 +324,26 @@ EN.social = {
       legwork: "The GM should call out these pressures at the start of the scene and let the players plan around them. Doing legwork to change the Floor before the scene starts is one of the things crews do to win social setpieces."
     },
 
-    /* Sit-Down Conditions. Scene conditions, not the Conditions Library's. */
+    /* Sit-Down Conditions. Scene conditions, not the Conditions Library's.
+       Rattled's `less` is the 1 each of the target's Postures takes off short
+       (author ruling, 9 Nov 2026: Deflect and Compose take nothing off,
+       Stonewall takes 1; a Counter, which takes nothing off, rolls with Snag).
+       `crewNames` are the crew's parallel conditions; "Caught" was "Marked"
+       until 9 Nov 2026, renamed so it no longer reads as the Hustler's Mark.
+       None of the three is in the Conditions Library or any picker, so no
+       saved record holds one. The Heat ladder's "Marked" (9 to 10, credHeat
+       below) is a different thing and keeps its name. */
     conditions: {
       intro: "A Sit-Down can apply temporary conditions to the Opposition or to crew members. These last for the duration of the scene and end when it concludes.",
       columns: ["Condition", "Effect"],
       rows: [
-        { key: "rattled", name: "Rattled", text: "The target rolls Postures with Snag." },
+        { key: "rattled", name: "Rattled", text: "Each of the target's Postures takes 1 less off, and a Counter rolls with Snag.", less: 1 },
         { key: "cornered", name: "Cornered", text: "The target can't Counter or Stonewall for the rest of the scene." },
         { key: "swayed", name: "Swayed", text: "The target treats one specific Character as a trusted source for the next Round." },
         { key: "exposed", name: "Exposed", text: "Sway has put the target on the defensive. The target loses 1 additional Resolve at the start of each subsequent Round until they regain composure." }
       ],
-      crew: "A Character who suffers Social Fallout mid-Sit-Down may take a parallel condition: **Doubted**, **Marked**, or **Discredited**, depending on the fallout. These impose Snag on that Character's Press rolls for the rest of the scene.",
-      crewNames: ["Doubted", "Marked", "Discredited"]
+      crew: "A Character who suffers Social Fallout mid-Sit-Down may take a parallel condition: **Doubted**, **Caught**, or **Discredited**, depending on the fallout. These impose Snag on that Character's Press rolls for the rest of the scene.",
+      crewNames: ["Doubted", "Caught", "Discredited"]
     }
   },
 

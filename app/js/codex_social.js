@@ -276,13 +276,15 @@ window.EN = window.EN || {};
     } },
 
     /* ---- 12 · Sit-Down Conditions -------------------------------------------------------------------
-       Scene conditions, separate from the Conditions Library: they end with the scene. */
+       Scene conditions, separate from the Conditions Library: they end with the scene. The crew's
+       three are titled from the data's crewNames (Doubted, Caught, Discredited since 9 Nov 2026,
+       when "Marked" became "Caught"), so the entry is so-conditions/doubted-caught-discredited. */
     { id: "so-conditions", title: "Sit-Down Conditions", tag: "FOR THE SCENE ONLY", audience: "gm", order: 110, when: sd("conditions"), build: function (ctx, K) {
       var c = S().sitDown.conditions;
       return [
         K.proseBlock(c.intro, lo()),
         K.el("div", null, c.rows.map(function (x) { return K.ruleBlock(x.name, x.text, null, lo()); })),
-        K.ruleBlock("Doubted, Marked, Discredited", c.crew, "CREW", lo())
+        K.ruleBlock((c.crewNames || []).join(", "), c.crew, "CREW", lo())
       ];
     } },
 

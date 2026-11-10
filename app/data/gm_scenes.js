@@ -76,9 +76,10 @@
    the Pursuit Escalation row are shown from EN.social and EN.chases (refs
    below) with links into the Codex, and the GM applies them by hand. Two are
    applied (author ruling, 2026-10-12): a Posture's `reduce` comes off a logged
-   result's Pressure (EN.social.sitDown.postures), with the Sit-Down Conditions
-   (EN.social.sitDown.conditions) shown as reminders, and a chase's DAMAGE goes
-   through the vehicle's Structure (EN.chases.shooting.structure).
+   result's Pressure (EN.social.sitDown.postures), less Rattled's `less` while
+   Rattled is on (author ruling, 9 Nov 2026), with the other Sit-Down
+   Conditions (EN.social.sitDown.conditions) shown as reminders, and a chase's
+   DAMAGE goes through the vehicle's Structure (EN.chases.shooting.structure).
 
    SHAPES
    A checklist item: { n, key, name (the bold run-in, as printed), text (the
