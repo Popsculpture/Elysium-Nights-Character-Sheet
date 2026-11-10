@@ -812,7 +812,7 @@ Run on the live site on 9 Nov 2026, with real Discord and the real project, one 
 
 # Campaigns build report: the writing tabs through the inbox
 
-Built 8 Nov 2026 on `claude/funny-hermann-497402`, cut from `main` at `d93f722`, and rebuilt on 9 Nov on `main` at `96bdb43`, which has the Admin desktop per campaign, then brought up to `main` at `b38dc88`. **Not merged, and the migration is not applied:** both wait for your go.
+Built 8 Nov 2026 on `claude/funny-hermann-497402`, cut from `main` at `d93f722`, and rebuilt on 9 Nov on `main` at `96bdb43`, which has the Admin desktop per campaign, then brought up to `main` at `b38dc88`. **The migration is on the live project, applied on your go on 10 Nov 2026. Not merged:** the code waits for your word.
 
 ## What you decided
 
@@ -875,6 +875,8 @@ npx supabase@2 migration repair --status applied 20261108210000 --project-ref gg
 ```
 
 The checks should say 293 PASS, 0 FAIL. The repair is there because `db query` applies a file and records nothing.
+
+**Step 1 is done, 10 Nov 2026.** The migration went on inside one transaction, with no error. Read back afterwards: the two new columns, the wider status rule, the one-row-per-key index, the marks table with row security on and nothing granted to a client and not in Realtime, and the five functions, three of them callable by a signed-in account only. The 9 rows already there were untouched. The checks said 293 PASS, 0 FAIL, and the history lists all six migrations on both sides.
 
 ## Worth your eye
 
@@ -994,7 +996,7 @@ The migration file didn't change this round.
 
 | What | Result | How |
 | --- | --- | --- |
-| The SQL | 293 PASS, 0 FAIL locally, nothing left behind, marks included | `campaign_checks.sql`, up from 168. Not yet on the live project |
+| The SQL | 293 PASS, 0 FAIL locally, nothing left behind, marks included | `campaign_checks.sql`, up from 168. On the live project too, after the migration: 293 PASS, 0 FAIL, rolled back, with the row counts the same before and after |
 | The checks have teeth | 265 of 265 caught. One more was dropped as equivalent: the marking helper runs with the caller's rights, and the table refuses a client either way. The new lock isn't broken on purpose, since PGlite never runs two counts at once | Broken copies of the migrations, 108 of them for this one |
 | The story, on the stand-in | 526 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, the far door's rules, sends from another campaign's desktop, every finding of the eight reviews of that, and campaigns deleted and no longer yours with sends and UNDOs waiting |
 | The same story, on the real SQL | 530 checks pass | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
