@@ -12880,6 +12880,8 @@ Run on the live site with real Discord, reading the browser's storage after each
 
 ### The writing tabs through the inbox, built 2026-11-08 on `claude/funny-hermann-497402`, rebuilt on `main` 2026-11-09
 
+**Live since 2026-11-10.** The migration went onto the live project on the author's go (293 PASS, 0 FAIL there), and the code was merged to `main` on their word the same day.
+
 **What changed, and why.** The next of the plan's later steps. Payroll with its Milestones panel, the XP award and the Job Board reach another player's character. `writeCrew` on a `row:` id sends a row in `character_inbox` and files the usual ledger record (THE FAR DOOR in `gmstore.js`), the courier files it (`cloud.js`, `deliverMail`), and the migration is `20261108210000_inbox_writes.sql`. Heat is not in it. The build report has the rest.
 
 **The author's three rulings, 8 Nov 2026.** Job Board, Payroll and the XP award first, with Heat on its own pass. A player gets the numbers at once with a letter, not a Take it. UNDO sends a correction, it doesn't refuse.

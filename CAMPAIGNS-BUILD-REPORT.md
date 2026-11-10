@@ -779,7 +779,7 @@ Two independent reads, each given the code and not my conclusions.
 
 ## Still open
 
-- **With the writing tabs branch.** `claude/funny-hermann-497402` keeps its outbox in the ledger, and the ledger now belongs to a campaign. So a send queued for one campaign waits until that campaign is opened, unless whichever lands second makes it walk every document. The two branches conflict in `gmstore.js` and `campaigns.js`. `campaigns_table_1` needs both to pass all its checks, and `gmtabs_*` and `campaigns_writes_1` fail on the branch without them.
+- **With the writing tabs branch.** Settled since: the writing tabs are on `main`, built on this, and a send queued on one campaign goes from whichever desktop is open. See the next part of this report.
 - **Two devices or a co-Admin** see separate Tables, as the live round showed. That is your choice 3. You chose an additive SYNC button for it, next after the writing tabs: see below.
 - **Two tabs changing one list on one record inside a moment:** one change loses. So does changing one field in the same instant.
 - **A payday form saved from two tabs:** the last SAVE wins, as one form. A credited payday is protected, since it refuses a save.
@@ -812,7 +812,7 @@ Run on the live site on 9 Nov 2026, with real Discord and the real project, one 
 
 # Campaigns build report: the writing tabs through the inbox
 
-Built 8 Nov 2026 on `claude/funny-hermann-497402`, cut from `main` at `d93f722`, and rebuilt on 9 Nov on `main` at `96bdb43`, which has the Admin desktop per campaign, then brought up to `main` at `b38dc88`. **The migration is on the live project, applied on your go on 10 Nov 2026. Not merged:** the code waits for your word.
+Built 8 Nov 2026 on `claude/funny-hermann-497402`, cut from `main` at `d93f722`, and rebuilt on 9 Nov on `main` at `96bdb43`, which has the Admin desktop per campaign, then brought up to `main` at `b38dc88`. **Merged to `main` on your word, 10 Nov 2026,** after the migration went onto the live project on your go the same day.
 
 ## What you decided
 
