@@ -121,6 +121,13 @@ card.
   its members' rows, so any read of `characters` for "my characters" must filter on `owner_id`, as
   `pull()` in cloud.js does. `store.setViewing` holds another player's sheet in memory with
   `meta.viewing` set; `store.update` refuses every write while one is open.
+- A campaign's Advancement Type (10 Nov 2026, `campaigns.advancement`: `xp`, `milestone` or empty) decides its sheets' type, and nothing ever writes a sheet's own `useXp` because of a campaign.
+  Never read `ch.useXp` for what a sheet is on: ask `EN.campaigns.usesXp(ch)` (or `advancementOf(ch)` for the campaign's word, `lockedBy(ch)` for "Set by your Admin for <name>"). It keys on `ch.meta.id`:
+  a record on this device by `recordCampaign`, a copy of someone else's (`view_<row id>`) by the crew that was read or by View sheet. `set_advancement` is the only write, and it sends the letters in the same step.
+  The player's app reads its campaigns again whenever mail arrives (`onInboxEvent` in cloud.js), which is what makes an open sheet switch. `EN.gmEngine.advancePicture()` is who is on which, for the heads-up
+  (`EN.gmCampaign.headsUp`), and the `advance` op in gmstore.js is the heads-up's switch for a crew with no campaign: local only, `sendCrew` refuses it.
+  Payroll's Milestone is part of the payday form (`msKey`, `msKind`, `msReason`, `msAmount`, with `noPay`), written by `numsFor` in the one write a sheet gets. The AWARD MILESTONE button is gone, but
+  `msGroups`, `lastAward`, `canUndoAward` and `undoAward` still read and undo the awards it left in ledgers (writes tagged `source: "milestone"`). Tests that need that shape seed it with `writeCrew` and the old tag.
 - Two tabs share one roster (`store.js`, TWO TABS, ONE ROSTER). Change a record through the store's own calls: a stamp has to move forward (`nextStamp`), or another tab reads the copy as old news. Take a record out only through
   `remove`, which writes the delete down (`en_roster_gone_v1`), or the other tab puts it back. Anything that brings an id back on purpose has to `clearGone` it. `cloud.js` trusts the link book only after `hearTabs()`, and reads the book first.
 - The Admin desktop's document (`gmstore.js`). `EN.gmStore.get()` is the desktop this tab is on, `EN.campaigns.desktop()` says which, and `follow()` gets it there on every render. Change it through `update`, `put` and `drop`, because a part changed any

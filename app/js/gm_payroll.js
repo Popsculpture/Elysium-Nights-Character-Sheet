@@ -406,7 +406,8 @@ EN.gmPayroll = (function () {
     gm.list("ledger").forEach(function (pd) {
       if (!isObj(pd) || pd.kind !== "payday" || pd.id === selfId) return;
       var fight = hasAt && paydayAt(pd) === encAt;
-      var jobHit = !!jobId && pd.jobId === jobId;
+      // a payday with no pay didn't pay the job's money (nor mark it paid), so it doesn't hold the job. The fight it paid still holds, for its XP
+      var jobHit = !!jobId && pd.jobId === jobId && pd.noPay !== true;
       if (!fight && !jobHit) return;
       if (!paid) paid = paidWrites();
       var ws = paidOf(pd, paid);
@@ -1468,6 +1469,32 @@ EN.gmPayroll = (function () {
     ]);
   }
 
+  /* The last award the old button made that still stands, with its COPY and its own UNDO MILESTONE, or null. It is drawn
+     with the Milestones panel, and alone when the crew's track shows no such panel, so an award in a ledger never loses its undo. */
+  function lastAwardCard() {
+    var la = lastAward();
+    if (!la) return null;
+    {
+      var lt = awardText(la), lbl = msLabel(la.kind, la.amount, la.reason);
+      var undo = canUndoAward(la.id)
+        ? EN.ui.armButton("pay:ms-undo:" + la.id, { cls: ".btn.sm.danger", label: "↶ UNDO MILESTONE", armedLabel: "UNDO IT?",
+            title: "Take this milestone back off the records it was written to",
+            armedTitle: "Takes " + lbl + " back off " + joinNames(la.names) + "'s " + plural(la.names.length, "record") + ".",
+            onConfirm: function () { undoAward(la.id); } })
+        : el("span.help", { style: { margin: 0 }, text: "A newer write sits on top, so this award can no longer be undone from here." });
+      if (undo.tagName === "BUTTON") undo.setAttribute("data-pay", "ms-undo");
+      return el("div.feature", { dataset: { pay: "ms-last" }, style: { borderLeftColor: "var(--success)", marginTop: "10px" } }, [
+        el("p", { style: { margin: 0, color: "var(--success)", fontWeight: 600 },
+          text: "Last milestone award: " + (la.amount > 1 ? la.amount + " " : "") + kindName(la.kind) + ", " + la.reason + ", to " +
+                joinNames(la.names) + ", " + stamp(la.at) + "." }),
+        el("div.row.wrap", { style: { gap: "8px", marginTop: "6px", alignItems: "center" } }, [
+          el("button.btn.sm", { dataset: { pay: "ms-last-copy" }, onclick: function () { copyText(lt, "The milestone"); } }, "COPY"),
+          undo
+        ])
+      ]);
+    }
+  }
+
   function msPanel(m) {
     var M = MS();
     if (!M) return null;
@@ -1560,26 +1587,8 @@ EN.gmPayroll = (function () {
     }
 
     // the last award the old button made, still standing, with its own undo
-    var la = lastAward();
-    if (la) {
-      var lt = awardText(la), lbl = msLabel(la.kind, la.amount, la.reason);
-      var undo = canUndoAward(la.id)
-        ? EN.ui.armButton("pay:ms-undo:" + la.id, { cls: ".btn.sm.danger", label: "↶ UNDO MILESTONE", armedLabel: "UNDO IT?",
-            title: "Take this milestone back off the records it was written to",
-            armedTitle: "Takes " + lbl + " back off " + joinNames(la.names) + "'s " + plural(la.names.length, "record") + ".",
-            onConfirm: function () { undoAward(la.id); } })
-        : el("span.help", { style: { margin: 0 }, text: "A newer write sits on top, so this award can no longer be undone from here." });
-      if (undo.tagName === "BUTTON") undo.setAttribute("data-pay", "ms-undo");
-      kids.push(el("div.feature", { dataset: { pay: "ms-last" }, style: { borderLeftColor: "var(--success)", marginTop: "10px" } }, [
-        el("p", { style: { margin: 0, color: "var(--success)", fontWeight: 600 },
-          text: "Last milestone award: " + (la.amount > 1 ? la.amount + " " : "") + kindName(la.kind) + ", " + la.reason + ", to " +
-                joinNames(la.names) + ", " + stamp(la.at) + "." }),
-        el("div.row.wrap", { style: { gap: "8px", marginTop: "6px", alignItems: "center" } }, [
-          el("button.btn.sm", { dataset: { pay: "ms-last-copy" }, onclick: function () { copyText(lt, "The milestone"); } }, "COPY"),
-          undo
-        ])
-      ]));
-    }
+    var lac = lastAwardCard();
+    if (lac) kids.push(lac);
 
     // the book on pacing, in the Codex
     kids.push(codexLine("milestones", "The Toolkit on pacing:", [["gmy-pay/milestones-and-pacing", M.name]]
@@ -1664,6 +1673,8 @@ EN.gmPayroll = (function () {
   }
   function opsFor(m, x, now) {
     var ops = numsFor(m, x);
+    // a payday with no pay lists only what came: a sheet that gets nothing from it gets no stub either
+    if (m.noPay && !ops.length) return [];
     // another player's sheet always gets the stub: a letter is how they hear what just landed on it
     if (_p.stub || (ops.length && gm.isCampaignRow(x.charId))) ops.push({ op: "post", mail: { from: "Payroll", subj: titled("Payday", m.title), when: clock(now), body: stubText(m, x) } });
     return ops;
@@ -1686,7 +1697,7 @@ EN.gmPayroll = (function () {
       xp: { total: m.xpTotal, each: m.xpTotal, objective: m.xpObj, written: m.xpWrite,
             tableAward: m.tAward ? m.tAward.total : 0 },
       // the Milestone this payday carried, or null (an older payday has none)
-      milestone: m.msPick.ok ? { kind: m.msPick.kind, amount: m.msPick.amount, reason: m.msPick.reason, key: m.msPick.item ? m.msPick.item.key : "other" } : null,
+      milestone: (m.track.ms && m.msPick.ok) ? { kind: m.msPick.kind, amount: m.msPick.amount, reason: m.msPick.reason, key: m.msPick.item ? m.msPick.item.key : "other" } : null,
       ledgerLines: { cred: (_p.cred || "").trim(), heat: (_p.heat || "").trim() },
       writeIds: [], credited: false, undone: false,
       summary: summaryText(m),
@@ -2309,6 +2320,10 @@ EN.gmPayroll = (function () {
     lower.push(el("div", { style: { flex: "1 1 300px", minWidth: 0 } }, [ledgerPanel()]));
     blocks.push(el("div.row.wrap", { style: { gap: "12px", alignItems: "stretch" } }, lower));
     if (m.track.ms) { blocks.push(gap()); blocks.push(msPanel(m)); }
+    else {
+      var oldAward = lastAwardCard();
+      if (oldAward) { blocks.push(gap()); blocks.push(EN.ui.panel("Earlier Milestone award", "STILL STANDING", [oldAward])); }
+    }
     blocks.push(gap()); blocks.push(summaryPanel(m));
     var past = pastPanel();
     if (past) { blocks.push(gap()); blocks.push(past); }

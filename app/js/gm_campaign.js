@@ -128,7 +128,9 @@ EN.gmCampaign = (function () {
     if (pic.campaign) {
       var name = pic.campaign.name;
       return C().setAdvancement(pic.campaign.id, type).then(function (n) {
-        toast(n ? name + " now levels on " + typeWord(type) + ". " + (n === 1 ? "1 letter sent." : n + " letters sent.") : name + " already levels on " + typeWord(type) + ".");
+        toast(n ? name + " now levels on " + typeWord(type) + ". " + (n === 1 ? "1 letter sent." : n + " letters sent.")
+          : pic.set === type ? name + " already levels on " + typeWord(type) + "."
+          : name + " now levels on " + typeWord(type) + ". Nobody has a character in it yet, so no letters went.");
       }, function (e) { console.warn("Could not set the Advancement Type", e); toast(C().errText(e)); });
     }
     var done = 0, held = 0;
@@ -146,7 +148,8 @@ EN.gmCampaign = (function () {
      stays put; a crew that is split lights neither. */
   function typeButtons(pic) {
     var scope = pic.campaign ? pic.campaign.id : "local";
-    var all = pic.total > 0 && !pic.split ? (pic.xp.length ? "xp" : "milestone") : "";
+    // with a campaign, only its own setting is in force: sheets that happen to agree don't set it. Without one, a crew that agrees has nothing left to switch
+    var all = !pic.campaign && pic.total > 0 && !pic.split ? (pic.xp.length ? "xp" : "milestone") : "";
     return el("div.camp-line", { dataset: { adv: "buttons" } }, ["xp", "milestone"].map(function (t) {
       var lit = (pic.set || all) === t;
       var label = t === "xp" ? "XP MODE" : "MILESTONE";

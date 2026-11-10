@@ -115,13 +115,16 @@ EN.campaigns = (function () {
     if (!id) return "";
     // a record on this device answers from what this account has read of its own characters, never from a crew that may be stale
     if (id.indexOf("view_") !== 0) return recordCampaign(id) || "";
+    // what View sheet is showing first, then the desktop's campaign, then any other crew that was read: a row can sit in two caches while one is stale
+    var vi = EN.store && EN.store.viewingInfo ? EN.store.viewingInfo() : null;
+    if (vi && vi.campaign && "view_" + vi.rowId === id) return vi.campaign;
+    var d = desktop(), order = Object.keys(crewCache);
+    if (d) order = [d.id].concat(order.filter(function (k) { return k !== d.id; }));
     var hit = "";
-    Object.keys(crewCache).forEach(function (cid) {
+    order.forEach(function (cid) {
       ((crewCache[cid] && crewCache[cid].rows) || []).forEach(function (r) { if (!hit && "view_" + r.rowId === id) hit = cid; });
     });
-    if (hit) return hit;
-    var vi = EN.store && EN.store.viewingInfo ? EN.store.viewingInfo() : null;
-    return vi && vi.campaign && "view_" + vi.rowId === id ? vi.campaign : "";
+    return hit;
   }
   // "xp", "milestone", or "" when the sheet's campaign has not chosen (or it is in none): then its own switch decides
   function advancementOf(ch) { return typeOf(campaignOf(ch)); }
@@ -657,7 +660,8 @@ EN.campaigns = (function () {
         return a.player < b.player ? -1 : a.player > b.player ? 1 : a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
       });
       // redraw for what a row or the picker shows, not for every save a player makes
-      var sig = JSON.stringify(rows.map(function (r) { return [r.charId, r.name, r.player, shownOf(r.ch)]; }));
+      // a player's own XP / Milestone switch is part of it, so the heads-up follows when they flip it
+      var sig = JSON.stringify(rows.map(function (r) { return [r.charId, r.name, r.player, shownOf(r.ch), r.ch && r.ch.useXp === true]; }));
       var moved = !slot.rows || slot.error || slot.sig !== sig;
       slot.loading = false; slot.error = false; slot.rows = rows; slot.sig = sig; slot.at = slot.stale ? 0 : Date.now();
       if (moved) repaintCrew();
