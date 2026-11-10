@@ -360,6 +360,13 @@ EN.gmPayroll = (function () {
     return { total: total, names: names };
   }
 
+  /* What a payday still answers for: money of its own that stands, or another player's UNDO not answered yet. Its record
+     is what ties that money to its fight and its job, so it can't be deleted meanwhile. */
+  function owes(pd, paid) {
+    return paidOf(pd, paid).length > 0 ||
+      paydayIds(pd).some(function (id) { var w = gm.rec("ledger", id); return !!w && isObj(w.far) && w.far.fix === "queued"; });
+  }
+
   /* AN EARLIER PAYDAY FOR THE SAME FIGHT OR THE SAME JOB (F8). A payday
      with a write still standing that paid the fight this form pays (the same
      encounterAt) or the job it pays, read off its writes, whatever its own
@@ -1954,14 +1961,21 @@ EN.gmPayroll = (function () {
   function pastPanel() {
     var list = gm.list("ledger").filter(function (r) { return r && r.kind === "payday"; });
     if (!list.length) return null;
+    var paid = paidWrites();
     var kids = list.map(function (pd) {
       var live = pd.credited && !pd.undone;
       var st = live ? ["CREDITED", "var(--success)"] : pd.undone ? ["UNDONE", "var(--text3)"] : ["SAVED", "var(--accent)"];
       var c = pd.contract || {}, each = pd.each || {};
       var current = pd.id === _p.paydayId;
-      var del = live ? null : EN.ui.armButton("pay:del:" + pd.id, { label: "✕", armedLabel: "DELETE?",
+      /* DELETE: never while the payday answers for money (owes). One that says credited, only when every write of its
+         own was taken back, which an imported payday can come to: reconcile leaves its flags alone */
+      var ids = paydayIds(pd);
+      var spent = ids.length > 0 && ids.every(function (id) { var w = gm.rec("ledger", id); return !!w && w.undone === true; });
+      var del = (owes(pd, paid) || (live && !spent)) ? null : EN.ui.armButton("pay:del:" + pd.id, { label: "✕", armedLabel: "DELETE?",
         title: "Delete this payday record", armedTitle: "Deletes the record only. Nothing on the crew's records changes.",
         onConfirm: function () {
+          // by what's in memory now: news from another tab may still be waiting to be drawn
+          if (owes(pd)) { toast("Not deleted: this payday is paid, or its UNDO hasn't been answered yet."); EN.app.render(); return; }
           gm.drop("ledger", pd.id, { silent: true });
           // the open form is now saved nowhere, so replacing it asks first (F18)
           if (_p.paydayId === pd.id) { _p.paydayId = null; _base = null; }
@@ -2277,13 +2291,15 @@ EN.gmPayroll = (function () {
       if (!isObj(pd) || pd.kind !== "payday") return;
       if (!paid) paid = paidWrites();
       var stands = paidOf(pd, paid);
-      /* standing again with its flags behind: only an UNDO that came back lost does that. Not a credit going out, whose
-         writes land a moment before its record says credited */
-      if (stands.length) { if ((pd.undone || !pd.credited) && stands.some(function (w) { return isObj(w.far) && w.far.fix === "lost"; })) relive(pd); return; }
+      /* standing again with its flags behind: only an UNDO that came back lost or refused does that. Not a credit going
+         out, whose writes land a moment before its record says credited */
+      if (stands.length) { if ((pd.undone || !pd.credited) && stands.some(function (w) { return isObj(w.far) && (w.far.fix === "lost" || w.far.fix === "refused"); })) relive(pd); return; }
       if (!pd.credited || pd.undone) return;
       // none of it stands here, and one of its writes was taken back. Not one with an imported write: that is history
       // from a GM file, paid where it was made, whatever this device holds
-      var ws = paydayIds(pd).map(function (id) { return gm.rec("ledger", id); });
+      // (the writes it lists now: an earlier round of it, undone before it was credited again, says nothing of this one.
+      // SAVE leaves it none listed, and then its tagged writes are all there is)
+      var ws = (Array.isArray(pd.writeIds) && pd.writeIds.length ? pd.writeIds : paydayIds(pd)).map(function (id) { return gm.rec("ledger", id); });
       if (ws.some(function (w) { return !!(w && w.imported); }) || !ws.some(function (w) { return !!(w && w.undone); })) return;
       var next = copy(pd);
       next.undone = true;
@@ -2296,7 +2312,8 @@ EN.gmPayroll = (function () {
 
   /* A PAYDAY WHOSE MONEY STANDS AGAIN. UNDO PAYDAY marks the payday undone at once, while another player's write still waits
      for its answer, and SAVE can rebuild it after that. When the answer is that the send landed and its campaign took the
-     UNDO with it (far.fix "lost"), the money is on their sheet: the payday reads as credited again and its job paid again.
+     UNDO with it (far.fix "lost"), or that the correction is refused because they left the campaign (far.fix "refused"),
+     the money is on their sheet: the payday reads as credited again and its job paid again.
      The hold reads the writes either way (paidOf); this is what the panels show, which read the flags. */
   function relive(pd) {
     var next = copy(pd);

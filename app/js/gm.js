@@ -2219,7 +2219,7 @@ EN.gmView = (function () {
       kids.push(el("div.row.between.wrap", { dataset: { gm: "far-refused" }, style: { gap: "8px", alignItems: "center", marginBottom: "6px" } }, [
         el("span.help", { style: { margin: 0, color: "var(--warn)", flex: "1 1 220px", minWidth: 0 },
           text: limit ? "Taking back " + (r.label || "a GM write") + " for " + who + " didn't go: this account has taken back too many sends that never went."
-              : (fixing ? "The correction for " + (r.label || "a GM write") + " did not reach " + who + ": this campaign can't reach them any more."
+              : (fixing ? "The correction for " + (r.label || "a GM write") + " did not reach " + who + ": this campaign can't reach them any more" + (r.undone === true ? "." : ", so it still counts as paid.")
                         : (r.label || "A GM write") + " did not reach " + who + ": this campaign can't reach them any more, so it doesn't count as paid.") }),
         el("button.btn.sm", { dataset: { gm: "far-refused-ok" }, onclick: function () { gm.farNoticeRead(r.id); EN.app.render(); } }, "OK")
       ]));

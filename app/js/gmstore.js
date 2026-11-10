@@ -1647,8 +1647,8 @@ EN.gmStore = (function () {
     else if (ra === rb && (FIX_RANK[af.fix] || 0) > (FIX_RANK[f.fix] || 0)) f.fix = af.fix;
     if (af.told) f.told = true;
     if (af.ending && !f.ending) f.ending = af.ending;
-    // an UNDO that couldn't go leaves what landed as paid
-    out.undone = (!!f.fix && f.fix !== "lost") || f.state === "refused" || f.state === "skipped";
+    // an UNDO that couldn't go, lost with its campaign or refused, leaves what landed as paid
+    out.undone = (!!f.fix && f.fix !== "lost" && !(f.fix === "refused" && f.state === "sent")) || f.state === "refused" || f.state === "skipped";
     var at = [a.undoneAt, b.undoneAt].filter(function (x) { return typeof x === "number"; }).sort(function (x, y) { return x - y; })[0];
     if (out.undone && at) out.undoneAt = at;
     if (!out.undone) delete out.undoneAt;
@@ -1738,8 +1738,8 @@ EN.gmStore = (function () {
     var was = r.far.fix, round = r.far.round;
     r.undone = true;
     r.undoneAt = Date.now();
-    // asked again after an UNDO was lost: a new one, so a copy that only knows the lost one can't put it back (farJoin)
-    if (was === "lost") r.far.round = (round || 0) + 1;
+    // asked again after an UNDO was lost or refused: a new one, so a copy that only knows the old answer can't put it back (farJoin)
+    if (was === "lost" || was === "refused") r.far.round = (round || 0) + 1;
     r.far.fix = "queued";
     if (!persist(true)) {
       r.undone = false;
@@ -1839,8 +1839,12 @@ EN.gmStore = (function () {
       if (!farFresh(it) || r.far.fix !== "queued") return;    // gone, or another tab has given the answer already
       // the marks' limit: words of its own, and nothing more owed
       if (code === "EN_TOO_MANY") { run.limited.push(it); farSave(it, { far: { fix: "limit", why: code } }); return; }
-      run.unfixed.push(it);
-      farSave(it, { far: { fix: "refused" } });
+      /* refused: no correction goes, so what landed stays where it is and still counts as paid (the author's ruling, as
+         with an UNDO lost with its campaign), and the strip keeps the word. EN_NOT_ALLOWED is the database saying a row
+         stands that it won't correct, on their sheet or still on its way to it */
+      var kept = code === "EN_NOT_ALLOWED" || r.far.state === "sent";
+      (kept ? run.unfixedPaid : run.unfixed).push(it);
+      farSave(it, kept ? { undone: false, undoneAt: undefined, far: { state: "sent", fix: "refused" } } : { far: { fix: "refused" } });
     });
   }
   function farStep(it, run) {
@@ -1907,7 +1911,7 @@ EN.gmStore = (function () {
     delete _unsaid[who];
     var todo = farTodo(who);
     if (!todo.length) { farSay(who, waiting); _sendStuck = false; return Promise.resolve(); }
-    var run = { refused: [], unfixed: [], ended: [], endedPaid: [], notRunning: [], notRunningPaid: [], limited: [] }, failed = false, wasStuck = _sendStuck, lines = waiting;
+    var run = { refused: [], unfixed: [], unfixedPaid: [], ended: [], endedPaid: [], notRunning: [], notRunningPaid: [], limited: [] }, failed = false, wasStuck = _sendStuck, lines = waiting;
     clearTimeout(_sendRetry);
     _sending = todo.reduce(function (p, it) {
       return p.then(function () { return farStep(it, run); });
@@ -1926,6 +1930,7 @@ EN.gmStore = (function () {
       _sendAgain = false;
       lines = lines.concat(farTell(run.refused, function (names, which) { return "Not delivered to " + names + which + " can't reach them any more, so it doesn't count as paid."; }));
       lines = lines.concat(farTell(run.unfixed, function (names, which) { return "Could not send the correction to " + names + which + " can't reach them any more."; }));
+      lines = lines.concat(farTell(run.unfixedPaid, function (names, which) { return "Could not send the correction to " + names + which + " can't reach them any more, so it still counts as paid."; }));
       if (run.limited.length) lines.push(FAR_LIMIT_SAID(farNames(run.limited)));
       if (run.ended.length) lines.push(farSaid(run.ended, false, true));
       if (run.endedPaid.length) lines.push(farSaid(run.endedPaid, true, true));
@@ -1934,7 +1939,7 @@ EN.gmStore = (function () {
       farSay(who, lines);
       // the link back takes the note off the tab, unless somebody is typing there
       var el = document.activeElement, typing = !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
-      if ((run.refused.length || run.unfixed.length || run.endedPaid.length || run.notRunningPaid.length || (wasStuck && !failed && !typing)) && EN.app && EN.app.render) EN.app.render();
+      if ((run.refused.length || run.unfixed.length || run.unfixedPaid.length || run.endedPaid.length || run.notRunningPaid.length || (wasStuck && !failed && !typing)) && EN.app && EN.app.render) EN.app.render();
       if (again && !failed) return flushSends();
     });
     return _sending;
