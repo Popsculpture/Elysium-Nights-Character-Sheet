@@ -839,7 +839,7 @@ A pay stub always goes to another player's sheet, whatever the chip says, becaus
 
 **If it can never land,** say the character left the campaign, it doesn't count as paid, and it stays on that campaign's undo strip, on every Admin tab, until you press OK. The toast alone would be gone before you saw it. Refused while you're on another campaign, the toast names the one it came from.
 
-**If the campaign has ended,** because it was deleted, what was waiting on its desktop ends with it, a send or an UNDO. It's closed for good, no copy of it anywhere can send it later, and a toast says so once, in your words, naming it: "Lost in #POST (5th flavor has ended)". Nothing goes to the player. A payday that had already landed stays paid, since the money is on their sheet: what's lost is its UNDO, and the toast says "UNDO lost in #POST (5th flavor has ended): what landed stays paid." If that was UNDO PAYDAY, the payday reads as credited again, with its job paid, so nothing offers to pay it twice. The desktop stays in Settings as left behind.
+**If the campaign has ended,** because it was deleted, what was waiting on its desktop ends with it, a send or an UNDO. It's closed for good, no copy of it anywhere can send it later, and a toast says so once, in your words, naming it: "Lost in #POST (5th flavor has ended)". Nothing goes to the player. A payday that had already landed stays paid, since the money is on their sheet: what's lost is its UNDO, and the toast says "UNDO lost in #POST (5th flavor has ended): what landed stays paid." If that was UNDO PAYDAY, the payday reads as credited again, with its job paid, and nothing pays it twice: whether a payday is paid is read off its writes, whatever has been done to the payday since, a SAVE included. The desktop stays in Settings as left behind.
 
 **A campaign that's still there but no longer yours to run** (demoted, removed, or left) ends the same way, as you chose ("End like a delete"), and stays ended if you run it again later. Its toast reads "Lost in #POST (You no longer run 5th flavor)", your words too, and for an UNDO on what landed, "UNDO lost in #POST (You no longer run 5th flavor): what landed stays paid." The two UNDO lines are suggestions from the session running this build, not yours, so change them as you like.
 
@@ -963,6 +963,17 @@ That round had a review of its own, below.
 7. **A row still due when its campaign is deleted** goes with the campaign, so its UNDO finds nothing, and the ledger keeps it as paid, though the player may never have opened it. Nothing is left to say either way: Still open.
 8. **A send whose UNDO came back lost** is still the one UNDO reaches while that desktop is open, so each press asks again and is told again. Still open.
 
+That round had a review of its own, below.
+
+**An eighth independent read, on the money,** found the take back's new order, the way a payday comes back, the toasts and the desktop a send names all sound. It traced one real fault and three plausible ones. Each one fixed has a check that failed before the fix:
+
+1. **A payday could still be paid twice.** UNDO PAYDAY while an answer was still out, then SAVE on the undone payday, which rebuilds it with no writes listed and no flags. When the UNDO came back lost, nothing tied the money that stood to that payday, so CREDIT went through, and so did a new payday for the same fight or job. Whether a payday's money stands is read off the ledger now: the writes tagged with its id, imported ones counted, whatever the payday's own flags or list say. Where the flags say paid, they still count, since a payday from another device's backup has no write that counts here. The CREDIT hold, the earlier-payday hold, UNDO PAYDAY and the panel's reconcile all read it, so a press acts on what's in memory even when news from another tab is still waiting to be drawn, as it does while a field is in use. The Table's AWARD XP already did, and a check now says it holds too.
+2. **A payday whose UNDO came back lost wasn't drawn again** when the link had been fine all along, so the panel went on saying "credited and then undone". It's drawn again at once. I had taken that redraw out last round as redundant, but my check only passed then because the link had been down, which redraws anyway.
+3. **A payday half taken back,** a write on this device undone and another player's UNDO lost, reads as credited, so the fight's XP for the one taken back can't be paid again. Still open.
+4. **A second UNDO of a lost write could be put back** by another tab still holding the lost copy, while the toast said a correction was going. An UNDO asked again now counts as newer than whatever the last one came to, so no older copy can undo it.
+
+**My first cut of fix 1 broke two older rules,** and the whole suite caught the first: a payday that came in with another device's backup read as unpaid, with CREDIT live (`fix_R1_import`). Looking for its like, I found the second myself: an imported payday, part undone where it was made, was marked undone here. Both rules are back, each with a check, and a third old rule that had no check has one now: a payday whose records were deleted since stays credited.
+
 This last round hasn't had a review of its own.
 
 ## Checked, and how
@@ -971,15 +982,15 @@ This last round hasn't had a review of its own.
 | --- | --- | --- |
 | The SQL | 293 PASS, 0 FAIL locally, nothing left behind, marks included | `campaign_checks.sql`, up from 168. Not yet on the live project |
 | The checks have teeth | 265 of 265 caught. One more was dropped as equivalent: the marking helper runs with the caller's rights, and the table refuses a client either way. The new lock isn't broken on purpose, since PGlite never runs two counts at once | Broken copies of the migrations, 108 of them for this one |
-| The story, on the stand-in | 465 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, the far door's rules, sends from another campaign's desktop, every finding of the six reviews of that, and campaigns deleted and no longer yours with sends and UNDOs waiting |
-| The same story, on the real SQL | 469 checks pass | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
+| The story, on the stand-in | 488 checks pass | `tests/campaigns_writes_1.js`, through the real UI: post, pay, award, Milestone, the player coming back, a sheet saved over, online, every UNDO, the far door's rules, sends from another campaign's desktop, every finding of the seven reviews of that, and campaigns deleted and no longer yours with sends and UNDOs waiting |
+| The same story, on the real SQL | 492 checks pass | `pg/writes_realdb.js`, the real app, real supabase-js and real realtime-js on the real migration in PGlite |
 | Two real tabs | 36 checks pass | `pg/writes_tabs_realdb.js`: the double payment held back, the idle tab's send, both tabs agreeing, a send queued in one tab going from the other on another campaign, and a take back landing while the other tab's send of it was out |
 | A real reload with a send queued | Pass | `tests/campaigns_writes_2.js` and `_3.js`: it goes with nobody asking, under the same key |
-| Breaking the code on purpose | 187 of 187 caught | `pg/writes_mutants.py`, a line at a time, each failing its own check. The one that only two real tabs show runs on the real database |
-| Before each fix | On `f59f3fc`, 2 of the new SQL checks fail, and 13 of the story's on the stand-in and 15 on the real SQL, the six fixes of the seventh review between them. Each earlier round's checks failed on the code before it, as that round reported | The same story and checks on the code before it |
+| Breaking the code on purpose | 201 of 201 caught | `pg/writes_mutants.py`, a line at a time, each failing its own check. The one that only two real tabs show runs on the real database |
+| Before each fix | On `1b4fe0b`, 12 of the story's new checks fail: the payday paid twice by five routes, the panel not drawn again, and a second UNDO put back. The migration didn't change this round. Each earlier round's checks failed on the code before it, as that round reported | The same story and checks on the code before it |
 | The other real rounds | All pass: batch 2 144, batch 3 61, the Table 159, two tabs 40, the same sequence in one window 21 | On the final code |
 | The two-tab fuzz | 400 random rounds of two and three tabs, nothing lost | `pg/gm_tabs_fuzz.mjs` on the final `gmstore.js` |
-| The whole suite | 499 chains, 524 runs, 1 bad, 0 skipped. The bad one, `r54_no_topbar_clock`, saw the top bar clock not tick in time once in the '98 skin, and passed on its own straight after. This round doesn't touch the clock. `gmtabs_1` to `_4`, `campaigns_table_1`, `tabs_1`, `campaigns_b3_1`, the writing tabs' reload chains, `fix_F8`, `fix_F18` and `sitdown_caught_snag` all pass | `cx_integ_run.py`, round wr17, on the final code |
+| The whole suite | 499 chains, 524 runs, 0 bad, 0 skipped. A run before the last fix had 1 real failure, `fix_R1_import`, which is how the first regression above was found, and 13 runs where Chrome didn't start, on a machine interrupted partway; all pass now | `cx_integ_run.py`, round wr19, on the final code |
 | Three skins, desktop and 375 px | 30 of 30 measured, none scrolls sideways | `tests/campaigns_writes_shot.js` measured without a screenshot, so its numbers are read. Measured again on the final code |
 
 `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
@@ -1003,8 +1014,9 @@ This last round hasn't had a review of its own.
 11. **A correction is filed in the campaign the money went through,** so it goes with that campaign. Whether you can still reach the character is still where they are now.
 12. **A sender has at most 10,000 marks.** A take back that names no character still marks the sender's own key, which delivers nothing to anyone. Past the limit, an UNDO that needs a mark says so in words of its own, suggested, on the toast and the strip, and nothing more is owed.
 13. **What a run has to say shares one toast,** one notice to a line, up for as long as it takes to read, at most 12 seconds, and only to the account it's about. One held for an account that isn't signed in is kept in memory and comes first in that account's next toast, so a reload before that account is back loses it. The record is closed either way.
-14. **A payday follows its writes.** Undone when none of them stands, as before, and credited again with its job paid when an UNDO comes back lost, unless another payday has claimed the job since.
+14. **A payday's money is its writes.** Whether it stands is read off the ledger's writes tagged with its id, imported ones counted: the CREDIT hold, the earlier-payday hold and UNDO PAYDAY read that. Its own flags still count where they say paid, for a payday from another device's backup. Its flags follow, for the panels: undone when none stands, and credited again with its job paid when an UNDO comes back lost, unless another payday has claimed the job since.
 15. **A send from before `far.desk`** is judged by the desktop it's kept on. One made on the browser's own desktop is judged by none, even after a move.
+16. **An UNDO asked again is newer than the last one's answer.** One asked after an UNDO was lost carries a round number, so a copy that only knows the lost one can't put it back.
 
 ## Still open
 
@@ -1014,7 +1026,8 @@ This last round hasn't had a review of its own.
 - **The locks in the database,** between `send_write` and `take_back` and on the marks' count, have never had two connections to work against. PGlite has one.
 - **RECALL on the Campaign tab's list leaves the Job Board saying "(posted)".** A later UNDO POSTING comes out right.
 - **A row still due goes with its campaign if the campaign is deleted,** and the Admin's ledger still reads as paid, an UNDO afterwards included, since nothing is left to say whether it landed.
-- **A send whose UNDO came back lost** is still the one UNDO reaches while that campaign's desktop is open, so each press asks again and is told again. A desktop you no longer run is rarely open, and once you run that campaign again, UNDO corrects it as usual.
+- **A send whose UNDO came back lost** is still the one UNDO reaches while that campaign's desktop is open, so each press asks again and is told again, and UNDO can't reach the older writes behind it meanwhile. The money and the ledger agree after each press. A desktop you no longer run is rarely open, and once you run that campaign again, UNDO corrects it as usual.
 - **A posting whose UNDO came back lost** drops off the Job Board's list of sends, though the player has it, so posting it again sends a second copy.
+- **A payday half taken back,** a write on this device undone and another player's UNDO lost, reads as credited, so the fight's XP for the one taken back can't be paid again, through Payroll or the Table's award.
 - **Importing an older GM file drops queued sends it doesn't hold,** because an import replaces the document. The ledger then has no word of them, so it doesn't read as paid either.
 - **A letter can be lost in the rarest two-tab race,** two filings at once after the lock gives up at 20 seconds. The numbers stay right.

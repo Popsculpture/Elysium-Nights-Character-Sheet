@@ -297,6 +297,27 @@ EN.gmPayroll = (function () {
     return standingWrites(filter, true);
   }
   function metaOf(w) { return (w && isObj(w.meta)) ? w.meta : {}; }
+  /* A PAYDAY'S MONEY IS ITS WRITES. Whether a payday stands is read off the ledger's writes tagged with its id (or, credited
+     before writes carried a tag, the ones its writeIds keep), counted by paidWrites, so an imported one counts. Never off
+     the payday's own flags or writeIds alone: UNDO PAYDAY marks it undone at once while another player's write still waits
+     for its answer, which can come back lost with the money still on their sheet, and SAVE rebuilds the record with no
+     writeIds and no flags. The CREDIT hold, the earlier payday, UNDO PAYDAY and reconcile all read this. The flags still
+     count where they say paid: a payday from another device's backup names records not here, so no write of it counts. */
+  function paydayIds(pd) {
+    var ids = Array.isArray(pd.writeIds) ? pd.writeIds.slice() : [];
+    gm.list("ledger").forEach(function (w) {
+      var mt = metaOf(w);
+      if (isObj(w) && w.kind === "write" && mt.source === "payday" && mt.paydayId === pd.id && ids.indexOf(w.id) === -1) ids.push(w.id);
+    });
+    return ids;
+  }
+  function paidOf(pd, paid) {
+    var ids = Array.isArray(pd.writeIds) ? pd.writeIds : [];
+    return (paid || paidWrites()).filter(function (w) {
+      var mt = metaOf(w);
+      return (mt.source === "payday" && mt.paydayId === pd.id) || ids.indexOf(w.id) !== -1;
+    });
+  }
   // the XP a write carries (the whole fight's total under D5), or 0
   function xpOfWrite(w) {
     var n = 0;
@@ -339,9 +360,10 @@ EN.gmPayroll = (function () {
     return { total: total, names: names };
   }
 
-  /* AN EARLIER PAYDAY FOR THE SAME FIGHT OR THE SAME JOB (F8). A credited
-     payday with a write still standing that paid the fight this form pays (the
-     same encounterAt) or the job it pays. CREDIT THE CREW waits for the GM's
+  /* AN EARLIER PAYDAY FOR THE SAME FIGHT OR THE SAME JOB (F8). A payday
+     with a write still standing that paid the fight this form pays (the same
+     encounterAt) or the job it pays, read off its writes, whatever its own
+     flags say (paidOf). CREDIT THE CREW waits for the GM's
      armed word when there is one, and the fight's XP is never written twice.
      A payday's writes are the ones tagged with its id, or (credited before
      writes carried a tag) the ones its writeIds list, counted by paidWrites, so
@@ -362,16 +384,12 @@ EN.gmPayroll = (function () {
     var hasAt = typeof encAt === "number", paid = null, hits = [];
     if (!hasAt && !jobId) return null;
     gm.list("ledger").forEach(function (pd) {
-      if (!isObj(pd) || pd.kind !== "payday" || pd.id === selfId || !pd.credited || pd.undone) return;
+      if (!isObj(pd) || pd.kind !== "payday" || pd.id === selfId) return;
       var fight = hasAt && paydayAt(pd) === encAt;
       var jobHit = !!jobId && pd.jobId === jobId;
       if (!fight && !jobHit) return;
       if (!paid) paid = paidWrites();
-      var ids = Array.isArray(pd.writeIds) ? pd.writeIds : [];
-      var ws = paid.filter(function (w) {
-        var mt = metaOf(w);
-        return (mt.source === "payday" && mt.paydayId === pd.id) || ids.indexOf(w.id) !== -1;
-      });
+      var ws = paidOf(pd, paid);
       if (!ws.length) return;
       // in the order written (paidWrites is newest first)
       var xpNames = ws.filter(function (w) { return xpOfWrite(w) > 0; }).reverse().map(function (w) { return w.charName || "a Freelancer"; });
@@ -541,7 +559,8 @@ EN.gmPayroll = (function () {
       xpRows: xpRows, xpObj: xpObj, xpTotal: xpTotal, tAward: tAward, xpPaid: xpPaid, xpWrite: xpWrite,
       credit: credit, title: (_p.title || "").trim() || defaultTitle(),
       encAt: encAt, dup: dup,
-      rec: rec, paid: !!(rec && rec.credited && !rec.undone)
+      // by its writes, or by its own word: a payday from another device's backup has no write that counts here, and was paid
+      rec: rec, paid: !!(rec && ((rec.credited && !rec.undone) || paidOf(rec).length))
     };
   }
 
@@ -1741,9 +1760,9 @@ EN.gmPayroll = (function () {
 
   // UNDO PAYDAY is live while the newest undoable write is one of this payday's
   function canUndo(pd) {
-    if (!pd || !Array.isArray(pd.writeIds) || !pd.writeIds.length) return false;
+    if (!pd) return false;
     var u = gm.undoable();
-    return !!(u && pd.writeIds.indexOf(u.id) !== -1);
+    return !!(u && paydayIds(pd).indexOf(u.id) !== -1);
   }
   // a payday whose writes all came in with an imported backup: paid, but never undoable here (F6)
   function importedPayday(pd) {
@@ -1753,6 +1772,8 @@ EN.gmPayroll = (function () {
   function undoPayday(pdId) {
     var pd = gm.rec("ledger", pdId);
     if (!canUndo(pd)) { toast("A newer write sits on top of this payday. Undo that first."); return; }
+    // what it paid that still stood, a credit made again on the same payday included
+    var mine = paydayIds(pd).filter(function (id) { var w = gm.rec("ledger", id); return !!(w && !w.undone); });
     var n = 0, guard = 0, refused = false;
     while (canUndo(pd) && guard < 500) {
       guard += 1;
@@ -1767,7 +1788,7 @@ EN.gmPayroll = (function () {
        (the same rule reconcile() keeps) */
     var standing = Object.create(null);
     paidWrites().forEach(function (w) { standing[w.id] = true; });
-    var left = pd.writeIds.filter(function (id) { return own(standing, id); });
+    var left = mine.filter(function (id) { return own(standing, id); });
     var next = copy(pd);
     if (!left.length) {
       next.undone = true;
@@ -1776,9 +1797,9 @@ EN.gmPayroll = (function () {
       unmarkJob(pd);
     }
     gm.put("ledger", next, { silent: true });
-    toast(!left.length ? "Payday undone: " + n + " " + plural(n, "record") + " put back as they were." + farFixNote(pd.writeIds.map(function (w) { return gm.rec("ledger", w); }))
-      : refused ? (n ? "Undid " + n + " of " + pd.writeIds.length + " writes. " : "") + "This device refused to save the next undo, so the rest of the payday stands."
-      : "Undid " + n + " of " + pd.writeIds.length + " writes. A newer write sits on top of the rest.");
+    toast(!left.length ? "Payday undone: " + n + " " + plural(n, "record") + " put back as they were." + farFixNote(mine.map(function (w) { return gm.rec("ledger", w); }))
+      : refused ? (n ? "Undid " + n + " of " + mine.length + " writes. " : "") + "This device refused to save the next undo, so the rest of the payday stands."
+      : "Undid " + n + " of " + mine.length + " writes. A newer write sits on top of the rest.");
     EN.app.render();
   }
 
@@ -2251,24 +2272,19 @@ EN.gmPayroll = (function () {
      put back, exactly as UNDO PAYDAY would have left them. Silent, and a no-op
      once done, so it is safe on every render. */
   function reconcile() {
-    var standing = null;
+    var paid = null;
     gm.list("ledger").forEach(function (pd) {
       if (!isObj(pd) || pd.kind !== "payday") return;
-      var ids = Array.isArray(pd.writeIds) ? pd.writeIds : [];
-      if (!ids.length) return;
-      if (!standing) {
-        standing = Object.create(null);
-        liveWrites().forEach(function (w) { standing[w.id] = true; });
-      }
-      if (pd.undone) { relive(pd, ids, standing); return; }
-      if (!pd.credited) return;
-      var undone = 0, keep = false;
-      ids.forEach(function (id) {
-        var w = gm.rec("ledger", id);
-        if (own(standing, id) || (w && w.imported)) keep = true;
-        else if (w && w.undone) undone += 1;
-      });
-      if (keep || !undone) return;
+      if (!paid) paid = paidWrites();
+      var stands = paidOf(pd, paid);
+      /* standing again with its flags behind: only an UNDO that came back lost does that. Not a credit going out, whose
+         writes land a moment before its record says credited */
+      if (stands.length) { if ((pd.undone || !pd.credited) && stands.some(function (w) { return isObj(w.far) && w.far.fix === "lost"; })) relive(pd); return; }
+      if (!pd.credited || pd.undone) return;
+      // none of it stands here, and one of its writes was taken back. Not one with an imported write: that is history
+      // from a GM file, paid where it was made, whatever this device holds
+      var ws = paydayIds(pd).map(function (id) { return gm.rec("ledger", id); });
+      if (ws.some(function (w) { return !!(w && w.imported); }) || !ws.some(function (w) { return !!(w && w.undone); })) return;
       var next = copy(pd);
       next.undone = true;
       next.undoneAt = Date.now();
@@ -2278,12 +2294,11 @@ EN.gmPayroll = (function () {
     });
   }
 
-  /* AN UNDO THAT CAME BACK LANDED. UNDO PAYDAY marks the payday undone at once, while another player's write still waits for
-     its answer. When the answer is that the send landed and its campaign took the UNDO with it (far.fix "lost"), the money
-     is on their sheet: the payday is credited again and its job paid again, so nothing offers to pay it twice. */
-  function relive(pd, ids, standing) {
-    var back = ids.some(function (id) { var w = gm.rec("ledger", id); return own(standing, id) && !!w && isObj(w.far) && w.far.fix === "lost"; });
-    if (!back) return;
+  /* A PAYDAY WHOSE MONEY STANDS AGAIN. UNDO PAYDAY marks the payday undone at once, while another player's write still waits
+     for its answer, and SAVE can rebuild it after that. When the answer is that the send landed and its campaign took the
+     UNDO with it (far.fix "lost"), the money is on their sheet: the payday reads as credited again and its job paid again.
+     The hold reads the writes either way (paidOf); this is what the panels show, which read the flags. */
+  function relive(pd) {
     var next = copy(pd);
     next.undone = false;
     delete next.undoneAt;

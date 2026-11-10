@@ -1495,7 +1495,7 @@ EN.gmStore = (function () {
      tag, so "already paid", UNDO and every view that reads the ledger go on working without knowing.
 
      THE LEDGER IS THE OUTBOX. writeCrew answers at once, because every tab's flow is built on that, and the
-     row goes a moment later (flushSends). A record carries `far`: { by, row, desk, state, rowId, why, fix, told, ending }.
+     row goes a moment later (flushSends). A record carries `far`: { by, row, desk, state, rowId, why, fix, told, ending, round }.
      state: queued, sent, refused, or skipped (taken back before it landed). fix: what UNDO still owes,
      queued, done, recalled, refused, limit (the marks' limit), or lost (its campaign ended, and what landed stays).
 
@@ -1641,7 +1641,10 @@ EN.gmStore = (function () {
     if ((FAR_RANK[af.state] || 0) > (FAR_RANK[f.state] || 0)) f.state = af.state;
     if (af.rowId && !f.rowId) f.rowId = af.rowId;
     if (af.why && !f.why) f.why = af.why;
-    if ((FIX_RANK[af.fix] || 0) > (FIX_RANK[f.fix] || 0)) f.fix = af.fix;
+    // a newer UNDO (`round`) outranks whatever an older one came to; within one, what either knows stays known
+    var ra = af.round || 0, rb = f.round || 0;
+    if (ra > rb) { f.round = ra; f.fix = af.fix; }
+    else if (ra === rb && (FIX_RANK[af.fix] || 0) > (FIX_RANK[f.fix] || 0)) f.fix = af.fix;
     if (af.told) f.told = true;
     if (af.ending && !f.ending) f.ending = af.ending;
     // an UNDO that couldn't go leaves what landed as paid
@@ -1732,13 +1735,17 @@ EN.gmStore = (function () {
     return id;
   }
   function undoFar(r) {
+    var was = r.far.fix, round = r.far.round;
     r.undone = true;
     r.undoneAt = Date.now();
+    // asked again after an UNDO was lost: a new one, so a copy that only knows the lost one can't put it back (farJoin)
+    if (was === "lost") r.far.round = (round || 0) + 1;
     r.far.fix = "queued";
     if (!persist(true)) {
       r.undone = false;
       delete r.undoneAt;
-      delete r.far.fix;
+      if (was === undefined) delete r.far.fix; else r.far.fix = was;
+      if (round === undefined) delete r.far.round; else r.far.round = round;
       persist(false);
       emit();
       return false;
@@ -1927,7 +1934,7 @@ EN.gmStore = (function () {
       farSay(who, lines);
       // the link back takes the note off the tab, unless somebody is typing there
       var el = document.activeElement, typing = !!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName);
-      if ((run.refused.length || run.unfixed.length || (wasStuck && !failed && !typing)) && EN.app && EN.app.render) EN.app.render();
+      if ((run.refused.length || run.unfixed.length || run.endedPaid.length || run.notRunningPaid.length || (wasStuck && !failed && !typing)) && EN.app && EN.app.render) EN.app.render();
       if (again && !failed) return flushSends();
     });
     return _sending;
