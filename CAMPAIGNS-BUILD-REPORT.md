@@ -986,7 +986,9 @@ That round had a review of its own, below.
 
 The migration file didn't change this round.
 
-This last round hasn't had a review of its own.
+**A tenth independent read, of that last round only,** found no path that doubles money or reads landed money as taken back. It checked that a refused correction only ever follows a row that reached them or is still on its way, never a send that didn't go or a posting recalled. It left three things, none of which moves money, all in Still open below: the half taken back payday now reaches a live campaign, a deleted imported payday leaves its job reading PAID OUT, and a DELETE can wait for good on another account's unanswered UNDO.
+
+**Run again from outside the build, on the final code (`32425e4`):** the whole suite 499 chains and 524 runs with 0 bad, the SQL 293 PASS with nothing left behind, all seven real rounds (530, 36, 159, 40, 21, 144, 61), and 1,000 new rounds of the two-tab fuzz with nothing lost.
 
 ## Checked, and how
 
@@ -1003,6 +1005,8 @@ This last round hasn't had a review of its own.
 | The other real rounds | All pass: batch 2 144, batch 3 61, the Table 159, two tabs 40, the same sequence in one window 21 | On the final code |
 | The two-tab fuzz | 400 random rounds of two and three tabs, nothing lost | `pg/gm_tabs_fuzz.mjs` on the final `gmstore.js` |
 | The whole suite | 499 chains, 524 runs, 0 bad, 0 skipped | `cx_integ_run.py`, round wr21, on the final code |
+| The app that is live today, on a database with this migration | The same as on today's database: batch 3 61, batch 2 144, two tabs 40, lost mail 21, and the Table 153 with the same 6 writing-tab checks failing on both | `main`'s `app` at `b38dc88` with this branch's `supabase` folder, round by round beside `main` as it is. So the site keeps working between the migration and the push |
+| The live project, read only, before the migration | The status rule is named `character_inbox_status_check`, all 9 rows fit the new rule, none of the new columns, table or functions exist, the three helpers do, and the history shows 5 applied | One `select` over the catalog, and `migration list` |
 | Three skins, desktop and 375 px | 30 of 30 measured, none scrolls sideways | `tests/campaigns_writes_shot.js` measured without a screenshot, so its numbers are read. Measured again on the final code |
 
 `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
@@ -1042,7 +1046,9 @@ This last round hasn't had a review of its own.
 - **A row still due goes with its campaign if the campaign is deleted,** and the Admin's ledger still reads as paid, an UNDO afterwards included, since nothing is left to say whether it landed.
 - **A send whose UNDO came back lost or refused** is still the one UNDO reaches while that campaign's desktop is open, so each press asks again and is told again, and UNDO can't reach the older writes behind it meanwhile. The money and the ledger agree after each press. A desktop you no longer run is rarely open, and once you run that campaign again, or they're back in it, UNDO corrects it as usual.
 - **A posting whose UNDO came back lost or refused** drops off the Job Board's list of sends, though the player has it, so posting it again sends a second copy.
-- **A payday half taken back,** a write on this device undone and another player's UNDO lost, reads as credited, so the fight's XP for the one taken back can't be paid again, through Payroll or the Table's award.
+- **A payday half taken back** reads as credited, so the fight's XP for the one taken back can't be paid again, through Payroll or the Table's award. That is a write on this device undone and another player's UNDO lost, and since the last round also a live campaign: a payday pays two players for a fight, one leaves, and UNDO PAYDAY takes the other's back while the one who left keeps theirs. Until they rejoin, the way round it is a payday with no fight attached, with the XP typed in as an objective award.
+- **An imported payday deleted after its writes were all taken back leaves its job reading PAID OUT** on the Job Board, with nothing standing. No money moves: PAY THIS JOB starts a new payday.
+- **A payday's DELETE can wait for good on an UNDO that is never answered,** where the UNDO was queued by another account on this browser, or came in with their GM file, since only that account's own runs ask about it.
 - **Which fight and job a payday paid is read from its record, which SAVE rebuilds.** UNDO PAYDAY with the answer still out, a different fight taken into the form, SAVE, then the UNDO comes back lost: the payday claims the new fight, so that fight's XP is never written, and the old fight and job have no hold.
 - **An imported payday whose writes here are all taken back** still reads CREDITED until you delete it.
 - **After an UNDO is answered, a payday's DELETE comes back with the next redraw,** not at once.
