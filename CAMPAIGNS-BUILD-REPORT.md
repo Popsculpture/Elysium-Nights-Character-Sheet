@@ -1259,6 +1259,11 @@ Settled with you on 9 Nov 2026, after the co-Admin's Table came up blank in the 
 - **Only those who run the campaign** (the Admin and co-Admins) can save or read it.
 - **No mirror and no live sharing.** Co-Admins are rare, so this button is the whole of it.
 
+And two answers on 10 Nov 2026, asked before any code, each with your pick in quotes:
+
+- **Payroll's ledger: "As history".** Another Admin's paydays and awards arrive like a GM file imported from another device. They count as already paid on your desktop, and only the desktop that made a write can UNDO it. The other choice was to leave the ledger out.
+- **Saved threats and custom hazards: "Stay on the browser".** Only the campaign's own desktop syncs. The other choice was for the library to travel too.
+
 ## The design
 
 **The button.** SYNC sits beside the campaign picker above the Table, on a campaign's desktop only. "No campaign" has none, since that desktop belongs to the browser. It asks once more before it acts (SYNC NOW?), because what it adds can't be taken back in one press. Nothing syncs by itself: not on load, not on a timer.
@@ -1282,7 +1287,7 @@ Reading before saving is what makes a second computer safe. A new computer's emp
 
 **Payroll's ledger.**
 
-- **What stays out, both ways:** a send still queued, an UNDO still queued, and a send that ended with its campaign or because the account stopped running it. They're left where they are, like any other record the sync doesn't carry.
+- **A send to another player's sheet travels once it has landed and nothing more is owed on it.** What stays out, both ways: a send still queued, an UNDO still queued, a send that never landed, and one that ended with its campaign or because the account stopped running it. They're left where they are, like any other record the sync doesn't carry.
 - **Everything else arrives as history,** the same as a GM file imported from another device. It counts as already paid here, so the hold on paying a fight or a job twice now sees the other Admin's paydays. It can't be undone from here: only the desktop that made a write can UNDO it.
 
 **In the database: one new migration, and nothing applied until you say go.** The seven already on the live project aren't edited.
@@ -1292,7 +1297,7 @@ Reading before saving is what makes a second computer safe. A new computer's emp
 - A campaign's saved desktops are deleted with it. Someone who stops running it keeps a row nobody can read, themselves included, and it's read again if they run it again.
 - A saved desktop is at most 2 MB. A browser's whole storage is about 5 MB, so a real one is far smaller.
 
-**Your own copy.** On the browser that saved it, your copy is this desktop as it stood, so it's never added back: what you delete here stays deleted unless somebody else still has it. On another computer, or on this one after its storage was cleared, your copy is added like anyone else's. The desktop remembers which save of yours it last matched, and that note lives in the desktop's own document, so deleting or replacing the document forgets it.
+**Your own copy.** On the browser that saved it, your copy is this desktop as it stood, so it's never added back: what you delete here stays deleted unless somebody else still has it. On another computer, or on this one after its storage was cleared, your copy is added like anyone else's. The desktop remembers which save of yours it last matched, and that note lives in the desktop's own document, so deleting the document forgets it, and so does importing a file over it.
 
 **Two of your devices pressing at once.** A save says which copy it read, and the database refuses it if the copy has changed since. The app then reads again, adds, and saves, up to three times.
 
@@ -1315,18 +1320,11 @@ Mine, so overrule any of them.
 1. **A delete on this browser sticks against your own saved copy.** Without that, an Admin with no co-Admin who pressed SYNC would see everything they had deleted come back from their own last save. "Someone who still has it" is another Admin, or another computer of yours.
 2. **An empty Table takes the whole fight,** round and clock included. That is what makes the co-Admin's blank Table match yours after one press.
 3. **The crew by character, threats by row.** A threat has no identity beyond its row.
-4. **What arrives in the ledger is history,** as from an imported file, and tells nobody anything: a refusal's strip notice stays on the desktop that got it. This is the first question below.
-5. **Saved threats and custom hazards stay on the browser.** This is the second question below.
+4. **What arrives in the ledger tells nobody anything:** a refusal's strip notice stays on the desktop that got it.
+5. **A send that never landed stays out too,** along with the queued and the ended. It was refused or taken back before it went, so it counts for nothing anywhere.
 6. **The other copies are added newest save first,** so where two of them hold one record differently, you get the more recent.
 7. **The database stores a desktop without reading it.** The app reads another Admin's copy the way it reads an imported file: record by record, dropping what it can't read.
 8. **A copy saved by a newer version of the app is skipped,** and the report says so, as an import refuses a newer file.
 9. **A crew row for a character that isn't in your account stays behind.** It has no database row, so it would mean nothing on another browser.
-10. **The report is a toast, and a line under the picker that stays until you press OK** or leave that desktop. Its words are suggested: "Synced. Added: 3 initiative rows, 2 contact cards. Kept as yours: 1 saved scene."
+10. **The report is a toast, and a line under the picker that stays until you press OK,** on the desktop it's about. Its words are suggested: "Synced. Added: 3 initiative rows, 2 contact cards." and under it "Kept as yours, where the two differ: 1 saved scene."
 11. **Jacked out or offline, the button says so and does nothing.**
-
-## Two questions for you
-
-Asked before any code, since each changes what is built. The first choice in each is what I'd build.
-
-1. **Payroll's ledger.** As history that counts as already paid (above), or left out of the sync altogether? Left out, each Admin's hold on paying twice stays blind to the other's paydays, as today.
-2. **Saved threats and custom hazards.** Stay on the browser, or travel too? They're one library shared by every campaign on a browser, so travelling would hand a co-Admin of one campaign the threats you built for the others. Plans and Table rows carry their own statblocks, so nothing that syncs depends on the library.
