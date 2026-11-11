@@ -1500,7 +1500,7 @@ One independent read, given the design and the diff and none of my conclusions. 
 | The whole suite | 501 chains, 526 runs, 0 bad, 0 skipped | `cx_integ_run.py`, round sync2, on the final code |
 | The app that is live today, on a database with this migration | The same as on today's database, round for round | `main`'s `app` at `38a02dc` with this branch's `supabase` folder. The SYNC story skips itself there |
 | The live project, read only | As above | `migration list`, and one `select` over the catalog |
-| By eye | The button, SYNC NOW?, SYNCING and the report line in Classic, '98 and #GRIDroid at desktop width | The Browser pane on this worktree, with canned answers in place of the database. Looked at before the review's fixes, which changed words and not layout |
+| By eye | The button, SYNC NOW?, SYNCING and the report line in Classic, '98 and #GRIDroid at desktop width | The Browser pane on this worktree, with canned answers in place of the database. All three skins before the review's fixes, which changed words and not layout, and Classic again on the final code |
 | A phone's width | Nothing runs past the page | Measured at 368 px in the story and at 375 px in the pane, where the button wraps under the picker. The pane's picture at that width is a crop, so this was measured, not seen |
 
 `gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
@@ -1511,7 +1511,7 @@ One independent read, given the design and the diff and none of my conclusions. 
 - **Two real browsers.** The story plays the co-Admin's browser on one page, by putting the campaign's document aside and signing the other account in. The unit test gives each browser its own storage, in Node. Neither is two machines.
 - **Two saves racing inside the database.** The row lock and the save count are there, and PGlite has one connection, so neither has ever contended. PGlite is also Postgres 18.6 where the project is 17.11.
 - **A big desktop.** The 2 MB limit is the database's. Whether Supabase's gateway takes a request that size hasn't been tried, and nobody has measured a real desktop.
-- **The fixes had no second review,** and the look wasn't checked again after them.
+- **The fixes had no second review.** '98 and #GRIDroid weren't looked at again after them.
 - **Light theme,** and a real phone.
 - **An older copy of the app in another tab.** It doesn't know the desktop's new part. By the two-tab rules a newer tab puts it back, and no check plays that.
 - **Three lines of the report's wording** have no check that would catch a break: the line kept after a save fails on a plan with nobody on it, a newer copy of your own being counted once and not twice, and the button's words before the migration is on the database.
