@@ -1078,7 +1078,7 @@ Run on the live site on 10 Nov 2026, after the migration and the merge, with two
 
 # Campaigns build report: one Advancement Type per campaign, and Milestones through the payday
 
-Designed with you on 10 Nov 2026, on `claude/charming-goodall-7c4a28`, cut from `main` at `1159856`. **Built on this branch, and neither applied nor merged.** The first half of this part is the settled design, so the build had one place to read it from. The second half is what was built, how it was checked, and what wasn't.
+Designed with you on 10 Nov 2026, on `claude/charming-goodall-7c4a28`, cut from `main` at `1159856`. **Live since 10 Nov 2026:** the migration went onto the live project on your word (324 PASS, 0 FAIL there), and the code was merged to `main` on your "push it" the same day. The first half of this part is the settled design, so the build had one place to read it from. The second half is what was built, how it was checked, and what wasn't. The live round is at the end.
 
 ## What you asked for
 
@@ -1181,7 +1181,7 @@ Mine again, so overrule any of them. The first seven are the ones above.
 
 ## What was built
 
-On `claude/charming-goodall-7c4a28`, on top of the design: the migration and its checks, the app, a merge of `main` for its live-round notes, and the fixes the review asked for. Nothing is pushed, nothing is applied to the live project.
+On `claude/charming-goodall-7c4a28`, on top of the design: the migration and its checks, the app, a merge of `main` for its live-round notes, and the fixes the review asked for. All of it is on `main` now, and the migration is on the live project.
 
 - **The migration,** `supabase/migrations/20261110120000_advancement_type.sql`: `campaigns.advancement` (a check allows `xp` and `milestone`, or empty) and `set_advancement(p_campaign, p_type, p_mail)`, for those who run the campaign, with the row locked first, the letter cleaned by `clean_mail` whether or not the type changes, and one inbox row per character in the campaign in the same step. It answers how many letters went; the same type again answers 0. The two migrations already on the live project aren't touched.
 - **`campaigns.js`:** the type is cached with each campaign, read with the list (and without the column if the project doesn't have it yet), and `usesXp(ch)`, `advancementOf(ch)`, `lockedBy(ch)`, `advancementLetter` and `setAdvancement` answer for the rest of the app. A record on this device finds its campaign by its local id; a copy of somebody else's by the crew that was read or by View sheet.
@@ -1190,9 +1190,11 @@ On `claude/charming-goodall-7c4a28`, on top of the design: the migration and its
 - **`gmstore.js`:** the `advance` op, local only, with its undo; `sendCrew` refuses it.
 - **`gm_payroll.js`:** the Milestone is in the form, saved, restored and counted as an unsaved change; `numsFor` gives each sheet its own track; NO PAY THIS TIME; the track decides the panels; the summary and stubs say only what came; the hold names a Milestone the earlier payday carried; AWARD MILESTONE and its ticks are gone, and the card, the undo strip and "Already awarded for this job" still read the old awards.
 - **`builder.js`, `printsheet.js`, `pdfexport.js`, `gm_encounters.js`:** the Advance step, the printed sheet, the PDF and the Table's XP Award card ask the same question.
-- **Asset stamp** `20261110.1`, above `main`'s `20261109.3`. **`HANDOFF.md`** says where the type is read from.
+- **Asset stamp** `20261110.2`, above the `20261109.3` that `main` had before. **`HANDOFF.md`** says where the type is read from.
 
 ## Going live, in this order
+
+Both steps are done, on 10 Nov 2026. They stay here as the record of how it went.
 
 1. **The migration, on the live project, before the code,** on your word. The app's read of its campaigns names the new column, and reads without it if it isn't there, so the other order is safe too, but the Campaign tab's buttons need the function.
 2. **Then the merge,** on "push it".
@@ -1229,10 +1231,10 @@ The checks should say 324 PASS, 0 FAIL. The repair is there because `db query` a
 
 ## What was not checked
 
-- **Nothing was run against the live project.** Supabase's own PostgREST, Realtime and Discord sign-in aren't in any of these rounds: the bridge imitates them, as before.
+- **Nothing was run against the live project before it went live.** Supabase's own PostgREST, Realtime and Discord sign-in aren't in any of these rounds: the bridge imitates them, as before. The live round at the end of this part has since run the main paths on the live site, and lists what it left out.
 - **Two Admins pressing at once.** The row lock is there, and PGlite has one connection, so the mutant that removes it can't be caught.
-- **How it looks,** other than a measurement that the heads-up and the Campaign tab stay inside a 368 px width. Not seen by eye: '98, #GRIDroid, light and dark, and a phone.
-- **The printed sheet and the PDF** read the campaign's type through the same call, and no PDF was exported and looked at.
+- **How it looks,** other than a measurement that the heads-up and the Campaign tab stay inside a 368 px width. Not seen by eye: '98, #GRIDroid, light and dark, and a phone. The look check at the end of this part has since looked at all of them, and found three things wrong.
+- **The printed sheet and the PDF** read the campaign's type through the same call, and no PDF was exported and looked at. The look check has since printed and exported both, and they are right.
 - **A player on an older copy of the app** (a cached page) still shows its own switch and ignores the column. The letter reaches it, but its sheet keeps its own type until it updates.
 - **Heat, the SYNC button, `gate.js`'s drawing and `tour.js`** weren't touched.
 
@@ -1241,6 +1243,79 @@ The checks should say 324 PASS, 0 FAIL. The repair is there because `db query` a
 1. **Every campaign starts with no type set,** so the first press sends the letters and a campaign that never presses keeps each sheet's own choice, split or not. The heads-up is how you find out.
 2. **The first press and a flip are the same act** (decision 7): both ask once more, both send the letter.
 3. **Two different Admins can still pay one fight twice,** as before; nothing here changes the ledger being per browser.
+
+## The live round
+
+Run on the live site on 10 Nov 2026, after the migration and the merge, with two real accounts on 5th flavor: Popsculpture as Admin in Chrome, and MyGalFRIDAY in Firefox. After each step I read the real rows, the campaign's setting and both sheets. You said each step looked as described on both screens.
+
+**The start:** 5th flavor had no type set, and its crew was split. Nessa's own switch was on XP and BOLLARD-7's on Milestones.
+
+| Step | Result | The database says |
+|---|---|---|
+| Setting the type to Milestone from Payroll's heads-up | **Pass** | The campaign reads milestone. One letter each, "Advancement Type: Milestone", delivered in 1.34 and 1.39 s. No number moved on either sheet |
+| A plain payday on the Milestone campaign, and its UNDO (your own extra) | **Pass** | 85 Glimmer on both sheets in 1.21 and 1.11 s, then off again under the payday's own keys in 0.97 s |
+| A payday carrying a Milestone | **Pass** | One write for each sheet, 85 Glimmer and 1 major Milestone together, in 0.65 and 0.61 s. Nessa got the Milestone and no XP, though her own switch says XP |
+| UNDO PAYDAY | **Pass** | One correction for each sheet, the Glimmer and the Milestone off together, in 0.87 and 0.79 s |
+| Flipping to XP from the Campaign tab | **Pass** | The campaign reads xp. One letter each, "Advancement Type: XP", in 0.69 and 0.75 s |
+| NO PAY THIS TIME, carrying 250 XP | **Pass** | One write for each sheet, 250 XP and no money, in 0.69 and 0.66 s. BOLLARD-7 got the XP, though its own switch says Milestone |
+| UNDO PAYDAY of it | **Pass** | 250 XP back off both sheets in 0.85 and 0.78 s |
+
+**What you saw, and said was as described:** the heads-up naming who was on which, with its two buttons; the second ask before a press acts; the heads-up gone and the Campaign tab's button lit afterwards; the letter in #POST; Nessa's Advance step changing tracks without a reload; her switch locked, with "Set by your Admin for 5th flavor."; a Milestones panel and no Experience panel on the Milestone campaign, and the other way round on XP; no AWARD MILESTONE button; "Gets it" listing both Freelancers; the Milestone on the pay stub under the money; and NO PAY THIS TIME folding the money away, with a stub that carried only the XP.
+
+**The sheets at the end:** Nessa has 1,784 Glimmer, 0.5 Nexus, 1,000 XP and no Milestones. BOLLARD-7 has 1,714 Glimmer, 0.5 Nexus, no XP and 1 major Milestone. Those are the starting numbers, to the unit. Neither sheet's own switch was written at any point: Nessa's still says XP and BOLLARD-7's still says Milestone. No row was marked delivered without reaching its sheet. 5th flavor was left on XP. Test has no type set and wasn't touched.
+
+**Not tried live:** a payday for a split crew on a campaign that hasn't chosen; the Table's XP Award card; the hold naming a Milestone, and CREDIT ANYWAY; an old AWARD MILESTONE award's card and its undo; a campaign with nobody in it; and a player on a cached older copy of the app. The printed sheet, the PDF, the other skins and a phone's width were looked at locally afterwards, in the look check below.
+
+**Not tried live, and closed on your word (10 Nov 2026):** you said these aren't important to test, so they aren't waiting on anyone. A player leaving the campaign and getting their own choice back; a co-Admin setting the type, or two Admins pressing at once; a letter waiting for a player who is away; and the align switch on a crew with no campaign.
+
+## The look check
+
+Run on 10 Nov 2026, after the live round, on `main`'s app at stamp `20261110.2`, against the stand-in for the database and not the live project. A separate agent did it, given the surfaces to capture and none of my conclusions. I then checked its three findings against its own pictures and the code, and they hold.
+
+**What was looked at:** seven looks (Classic dark and light, '98 in its own palette and in a light and a dark one, #GRIDroid dark and light), ten surfaces, each at 1,400 px and at a true 375 px: 140 runs, every picture opened. The surfaces were Payroll's heads-up and its armed button, the Campaign tab not set and set, the Milestones panel with an item picked, NO PAY THIS TIME on, the Experience panel, and the player's Advance step on both tracks, folded and open.
+
+**What is right.** The layout holds in every look and at both widths: nothing clipped, nothing overlapping, nothing wider than the screen at 375 px. The heads-up, its warning edge, the armed button, the Campaign tab before a type is set, the Milestones panel, NO PAY THIS TIME and the Experience panel are fine everywhere.
+
+**The printed sheet and the PDF follow the campaign,** for a sheet that disagrees with it either way round:
+
+| Sheet | Its own switch | Its campaign | The printed sheet says | The PDF says |
+|---|---|---|---|---|
+| Nessa | XP | Milestones | Progression: Milestones 0 maj, 1 min | Milestones 0 maj, 1 min |
+| Bollard | Milestones | XP | Progression: XP 400 / 300 | XP 400 / 300 |
+
+**What was wrong, in every skin.** The first two are fixed, and the fix covers most of the third: see "The look fix" below.
+
+1. **On the Campaign tab, the button in force reads as the dead one.** It is drawn disabled, and each skin's paint for a disabled button overrides the lit fill (`theme.css`, the `.btn:disabled` rules). So with the campaign on Milestones, MILESTONE is dim and XP MODE is bright, and the eye reads XP MODE as the one chosen. In '98 and #GRIDroid on a light palette the button in force is close to invisible. The live round's "lit" was my word for it, and it overstates what is on screen.
+2. **On the player's locked Advance step, the two buttons are painted the same.** Both are disabled, so nothing shows which is in force. In '98 and #GRIDroid their labels are hard to read at all.
+3. **That panel opens folded,** like every section on the Advance step, so "Set by your Admin for 5th flavor." and the track are hidden until the player opens it. What shows first is the header with the two identical buttons. Fixing 2 would let the header say which is in force without opening anything.
+
+**Smaller, and written down so they aren't lost:**
+
+- With NO PAY THIS TIME on, the Milestones panel still said "CREDIT THE CREW writes it with the money". There is no money in that payday. Fixed below.
+- '98 in its own palette paints placeholder text the same grey as the box it sits in, so "What the milestone was for" and the "1" in How many show as blank boxes. This is older than this build.
+- The help lines that carry the meaning here ("Set by your Admin for ...", the Campaign tab's state line, the NO PAY note) are in the app's faint help style. Readable, and the faintest text on these surfaces.
+- '98 at 375 px wraps a long title bar onto two rows. Nothing is cut.
+
+**What the look check could not see:** motion (the stage runs on virtual time), the toasts after a press, a real phone (touch, real pixel density, a mobile browser, the on-screen keyboard), palettes beyond the seven except in a strip of lit against unlit buttons, custom palettes, a print from the Admin's View sheet, and the live database. The pictures were shown to you in the session and aren't kept in the repo.
+
+## The look fix
+
+Made on 10 Nov 2026, on your word, after the look check. Asset stamp `20261110.3`.
+
+- **The button in force keeps its fill while it can't be pressed.** It carries a new class, `.lit`. `theme.css` gives a lit, disabled button the same fill as a chosen button that can still be pressed, at full strength, in Classic, '98 and #GRIDroid. In '98 it is also drawn pressed in, the way a toolbar there shows the mode that is on. `gm_campaign.js` puts the class on the Campaign tab's button and `builder.js` on the player's switch.
+- **The folded Advance panel now shows which type is in force,** because its header holds the switch. "Set by your Admin for ..." is still inside the panel, and the panel still opens folded like the others on that step.
+- **With NO PAY THIS TIME on, the Milestones panel no longer mentions money.** It says "CREDIT THE CREW writes it to each Freelancer in one write, and UNDO PAYDAY takes it back."
+
+**How it was checked:**
+
+- **The story has six new checks,** and passes: 170 on the stand-in and 174 on the real SQL, none failed. They check that the button in force is marked on the Campaign tab and on the locked switch for either type, that in each of the three skins it has the fill of a chosen button at full strength and is painted unlike the other one, and that the NO PAY line is the new one. They run only once the stylesheet knows `.lit`, so the story still passes on a branch cut before this.
+- **Eight one-line breaks of the fix, all caught.** Three got past my first version of the checks: "painted unlike the other" was satisfied by opacity alone, so a skin could lose its fill unnoticed, and the locked switch was only checked with XP in force. The checks were tightened until all eight were caught.
+- **Rendered again:** the lit button against the other one in all ten palettes and three skins, on both surfaces. None of the 60 is painted alike now, where all 30 on the Advance step were before. Then the changed surfaces in the seven looks at both widths, 70 runs. I looked at the three sheets of palettes, the Campaign tab, the folded panel at phone width and '98's title bar.
+- **The whole suite** on the fixed code: 525 runs in 500 chains, none bad, with the story's 170 checks among them. The app's syntax check is clean.
+
+**Not checked:** the fix on the live site, on a real phone, or in a custom palette. A custom palette sets its own accent and the fill follows it, but none was rendered.
+
+**Left as it was:** '98's placeholder grey, the faint help style, and the panel opening folded. On a locked switch the type not in force is still a ghost, at 35% in '98 and #GRIDroid. It can't be pressed and isn't in force, so dim is right, but its label is hard to read there.
 
 # Campaigns build report: the SYNC button
 

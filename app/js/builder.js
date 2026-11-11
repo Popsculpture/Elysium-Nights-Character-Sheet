@@ -2866,9 +2866,10 @@ EN.builder = (function () {
        character leaves. A campaign that has not chosen leaves the switch the player's own. */
     var camp = EN.campaigns, onXp = camp && camp.usesXp ? camp.usesXp(ch) : !!ch.useXp;
     var lockName = camp && camp.lockedBy ? camp.lockedBy(ch) : "";
+    // ".lit" keeps the one in force filled while a campaign has both locked, so the switch still says which it is
     var modeToggle = el("div.row", { style: { gap: "4px" } }, [
-      el("button.btn.sm" + (onXp ? ".primary" : ""), { disabled: !!lockName, "data-adv": "xp", onclick: function (e) { e.stopPropagation(); store.update(function (c) { c.useXp = true; }); } }, "XP MODE"),
-      el("button.btn.sm" + (!onXp ? ".primary" : ""), { disabled: !!lockName, "data-adv": "milestone", onclick: function (e) { e.stopPropagation(); store.update(function (c) { c.useXp = false; }); } }, "MILESTONE")
+      el("button.btn.sm" + (onXp ? ".primary.lit" : ""), { disabled: !!lockName, "data-adv": "xp", onclick: function (e) { e.stopPropagation(); store.update(function (c) { c.useXp = true; }); } }, "XP MODE"),
+      el("button.btn.sm" + (!onXp ? ".primary.lit" : ""), { disabled: !!lockName, "data-adv": "milestone", onclick: function (e) { e.stopPropagation(); store.update(function (c) { c.useXp = false; }); } }, "MILESTONE")
     ]);
     var advTrack = onXp
       ? el("div.row.wrap", { style: { gap: "12px", alignItems: "flex-end" } }, [

@@ -1576,7 +1576,9 @@ EN.gmPayroll = (function () {
     ]));
     if (mm.amount === null) kids.push(help("How many is a whole number, 1 to 99.", { color: "var(--warn)" }));
     if (mm.ok) {
-      kids.push(help("CREDIT THE CREW writes it with the money, in each Freelancer's one write, and UNDO PAYDAY takes it back with the rest.", { margin: "8px 0 0" }));
+      // NO PAY THIS TIME has no money in it, so the line doesn't promise any
+      kids.push(help(_p.noPay ? "CREDIT THE CREW writes it to each Freelancer in one write, and UNDO PAYDAY takes it back."
+                              : "CREDIT THE CREW writes it with the money, in each Freelancer's one write, and UNDO PAYDAY takes it back with the rest.", { margin: "8px 0 0" }));
       kids.push(el("div.mono", { dataset: { pay: "ms-text" },
         style: { whiteSpace: "pre-wrap", fontSize: "12px", lineHeight: "1.5", background: "var(--bg2)", border: "1px solid var(--border2)",
                  borderRadius: "4px", padding: "10px 12px", marginTop: "8px", userSelect: "text", overflowWrap: "anywhere" }, text: text }));
