@@ -21,7 +21,7 @@ declare
   n int;
   n2 int;
   campx uuid; campy uuid; campz uuid;
-  adv uuid; adv_t text; adv_a uuid; adv_c uuid; adv_d uuid;
+  adv uuid; adv_t text; adv_a uuid; adv_c uuid; adv_d uuid; adv_n int;
   t5 text;
   dk uuid; dk2 uuid; dk_t text; r1 bigint; d1 jsonb; d2 jsonb; d3 jsonb; pad int;
   v text;
@@ -1323,8 +1323,14 @@ begin
   select count(*) into n from public.character_inbox where campaign_id = adv;
   out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' none of the refusals sent a letter (' || n || E')\n';
 
+  -- how many other campaigns hold a type before anything is set here. On a live project some real ones do, so the
+  -- check further down asks that the number has not moved, not that it is nothing
+  perform set_config('role', 'postgres', true);
+  select count(*) into adv_n from public.campaigns where id <> adv and advancement is not null;
+  perform set_config('role', 'authenticated', true);
+
   -- the first press: a co-Admin sets Milestones, and every character in the campaign is written to
-  n := public.set_advancement(adv, 'milestone', '{"from": "  Campaign  ", "subj": " Advancement Type: Milestone ", "body": "Advancement Table now levels on Milestones. Your XP is kept as it is."}');
+  n := public.set_advancement(adv, 'milestone','{"from": "  Campaign  ", "subj": " Advancement Type: Milestone ", "body": "Advancement Table now levels on Milestones. Your XP is kept as it is."}');
   out := out || case when n = 3 then 'PASS' else 'FAIL' end || ' a co-Admin can set the type, and three letters go (' || n || E')\n';
   select advancement into v from public.campaigns where id = adv;
   out := out || case when v = 'milestone' then 'PASS' else 'FAIL' end || ' the type is stored (' || coalesce(v, 'null') || E')\n';
@@ -1364,7 +1370,7 @@ begin
   perform set_config('role', 'postgres', true);
   select count(*) into n from public.campaigns where id <> adv and advancement is not null;
   perform set_config('role', 'authenticated', true);
-  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' no other campaign took the type (' || n || E')\n';
+  out := out || case when n = adv_n then 'PASS' else 'FAIL' end || ' no other campaign took the type (' || n || ', and ' || adv_n || E' before)\n';
   select count(*) into n from public.character_inbox where campaign_id = adv and mail ->> 'subj' = 'Advancement Type: XP' and character_id in (adv_c, adv_d);
   out := out || case when n = 2 then 'PASS' else 'FAIL' end || ' both players got the flip''s letter (' || n || E')\n';
   select count(*) into n from public.character_inbox where character_id = adv_a and mail ->> 'subj' = 'Advancement Type: XP';

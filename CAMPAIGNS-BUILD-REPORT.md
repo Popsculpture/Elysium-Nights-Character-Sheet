@@ -1321,7 +1321,7 @@ Made on 10 Nov 2026, on your word, after the look check. Asset stamp `20261110.3
 
 # Campaigns build report: the SYNC button
 
-Designed and built on 10 Nov 2026 on `claude/vigilant-kare-2e3a45`, cut from `main` at `81f3711` and brought up to `main` at `38a02dc`. **Not merged, not pushed, and the migration is not applied to the live project.** The design below is the design as built. An independent review changed it in a few places, and each of those says so.
+Designed and built on 10 Nov 2026 on `claude/vigilant-kare-2e3a45`, cut from `main` at `81f3711` and brought up to `main` at `38a02dc`. **The migration went onto the live project on your word, 10 Nov 2026. The code is not merged and not pushed.** The design below is the design as built. An independent review changed it in a few places, and each of those says so.
 
 ## What you decided
 
@@ -1434,7 +1434,7 @@ Mine again, so overrule any of them. From 21 on they came out of the review.
 
 ## What was built
 
-On `claude/vigilant-kare-2e3a45`: the migration and its checks, the app, the review's fixes, and two merges of `main`. Nothing is pushed, nothing is merged, nothing is applied to the live project.
+On `claude/vigilant-kare-2e3a45`: the migration and its checks, the app, the review's fixes, and two merges of `main`. The migration is on the live project. The code is not pushed and not merged.
 
 - **The migration,** `supabase/migrations/20261110180000_campaign_desks.sql`: the table `campaign_desks` (campaign, account, the saved desktop, a save number and the time), with row security on, no policy and no privilege for any client, and not in Realtime. `desk_read(p_campaign)` answers the saved desktops of everyone who runs the campaign now, newest save first, each marked as the caller's own or not. `desk_save(p_campaign, p_doc, p_rev, p_sender)` stores the caller's: it takes an object of at most 2,000,000 bytes, locks the row, and refuses `EN_MOVED` unless `p_rev` is the number of the copy stored (0 for none). `p_sender` is the account the app means, as with `send_write`. The seven migrations already live aren't touched, and the review asked for no change to this one.
 - **`gmstore.js`:** THE SYNC BUTTON, near the end. `sync()` reads, adds, then saves. `syncIn` adds what the copies hold and this desktop lacks, through the same reader a load and an import use, and never replaces. `syncOut` is the desktop as it's saved: no library, a character named by its database row, and the ledger without the far door's unfinished business (`syncCarries`). `syncClean` is what a string may carry across. The document gains one part, `synced`: the names of the saved copies it holds, and when it last pressed. `isLive` counts a write that arrived by SYNC onto a sheet another browser holds.
@@ -1467,7 +1467,21 @@ npx supabase@2 migration repair --status applied 20261110180000 --project-ref gg
 
 The checks should say 378 PASS, 0 FAIL. The repair is there because `db query` applies a file and records nothing.
 
-**Read from the live project on 10 Nov 2026, read only:** its history lists the seven migrations as applied and this one as local only. One `select` over the catalog found no `campaign_desks` table and no `desk_read` or `desk_save`, and found `runs_campaign`, the three columns of `campaign_members` the read joins on, and one table in the Realtime publication. The project is on Postgres 17.11.
+**Read from the live project on 10 Nov 2026, read only, before the migration:** its history listed the seven migrations as applied and this one as local only. One `select` over the catalog found no `campaign_desks` table and no `desk_read` or `desk_save`, and found `runs_campaign`, the three columns of `campaign_members` the read joins on, and one table in the Realtime publication. The project is on Postgres 17.11.
+
+**Step 1 is done, 10 Nov 2026, on your word.** The migration went on inside one transaction, with no error. Read back afterwards:
+
+- the table, with its five columns, its key, its two links to the campaign and the account, and the rule that a desktop is an object;
+- row security on, no policy, and no privilege at all for a signed-in or anonymous client;
+- in no publication, so not in Realtime, which still carries the one table it did;
+- both functions running as their owner with a pinned search path, callable by a signed-in account and not by an anonymous one;
+- no rows in the new table, and the rows already there untouched: 2 accounts, 2 campaigns, 4 memberships, 6 characters, 62 inbox rows, before and after.
+
+The checks said **378 PASS, 0 FAIL** on the live project, rolled back, with the counts the same after as before and nothing of the fixtures left. The history lists all eight migrations on both sides.
+
+**The first live run said 377 PASS, 1 FAIL,** and the one failure was an older check, not a new one and not the migration. The Advancement Type's "no other campaign took the type" counted every campaign in the database that has a type, and expected none. One of your real campaigns has had its type set since that check was written. The check now asks that the number hasn't moved, which is what it meant. It still catches the broken copy it guards, and the file went 378 and 0 on the live project after that. Nothing on the live project was changed to get there.
+
+What is left is step 2: the code, on "push it".
 
 ## How it was reviewed
 
@@ -1499,7 +1513,8 @@ One independent read, given the design and the diff and none of my conclusions. 
 | The two-tab fuzz | 400 rounds, nothing lost | `pg/gm_tabs_fuzz.mjs`, since the document gained a part |
 | The whole suite | 501 chains, 526 runs, 0 bad, 0 skipped | `cx_integ_run.py`, round sync2, on the final code |
 | The app that is live today, on a database with this migration | The same as on today's database, round for round | `main`'s `app` at `38a02dc` with this branch's `supabase` folder. The SYNC story skips itself there |
-| The live project, read only | As above | `migration list`, and one `select` over the catalog |
+| The live project, read only, before the migration | As above | `migration list`, and one `select` over the catalog |
+| The live project, after the migration | 378 PASS, 0 FAIL, rolled back, every row count the same before and after | The catalog read back, then `campaign_checks.sql` on the live project. See Going live for the one older check the first run tripped on |
 | By eye | The button, SYNC NOW?, SYNCING and the report line in Classic, '98 and #GRIDroid at desktop width | The Browser pane on this worktree, with canned answers in place of the database. All three skins before the review's fixes, which changed words and not layout, and Classic again on the final code |
 | A phone's width | Nothing runs past the page | Measured at 368 px in the story and at 375 px in the pane, where the button wraps under the picker. The pane's picture at that width is a crop, so this was measured, not seen |
 
@@ -1507,7 +1522,7 @@ One independent read, given the design and the diff and none of my conclusions. 
 
 ## What was not checked
 
-- **Nothing was run against the live project.** Supabase's own PostgREST and Discord sign-in aren't in any of these rounds: the bridge imitates them, as before.
+- **The app hasn't run against the live project.** The migration and its checks have. Supabase's own PostgREST and Discord sign-in aren't in any of the app's rounds: the bridge imitates them, as before. A press of the real button on the live site is the live round, after the push.
 - **Two real browsers.** The story plays the co-Admin's browser on one page, by putting the campaign's document aside and signing the other account in. The unit test gives each browser its own storage, in Node. Neither is two machines.
 - **Two saves racing inside the database.** The row lock and the save count are there, and PGlite has one connection, so neither has ever contended. PGlite is also Postgres 18.6 where the project is 17.11.
 - **A big desktop.** The 2 MB limit is the database's. Whether Supabase's gateway takes a request that size hasn't been tried, and nobody has measured a real desktop.
