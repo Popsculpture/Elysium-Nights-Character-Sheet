@@ -215,11 +215,15 @@ A desktop lives in one browser, so a co-Admin's Table starts blank, and so does 
 above the Table, is the one way across: a press saves that campaign's desktop to the account and adds what the others who run the campaign saved. It
 only ever adds. A record this desktop has is left exactly as it is, and the report under the picker says what was added and what was kept.
 
-- A delete doesn't travel: the next press brings a record back from someone who still has it. An edit reaches only someone who doesn't have the record yet.
-- A Table that isn't in use takes the other fight whole. One in use gains rows, and keeps its own round, turn and clock.
+- A delete doesn't travel. It stands on the desktop that made it until someone who still has the record saves again: the press after that brings it
+  back. An edit reaches only someone who doesn't have the record yet.
+- A saved copy is read once. Each save carries a name, and a desktop notes the copies it already holds, its own last save among them.
+- A Table that isn't in use takes the other fight whole. One in use gains rows, and keeps its own round, turn and clock. A fight a desktop has ended
+  doesn't come back onto its Table from someone still in it.
 - Payroll's ledger arrives as history, like an imported file: it counts as paid, and only the desktop that made a write can UNDO it. A send still
-  waiting, an UNDO still waiting, and a send that ended with its campaign stay where they are.
+  waiting, an UNDO still waiting, one that never landed, and one that ended with its campaign stay where they are.
 - Saved Threats and custom Hazards stay on the browser.
+- A copy is somebody else's data in this page, so it loses every `<` and `>` before it is read, as another player's sheet does.
 - `supabase/migrations/20261110180000_campaign_desks.sql` holds the rules: one saved desktop to a campaign and an account, read and written only
   by those who run the campaign, through `desk_read` and `desk_save`. It has to be on the database before the button can do anything.
 

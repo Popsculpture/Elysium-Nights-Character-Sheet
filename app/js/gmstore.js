@@ -2738,9 +2738,8 @@ EN.gmStore = (function () {
     function tagOf(doc) { return isObj(doc) && typeof doc.tag === "string" && doc.tag && doc.tag !== "at" ? doc.tag : ""; }
     function attempt(n) {
       return syncWait(C.deskRead(id)).then(function (rows) {
-        if (!here()) return stop("moved");
         syncTabs();
-        // hearing another tab can redraw, and a redraw can take this tab to another desktop
+        // asked after the look, not before: hearing another tab can redraw, and a redraw can take this tab to another desktop
         if (!here()) return stop("moved");
         rows = (Array.isArray(rows) ? rows : []).filter(isObj);
         var mine = rows.filter(function (r) { return r.mine === true; })[0] || null;
