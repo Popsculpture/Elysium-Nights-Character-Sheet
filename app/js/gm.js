@@ -1161,9 +1161,11 @@ EN.gmView = (function () {
       el("select.camp-input.gm-crew-pick", { "aria-label": "Campaign", dataset: { gm: "crew-pick" }, onchange: function (e) { C.setPick(e.target.value); EN.app.render(); } },
         mine.map(function (x) { return el("option", { value: x.id, selected: !!now && x.id === now.id, text: x.name }); })
           .concat([el("option", { value: C.NO_CAMPAIGN, selected: !now, text: "No campaign" })])),
-      now ? syncButton(now) : null
+      // the button syncs the desktop this tab is ON. A switch this device refused leaves the tab on the old one (NOT SAVED
+      // says why), and a button under the new name would then save the old campaign's desktop: no button until they agree
+      now && onDesk(now) ? syncButton(now) : null
     ]);
-    if (!now || !_sync.said) return line;
+    if (!now || !onDesk(now) || !_sync.said) return line;
     line.style.marginBottom = "6px";
     return el("div", { dataset: { gm: "desk" } }, [line,
       el("div.row.between.wrap", { dataset: { gm: "sync-said" }, style: { gap: "8px", alignItems: "center", marginBottom: "12px" } }, [
@@ -1178,34 +1180,49 @@ EN.gmView = (function () {
      a toast would be gone before anyone had read a list. The words are suggested, not the author's. */
   var _sync = { said: null };
   gm.perDesk(function () { return _sync.said; }, function (kept) { _sync.said = kept || null; });
+  function onDesk(c) { var d = gm.desk(); return !!d && d.id === c.id; }
   function syncAny(c) { return Object.keys(c || {}).some(function (k) { return !!c[k]; }); }
+  // what a press that didn't save has to say, where the database's own word isn't one a person can read
+  var SYNC_WHY = {
+    moved: "The desktop changed before the sync came back.",
+    link: "Could not reach your account.",
+    error: "Could not reach your account.",
+    newer: "Your own saved copy is from a newer version of the app, so this desktop was not saved over it. Reload to update."
+  };
+  // the refusals a second press can get past. Too big, not this account's to run, or a newer copy: pressing again changes nothing
+  var SYNC_AGAIN = { moved: 1, link: 1, error: 1, EN_MOVED: 1, EN_NOT_MINE: 1 };
   function syncWords(rep, name) {
-    var added = syncAny(rep.added), kept = syncAny(rep.kept), out = [];
+    var counts = syncAny(rep.added), added = counts || !!rep.fight, kept = syncAny(rep.kept), out = [];
+    // a plan with nobody on it yet is still something that came: its name, its clock, its round
+    var list = counts ? gm.countText(rep.added) + (rep.fight ? ", with the fight's round, clock and name" : "") : "the plan on the Table, with its round, clock and name";
     if (rep.why === "offline") return "SYNC needs the link. Nothing was saved or added.";
-    if (rep.why === "no-desktop") return "This browser's own desktop has nothing to sync. Pick a campaign.";
     if (rep.ok) {
-      out.push(added ? "Synced. Added: " + gm.countText(rep.added) + (rep.fight ? ", with the fight's round, turn and clock." : ".")
-        : (rep.others ? "Synced. Nothing new to add." : "Synced. Nobody else has saved a desktop for " + name + " yet."));
+      out.push(added ? "Synced. Added: " + list + "." : (rep.others ? "Synced. Nothing new to add." : "Synced. Nobody else has saved a desktop for " + name + " yet."));
     } else {
-      var word = rep.why === "moved" ? "The desktop changed before the sync came back."
-        : rep.why === "link" || rep.why === "error" ? "Could not reach your account." : EN.campaigns.errText(rep.error, "The account refused it.");
+      // the store's word for it, not the raw error: it has already read a refusal to store the document as EN_BAD_DESK
+      var word = SYNC_WHY[rep.why] || EN.campaigns.errText({ message: rep.why }, "The account refused it.");
       if (!added) return word + " Nothing was saved or added.";
-      out.push("Added: " + gm.countText(rep.added) + (rep.fight ? ", with the fight's round, turn and clock." : "."));
-      out.push("This desktop was not saved to your account. " + word + " Press SYNC again.");
+      out.push("Added: " + list + ".");
+      out.push("This desktop was not saved to your account. " + word + (SYNC_AGAIN[rep.why] ? " Press SYNC again." : ""));
     }
     if (kept) out.push("Kept as yours, where the two differ: " + gm.countText(rep.kept) + ".");
-    if (rep.skipped) out.push(rep.skipped === 1 ? "One saved desktop is from a newer version of the app and was left out. Reload to update."
-                                                : rep.skipped + " saved desktops are from a newer version of the app and were left out. Reload to update.");
+    // this account's own newer copy has had its say above
+    var newer = (rep.newer || 0) - (rep.why === "newer" ? 1 : 0);
+    if (newer > 0) out.push(newer === 1 ? "One saved desktop is from a newer version of the app and was left out. Reload to update."
+                                        : newer + " saved desktops are from a newer version of the app and were left out. Reload to update.");
+    if (rep.unread) out.push(rep.unread === 1 ? "One saved desktop could not be read and was left out."
+                                              : rep.unread + " saved desktops could not be read and were left out.");
     return out.join("\n");
   }
   function runSync(c) {
     var p = gm.sync();
     EN.app.render();
     p.then(function (rep) {
-      var words = syncWords(rep, c.name), d = gm.desk();
-      // still on the desktop it is about: the line stays. Otherwise a toast names the campaign
-      if (d && d.id === c.id) { if (rep.ok || syncAny(rep.added)) _sync.said = words; toast(words, Math.min(12000, words.length * 55)); }
-      else toast(c.name + ": " + words, Math.min(12000, words.length * 55));
+      var words = syncWords(rep, c.name), ms = Math.min(12000, words.length * 55);
+      // still on the desktop it is about: the line says what this press did, or goes, so an older press's words can't stand
+      // for this one. Otherwise a toast names the campaign
+      if (onDesk(c)) { _sync.said = rep.ok || syncAny(rep.added) || rep.fight ? words : null; toast(words, ms); }
+      else toast(c.name + ": " + words, ms);
       EN.app.render();
     });
   }
@@ -1217,7 +1234,7 @@ EN.gmView = (function () {
     else b = EN.ui.armButton("gm:sync:" + c.id, {
       cls: ".btn.sm", label: "SYNC", armedLabel: "SYNC NOW?",
       title: "Save this desktop to your account, and add what the others who run " + c.name + " have saved. Nothing of yours is replaced or removed.",
-      armedTitle: "It only adds, and it can't be taken back in one press: a record you deleted comes back if someone else still has it, and the other Admin's Table rows join yours. Click again to sync.",
+      armedTitle: "It only adds, and it can't be taken back in one press: the other Admin's Table rows join yours, and a record you deleted earlier comes back if someone who still has it has saved since. Click again to sync.",
       onConfirm: function () { runSync(c); }
     });
     b.dataset.gm = "sync";
