@@ -1321,10 +1321,61 @@ Mine, so overrule any of them.
 2. **An empty Table takes the whole fight,** round and clock included. That is what makes the co-Admin's blank Table match yours after one press.
 3. **The crew by character, threats by row.** A threat has no identity beyond its row.
 4. **What arrives in the ledger tells nobody anything:** a refusal's strip notice stays on the desktop that got it.
-5. **A send that never landed stays out too,** along with the queued and the ended. It was refused or taken back before it went, so it counts for nothing anywhere.
-6. **The other copies are added newest save first,** so where two of them hold one record differently, you get the more recent.
-7. **The database stores a desktop without reading it.** The app reads another Admin's copy the way it reads an imported file: record by record, dropping what it can't read.
-8. **A copy saved by a newer version of the app is skipped,** and the report says so, as an import refuses a newer file.
-9. **A crew row for a character that isn't in your account stays behind.** It has no database row, so it would mean nothing on another browser.
-10. **The report is a toast, and a line under the picker that stays until you press OK,** on the desktop it's about. Its words are suggested: "Synced. Added: 3 initiative rows, 2 contact cards." and under it "Kept as yours, where the two differ: 1 saved scene."
-11. **Jacked out or offline, the button says so and does nothing.**
+5. **The other copies are added newest save first,** so where two of them hold one record differently, you get the more recent.
+6. **The database stores a desktop without reading it.** The app reads another Admin's copy the way it reads an imported file: record by record, dropping what it can't read.
+7. **A copy saved by a newer version of the app is skipped,** and the report says so, as an import refuses a newer file.
+8. **A crew row for a character that isn't in your account stays behind.** It has no database row, so it would mean nothing on another browser.
+9. **The report is a toast, and a line under the picker that stays until you press OK,** on the desktop it's about. Its words are suggested: "Synced. Added: 3 initiative rows, 2 contact cards." and under it "Kept as yours, where the two differ: 1 saved scene."
+10. **Jacked out or offline, the button says so and does nothing.**
+
+## Decisions I made while building
+
+Mine again, so overrule any of them.
+
+11. **A send that never landed stays out too,** along with the queued and the ended. It was refused, or taken back before it went, so it counts for nothing anywhere.
+12. **The report names what it kept on every press,** for as long as the two copies differ. It doesn't remember what it told you last time.
+13. **A write that has only gained its arrival marks isn't counted as different.** Your payday, read back from the co-Admin's copy as history, is still the same payday.
+14. **A press belongs to the desktop and the account it was pressed on.** If the tab has gone to another campaign, or another account has jacked in, by the time the answer comes, nothing is added anywhere and a toast names the campaign it was about.
+15. **Only a copy that moved is tried again,** up to three times. A save with no answer is left for you to press again, and what the press added stays added.
+16. **An imported file forgets which save the desktop matched.** So the press after an import adds whatever your saved copy holds, which brings back what an older backup lacked.
+17. **A fight none of whose rows can be named on your browser takes no round.** A round with nobody in the order isn't a fight.
+18. **A threat that arrives beside one of the same name is numbered,** as any second threat on a Table is: yours stays "Street Ganger" and theirs reads "Street Ganger 2".
+19. **Nothing is tidied up when someone stops running a campaign.** Their saved copy stays in its row, unread, until the campaign is deleted. Tidying it would have meant new versions of functions already on the live project.
+20. **Offline, the button has no second press.** One press says "SYNC needs the link."
+
+## What was built
+
+On `claude/vigilant-kare-2e3a45`, on top of the design: the migration and its checks, the app, and the fixes the review asked for. Nothing is pushed, nothing is merged, nothing is applied to the live project.
+
+- **The migration,** `supabase/migrations/20261110180000_campaign_desks.sql`: the table `campaign_desks` (campaign, account, the saved desktop, a save number and the time), with row security on, no policy and no privilege for any client, and not in Realtime. `desk_read(p_campaign)` answers the saved desktops of everyone who runs the campaign now, newest save first, each marked as the caller's own or not. `desk_save(p_campaign, p_doc, p_rev, p_sender)` stores the caller's: it takes an object of at most 2,000,000 bytes, locks the row, and refuses `EN_MOVED` unless `p_rev` is the number of the copy stored (0 for none). `p_sender` is the account the app means, as with `send_write`. The seven migrations already live aren't touched.
+- **`gmstore.js`:** THE SYNC BUTTON, near the end. `sync()` reads, adds, then saves. `syncIn` adds what the copies hold and this desktop lacks, through the same reader a load and an import use, and never replaces. `syncOut` is the desktop as it's saved: no library, a crew row named by its database row, and the ledger without the far door's unfinished business (`syncCarries`). The document gains one part, `synced`: which saved copy of each account's it last matched.
+- **`campaigns.js`:** `deskRead` and `deskSave`, and four refusals in words.
+- **`gm.js`:** the button beside the campaign picker, its second press, SYNCING while it's out, and the report under the picker until OK.
+- **Asset stamp** `20261110.3`, above `main`'s `20261110.2`. **README, HANDOFF and DEFERRED-FIXES** describe it.
+
+## Going live, in this order
+
+1. **The migration, on the live project, before the code,** on your word. Nothing else in the app reads the new table, so the site is the same with it as without. Without it the button answers "Could not reach your account. Nothing was saved or added."
+2. **Then the merge,** on "push it".
+
+From a worktree, which has no `supabase link` of its own:
+
+```bash
+npx supabase@2 migration list --project-ref ggjgkcnhfpjwyrhakqun
+```
+
+```bash
+npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/migrations/20261110180000_campaign_desks.sql
+```
+
+```bash
+npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/campaign_checks.sql
+```
+
+```bash
+npx supabase@2 migration repair --status applied 20261110180000 --project-ref ggjgkcnhfpjwyrhakqun
+```
+
+The checks should say 378 PASS, 0 FAIL. The repair is there because `db query` applies a file and records nothing.
+
+**Read from the live project on 10 Nov 2026, read only:** its history lists the seven migrations as applied and this one as local only. One `select` over the catalog found no `campaign_desks` table and no `desk_read` or `desk_save`, and found `runs_campaign`, the three columns of `campaign_members` the read joins on, and one table in the Realtime publication. The project is on Postgres 17.11.
