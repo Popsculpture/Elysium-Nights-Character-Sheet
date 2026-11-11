@@ -12453,6 +12453,28 @@ Verified in the browser: Freelancer's Attribute Matrix, Vitality, Skills and Act
 the Settings tray header, all lost the square on both Bubblegum Flapjack and the default #GRID
 theme, headers otherwise unchanged. Fresh tab, no console errors.
 
+## Markup in a stored GM record prints as text, 2026-11-10
+
+Built on `claude/trusting-cray-fde91a`, cut from `main` at `38a02dc`. Not merged, not pushed. The SYNC button's review found this and left it open; this closes it where the markup was made.
+
+**Found.** A die face is an SVG string set through `el()`'s `html:`, which is `innerHTML`, and `dieFaceSvg` and `d20Face` in `ui.js` put the value they print into that string raw. Two Admin views draw a die from a field they read out of a stored record: a Downtime check's `roll` and its event's `n` (`gm_heat.js`, `checkRow` and `eventCard`), and a logged job's `picks[k].n` once the job is opened (`gm_jobs.js`, `column`). Nothing checks those fields on the way in (`gmstore.js` `migrate` keeps a record as it finds it), so a GM data file imported by hand in Settings could carry an `<img>` with an `onerror` in any of the three. Reproduced on `main` through the real picker: each one left the `<text>`, became an `<img>` beside the die and ran its handler. The page holds the signed-in session and has no Content Security Policy.
+
+**Fixed, in `ui.js` only.** Both functions escape what they print, and the colours and sizes a caller passes go in escaped too, so no caller can put markup into a die. A digit, `?` and a CSS colour hold none of the escaped characters, so an ordinary face is the same string as before. `gm_heat.js` and `gm_jobs.js` did not change. Stamp `20261110.4`.
+
+**Swept.** Every `html:` and `innerHTML` in `gm*.js` and `ui.js`, and in what the Admin views call (`codex.js`, `app.js`, `settings.js`, `campaigns.js`, `cloud.js`):
+
+- The ten tab headings (`heading` in `gm.js` and each `gm_*.js`): two literals each. Safe.
+- `gm_heat.js` `dieFace`: a stored check's `roll`, a stored event's `n`. **This was the hole.**
+- `gm_jobs.js` `dieFace`: a stored pick's `n`. **This was the hole.** The posting die beside it is rolled in the session.
+- `gm_people.js`: the Profile d12 prints the book row's own number (the stored number only picks the row, by `===`), and the name roller's d20 prints a roll made in the session. Safe.
+- `ui.js`: `dieFaceSvg` and `d20Face` (fixed), the damage icons (the shipped SVG, picked by a name the catalogue lists), the filing animation (a constant).
+- `app.js` (tab icons and stubs, the boot lines), `codex.js` and `settings.js` (icons, a heading): literals. `campaigns.js` and `cloud.js` have none.
+- No Admin view builds an element name, an `href` or a `src` from a record, and `toast` writes text.
+
+**Checked.** `tests/gm_markup_1.js` in the suite, 45 checks: the file goes in through the Settings picker, then the Heat tab and the job. 14 failed before the fix, none after, and three ordinary faces are compared with the strings `main` drew. `pg/gm_markup_mutants.py` takes each escape out in turn: 14 of 14 caught.
+
+**Left open.** The Freelancer desktop joins record fields into markup at sites of its own, and they were not swept: the Freelancer tab's heading prints the handle (`combat.js`), the Impact Table an item's name (`inventory.js`), and more in `builder.js`, `flow.js` and `grid.js`. Another player's sheet is already stripped of `<` and `>` before it is drawn (`store.js` `neuter`), so what is left is a Freelancer's file imported by hand. A Content Security Policy would stop an inline handler whichever view let it through; it is an option and was not done. `gate.js` and `tour.js` were not read. The SYNC branch's `syncClean` can stay as a second fence, but its entry here lists these views as left open, which stops being true once both branches are merged.
+
 ## Environment
 
 - **The rulings ledger is not in this repo, and may not be reachable at all.** It is recorded

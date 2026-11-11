@@ -389,12 +389,23 @@ EN.ui = (function () {
           facets: ["P:50,24 74.7,42 65.3,71 34.7,71 25.3,42", "M50,24 L50,2 M74.7,42 L95.6,35.2 M65.3,71 L78.2,88.8 M34.7,71 L21.8,88.8 M25.3,42 L4.4,35.2"],
           numY: 50 }
   };
+  /* A die face is an SVG STRING, and every caller hands it to el()'s `html:`, which is innerHTML.
+     So whatever a caller passes goes into that string as text, never as markup: the value a die
+     prints, and the colours and sizes around it. A roll is a number everywhere the app writes
+     one, but a view also draws rolls it READS (a Downtime check's `roll`, a job pick's `n`), and
+     a GM data file imported by hand can hold anything there. Unescaped, an <img onerror> in such
+     a field left the <text>, became a tag beside the die and ran, in a page that holds a session.
+     A digit, "?" and a CSS colour have none of these five characters, so they print as before. */
+  function svgText(v) {
+    return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
   // opts: { size (width px), edge (stroke), num (value color), value, animating, numSize, glow (drop-shadow color) }
   function dieFaceSvg(sides, opts) {
     opts = opts || {};
     var g = DIE_GEOM[sides] || DIE_GEOM[6];
     var w = opts.size || 24, h = Math.round(w * (opts.hRatio || 1.04));
-    var edge = opts.edge || "var(--border2)", num = opts.num || "var(--text)";
+    var edge = svgText(opts.edge || "var(--border2)"), num = svgText(opts.num || "var(--text)");
     var shown = opts.animating ? "?" : (opts.value == null ? "" : String(opts.value));
     var fs = opts.numSize || (shown.length >= 2 ? 30 : 36);
     var inner = g.facets.map(function (f) {
@@ -402,11 +413,11 @@ EN.ui = (function () {
         ? '<polygon points="' + f.slice(2) + '" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>'
         : '<path d="' + f + '" fill="none" style="stroke:' + edge + '" stroke-width="3" stroke-linejoin="round" opacity=".7"/>';
     }).join("");
-    var glow = opts.glow ? "filter:drop-shadow(0 0 " + Math.round(w / 5) + "px " + opts.glow + ");" : "";
-    return '<svg viewBox="0 0 100 100" width="' + w + '" height="' + h + '" aria-hidden="true" style="' + glow + '">'
+    var glow = opts.glow ? "filter:drop-shadow(0 0 " + Math.round(w / 5) + "px " + svgText(opts.glow) + ");" : "";
+    return '<svg viewBox="0 0 100 100" width="' + svgText(w) + '" height="' + h + '" aria-hidden="true" style="' + glow + '">'
       + '<polygon points="' + g.outer + '" fill="rgba(0,0,0,.35)" style="stroke:' + edge + '" stroke-width="4" stroke-linejoin="round"/>'
       + inner
-      + '<text x="50" y="' + g.numY + '" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
+      + '<text x="50" y="' + g.numY + '" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + svgText(fs) + '">' + svgText(shown) + '</text>'
       + '</svg>';
   }
   // one rolled Dice-Pool die (#GRID Deep Run + crafting Work Intervals). poolColor
@@ -479,9 +490,9 @@ EN.ui = (function () {
     var fs = shown.length >= 2 ? 4200 : 5400;
     var glowPx = opts.fumble ? Math.round(w / 10) : Math.round(w / 6);
     var glow = (opts.kept && !opts.animating) ? "filter:drop-shadow(0 0 " + glowPx + "px " + edge + ");" : "";
-    var svg = '<svg viewBox="' + D20_VIEWBOX + '" width="' + w + '" height="' + h + '" aria-hidden="true" style="' + glow + '">'
+    var svg = '<svg viewBox="' + D20_VIEWBOX + '" width="' + svgText(w) + '" height="' + h + '" aria-hidden="true" style="' + glow + '">'
       + '<path d="' + D20_PATH + '" fill="rgba(2,10,18,.55)" fill-rule="evenodd" style="stroke:' + edge + '" stroke-width="260" stroke-linejoin="round"/>'
-      + '<text x="' + D20_NUM_X + '" y="' + D20_NUM_Y + '" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + shown + '</text>'
+      + '<text x="' + D20_NUM_X + '" y="' + D20_NUM_Y + '" text-anchor="middle" dominant-baseline="central" style="fill:' + num + ';font-family:var(--mono);font-weight:700" font-size="' + fs + '">' + svgText(shown) + '</text>'   // as dieFaceSvg: a value is text
       + '</svg>';
     return el("span.tb-die" + (opts.animating ? ".rolling" : "") + (opts.fxCrit ? ".fx-die-crit" : "") + (opts.fxFault ? ".fx-die-fault" : ""), {
       title: "d20" + (opts.animating ? "" : ": " + value + (opts.dropped ? " (dropped)" : opts.kept ? " (kept)" : "")),
