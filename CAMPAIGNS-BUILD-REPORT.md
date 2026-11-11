@@ -1313,6 +1313,8 @@ Made on 10 Nov 2026, on your word, after the look check. Asset stamp `20261110.3
 - **Rendered again:** the lit button against the other one in all ten palettes and three skins, on both surfaces. None of the 60 is painted alike now, where all 30 on the Advance step were before. Then the changed surfaces in the seven looks at both widths, 70 runs. I looked at the three sheets of palettes, the Campaign tab, the folded panel at phone width and '98's title bar.
 - **The whole suite** on the fixed code: 525 runs in 500 chains, none bad, with the story's 170 checks among them. The app's syntax check is clean.
 
-**Not checked:** the fix on the live site, on a real phone, or in a custom palette. A custom palette sets its own accent and the fill follows it, but none was rendered.
+**On the live site, 10 Nov 2026.** It went to `main` on your "push it" as `68887bd`. The site served stamp `20261110.3` and its four changed app files matched `main`. You looked at it there with the real accounts and said it looks right. The database also shows 5th flavor flipped to Milestone and back to XP two seconds apart: four letters, all delivered in under two seconds, and no number moved on either sheet. It ends on XP.
+
+**Not checked:** a real phone, and a custom palette. A custom palette sets its own accent and the fill follows it, but none was rendered.
 
 **Left as it was:** '98's placeholder grey, the faint help style, and the panel opening folded. On a locked switch the type not in force is still a ghost, at 35% in '98 and #GRIDroid. It can't be pressed and isn't in force, so dim is right, but its label is hard to read there.
