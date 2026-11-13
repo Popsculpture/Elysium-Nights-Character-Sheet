@@ -845,7 +845,7 @@ EN.ui = (function () {
   return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline, proseP: proseP, nameCaret: nameCaret,
            ruleLink: ruleLink, ruleChip: ruleChip, ruleText: ruleText, damageIcon: damageIcon, damageText: damageText, damageTie: damageTie,
            currencyGlyphsOk: currencyGlyphsOk, substituteCurrencyGlyphs: substituteCurrencyGlyphs,
-           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, animatePoolRoll: animatePoolRoll, playFiled: playFiled,
+           dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, svgText: svgText, animatePoolRoll: animatePoolRoll, playFiled: playFiled,
            armButton: armButton, disarm: disarm, isArmed: isArmed, scrollUnderChrome: scrollUnderChrome,
            heldChip: heldChip, heldSuffix: heldSuffix };
 })();

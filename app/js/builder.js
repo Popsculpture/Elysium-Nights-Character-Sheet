@@ -319,7 +319,8 @@ EN.builder = (function () {
       return el("div.attr-cell", { title: bump ? tip + "\n" + bumpTitle : tip }, [
         el("div.abbr", { text: a.abbr }),
         el("div.mod", { text: eng.fmtMod(d.attributes[a.key].mod) }),
-        el("div.s.mono", { html: "score " + score + (bump ? " <span class='cyan'>▲</span>" : "") }),
+        // text and a child, not innerHTML: `score` is read straight off the record, and a file imported by hand can hold markup there
+        el("div.s.mono", null, ["score " + score + (bump ? " " : ""), bump ? el("span.cyan", { text: "▲" }) : null]),
         ctrl
       ]);
     });
