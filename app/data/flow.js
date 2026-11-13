@@ -176,25 +176,30 @@ EN.flow = {
         { name: "Flare", save: "Agility", text: "Brighten a dark space to daylight, or lance a beam a target must make a Flow Save DC, Agility, to avoid or be dazzled, taking Snag on their next attack roll." }
       ],
       empowered: [
-        { name: "Optic Scramble", sustain: true, save: "Body", text: "Cameras, drone eyes, and cybernetic optics in the area go dark for the duration. Organic targets make a Flow Save DC (Body) or are Blinded." },
+        // every target saves, synthetic optics included; only unattended devices go dark with no roll (Handbook 2026-11-11A)
+        { name: "Optic Scramble", sustain: true, save: "Body", text: "A blaze of light and current overloads everything watching. Unattended cameras and sensors in the area go dark for the duration. Every target in the area, organic eyes and synthetic optics alike, must succeed on a Flow Save DC (Body) or suffer the Blinded condition." },
         { name: "Overload", sustain: false, save: "Body", text: "Drive raw current through a target. They make a Flow Save DC (Body) or are Staggered until the end of their next turn. A target in metal armor or running cyberware rolls this save with Snag." },
         { name: "Magnetic Seize", sustain: true, save: "Body", text: "Each target in the area makes a Flow Save DC (Body) or has any metal weapon wrenched from their grip, and can't draw, aim, or fire a metal weapon while the effect lasts." }
       ] },
-    { key: "visceral", name: "Visceral", unlock: 1, focus: "Biology and Decay", damage: "Toxic / Entropy",
+    // Toxic or Genesis since the Handbook of 2026-11-11A; Entropy is Temporal's alone now
+    { key: "visceral", name: "Visceral", unlock: 1, focus: "Biology and Growth", damage: "Toxic / Genesis",
       plain: "Visceral is the manipulation of biology, cellular rhythm, and living things.",
       resolution: "attack",
       targeting: "Applies to living and resonant targets. Against a Clanker the mechanics are identical.",
-      base: "Choose one: Patch (a willing target regains 1d4 Vitality); Purge (remove one mundane toxin, drug, or low-severity bio-effect from a willing target); Faltering Pulse (an unwilling target makes a Flow Save DC, Body, or takes -1d4 on their next physical check or attack).",
+      base: "Choose one: Patch (a willing target spends one Resilience Die and regains Vitality equal to the roll plus their Body Modifier; a target with no Resilience Dice left gains nothing); Purge (remove one mundane toxin, drug, or low-severity bio-effect from a willing target); Faltering Pulse (an unwilling target makes a Flow Save DC, Body, or takes -1d4 on their next physical check or attack).",
       /* the base sentence above, split into the effects it offers: the builder's EFFECT row (js/flow.js) */
       baseOptions: [
-        { name: "Patch", text: "A willing target regains 1d4 Vitality." },
+        // the target's own Resilience Die, as one die spent on a Short Rest; it was a flat 1d4 before 2026-11-11A
+        { name: "Patch", text: "A willing target spends one Resilience Die and regains Vitality equal to the roll plus their Body Modifier. A target with no Resilience Dice left gains nothing." },
         { name: "Purge", text: "Remove one mundane toxin, drug, or low-severity bio-effect from a willing target." },
         { name: "Faltering Pulse", save: "Body", text: "An unwilling target makes a Flow Save DC, Body, or takes -1d4 on their next physical check or attack." }
       ],
       empowered: [
         { name: "Adrenal Overclock", sustain: true, text: "Grant a willing target Edge on physical checks and a +2 bonus to Speed until the end of their next turn. Held with Sustain, it lasts as long as you hold it, and when it ends the target gains 1 level of Fatigue." },
         { name: "Forceful Sedation", sustain: true, save: "Body", text: "A target makes a Flow Save DC (Body). On a failure, they fall Unconscious. The target wakes immediately if they take damage or are shaken awake by an adjacent ally using their Action. Held with Sustain, its re-save still rolls: the Unconscious it causes doesn't fail that save." },
-        { name: "Cellular Crash", sustain: false, save: "Body", text: "Target makes a Flow Save DC (Body) or is Poisoned until the end of their next turn and can't benefit from Resilience Dice or self-healing." }
+        /* Regrowth took Cellular Crash's place (Handbook 2026-11-11A). It heals a willing target, so nothing is rolled
+           to land it (noRoll). A pattern saved with the old name is moved over in js/store.js, migrateRegrowth. */
+        { name: "Regrowth", sustain: false, noRoll: true, text: "A willing target regains Vitality equal to 1d6 + your Flow Modifier + 1d6 per Caliber, and healing past their maximum becomes Vigor. It can restore Vitality lost to Sticky damage." }
       ] },
     { key: "spatial", name: "Spatial", unlock: 1, focus: "Dimensions and Void", damage: "Force (Spatial)",
       plain: "Spatial is the manipulation of dimensions, geometry, and distance.",
@@ -270,12 +275,12 @@ EN.flow = {
     { resonance: "Kinetic", effect: "Gravity Pin", allowed: true, notes: "Target repeats the save at the start of each of its turns (Shaking It Off); the break-free Action still works." },
     { resonance: "Thermal", effect: "Structural Melt", allowed: true, notes: "Cover grade and DR loss persist while held." },
     { resonance: "Thermal", effect: "Thermal Fog", allowed: true, notes: "Fills the Invocation's area; needs Focused or Wide Area delivery." },
-    { resonance: "Electromagnetic", effect: "Optic Scramble", allowed: true, notes: "Devices in the area stay dark; organic targets repeat the save (Shaking It Off)." },
+    { resonance: "Electromagnetic", effect: "Optic Scramble", allowed: true, notes: "Unattended devices in the area stay dark; every target repeats the save (Shaking It Off)." },
     { resonance: "Electromagnetic", effect: "Overload", allowed: false, notes: "Staggered resolves at the end of the target's next turn." },
     { resonance: "Electromagnetic", effect: "Magnetic Seize", allowed: true, notes: "Targets repeat the save at the start of each of their turns (Shaking It Off)." },
     { resonance: "Visceral", effect: "Adrenal Overclock", allowed: true, notes: "When the held effect ends, the target gains 1 level of Fatigue." },
     { resonance: "Visceral", effect: "Forceful Sedation", allowed: true, notes: "The re-save still rolls; the Unconscious it causes doesn't fail it." },
-    { resonance: "Visceral", effect: "Cellular Crash", allowed: false, notes: "Resolves at the end of the target's next turn." },
+    { resonance: "Visceral", effect: "Regrowth", allowed: false, notes: "Instant healing." },
     { resonance: "Spatial", effect: "Spatial Displacement", allowed: false, notes: "Instant teleport." },
     { resonance: "Spatial", effect: "Folded Terrain", allowed: true, notes: "Fills the Invocation's area; needs Focused or Wide Area delivery." },
     { resonance: "Spatial", effect: "Void Pocket", allowed: true, notes: "Hazard zone: tests anyone inside when it opens, who enters, or starts a turn there." },

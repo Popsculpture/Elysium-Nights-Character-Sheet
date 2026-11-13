@@ -12945,6 +12945,20 @@ Run locally after the live round, against the stand-in, by a separate agent whos
 
 **Left open:** '98 in its own palette paints placeholders the same grey as their box (older than this build). The type not in force on a locked switch is a 35% ghost in '98 and #GRIDroid, hard to read. The Advance panel still opens folded. Not seen: motion, the toasts, a real phone, and custom palettes.
 
+### Handbook 2026-11-11A: Visceral, Patch, Regrowth and Optic Scramble, 2026-11-12
+
+From the author's handoff of 11 Nov 2026, which quotes every string. Built on `handbook-2026-11-11a`, asset stamp 20261112.1.
+
+**What changed:** Visceral's Primary Focus is Biology and Growth and it deals Toxic or Genesis (`data/flow.js`). Patch has the target spend one Resilience Die. Regrowth takes Cellular Crash's place as Visceral's third Empowered Effect. Every target saves against Optic Scramble, and its Sustain note says so. The Genesis source line names Visceral Resonance (`data/combat.js`). All of the Handbook's sentences are word for word.
+
+**A saved pattern stores its effect by name alone,** in `flow.patterns[].empoweredEffect` and its layer's. Four places look the name up (the engine and the builder, each for the pattern and its layer), and a name they can't find is dropped. So `migrateRegrowth` in `store.js` moves Cellular Crash to Regrowth on a Visceral pattern or layer, and the pattern says so in its note if it has none. A pattern's own name is the player's label and is left. No character on the live project had a saved pattern when this was built.
+
+**Mine, so overrule them:** Regrowth carries `noRoll`, so the builder says no roll for a heal on a willing target. The moved pattern's note. The app's Sustain table gets a Regrowth row, not allowed, "Instant healing."
+
+**Not in the app, so not changed:** the Visceral Damage Profile sentence and the Mutating intro sentence. The app rolls nothing for Patch or for Optic Scramble's saves, so neither needed code.
+
+**Checked:** `tests/hb1111_handbook.js`, 37 checks, which skips itself on a build from before the change. Sixteen one-line breaks of the change, all caught. `tests/r89_legal.js` named Cellular Crash as the effect that can't be held, and now asks the data, so it passes on both builds. The whole suite: 528 runs in 503 chains, one bad, and that one is the die-face test, which fails on any branch without the die-face fix. Not looked at by eye in a browser.
+
 ### The SYNC button, 2026-11-10
 
 Built on `claude/vigilant-kare-2e3a45` from the rules the author settled on 9 Nov 2026 and two answers on 10 Nov (the ledger arrives as history; saved threats and custom hazards stay on the browser). The migration `20261110180000_campaign_desks.sql` went onto the live project on the author's word the same day (378 PASS, 0 FAIL there, rolled back, history repaired), so it is an applied migration now: never edit it, any change is a new file. The code is not merged and not pushed. One press saves a campaign's Admin desktop to the account and adds what the others who run the campaign saved. It only ever adds. The design, the decisions, what the review found and how it was checked are the last part of `CAMPAIGNS-BUILD-REPORT.md`.

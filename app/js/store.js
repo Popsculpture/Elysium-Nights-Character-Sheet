@@ -384,6 +384,26 @@ EN.store = (function () {
     if (cur.Discipline == null && typeof cur.Execution === "number") cur.Discipline = cur.Execution;
     delete cur.Execution;
   }
+  /* Cellular Crash left the Handbook and Regrowth took its place as Visceral's third Empowered Effect (edition
+     2026-11-11A, the author, 11 Nov 2026). A saved Resonant Pattern names its effect and carries nothing else of
+     it: the engine and the builder look the name up in EN.flow every time, and a name they can't find is dropped
+     (the pattern's row shows no effect, and LOAD picks another one in its place). So a pattern that names Cellular
+     Crash on Visceral, as its own effect or as its layer's, names Regrowth from here on. The two do opposite
+     things, so the pattern says what happened in its note, unless it already has one. A pattern's own name is
+     the player's label, and is left as it is. Idempotent. */
+  var REGROWTH_NOTE = "Cellular Crash became Regrowth in the Handbook of 11 Nov 2026. Regrowth heals a willing target, so check this pattern.";
+  function migrateRegrowth(ch) {
+    var pats = ch && ch.flow && ch.flow.patterns;
+    if (!Array.isArray(pats)) return;
+    pats.forEach(function (p) {
+      if (!p || typeof p !== "object" || Array.isArray(p)) return;
+      var moved = false;
+      if (p.resonance === "visceral" && p.empoweredEffect === "Cellular Crash") { p.empoweredEffect = "Regrowth"; moved = true; }
+      var ly = p.layer;
+      if (ly && typeof ly === "object" && !Array.isArray(ly) && ly.resonance === "visceral" && ly.empoweredEffect === "Cellular Crash") { ly.empoweredEffect = "Regrowth"; moved = true; }
+      if (moved && !p.note) p.note = REGROWTH_NOTE;
+    });
+  }
   function migrateScrapFamiliar(ch) {
     function kindOf(v) {
       if (v && typeof v === "object") v = v.type || v.kind || v.name || v.familiar || "";
@@ -1172,6 +1192,7 @@ EN.store = (function () {
     migratePresence(ch);
     migrateScrapFamiliar(ch);
     migrateDiscipline(ch);
+    migrateRegrowth(ch);
     /* The damage-type picks, rebuilt the same way and for the same reason: the schema fill deep
        copies through JSON and hands back a plain object, so a save file carrying a key of
        "toString" would otherwise read as present and feed the engine a prototype method. Renames
