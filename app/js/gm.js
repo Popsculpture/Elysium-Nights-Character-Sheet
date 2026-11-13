@@ -1187,9 +1187,10 @@ EN.gmView = (function () {
     moved: "The desktop changed before the sync came back.",
     link: "Could not reach your account.",
     error: "Could not reach your account.",
-    newer: "Your own saved copy is from a newer version of the app, so this desktop was not saved over it. Reload to update."
+    newer: "Your own saved copy is from a newer version of the app, so this desktop was not saved over it. Reload to update.",
+    unread: "Your own saved copy could not be read here, so this desktop was not saved over it."
   };
-  // the refusals a second press can get past. Too big, not this account's to run, or a newer copy: pressing again changes nothing
+  // the refusals a second press can get past. Too big, not this account's to run, or a copy of your own that didn't read: pressing again changes nothing
   var SYNC_AGAIN = { moved: 1, link: 1, error: 1, EN_MOVED: 1, EN_NOT_MINE: 1 };
   function syncWords(rep, name) {
     var counts = syncAny(rep.added), added = counts || !!rep.fight, kept = syncAny(rep.kept), out = [];
@@ -1210,8 +1211,10 @@ EN.gmView = (function () {
     var newer = (rep.newer || 0) - (rep.why === "newer" ? 1 : 0);
     if (newer > 0) out.push(newer === 1 ? "One saved desktop is from a newer version of the app and was left out. Reload to update."
                                         : newer + " saved desktops are from a newer version of the app and were left out. Reload to update.");
-    if (rep.unread) out.push(rep.unread === 1 ? "One saved desktop could not be read and was left out."
-                                              : rep.unread + " saved desktops could not be read and were left out.");
+    // and so has its own copy that could not be read
+    var unread = (rep.unread || 0) - (rep.why === "unread" ? 1 : 0);
+    if (unread > 0) out.push(unread === 1 ? "One saved desktop could not be read and was left out."
+                                          : unread + " saved desktops could not be read and were left out.");
     return out.join("\n");
   }
   function runSync(c) {

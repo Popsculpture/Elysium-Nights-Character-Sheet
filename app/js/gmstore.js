@@ -111,7 +111,8 @@ EN.gmStore = (function () {
       encounter: blankEncounter(),
       updatedAt: 0,
       lastEncounter: null,
-      synced: Object.create(null)   // the saved copies this desktop already holds, and when it last pressed (THE SYNC BUTTON)
+      synced: Object.create(null),  // the saved copies this desktop already holds, and when it last pressed (THE SYNC BUTTON)
+      over: Object.create(null)     // the rows of the fights ended on this desktop, row id -> when (A FIGHT IS UP OR IT IS OVER)
     };
     // every bag is keyed on ids and on strings a GM typed, so null-prototype at
     // EVERY creation site. A GM will name something __proto__ eventually.
@@ -344,6 +345,12 @@ EN.gmStore = (function () {
       try { s.encounter.room = cleanRoom(e.room); } catch (err) { s.encounter.room = []; }
       try { s.encounter.clock = cleanClock(e.clock); } catch (err) { s.encounter.clock = null; }
       s.encounter.defeated = cleanEntries(e.defeated);
+      // the same fight, ended on another Admin's Table first: when, and by which of its threats it is known (THE SYNC BUTTON)
+      if (isObj(e.ended) && typeof e.ended.at === "number" && e.ended.at > 0 && isObj(e.ended.rows)) {
+        var twin = { at: e.ended.at, rows: Object.create(null) };
+        Object.keys(e.ended.rows).forEach(function (k) { if (e.ended.rows[k] === 1) twin.rows[k] = 1; });
+        s.encounter.ended = twin;
+      }
     }
     try { s.lastEncounter = cleanLast(raw.lastEncounter); } catch (err) { s.lastEncounter = null; }
     // which campaign a document belongs to, so one left behind can still say so
@@ -357,7 +364,22 @@ EN.gmStore = (function () {
         else if (v === 1) s.synced[k] = 1;
       });
     }
+    if (isObj(raw.over)) {
+      Object.keys(raw.over).forEach(function (k) { var at = Number(raw.over[k]); if (isFinite(at) && at > 0) s.over[k] = at; });
+    }
     return s;
+  }
+  /* The rows of the fights ended here are kept so they never come back onto this Table (A FIGHT IS UP OR IT IS
+     OVER). A list that only grew would be written with every save for ever, so every END cuts it back to
+     OVER_KEEP rows, the ones ended longest ago going first. That is some fifty fights of ten. */
+  var OVER_KEEP = 500;
+  function capOver(o) {
+    var ids = Object.keys(o);
+    if (ids.length <= OVER_KEEP) return;
+    // by when they ended, and as they were listed where that is the same
+    ids.map(function (id, i) { return { id: id, at: o[id], i: i }; })
+      .sort(function (a, b) { return a.at - b.at || a.i - b.i; })
+      .slice(0, ids.length - OVER_KEEP).forEach(function (x) { delete o[x.id]; });
   }
 
   function readKey(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -470,6 +492,7 @@ EN.gmStore = (function () {
        lastEncounter      what clearEncounter() kept
        stamps             the v1 field, carried along
        synced             the saved copies this desktop already holds (THE SYNC BUTTON)
+       over               the rows of the fights ended here (A FIGHT IS UP OR IT IS OVER)
 
      Stored beside the parts is `rev`, path -> stamp. A path in `rev` with no part is a DELETE NOTE, so
      a delete travels in the same write as everything else, and is forgotten after GONE_KEEP. A part
@@ -540,6 +563,7 @@ EN.gmStore = (function () {
     add("lastEncounter", doc.lastEncounter === undefined ? null : doc.lastEncounter);
     add("stamps", doc.stamps || {});
     add("synced", doc.synced || {});
+    add("over", doc.over || {});
     return out;
   }
   function noteLoaded(file, text, raw) {
@@ -580,6 +604,7 @@ EN.gmStore = (function () {
     if (p === "lastEncounter") return doc.lastEncounter;
     if (p === "stamps") return doc.stamps;
     if (p === "synced") return doc.synced;
+    if (p === "over") return doc.over;
     var kind = p.charAt(0), rest = p.slice(2), e = doc.encounter || {};
     if (kind === "e") return e[rest];
     if (kind === "o") return (Array.isArray(e[rest]) ? e[rest] : []).map(function (r) { return r && r.id; });
@@ -598,6 +623,7 @@ EN.gmStore = (function () {
     if (p === "lastEncounter") { state.lastEncounter = gone ? null : v; return; }
     if (p === "stamps") { state.stamps = Object.create(null); if (isObj(v)) Object.keys(v).forEach(function (k) { state.stamps[k] = v[k]; }); return; }
     if (p === "synced") { state.synced = Object.create(null); if (isObj(v)) Object.keys(v).forEach(function (k) { state.synced[k] = v[k]; }); return; }
+    if (p === "over") { state.over = Object.create(null); if (isObj(v)) Object.keys(v).forEach(function (k) { state.over[k] = v[k]; }); return; }
     var kind = p.charAt(0), rest = p.slice(2);
     if (kind === "e") { if (gone) delete state.encounter[rest]; else state.encounter[rest] = v; return; }
     if (kind === "o") { orders[rest] = Array.isArray(v) ? v : []; return; }
@@ -629,6 +655,12 @@ EN.gmStore = (function () {
     out.concat(rest).forEach(function (r) { list.push(r); });
   }
   function tieText(t) { return t === null ? "" : t; }
+  /* THE PARTS AN OLDER COPY OF THE APP HAS NEVER HEARD OF. A tab left open from before the update saves the
+     document without the field, under the stamp it heard for it. Read as a part, a field that isn't there is an
+     empty one, and at the same stamp an empty note won the tie against a full one: the new tab forgot which saved
+     copies it held, and its next press read every one of them again (the second review of the SYNC button). A
+     document without the field says nothing about the part. This tab's stays, and goes back into storage. */
+  var LATER_PARTS = ["synced", "over"];
   /* Takes in what another tab has written. Answers whether memory changed. Sets file.owes when something
      here still has to reach storage. `past` is a document that has been written and may already be written
      over (the storage event's newValue): only what is news in it counts, and storage isn't judged by it. */
@@ -644,10 +676,15 @@ EN.gmStore = (function () {
     var doc;
     try { doc = migrate(raw); } catch (e) { return false; }
     var theirs = partsOf(doc, file), rev = isObj(raw) && isObj(raw.rev) ? raw.rev : {}, now = partsOf(state, file);
-    var paths = {}, moved = false, orders = Object.create(null);
+    var paths = {}, moved = false, orders = Object.create(null), silent = Object.create(null);
+    if (isObj(raw)) LATER_PARTS.forEach(function (k) { if (!own(raw, k)) silent[k] = true; });
     [now, theirs, file.seen].forEach(function (o) { Object.keys(o).forEach(function (p) { paths[p] = 1; }); });
     Object.keys(rev).forEach(function (p) { if (fileHolds(file, p)) paths[p] = 1; });
     Object.keys(paths).forEach(function (p) {
+      if (silent[p]) {                             // written by a copy of the app that doesn't know the part
+        if (!isPast && own(now, p) && now[p] !== "{}") file.owes = true;
+        return;
+      }
       var was = file.seen[p] || null, wasAt = was ? was.at : 0, wasText = was ? was.text : null;
       var t = own(theirs, p) ? theirs[p] : null, at = Number(rev[p]);
       if (!isFinite(at) || at < 0) at = 0;
@@ -1006,8 +1043,19 @@ EN.gmStore = (function () {
     var plan = (e.round | 0) > 0 && e.sourceId && s.encounters && own(s.encounters, e.sourceId) ? s.encounters[e.sourceId] : null;
     var objective = !!(plan && plan.objective && Number(plan.objective.awardXp) > 0);
     if (objective || rows.some(function (r) { return r && r.kind === "threat"; })) {
-      s.lastEncounter = { at: Date.now(), name: e.name || "", sourceId: e.sourceId || null,
+      var now = Date.now(), at = now, twin = e.ended;
+      /* ONE FIGHT, ONE TIME (THE SYNC BUTTON). A fight another Admin ended on their own Table while it was still
+         up on this one keeps the time they gave it, as long as one of its threats is still in it here. An award
+         names its fight by that time, so the award they made answers for this Table's copy of the fight too. */
+      if (isObj(twin) && twin.at > 0 && rows.some(function (r) { return r && own(twin.rows, r.id); })) at = twin.at;
+      s.lastEncounter = { at: at, name: e.name || "", sourceId: e.sourceId || null,
                           round: e.round | 0, entries: copy(rows) };
+      delete e.ended;
+      // and its rows are over, on a campaign's desktop: the only kind another Admin's saved copy can reach
+      if (deskId) {
+        rows.forEach(function (r) { if (r && typeof r.id === "string") s.over[r.id] = now; });
+        capOver(s.over);
+      }
     }
   }
 
@@ -2458,9 +2506,16 @@ EN.gmStore = (function () {
      THE TABLE. One not in use takes the other fight whole: rows, Room, round, turn, clock and name. One in use
      gains only rows, after its own: a threat by its row id, the crew by character, and never a row that is
      already here in either list (a threat one Admin has defeated and the other still has up is one row).
-     A FIGHT IS UP OR IT IS OVER. The rows of the fight this desktop last ended never come back onto its Table
-     from someone still in that fight, and a fight whose rows are on this Table isn't also taken as the last one
-     ended. Either would offer one fight's XP twice, since the award is held by the snapshot's own time. */
+     A FIGHT IS UP OR IT IS OVER. The rows of a fight this desktop has ended never come back onto its Table from
+     someone still in that fight, and a fight whose rows are on this Table isn't also taken as the last one
+     ended. Either would offer one fight's XP twice, since the award is held by the snapshot's own time. The rows
+     are kept in `over`, a part of the document, added to at every END (snapshotFight). The last fight alone was
+     not enough: an Admin who took a fight whole and never cleared their Table keeps saving it, and it came back
+     as soon as one more fight had been ended here (the second review).
+     ONE FIGHT, ONE TIME. When the other Admin has ended a fight that is still up on this Table, the Table notes
+     the time they gave it (encounter.ended), and END here uses it. Their award then answers for both Tables.
+     Only their last fight is known, and only while it is up here when the press reads it: two Admins who each
+     end the same fight before either presses still have two times for it, and so two award cards. */
   var SYNC_TRIES = 3, SYNC_WAIT = 20000, SYNC_DEEP = 64;
   /* A ledger record that travels. A send to another player's sheet does once it has landed and nothing more is
      owed on it. Still queued, an UNDO still queued, never landed, or ended with its campaign: it stays where it
@@ -2550,7 +2605,8 @@ EN.gmStore = (function () {
     if (depth > SYNC_DEEP) throw new Error("nested too deep to be a desktop");
     if (Array.isArray(v)) return v.map(function (x) { return syncClean(x, depth + 1); });
     var o = {};
-    Object.keys(v).forEach(function (k) { if (k !== "__proto__") o[syncText(k)] = syncClean(v[k], depth + 1); });
+    // the key is judged as it will be written: "__pro<to__" is "__proto__" once it is clean, and would set the prototype
+    Object.keys(v).forEach(function (k) { var c = syncText(k); if (c !== "__proto__") o[c] = syncClean(v[k], depth + 1); });
     return o;
   }
   // this desktop as it is saved
@@ -2606,8 +2662,10 @@ EN.gmStore = (function () {
     e.entries.concat(e.defeated).forEach(function (r) { if (r && typeof r.id === "string") have[r.id] = r; });
     e.entries.forEach(function (r) { if (r && r.kind === "crew") crew[crewKey(r)] = r; });
     ((s.lastEncounter && s.lastEncounter.entries) || []).forEach(function (r) { if (r && typeof r.id === "string") over[r.id] = true; });
+    // and of every fight ended here before that one. The last fight is still read, for a document from before the list
+    Object.keys(s.over).forEach(function (id) { over[id] = true; });
     var theirDown = (t.defeated || []).filter(function (r) { return r.kind === "threat"; });
-    // not coming back onto this Table: a row of the fight it last ended, or one taken off it since its last press
+    // not coming back onto this Table: a row of a fight it has ended, or one taken off it since its last press
     function barred(r) { return own(over, r.id) || goneSince("r/entries/" + r.id, run.since) || goneSince("r/defeated/" + r.id, run.since); }
     var whole = !tableBusy(e) && tableBusy(t) && !t.entries.concat(theirDown).some(barred);
     if (whole) {
@@ -2654,6 +2712,12 @@ EN.gmStore = (function () {
     // a round with nobody in the order isn't a fight: none of its rows could be attributed here
     if (whole && !e.entries.length) { e.round = 0; e.activeId = null; }
     if (doc.lastEncounter) {
+      // their last fight is one still up on this Table: ended here, it will be that fight, by the time they gave it
+      var shared = doc.lastEncounter.entries.filter(function (r) { return r.kind === "threat" && own(have, r.id); });
+      if (shared.length && doc.lastEncounter.at > 0 && !isObj(e.ended)) {
+        e.ended = { at: doc.lastEncounter.at, rows: Object.create(null) };
+        shared.forEach(function (r) { e.ended.rows[r.id] = 1; });
+      }
       if (!s.lastEncounter) {
         // a fight whose rows are on this Table is still up here: it isn't also the last one ended
         if (!doc.lastEncounter.entries.some(function (r) { return own(have, r.id); })) {
@@ -2710,8 +2774,9 @@ EN.gmStore = (function () {
   /* One press. Answers a promise of the report, which never rejects: { ok, why, error, others, added, kept, newer,
      unread, fight }. `why` is "no-desktop" (the browser's own desktop has nothing to sync), "offline", "moved" (the
      tab left this desktop, or the account changed, while the read was out: nothing is added anywhere), "newer"
-     (this account's own copy was saved by a newer version of the app, so it isn't saved over), "link" (no
-     answer), or the database's code. What a press added stays added when its save then fails: it only ever adds,
+     (this account's own copy was saved by a newer version of the app, so it isn't saved over), "unread" (it
+     couldn't be read here for some other reason, and isn't saved over either), "link" (no answer), or the
+     database's code. What a press added stays added when its save then fails: it only ever adds,
      and the next press saves. Two presses at once are one. */
   function sync() {
     if (_syncing) return _syncing;
@@ -2750,6 +2815,9 @@ EN.gmStore = (function () {
         total.others = rows.length - (mine ? 1 : 0);
         // this account's own copy can't be read here, so it must not be saved over: what only it holds would go
         if (mine && isObj(mine.doc) && typeof mine.doc.v === "number" && mine.doc.v > SCHEMA) return stop("newer");
+        // and the same for any other reason it didn't read: saving would put this desktop over whatever it holds
+        var mineAt = mine ? unread.indexOf(mine) : -1;
+        if (mineAt !== -1 && !rep.read[mineAt]) return stop("unread");
         var tag = uid(), notes = Object.create(null);
         rows.forEach(function (r) {
           var t = tagOf(r.doc), at = unread.indexOf(r);
