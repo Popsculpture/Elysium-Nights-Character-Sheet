@@ -1321,7 +1321,7 @@ Made on 10 Nov 2026, on your word, after the look check. Asset stamp `20261110.3
 
 # Campaigns build report: the SYNC button
 
-Designed and built on 10 Nov 2026 on `claude/vigilant-kare-2e3a45`, cut from `main` at `81f3711` and brought up to `main` at `38a02dc`. **The migration went onto the live project on your word, 10 Nov 2026. The code is not merged and not pushed.** The design below is the design as built. An independent review changed it in a few places, and each of those says so.
+Designed and built on 10 Nov 2026 on `claude/vigilant-kare-2e3a45`, cut from `main` at `81f3711` and brought up to `main` at `39f5782`. **The migration went onto the live project on your word, 10 Nov 2026. The code is not merged and not pushed.** The design below is the design as built. An independent review changed it in a few places, and each of those says so.
 
 ## What you decided
 
@@ -1434,13 +1434,13 @@ Mine again, so overrule any of them. From 21 on they came out of the review.
 
 ## What was built
 
-On `claude/vigilant-kare-2e3a45`: the migration and its checks, the app, the review's fixes, and two merges of `main`. The migration is on the live project. The code is not pushed and not merged.
+On `claude/vigilant-kare-2e3a45`: the migration and its checks, the app, the review's fixes, and three merges of `main`, the last one the Handbook 2026-11-11A change. The migration is on the live project. The code is not pushed and not merged.
 
 - **The migration,** `supabase/migrations/20261110180000_campaign_desks.sql`: the table `campaign_desks` (campaign, account, the saved desktop, a save number and the time), with row security on, no policy and no privilege for any client, and not in Realtime. `desk_read(p_campaign)` answers the saved desktops of everyone who runs the campaign now, newest save first, each marked as the caller's own or not. `desk_save(p_campaign, p_doc, p_rev, p_sender)` stores the caller's: it takes an object of at most 2,000,000 bytes, locks the row, and refuses `EN_MOVED` unless `p_rev` is the number of the copy stored (0 for none). `p_sender` is the account the app means, as with `send_write`. The seven migrations already live aren't touched, and the review asked for no change to this one.
 - **`gmstore.js`:** THE SYNC BUTTON, near the end. `sync()` reads, adds, then saves. `syncIn` adds what the copies hold and this desktop lacks, through the same reader a load and an import use, and never replaces. `syncOut` is the desktop as it's saved: no library, a character named by its database row, and the ledger without the far door's unfinished business (`syncCarries`). `syncClean` is what a string may carry across. The document gains one part, `synced`: the names of the saved copies it holds, and when it last pressed. `isLive` counts a write that arrived by SYNC onto a sheet another browser holds.
 - **`campaigns.js`:** `deskRead` and `deskSave`, and four refusals in words.
 - **`gm.js`:** the button beside the campaign picker, its second press, SYNCING while it's out, and the report under the picker until OK.
-- **Asset stamp** `20261110.4`, above `main`'s `20261110.3`. **README, HANDOFF and DEFERRED-FIXES** describe it.
+- **Asset stamp** `20261112.2`, above `main`'s `20261112.1`. **README, HANDOFF and DEFERRED-FIXES** describe it.
 
 ## Going live, in this order
 
@@ -1509,10 +1509,10 @@ One independent read, given the design and the diff and none of my conclusions. 
 | The story, on the stand-in | 120 checks pass | `tests/campaigns_sync_1.js`, through the real UI: the button, its second press, the Admin's desktop, the co-Admin's blank browser, back again, deletes, a second computer, every refusal, a copy with markup in it, copies that can't be read, a refused switch of campaign, a campaign that isn't yours any more, and a deleted one |
 | The same story, on the real SQL | 124 checks pass | `pg/sync_realdb.js`: the real app and the real supabase-js on the real migration in PGlite. It caught one thing the stand-in had let through: my story deleted a campaign somebody else led |
 | Breaking the button's code on purpose | 53 of 53 caught | `pg/sync_mutants.py`, a line at a time, against the stand-in chain |
-| The other real rounds | All pass: batch 2 144, batch 3 61, the Table 159, two tabs 40, the same sequence in one window 21, the Advancement Type 174, the writing tabs 528 and their two tabs 36 | On the final code |
+| The other real rounds | All pass: batch 2 144, batch 3 61, the Table 159, two tabs 40, the same sequence in one window 21, the Advancement Type 174, the writing tabs 528 and their two tabs 36 | On the final code, and again after the last merge of `main` |
 | The two-tab fuzz | 400 rounds, nothing lost | `pg/gm_tabs_fuzz.mjs`, since the document gained a part |
-| The whole suite | 501 chains, 526 runs, 0 bad, 0 skipped | `cx_integ_run.py`, round sync2, on the final code |
-| The app that is live today, on a database with this migration | The same as on today's database, round for round | `main`'s `app` at `38a02dc` with this branch's `supabase` folder. The SYNC story skips itself there |
+| The whole suite | 501 chains, 526 runs, 0 bad, 0 skipped. After the last merge of `main`: 503 chains, 528 runs, 1 bad | `cx_integ_run.py`, rounds sync2 and sync3. The one bad run is `gm_markup_1.js`, the test that came with the fix for the views that build HTML from record fields. That fix is on its own branch, so the test fails on any build without it, `main` included |
+| The app that was live then, on a database with this migration | The same as on that day's database, round for round | `main`'s `app` at `38a02dc` with this branch's `supabase` folder, before the migration went on. The SYNC story skips itself there |
 | The live project, read only, before the migration | As above | `migration list`, and one `select` over the catalog |
 | The live project, after the migration | 378 PASS, 0 FAIL, rolled back, every row count the same before and after | The catalog read back, then `campaign_checks.sql` on the live project. See Going live for the one older check the first run tripped on |
 | By eye | The button, SYNC NOW?, SYNCING and the report line in Classic, '98 and #GRIDroid at desktop width | The Browser pane on this worktree, with canned answers in place of the database. All three skins before the review's fixes, which changed words and not layout, and Classic again on the final code |
@@ -1541,7 +1541,7 @@ One independent read, given the design and the diff and none of my conclusions. 
 
 ## Still open
 
-- **The views that build HTML from record fields.** A die's face (`ui.js`, `dieFaceSvg`), a Heat check's roll and a job's rolled number go into the page as markup. SYNC no longer feeds them anything with a `<` in it, but a GM file imported by hand still can, as it always could. Escaping them at the source is its own small job.
+- **The views that build HTML from record fields.** A die's face (`ui.js`, `dieFaceSvg`), a Heat check's roll and a job's rolled number go into the page as markup. SYNC no longer feeds them anything with a `<` in it, but a GM file imported by hand still can, as it always could. Escaping them at the source was its own small job, done since on `claude/trusting-cray-fde91a`. That branch isn't on `main` or in this one.
 - **A payday taken back after the other Admin synced** still reads as paid on theirs, by your rule. With three desktops, the third can take "paid" from the stale copy.
 - **Names inside history.** A job's sent-to list, a payday's form and Heat's holders carry the ids of the browser that made them, so on another Admin's browser they name nobody. Nothing reads them for money.
 - **Someone who stopped running a campaign** leaves their saved copy in the database until the campaign is deleted.
