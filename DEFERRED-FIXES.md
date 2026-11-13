@@ -12944,3 +12944,17 @@ Run locally after the live round, against the stand-in, by a separate agent whos
 **Fixed the same day, on the author's word (stamp 20261110.3):** a lit button that can't be pressed keeps a chosen button's fill at full strength in all three skins (`.btn.lit:disabled` in `theme.css`, the class set in `gm_campaign.js` and `builder.js`), so the folded header shows the type in force too, and the NO PAY line no longer mentions money. Six new checks in the Advancement Type story, eight mutants caught, and every palette and skin rendered again and looked at. Pushed on the author's word and live the same day; the author looked at it on the live site with the real accounts and said it looks right.
 
 **Left open:** '98 in its own palette paints placeholders the same grey as their box (older than this build). The type not in force on a locked switch is a 35% ghost in '98 and #GRIDroid, hard to read. The Advance panel still opens folded. Not seen: motion, the toasts, a real phone, and custom palettes.
+
+### Handbook 2026-11-11A: Visceral, Patch, Regrowth and Optic Scramble, 2026-11-12
+
+From the author's handoff of 11 Nov 2026, which quotes every string. Built on `handbook-2026-11-11a`, asset stamp 20261112.1.
+
+**What changed:** Visceral's Primary Focus is Biology and Growth and it deals Toxic or Genesis (`data/flow.js`). Patch has the target spend one Resilience Die. Regrowth takes Cellular Crash's place as Visceral's third Empowered Effect. Every target saves against Optic Scramble, and its Sustain note says so. The Genesis source line names Visceral Resonance (`data/combat.js`). All of the Handbook's sentences are word for word.
+
+**A saved pattern stores its effect by name alone,** in `flow.patterns[].empoweredEffect` and its layer's. Four places look the name up (the engine and the builder, each for the pattern and its layer), and a name they can't find is dropped. So `migrateRegrowth` in `store.js` moves Cellular Crash to Regrowth on a Visceral pattern or layer, and the pattern says so in its note if it has none. A pattern's own name is the player's label and is left. No character on the live project had a saved pattern when this was built.
+
+**Mine, so overrule them:** Regrowth carries `noRoll`, so the builder says no roll for a heal on a willing target. The moved pattern's note. The app's Sustain table gets a Regrowth row, not allowed, "Instant healing."
+
+**Not in the app, so not changed:** the Visceral Damage Profile sentence and the Mutating intro sentence. The app rolls nothing for Patch or for Optic Scramble's saves, so neither needed code.
+
+**Checked:** `tests/hb1111_handbook.js`, 37 checks, which skips itself on a build from before the change. Sixteen one-line breaks of the change, all caught. `tests/r89_legal.js` named Cellular Crash as the effect that can't be held, and now asks the data, so it passes on both builds. The whole suite: 528 runs in 503 chains, one bad, and that one is the die-face test, which fails on any branch without the die-face fix. Not looked at by eye in a browser.
