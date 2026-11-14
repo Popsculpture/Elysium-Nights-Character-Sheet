@@ -1490,6 +1490,10 @@ EN.inventoryView = (function () {
       blobs += '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="' + r + '" fill="' + col + '" opacity="0.38" filter="url(#chsoft)"/>' +
                '<circle cx="' + pt.x + '" cy="' + pt.y + '" r="11" fill="' + col + '"/>';
       // readable chip: rounded panel behind a zone line + an SP/count line, offset to the nearer side
+      /* The two lines go into the SVG string below as text (EN.ui.svgText), never as markup. A piece
+         of chrome's zone, side and Static are read off the record, and a Freelancer's file imported by
+         hand can hold an <img onerror> in any of them: it used to leave its <text> and run. Everything
+         else joined here is a catalogue coordinate, a computed number or one of the fixed colours. */
       var zoneTxt = pt.zone.toUpperCase() + (pt.side ? " " + pt.side : "");
       var spTxt = pt.sp + " SP · " + pt.n + (pt.n === 1 ? " pc" : " pcs");
       var pad = 16, w = Math.max(zoneTxt.length * 18, spTxt.length * 15.5) + pad * 2, h = 66, gap = 22;
@@ -1498,8 +1502,8 @@ EN.inventoryView = (function () {
       var nearX = leftSide ? (cx + w) : cx;
       labels += '<line x1="' + pt.x + '" y1="' + pt.y + '" x2="' + nearX + '" y2="' + pt.y + '" stroke="' + col + '" stroke-width="2" opacity="0.5"/>' +
         '<rect x="' + cx + '" y="' + cy + '" width="' + w + '" height="' + h + '" rx="11" fill="rgba(8,12,18,0.84)" stroke="' + col + '" stroke-width="1.5"/>' +
-        '<text x="' + tx + '" y="' + (cy + 28) + '" fill="' + col + '" font-size="30" font-weight="bold" font-family="monospace">' + zoneTxt + '</text>' +
-        '<text x="' + tx + '" y="' + (cy + 55) + '" fill="#9fb3c8" font-size="26" font-family="monospace">' + spTxt + '</text>';
+        '<text x="' + tx + '" y="' + (cy + 28) + '" fill="' + col + '" font-size="30" font-weight="bold" font-family="monospace">' + EN.ui.svgText(zoneTxt) + '</text>' +
+        '<text x="' + tx + '" y="' + (cy + 55) + '" fill="#9fb3c8" font-size="26" font-family="monospace">' + EN.ui.svgText(spTxt) + '</text>';
     });
     var aura = THRESH_COLOR[Math.min(5, tax.index)] || "#34465f";
     var overlay = '<svg viewBox="0 0 ' + SIL_W + ' ' + SIL_H + '" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible" xmlns="http://www.w3.org/2000/svg">' +

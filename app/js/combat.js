@@ -3963,17 +3963,21 @@ EN.combatView = (function () {
     }
 
     blocks.push(el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
-      el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" }, html: (function () {
+      /* Built from nodes, not from a string handed to innerHTML: the handle (or, with none, the first
+         word of the name) is whatever a Freelancer's file holds, and a file imported by hand can hold
+         an <img onerror> there. As text it prints as typed. The nodes are the ones the string made. */
+      el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" } }, (function () {
         var handle = (ch.identity && ch.identity.handle) || (ch.name || "Unnamed").split(" ")[0];
         var cls = (d.classInfo && d.classInfo.name) || "";
         var sub = (d.subclassInfo && d.subclassInfo.name) || "";
         var classStr = cls ? (" · " + cls + (sub ? " / " + sub : "")) : "";
         var calRoman = ["I","II","III","IV","V"][(d.caliber || 1) - 1] || String(d.caliber || 1);
         var levelStr = " · L" + (d.level || 1) + " · CAL " + calRoman;
+        var kids = ["FREELANCER ", el("span.dim3", { style: "font-size:13px", text: "// live status · " + handle + classStr + levelStr })];
         // the opt-in Edit freely switch (builder.js), flagged on the live sheet for the GM
-        var freely = ch.editFreely === true ? ' <span class="chip edit-freely" title="Edit freely is on: this character\'s Talents and Lineage Evolutions can change at any time, outside the one retrain per level">EDIT FREELY</span>' : "";
-        return 'FREELANCER <span class="dim3" style="font-size:13px">// live status · ' + handle + classStr + levelStr + "</span>" + freely;
-      })() }),
+        if (ch.editFreely === true) kids.push(" ", el("span.chip.edit-freely", { title: "Edit freely is on: this character's Talents and Lineage Evolutions can change at any time, outside the one retrain per level", text: "EDIT FREELY" }));
+        return kids;
+      })()),
       el("div.row.wrap", { style: { gap: "8px" } }, [
         el("div.pop-anchor", { style: { position: "relative" } }, [
           // opening the popover BEGINS the Short Rest: the dice left now decide the free die
