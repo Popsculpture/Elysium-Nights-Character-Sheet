@@ -145,6 +145,50 @@ EN.campaigns = (function () {
       : { from: "Campaign", subj: "Advancement Type: Milestone", body: n + " now levels on Milestones. Your XP is kept as it is." };
   }
 
+  /* ---- HOUSE RULES (14 Nov 2026) --------------------------------------------------------------
+     A table decides once whether Encumbrance, Weapon Jam and Morale are in play and whether the GM's -1 Load and
+     the Five-Finger Supply are offered, and every sheet in the campaign follows. They sit on the campaign in the
+     database (campaigns.settings, a map of rule to true or false), set by those who run it through one function that
+     also sends every character a letter. A rule the map does not name has not been decided: it reads its book
+     default here (the rules on, the GM's controls off). `settings` is null on a campaign read from a project that
+     has not had the migration yet, which is how the app tells "decided nothing" ({}) from "cannot know": a null
+     answers from the device's own switches, as every sheet did before. Nothing is ever written to a sheet. This
+     list is the one place the client knows the five names; the database holds the same five. */
+  var HOUSE_RULES = [
+    { key: "encumbrance", name: "Encumbrance", def: true },
+    { key: "weaponJam", name: "Weapon Jam", def: true },
+    { key: "morale", name: "Morale", def: true },
+    { key: "loadLower", name: "GM -1 Load", def: false },
+    { key: "fiveFinger", name: "Five-Finger Supply", def: false }
+  ];
+  function ruleOf(key) { return HOUSE_RULES.filter(function (r) { return r.key === key; })[0] || null; }
+  // what the database sent, kept to the rules it may hold: a map of true and false, or null when there is none to read
+  function cleanSettings(v) {
+    if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+    var out = {};
+    HOUSE_RULES.forEach(function (r) { if (typeof v[r.key] === "boolean") out[r.key] = v[r.key]; });
+    return out;
+  }
+  // a campaign's decided rules: a map, {} for none decided, or null when this project cannot say
+  function settingsOfCampaign(campaignId) {
+    var c = campaignId ? find(campaignId) : null;
+    return c && c.settings && typeof c.settings === "object" ? c.settings : null;
+  }
+  // a sheet's: through the campaign it sits in, which is how Advancement Type finds it
+  function settingsOf(ch) { return settingsOfCampaign(campaignOf(ch)); }
+  // every rule with its value in force in a campaign: the decided one, or the book's
+  function ruleValues(campaignId) {
+    var set = settingsOfCampaign(campaignId) || {}, out = {};
+    HOUSE_RULES.forEach(function (r) { out[r.key] = typeof set[r.key] === "boolean" ? set[r.key] : r.def; });
+    return out;
+  }
+  // the letter every character gets when rules change: the campaign, then one line for each rule that did
+  function houseRulesLetter(name, changed) {
+    var lines = HOUSE_RULES.filter(function (r) { return typeof changed[r.key] === "boolean"; })
+      .map(function (r) { return r.name + ": " + (changed[r.key] ? "on." : "off."); });
+    return { from: "Campaign", subj: "House Rules", body: String(name || "Your campaign") + " changed its table rules.\n" + lines.join("\n") };
+  }
+
   /* GIZMO SAYS NO. An account that is crew in at least one campaign and runs none gets his ACCESS
      DENIED page instead of the Admin desktop: this answers with the campaign to name, or null for
      everyone else (no campaigns, offline, or running any campaign). It is a polite fence, like the
@@ -197,11 +241,17 @@ EN.campaigns = (function () {
      advancement migration yet refuses the column by name: ask again without it, so going live in either
      order can never blank the campaign list. Every campaign then reads as having no type set. */
   function readCampaigns(c) {
-    return c.from("campaigns").select("id, name, advancement").then(function (res) {
-      var e = res && res.error;
-      if (e && (e.code === "42703" || /advancement/i.test(String(e.message || "")))) return c.from("campaigns").select("id, name").then(check);
-      return check(res);
-    });
+    // the newest columns first, then fewer: a project that lacks the house rules column answers with the type alone,
+    // and one that lacks both with the name alone, so no order of going live can blank the campaign list
+    var tries = ["id, name, advancement, settings", "id, name, advancement", "id, name"];
+    function go(i) {
+      return c.from("campaigns").select(tries[i]).then(function (res) {
+        var e = res && res.error;
+        if (e && i < tries.length - 1 && (e.code === "42703" || /advancement|settings/i.test(String(e.message || "")))) return go(i + 1);
+        return check(res);
+      });
+    }
+    return go(0);
   }
   function refresh() {
     var c = client(), id = c && enabled() ? me() : null;
@@ -214,11 +264,11 @@ EN.campaigns = (function () {
       c.from("characters").select("id, campaign_id").eq("owner_id", id).then(check)
     ]).then(function (all) {
       if (me() !== id) return false;
-      var names = {}, types = {}, rows = {};
-      (all[1] || []).forEach(function (x) { names[x.id] = x.name; types[x.id] = x.advancement === "xp" || x.advancement === "milestone" ? x.advancement : ""; });
+      var names = {}, types = {}, sets = {}, rows = {};
+      (all[1] || []).forEach(function (x) { names[x.id] = x.name; types[x.id] = x.advancement === "xp" || x.advancement === "milestone" ? x.advancement : ""; sets[x.id] = cleanSettings(x.settings); });
       (all[2] || []).forEach(function (x) { if (x.campaign_id) rows[x.id] = x.campaign_id; });
       var next = (all[0] || []).map(function (m) {
-        return { id: m.campaign_id, name: names[m.campaign_id] || "Unnamed campaign", role: m.role, joined_at: m.joined_at, advancement: types[m.campaign_id] || "" };
+        return { id: m.campaign_id, name: names[m.campaign_id] || "Unnamed campaign", role: m.role, joined_at: m.joined_at, advancement: types[m.campaign_id] || "", settings: sets[m.campaign_id] || null };
       }).sort(function (a, b) { return a.joined_at < b.joined_at ? -1 : a.joined_at > b.joined_at ? 1 : 0; });
       var d = data(), changed = JSON.stringify(d.list) !== JSON.stringify(next) || JSON.stringify(d.rows) !== JSON.stringify(rows);
       d.list = next; d.rows = rows;
@@ -262,6 +312,7 @@ EN.campaigns = (function () {
     EN_BAD_ROLE: "That role isn't one of the choices.",
     EN_BAD_MAIL: "A message needs a From, and a subject, a message or a package.",
     EN_BAD_TYPE: "A campaign levels on XP or on Milestones.",
+    EN_BAD_RULES: "Those are not rules this table can set.",
     EN_TOO_LATE: "Too late to recall that one.",
     EN_BAD_DESK: "This desktop could not be saved to your account.",
     EN_TOO_BIG: "This desktop is too big to save to your account.",
@@ -309,6 +360,22 @@ EN.campaigns = (function () {
     return rpc("set_advancement", { p_campaign: id, p_type: type, p_mail: mail }).then(function (n) {
       var c2 = find(id);
       if (c2 && c2.advancement !== type) { c2.advancement = type; save(); repaint(); }
+      return afterRoster(n);
+    });
+  }
+  /* Sets rules on the campaign and sends every character the letter in the same step (the database does both or
+     neither). `rules` is a map of rule to true or false; only the ones that change what is in force are sent, so
+     the letter says what changed and a press that changes nothing goes nowhere. Answers how many letters went.
+     The cache follows at once, then the list is read again. */
+  function setHouseRules(id, rules) {
+    var c = find(id), now = ruleValues(id), changed = {}, any = false;
+    Object.keys(rules || {}).forEach(function (k) {
+      if (ruleOf(k) && typeof rules[k] === "boolean" && rules[k] !== now[k]) { changed[k] = rules[k]; any = true; }
+    });
+    if (!any) return Promise.resolve(0);
+    return rpc("set_house_rules", { p_campaign: id, p_rules: changed, p_mail: houseRulesLetter(c ? c.name : "", changed) }).then(function (n) {
+      var c2 = find(id);
+      if (c2) { c2.settings = Object.assign({}, c2.settings || {}, changed); save(); repaint(); }
       return afterRoster(n);
     });
   }
@@ -741,7 +808,8 @@ EN.campaigns = (function () {
     pendingJoin: pendingJoin, newForm: newForm, errText: errText,
     create: create, leave: leave, roster: roster, blocked: blocked, invite: invite, resetInvite: resetInvite,
     removeMember: removeMember, unblock: unblock, setRole: setRole, transfer: transfer, rename: rename, remove: remove,
-    setAdvancement: setAdvancement, advancementOf: advancementOf, advancementOfCampaign: typeOf, usesXp: usesXp, lockedBy: lockedBy, advancementLetter: advancementLetter,
+    setHouseRules: setHouseRules, houseRules: HOUSE_RULES, settingsOf: settingsOf, settingsOfCampaign: settingsOfCampaign, ruleValues: ruleValues, houseRulesLetter: houseRulesLetter,
+    campaignOf: campaignOf, setAdvancement: setAdvancement, advancementOf: advancementOf, advancementOfCampaign: typeOf, usesXp: usesXp, lockedBy: lockedBy, advancementLetter: advancementLetter,
     inviteUrl: inviteUrl, viewSheet: viewSheet, refreshView: refreshView, backToCampaign: backToCampaign,
     sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sendWrite: sendWrite, takeBack: takeBack, sends: sends,
     deskRead: deskRead, deskSave: deskSave,

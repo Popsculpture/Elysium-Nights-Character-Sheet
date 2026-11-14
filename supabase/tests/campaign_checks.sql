@@ -22,6 +22,7 @@ declare
   n2 int;
   campx uuid; campy uuid; campz uuid;
   adv uuid; adv_t text; adv_a uuid; adv_c uuid; adv_d uuid; adv_n int;
+  hr uuid; hr_t text; hr_a uuid; hr_c uuid; hr_d uuid; hr_n int;
   t5 text;
   dk uuid; dk2 uuid; dk_t text; r1 bigint; d1 jsonb; d2 jsonb; d3 jsonb; pad int;
   v text;
@@ -1391,6 +1392,184 @@ begin
   err := null;
   begin update public.campaigns set advancement = null where id = adv; exception when others then err := sqlstate; end;
   out := out || case when err is null then 'PASS' else 'FAIL' end || ' but the database owner can clear it (' || coalesce(err, 'no error') || E')\n';
+
+  /* ---- House rules (the house rules migration) ----
+     a runs a fresh campaign with their own character, b is a co-Admin, c and d are players with one
+     character each, e is outside it, and ch_c2 is c's second character, in no campaign. */
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  hr := public.create_campaign('House Rules Table');
+  select token into hr_t from public.campaign_invites where campaign_id = hr;
+  insert into public.characters (name, data, campaign_id) values ('Hr Ada', '{"name": "Hr Ada"}', hr) returning id into hr_a;
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(hr_t);
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(hr_t);
+  insert into public.characters (name, data, campaign_id) values ('Hr Cee', '{"name": "Hr Cee"}', hr) returning id into hr_c;
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(hr_t);
+  insert into public.characters (name, data, campaign_id) values ('Hr Dee', '{"name": "Hr Dee"}', hr) returning id into hr_d;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.set_role(hr, b, 'coadmin');
+
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.campaigns where id = hr and settings = '{}'::jsonb;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a new campaign has decided no rule, and a player reads that (' || n || E')\n';
+
+  -- who may set them
+  err := null;
+  begin perform public.set_house_rules(hr, '{"morale": false}', '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot set them (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.campaigns set settings = '{"morale": false}' where id = hr; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a client cannot write the column directly (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.set_house_rules(hr, '{"morale": false}', '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' someone outside the campaign cannot set them (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.set_house_rules(gen_random_uuid(), '{"morale": false}', '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a campaign that does not exist answers the same way (' || coalesce(err, 'no error') || E')\n';
+
+  -- only the five rules, each true or false, and something to change
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  v := '';
+  foreach bad in array array[
+    'null'::jsonb, '[]'::jsonb, '{}'::jsonb, '"morale"'::jsonb, '7'::jsonb, '{"nope": true}'::jsonb, '{"Morale": false}'::jsonb, '{"morale ": false}'::jsonb,
+    '{"morale": "off"}'::jsonb, '{"morale": 0}'::jsonb, '{"morale": null}'::jsonb, '{"morale": [false]}'::jsonb, '{"morale": {"on": false}}'::jsonb,
+    '{"morale": false, "nope": true}'::jsonb, '{"nope": true, "morale": false}'::jsonb
+  ] loop
+    err := null;
+    begin perform public.set_house_rules(hr, bad, '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlerrm; end;
+    if err is distinct from 'EN_BAD_RULES' then v := v || left(bad::text, 40) || ' = ' || coalesce(err, 'no error') || '; '; end if;
+  end loop;
+  out := out || case when v = '' then 'PASS' else 'FAIL' end || ' any other rules are refused as EN_BAD_RULES (' || v || E')\n';
+  err := null;
+  begin perform public.set_house_rules(hr, null, '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_RULES' then 'PASS' else 'FAIL' end || ' no rules at all is refused (' || coalesce(err, 'no error') || E')\n';
+
+  -- a bad letter refuses the whole change
+  v := '';
+  foreach bad in array array[
+    'null'::jsonb, '[]'::jsonb, '{}'::jsonb, '{"subj": "No from"}'::jsonb, '{"from": "Campaign"}'::jsonb,
+    '{"from": "Campaign", "subj": "Hi", "op": "xp"}'::jsonb, '{"from": "Campaign", "subj": 7}'::jsonb
+  ] loop
+    err := null;
+    begin perform public.set_house_rules(hr, '{"morale": false}', bad); exception when others then err := sqlerrm; end;
+    if err is distinct from 'EN_BAD_MAIL' then v := v || left(bad::text, 50) || ' = ' || coalesce(err, 'no error') || '; '; end if;
+  end loop;
+  out := out || case when v = '' then 'PASS' else 'FAIL' end || ' a malformed letter is refused as EN_BAD_MAIL (' || v || E')\n';
+  err := null;
+  begin perform public.set_house_rules(hr, '{"morale": false}', null); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_MAIL' then 'PASS' else 'FAIL' end || ' no letter at all is refused (' || coalesce(err, 'no error') || E')\n';
+  select count(*) into n from public.campaigns where id = hr and settings = '{}'::jsonb;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' none of the refusals changed a rule (' || n || E')\n';
+  select count(*) into n from public.character_inbox where campaign_id = hr;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' none of the refusals sent a letter (' || n || E')\n';
+
+  -- how many other campaigns hold a rule before anything is set here. On a live project this stays nothing, but the check
+  -- further down asks that the number has not moved, not that it is nothing
+  perform set_config('role', 'postgres', true);
+  select count(*) into hr_n from public.campaigns where id <> hr and settings <> '{}'::jsonb;
+  perform set_config('role', 'authenticated', true);
+
+  -- the first press: a co-Admin switches Encumbrance and Morale off, and every character in the campaign is written to
+  n := public.set_house_rules(hr, '{"encumbrance": false, "morale": false}',
+    '{"from": "  Campaign  ", "subj": " House Rules ", "body": "House Rules Table changed its table rules. Encumbrance: off. Morale: off."}');
+  out := out || case when n = 3 then 'PASS' else 'FAIL' end || ' a co-Admin can set rules, and three letters go (' || n || E')\n';
+  select settings into j from public.campaigns where id = hr;
+  out := out || case when j = '{"encumbrance": false, "morale": false}'::jsonb then 'PASS' else 'FAIL' end || ' the rules are stored (' || coalesce(j::text, 'null') || E')\n';
+  select count(*) into n from public.character_inbox i
+    where i.campaign_id = hr and i.sender_id = b and i.status = 'waiting' and i.ops is null and i.send_key is null
+      and i.character_id in (hr_a, hr_c, hr_d)
+      and i.mail = '{"from": "Campaign", "subj": "House Rules", "body": "House Rules Table changed its table rules. Encumbrance: off. Morale: off."}'::jsonb;
+  out := out || case when n = 3 then 'PASS' else 'FAIL' end || ' one plain letter each, stored trimmed, to the Admin''s character and both players'' (' || n || E')\n';
+  select count(*) into n from public.character_inbox where character_id = ch_c2 and mail ->> 'subj' = 'House Rules';
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a character in no campaign gets nothing (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.character_inbox where character_id = hr_c and mail ->> 'subj' = 'House Rules';
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' the player reads their own letter (' || n || E')\n';
+  select count(*) into n from public.character_inbox where character_id = hr_d;
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' and not another player''s (' || n || E')\n';
+  select settings into j from public.campaigns where id = hr;
+  out := out || case when j = '{"encumbrance": false, "morale": false}'::jsonb then 'PASS' else 'FAIL' end || ' a player reads the rules (' || coalesce(j::text, 'null') || E')\n';
+
+  -- setting them to what they already are changes nothing, whatever the letter says
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  n := public.set_house_rules(hr, '{"morale": false}', '{"from": "Campaign", "subj": "A second letter"}');
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' setting the same rule again sends nothing (' || n || E')\n';
+  n := public.set_house_rules(hr, '{"encumbrance": false, "morale": false}', '{"from": "Campaign", "subj": "A second letter"}');
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' nor does setting both again (' || n || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.character_inbox where campaign_id = hr;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = 3 then 'PASS' else 'FAIL' end || ' and leaves the three letters as they were (' || n || E')\n';
+  err := null;
+  begin perform public.set_house_rules(hr, '{"morale": false}', '{"from": "Campaign", "subj": "Hi", "op": "xp"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_MAIL' then 'PASS' else 'FAIL' end || ' even then, a malformed letter is refused (' || coalesce(err, 'no error') || E')\n';
+
+  -- a later change merges over what is stored, and only characters still in the campaign are written to
+  update public.characters set campaign_id = null where id = hr_a;
+  n := public.set_house_rules(hr, '{"weaponJam": false, "morale": true}', '{"from": "Campaign", "subj": "House Rules", "body": "Weapon Jam: off. Morale: on."}');
+  out := out || case when n = 2 then 'PASS' else 'FAIL' end || ' the Admin can change more, and a character who has left is not written to (' || n || E')\n';
+  select settings into j from public.campaigns where id = hr;
+  out := out || case when j = '{"encumbrance": false, "morale": true, "weaponJam": false}'::jsonb then 'PASS' else 'FAIL' end || ' the new rules merge over the old, and keep the one not named (' || coalesce(j::text, 'null') || E')\n';
+  select count(*) into n from public.character_inbox where campaign_id = hr and mail ->> 'subj' = 'House Rules' and mail ->> 'body' = 'Weapon Jam: off. Morale: on.' and character_id in (hr_c, hr_d);
+  out := out || case when n = 2 then 'PASS' else 'FAIL' end || ' both players got the change''s letter (' || n || E')\n';
+  select count(*) into n from public.character_inbox where character_id = hr_a and mail ->> 'body' = 'Weapon Jam: off. Morale: on.';
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' and the one who left did not (' || n || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.campaigns where id <> hr and settings <> '{}'::jsonb;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = hr_n then 'PASS' else 'FAIL' end || ' no other campaign took a rule (' || n || ', and ' || hr_n || E' before)\n';
+
+  -- the two settings on a campaign do not touch each other
+  n := public.set_advancement(hr, 'xp', '{"from": "Campaign", "subj": "Advancement Type: XP"}');
+  select settings into j from public.campaigns where id = hr;
+  out := out || case when j = '{"encumbrance": false, "morale": true, "weaponJam": false}'::jsonb then 'PASS' else 'FAIL' end || ' setting the advancement type leaves the rules alone (' || coalesce(j::text, 'null') || E')\n';
+
+  -- the database holds the shape too: an object, every value true or false. The names live in the function
+  perform set_config('role', 'postgres', true);
+  v := '';
+  foreach f in array array['[]', '"x"', '7', 'null', '{"morale": "off"}', '{"morale": 1}', '{"morale": null}', '{"a": {"b": true}}', '{"a": [true]}'] loop
+    err := null;
+    begin update public.campaigns set settings = f::jsonb where id = hr; exception when others then err := sqlstate; end;
+    if err is distinct from '23514' then v := v || f || ' = ' || coalesce(err, 'no error') || '; '; end if;
+  end loop;
+  out := out || case when v = '' then 'PASS' else 'FAIL' end || ' the column itself allows only an object of true and false (' || v || E')\n';
+  err := null;
+  begin update public.campaigns set settings = null where id = hr; exception when others then err := sqlstate; end;
+  out := out || case when err = '23502' then 'PASS' else 'FAIL' end || ' and is never null (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.campaigns set settings = '{}' where id = hr; exception when others then err := sqlstate; end;
+  out := out || case when err is null then 'PASS' else 'FAIL' end || ' but the database owner can clear it (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.campaigns set settings = '{"morale": true}' where id = hr; exception when others then err := sqlstate; end;
+  out := out || case when err is null then 'PASS' else 'FAIL' end || ' and set a rule (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'authenticated', true);
+
+  -- each of the five rules can be set, and nothing else is a rule
+  v := '';
+  foreach f in array array['encumbrance', 'weaponJam', 'morale', 'loadLower', 'fiveFinger'] loop
+    err := null;
+    begin perform public.set_house_rules(hr, jsonb_build_object(f, false), '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlerrm; end;
+    if err is not null then v := v || f || ' = ' || err || '; '; end if;
+  end loop;
+  select settings into j from public.campaigns where id = hr;
+  out := out || case when v = '' and j = '{"encumbrance": false, "weaponJam": false, "morale": false, "loadLower": false, "fiveFinger": false}'::jsonb then 'PASS' else 'FAIL' end
+    || ' each of the five rules can be set (' || v || coalesce(j::text, 'null') || E')\n';
+
+  -- the function is for signed-in accounts only
+  perform set_config('role', 'anon', true);
+  err := null;
+  begin perform public.set_house_rules(hr, '{"morale": false}', '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a signed-out client cannot call it (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.set_house_rules(hr, '{"morale": false}', '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_SIGNED_OUT' then 'PASS' else 'FAIL' end || ' and with no account behind the call it says so (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
 
   /* ---- the SYNC button's saved desktops (the campaign desks migration) ----
      a runs a fresh campaign, b is a co-Admin, c is a player and e is outside it. dk2 is a second
