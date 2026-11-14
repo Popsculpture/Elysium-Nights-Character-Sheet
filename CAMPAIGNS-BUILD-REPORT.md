@@ -1318,3 +1318,251 @@ Made on 10 Nov 2026, on your word, after the look check. Asset stamp `20261110.3
 **Not checked:** a real phone, and a custom palette. A custom palette sets its own accent and the fill follows it, but none was rendered.
 
 **Left as it was:** '98's placeholder grey, the faint help style, and the panel opening folded. On a locked switch the type not in force is still a ghost, at 35% in '98 and #GRIDroid. It can't be pressed and isn't in force, so dim is right, but its label is hard to read there.
+
+# Campaigns build report: the SYNC button
+
+Designed and built on 10 Nov 2026 on `claude/vigilant-kare-2e3a45`, cut from `main` at `81f3711` and brought up to `main` at `39f5782`. **The migration went onto the live project on your word, 10 Nov 2026. The code is not merged and not pushed.** The design below is the design as built. An independent review changed it in a few places, and each of those says so. A second independent review on 12 Nov 2026 found nine more things. You chose five fixes to make before the push, and they are made: How it was reviewed has them, and Still open has what you left.
+
+## What you decided
+
+Settled with you on 9 Nov 2026, after the co-Admin's Table came up blank in the live round. Not asked again:
+
+- **One SYNC button on a campaign's desktop.** A press saves this desktop to the database and adds what the campaign's other Admins saved there. It also covers one Admin on two computers.
+- **Additive only.** Nothing is replaced and nothing is removed. Afterwards it says what it added and what it kept as yours.
+- **Deletes don't travel.** The next sync brings a deleted record back from someone who still has it.
+- **An edit reaches only someone who doesn't have that record yet.** If both have it, each keeps their own.
+- **A sync in the middle of a fight adds the other Admin's Table rows.**
+- **Payroll's queued sends stay out,** and so do ended sends.
+- **Only those who run the campaign** (the Admin and co-Admins) can save or read it.
+- **No mirror and no live sharing.** Co-Admins are rare, so this button is the whole of it.
+
+And two answers on 10 Nov 2026, asked before any code, each with your pick in quotes:
+
+- **Payroll's ledger: "As history".** Another Admin's paydays and awards arrive like a GM file imported from another device. They count as already paid on your desktop, and only the desktop that made a write can UNDO it. The other choice was to leave the ledger out.
+- **Saved threats and custom hazards: "Stay on the browser".** Only the campaign's own desktop syncs. The other choice was for the library to travel too.
+
+## The design
+
+**The button.** SYNC sits beside the campaign picker above the Table, on a campaign's desktop only. "No campaign" has none, since that desktop belongs to the browser. It asks once more before it acts (SYNC NOW?), because what it adds can't be taken back in one press. Nothing syncs by itself: not on load, not on a timer.
+
+**One press, three steps, in this order.**
+
+1. It reads what those who run the campaign have saved: one saved desktop to an account.
+2. It adds to this desktop whatever this desktop doesn't have.
+3. It saves this desktop, with what it just added, as this account's copy.
+
+Reading before saving is what makes a second computer safe. A new computer's empty desktop takes in your saved copy first, and only then saves over it, so the saved copy never shrinks to nothing.
+
+**What "has it" means.** A saved encounter, a job, a ledger record, a Heat record, a contact card and a scene each have an id. A record whose id this desktop lacks is added, whole. One it has already is left exactly as it is, and if the two differ it's counted as kept as yours.
+
+**A copy is read once** (changed by the review). Each save carries a name of its own, and a desktop notes the copies it already has in it: the ones it took in, and its own last save. A copy it has noted holds nothing it hasn't had, so it isn't read again. As first built, every press read every copy, and that broke your delete rule in a way nobody agreed to: see Worth your eye, 1.
+
+**The Table.**
+
+- **An empty Table here** takes the other's whole fight: the rows, the Room, the round, whose turn it is, the clock and the plan's name. Nothing of yours is there to replace.
+- **A Table in use here** gains only the rows it lacks, after yours: threats by row, the crew by character, Room hazards, and threats defeated and cleared off. Your round, turn, clock and name stay yours.
+- **A crew row names the same character on both browsers.** Your own character is a record on your browser and a row in the database to everyone else, so a crew row travels by the database row. Yours shows on the co-Admin's Table, and theirs on yours. Someone already on your Table isn't added twice.
+- **The last fight's XP award** comes over only if this desktop has none.
+- **A fight is up or it's over** (added by the review, widened by the second). The rows of a fight you have ended don't come back onto your Table from someone still in it, and a fight whose rows are on your Table isn't also taken as your last fight. Either would offer one fight's XP twice. As first fixed, only the fight you ended last was kept off. Now the desktop keeps the rows of every fight it has ended, the last 500 of them.
+- **One fight, one time** (added by the second review). An award names its fight by the moment the fight was ended. When the other Admin has ended a fight that is still up on your Table, your Table notes the time they gave it, and END on yours uses that time. So the award they made counts on your Table too, and your card reads Awarded.
+
+**Payroll's ledger.**
+
+- **A send to another player's sheet travels once it has landed and nothing more is owed on it.** What stays out, both ways: a send still queued, an UNDO still queued, a send that never landed, and one that ended with its campaign or because the account stopped running it. They're left where they are, like any other record the sync doesn't carry.
+- **Everything else arrives as history,** the same as a GM file imported from another device. It counts as already paid here, so the hold on paying a fight or a job twice now sees the other Admin's paydays. It can't be undone from here: only the desktop that made a write can UNDO it.
+- **A write onto a sheet on your own browser travels by the sheet's row** (added by the review), as a crew row does. Under your browser's own id it named nobody on the co-Admin's, so it counted for nothing there, and a fight you had already awarded read as unpaid to them.
+
+**What a copy may carry** (added by the review). A saved copy is somebody else's data in your page, where your signed-in session is. So it loses every `<` and `>` before it's read, in its values and its keys, the way another player's sheet already does. A string also loses what the database refuses to store, so one odd character in a typed note can't stop every save.
+
+**In the database: one new migration, and nothing applied until you say go.** The seven already on the live project aren't edited.
+
+- One small table, `campaign_desks`: one row to a campaign and an account, holding that account's saved desktop, a save count and the time. No client can read or write the table directly, and it isn't in Realtime.
+- Two functions, both for those who run the campaign and nobody else. `desk_read` answers with the saved desktops of everyone who runs it now. `desk_save` stores the caller's.
+- A campaign's saved desktops are deleted with it. Someone who stops running it keeps a row nobody can read, themselves included, and it's read again if they run it again.
+- A saved desktop is at most 2 MB. A browser's whole storage is about 5 MB, so a real one is far smaller.
+
+**Two of your devices pressing at once.** A save says which copy it read, and the database refuses it if the copy has changed since. The app then reads again, adds, and saves, up to three times.
+
+**Not touched:** the far door and its outbox, Heat, the library, GM Controls and Optional Rules, `gate.js`'s drawing and `tour.js`.
+
+## What you'll notice
+
+The catches you agreed to, and what follows from them:
+
+- **A deleted record comes back** once someone who still has it has saved again. Until then it stays deleted for you, and it never leaves them.
+- **An edit doesn't reach someone who has the record.** That holds for money too: a payday you take back after the co-Admin synced still reads as paid on theirs. It errs on the side of not paying twice.
+- **A sync in the middle of a fight adds rows.** If you both run the same fight on your own Tables, each keeps their own numbers for a row you both have, and the report counts those rows as kept as yours.
+- **Two threats added separately are two threats.** You each add a Street Ganger, you sync, and you each have two.
+- **Heat's hidden rows and aliases are one record,** so whoever has one keeps their own.
+- **A note with a `<` or a `>` in it arrives without them.** "HP < 5" reads "HP  5" on the co-Admin's desktop. Yours is as you typed it.
+
+## Decisions beyond your rules
+
+Mine, so overrule any of them.
+
+1. **A delete on this browser sticks against your own saved copy.** Without that, an Admin with no co-Admin who pressed SYNC would see everything they had deleted come back from their own last save. "Someone who still has it" is another Admin, or another computer of yours.
+2. **An empty Table takes the whole fight,** round and clock included. That is what makes the co-Admin's blank Table match yours after one press.
+3. **The crew by character, threats by row.** A threat has no identity beyond its row.
+4. **What arrives in the ledger tells nobody anything:** a refusal's strip notice stays on the desktop that got it.
+5. **The other copies are added newest save first.** Where two of them hold a record you lack, you get the one edited last, whichever was saved last.
+6. **The database stores a desktop without reading it.** The app reads another Admin's copy the way it reads an imported file: record by record, dropping what it can't read.
+7. **A copy saved by a newer version of the app is skipped,** and the report says so, as an import refuses a newer file.
+8. **A crew row for a character that isn't in your account stays behind.** It has no database row, so it would mean nothing on another browser.
+9. **The report is a toast, and a line under the picker that stays until you press OK,** on the desktop it's about. Its words are suggested: "Synced. Added: 3 initiative rows, 2 contact cards." and under it "Kept as yours, where the two differ: 1 saved scene."
+10. **Jacked out or offline, the button says so and does nothing.**
+
+## Decisions I made while building
+
+Mine again, so overrule any of them. 21 to 27 came out of the first review, and 28 to 31 out of the second.
+
+11. **A send that never landed stays out too,** along with the queued and the ended. It was refused, or taken back before it went, so it counts for nothing anywhere.
+12. **A write that has only gained its arrival marks isn't counted as different.** Your payday, read back from the co-Admin's copy as history, is still the same payday.
+13. **A press belongs to the desktop and the account it was pressed on.** If the tab has gone to another campaign, or another account has jacked in, by the time the answer comes, nothing is added anywhere and a toast names the campaign it was about.
+14. **Only a copy that moved is tried again,** up to three times. A save with no answer is left for you to press again, and what the press added stays added.
+15. **A fight none of whose rows can be named on your browser takes no round.** A round with nobody in the order isn't a fight.
+16. **A threat that arrives beside one of the same name is numbered,** as any second threat on a Table is: yours stays "Street Ganger" and theirs reads "Street Ganger 2".
+17. **Nothing is tidied up when someone stops running a campaign.** Their saved copy stays in its row, unread, until the campaign is deleted. Tidying it would have meant new versions of functions already on the live project.
+18. **Offline, the button has no second press.** One press says "SYNC needs the link."
+19. **A crew row with no name of its own takes its character's on the way out.** A row you pulled from your own records had no need of one. On the co-Admin's Table it would have read as a nameless Freelancer.
+20. **A plan with a name and a clock and nobody on it yet counts as something added,** and the report says so: "Added: the plan on the Table, with its round, clock and name."
+21. **A copy is read once.** So the report names what it kept when the other copy is new, and has nothing to say about a copy it has already taken in.
+22. **What you deleted since your last press isn't taken back at this one,** whatever a copy holds. A copy saved before the other Admin deleted the record too can't say they still have it. If they do, their next save says so, and your press after that brings it back.
+23. **A file imported over a desktop counts as deleting what it leaves out,** at that moment, like any delete. The press after an import saves the desktop as the file made it.
+24. **Your own saved copy from a newer version of the app isn't saved over.** The press adds what the others saved, saves nothing, and says to reload.
+25. **A press gives up on a call after 20 seconds,** so a request that never answers can't leave the button reading SYNCING until a reload.
+26. **No button while the tab hasn't caught up with the picker.** If the device refuses to save a switch of campaign, the tab stays on the old desktop and NOT SAVED says why. A button under the new name would have saved the old campaign's desktop as the new one's.
+27. **"Press SYNC again" is said only where it can help.** Too big, not yours to run, or a copy of your own that is newer or can't be read: pressing again changes nothing, so it isn't suggested.
+28. **Every fight ended on a desktop stays ended there,** not only the last one. The desktop keeps the rows of the fights it has ended, up to 500 rows, the ones ended longest ago going first. The list belongs to the browser: it isn't in the saved copy, and the browser's own "No campaign" desktop keeps none.
+29. **A fight the other Admin ended first keeps their time when you end it too,** as long as one of its threats is still in it on your Table. The crew staying on for another fight doesn't make it the same fight. If two Admins ended it at two times, the first time your desktop read is the one it keeps.
+30. **Your own saved copy that can't be read here isn't saved over, whatever the reason.** The press adds what the others saved, saves nothing, and says so. Before, that held only for a copy from a newer version of the app. See Worth your eye, 6, for what it costs.
+31. **A tab left open from before an update can't empty what it has never heard of.** Such a tab saves the desktop without the new parts. A newer tab now reads that as saying nothing about them, keeps its own, and puts them back.
+
+## What was built
+
+On `claude/vigilant-kare-2e3a45`: the migration and its checks, the app, the first review's fixes, three merges of `main` (the last one the Handbook 2026-11-11A change), and the five fixes you chose from the second review. The migration is on the live project. The code is not pushed and not merged.
+
+- **The migration,** `supabase/migrations/20261110180000_campaign_desks.sql`: the table `campaign_desks` (campaign, account, the saved desktop, a save number and the time), with row security on, no policy and no privilege for any client, and not in Realtime. `desk_read(p_campaign)` answers the saved desktops of everyone who runs the campaign now, newest save first, each marked as the caller's own or not. `desk_save(p_campaign, p_doc, p_rev, p_sender)` stores the caller's: it takes an object of at most 2,000,000 bytes, locks the row, and refuses `EN_MOVED` unless `p_rev` is the number of the copy stored (0 for none). `p_sender` is the account the app means, as with `send_write`. The seven migrations already live aren't touched, and the review asked for no change to this one.
+- **`gmstore.js`:** THE SYNC BUTTON, near the end. `sync()` reads, adds, then saves. `syncIn` adds what the copies hold and this desktop lacks, through the same reader a load and an import use, and never replaces. `syncOut` is the desktop as it's saved: no library, a character named by its database row, and the ledger without the far door's unfinished business (`syncCarries`). `syncClean` is what a string may carry across. The document gains two parts: `synced`, the names of the saved copies it holds and when it last pressed, and `over`, the rows of the fights ended on it. A Table also notes the time another Admin gave a fight it still has up (`encounter.ended`), and `snapshotFight` uses it. `hear` lists the parts an older tab doesn't know (`LATER_PARTS`). `isLive` counts a write that arrived by SYNC onto a sheet another browser holds.
+- **`campaigns.js`:** `deskRead` and `deskSave`, and four refusals in words.
+- **`gm.js`:** the button beside the campaign picker, its second press, SYNCING while it's out, and the report under the picker until OK.
+- **Asset stamp** `20261112.3`, above `main`'s `20261112.1`. **README, HANDOFF and DEFERRED-FIXES** describe it.
+
+## Going live, in this order
+
+1. **The migration, on the live project, before the code,** on your word. Nothing else in the app reads the new table, so the site is the same with it as without. Without it the button would answer "Could not reach your account. Nothing was saved or added."
+2. **Then the merge,** on "push it".
+
+From a worktree, which has no `supabase link` of its own:
+
+```bash
+npx supabase@2 migration list --project-ref ggjgkcnhfpjwyrhakqun
+```
+
+```bash
+npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/migrations/20261110180000_campaign_desks.sql
+```
+
+```bash
+npx supabase@2 db query --linked --project-ref ggjgkcnhfpjwyrhakqun -f supabase/tests/campaign_checks.sql
+```
+
+```bash
+npx supabase@2 migration repair --status applied 20261110180000 --project-ref ggjgkcnhfpjwyrhakqun
+```
+
+The checks should say 378 PASS, 0 FAIL. The repair is there because `db query` applies a file and records nothing.
+
+**Read from the live project on 10 Nov 2026, read only, before the migration:** its history listed the seven migrations as applied and this one as local only. One `select` over the catalog found no `campaign_desks` table and no `desk_read` or `desk_save`, and found `runs_campaign`, the three columns of `campaign_members` the read joins on, and one table in the Realtime publication. The project is on Postgres 17.11.
+
+**Step 1 is done, 10 Nov 2026, on your word.** The migration went on inside one transaction, with no error. Read back afterwards:
+
+- the table, with its five columns, its key, its two links to the campaign and the account, and the rule that a desktop is an object;
+- row security on, no policy, and no privilege at all for a signed-in or anonymous client;
+- in no publication, so not in Realtime, which still carries the one table it did;
+- both functions running as their owner with a pinned search path, callable by a signed-in account and not by an anonymous one;
+- no rows in the new table, and the rows already there untouched: 2 accounts, 2 campaigns, 4 memberships, 6 characters, 62 inbox rows, before and after.
+
+The checks said **378 PASS, 0 FAIL** on the live project, rolled back, with the counts the same after as before and nothing of the fixtures left. The history lists all eight migrations on both sides.
+
+**The first live run said 377 PASS, 1 FAIL,** and the one failure was an older check, not a new one and not the migration. The Advancement Type's "no other campaign took the type" counted every campaign in the database that has a type, and expected none. One of your real campaigns has had its type set since that check was written. The check now asks that the number hasn't moved, which is what it meant. It still catches the broken copy it guards, and the file went 378 and 0 on the live project after that. Nothing on the live project was changed to get there.
+
+What is left is step 2: the code, on "push it".
+
+## How it was reviewed
+
+One independent read, given the design and the diff and none of my conclusions. It ran the real `gmstore.js` in Node against a stand-in of its own to confirm what it found. It found the SQL sound, and four more areas: money in flight never crossing, even from a copy doctored to hold it, two tabs, nobody on a Table twice, and the library being safe to leave behind. It found five real defects and some smaller ones. Each fix has a check that failed before it.
+
+1. **A saved copy could carry markup that ran as script in another Admin's browser.** A few views build HTML from stored record fields: a Heat check's die, a job's rolled number. Until now only a file you imported yourself could put anything there. With SYNC, a co-Admin could save a copy with markup in one of those fields, and it would run in your page, where your session is, the next time you opened that tab. Every copy now loses `<` and `>` before it's read. The views themselves are a follow-up: see Still open.
+2. **Between two accounts a delete could never stand, and a finished fight came back on every press.** Once both saved copies held a record, each press took it back from the other's copy and saved it again, even after both of you had deleted it. The same loop put a fight you had ended back on your empty Table, and ending it again offered its XP a second time. Fixed by reading a copy once (21), holding back what was deleted since the last press (22), and a fight being up or over.
+3. **A payment through the near door read as unpaid on the other desktop.** A write onto a sheet on your own browser carried your browser's id for it. Fixed: it travels by the sheet's row, and counts.
+4. **The note of which copy a desktop matched went wrong three ways.** It was written when the save's answer came, so a lost answer, or a tab that had moved on, made the next press take your own copy back in "like anyone's": deletes undone, an ended fight restored. An import landing while a save was out could make the next press save the file over your copy. And your own copy from a newer version of the app was skipped and then saved over. Fixed: the note is written before the save goes, an import is a delete of what it leaves out (23), and a newer copy of your own isn't saved over (24).
+5. **The report said things that weren't so.** "Kept as yours" for records it had just added from another copy. "Nothing new to add" after taking a plan's name and clock. "With the fight's turn" when the turn hadn't come. An older press's line left standing after a failed one. "Press SYNC again" for refusals a second press can't pass, and a refusal to store the desktop read as a bad link. All fixed.
+
+**Smaller, all fixed:** the press now looks at other tabs before it asks whether it is still on its desktop, since hearing one can redraw and a redraw can move the tab. A call that never answers gives up (25). No button while the tab hasn't caught up with the picker (26). A nameless crew row (19). Of two copies of a record you lack, the one edited last (5). Five lines that did nothing are gone.
+
+**A second independent review, 12 Nov 2026,** on `0024ce1`, given your rules and the code and none of my conclusions. It wrote its own stand-in and its own scripts. Four things it could not break: additive only (2,100 random presses of its own), money in flight crossing, the SQL's access rules, and markup or script getting in through a value. It found nine things, two of them medium. You chose five fixes to make before the push: four of its findings, and half of a fifth. Each fix has a check that failed before it, and the review's own scripts now show the fixed behaviour.
+
+1. **A fight you had ended came back once you had ended one more** (its 1, medium). Only the last fight's rows were kept off your Table. A co-Admin who took a fight whole and never cleared their Table keeps saving it, so after your next fight it returned: whole onto an empty Table, or, in the middle of a later fight, as extra rows and extra defeated threats that raised that fight's XP. Fixed (28).
+2. **One fight on two Tables got two award cards, even after the first award had arrived by SYNC** (its 2, medium). Each Table stamped its own time on the fight when it ended it, and an award is found by that time. Fixed for the case it found: the other Admin ended and awarded, you pressed SYNC with the fight still up, then ended it (29). Two cases are left: Worth your eye, 3.
+3. **A key could become `__proto__` after it was cleaned** (its 5, low). The cleaner refused that key and then stripped `<` and `>`, and `__pro<to__` passed the first step and came out of the second as `__proto__`. A doctored copy could use it to put a row with no id and no statblock on your Table, and the Table then threw until a reload. Fixed: the key is judged as it will be written.
+4. **Your own copy was saved over when it couldn't be read for a reason other than being newer** (its 7, low). Nothing in the app writes such a copy today. Fixed (30).
+5. **A tab left open from before the update made the new tab forget which copies it held** (its 3b). The old tab saved the desktop without the note, the new tab took that for an empty note, and its next press read every copy again, with no last press to judge deletes by. I had written in this report that a newer tab would put the note back. That was wrong, and nothing had tested it. Fixed (31), and tested against `main`'s own store playing the old tab.
+
+The rest of what it found (its 3a, 4, 6, 8 and 9) is not fixed, by your choice: Still open has each. **These five fixes have had no review of their own.** The checks below cover each one.
+
+## How it was checked
+
+| What | Result | How |
+| --- | --- | --- |
+| The SQL | 378 PASS, 0 FAIL, nothing left behind | `campaign_checks.sql`, up from 324, in PGlite |
+| The checks have teeth | 329 of 329 caught, 45 of them new | `pg/mutants.mjs`: a broken copy of a migration at a time. Some stop a fixture step instead of failing a check, which the tool counts as caught |
+| What a press adds, keeps and saves | 208 checks pass | `pg/sync_unit.mjs`: the real `gmstore.js` in Node, each browser its own storage, against a stand-in database that keeps the migration's rules. Twenty-five scenarios, the last five for the second review's fixes. On the code before those fixes, 18 of its checks fail |
+| Random rounds | 2,000 clean | The same file: three who run one campaign, adding, editing, deleting, ending fights and pressing in any order. After each press: nothing the desktop held was changed, removed or reordered, no row or character is on a Table twice, no row of any fight that desktop has ended is back on its Table, no fight is both up and over, and nothing in flight crossed. At the end everyone holds what anyone holds, and a record all three deleted stays deleted |
+| Breaking the store's code on purpose | 166 of 166 caught | `pg/sync_unit_mutants.py`, a line at a time. 29 of them break the second review's fixes. Two survived the first run after those fixes: one line the new list had made redundant in the case its check played, and the cap at its very edge. Each got a check, and both are caught now |
+| The story, on the stand-in | 129 checks pass | `tests/campaigns_sync_1.js`, through the real UI: the button, its second press, the Admin's desktop, the co-Admin's blank browser, back again, deletes, a second computer, every refusal, a copy with markup in it, copies that can't be read, your own copy that can't be read, a refused switch of campaign, a campaign that isn't yours any more, a deleted one, and one fight ended and awarded by the Admin and then ended on the co-Admin's Table, where the card reads Awarded. On the code before the second review's fixes, 7 of its checks fail |
+| The same story, on the real SQL | 133 checks pass | `pg/sync_realdb.js`: the real app and the real supabase-js on the real migration in PGlite. It caught one thing the stand-in had let through: my story deleted a campaign somebody else led |
+| Breaking the button's code on purpose | 56 of 56 caught | `pg/sync_mutants.py`, a line at a time, against the stand-in chain |
+| The other real rounds | All pass: batch 2 144, batch 3 61, the Table 159, two tabs 40, the same sequence in one window 21, the Advancement Type 174, the writing tabs 528 and their two tabs 36 | On the final code, again after the last merge of `main`, and again after the second review's fixes |
+| The two-tab fuzz | 400 rounds, nothing lost | `pg/gm_tabs_fuzz.mjs`, since the document gained parts. Run again after the second review's fixes, which changed how a tab hears another, and the seven older two-tab mutants that break that code are still caught |
+| The second review's own scripts | Each shows the fixed behaviour | Its six scripts for the five findings, run from its folder against this branch's store. One of them runs `main`'s store from before SYNC as the old tab. I ran one more of my own on that harness, for the two newer parts against the same old tab: both are kept, both are put back in storage, and two more looks by each tab write nothing |
+| The whole suite | 501 chains, 526 runs, 0 bad, 0 skipped. After the last merge of `main`: 503 chains, 528 runs, 1 bad. After the second review's fixes: 504 chains, 529 runs, 2 bad | `cx_integ_run.py`, rounds sync2, sync3 and sync4. The bad run in sync3 is `gm_markup_1.js`, the test that came with the fix for the views that build HTML from record fields. That fix is on its own branch, so the test fails on any build without it, `main` included. The second bad run in sync4 is `fl_markup_1.js`, new in the suite since: the test that came with the same kind of fix for the Freelancer views, on `claude/objective-ptolemy-3315ec`. I ran it against `main`'s own app, and it fails there too |
+| The app that was live then, on a database with this migration | The same as on that day's database, round for round | `main`'s `app` at `38a02dc` with this branch's `supabase` folder, before the migration went on. The SYNC story skips itself there |
+| The live project, read only, before the migration | As above | `migration list`, and one `select` over the catalog |
+| The live project, after the migration | 378 PASS, 0 FAIL, rolled back, every row count the same before and after | The catalog read back, then `campaign_checks.sql` on the live project. See Going live for the one older check the first run tripped on |
+| By eye | The button, SYNC NOW?, SYNCING and the report line in Classic, '98 and #GRIDroid at desktop width | The Browser pane on this worktree, with canned answers in place of the database. All three skins before the first review's fixes, which changed words and not layout, and Classic again after them. Not looked at again after the second review's fixes, which added one line of words to the same place |
+| A phone's width | Nothing runs past the page | Measured at 368 px in the story and at 375 px in the pane, where the button wraps under the picker. The pane's picture at that width is a crop, so this was measured, not seen |
+
+`gate.js` and `tour.js` have no diff against `main`. No em or en dashes in anything added.
+
+## What was not checked
+
+- **The app hasn't run against the live project.** The migration and its checks have. Supabase's own PostgREST and Discord sign-in aren't in any of the app's rounds: the bridge imitates them, as before. A press of the real button on the live site is the live round, after the push.
+- **Two real browsers.** The story plays the co-Admin's browser on one page, by putting the campaign's document aside and signing the other account in. The unit test gives each browser its own storage, in Node. Neither is two machines.
+- **Two saves racing inside the database.** The row lock and the save count are there, and PGlite has one connection, so neither has ever contended. PGlite is also Postgres 18.6 where the project is 17.11.
+- **A big desktop.** The 2 MB limit is the database's. Whether Supabase's gateway takes a request that size hasn't been tried, and nobody has measured a real desktop.
+- **The second review's five fixes have had no review of their own.** '98 and #GRIDroid weren't looked at again after either round of fixes, and the one new line of words (your own copy that can't be read) was read off the real page by the story, not looked at by eye.
+- **Light theme,** and a real phone.
+- **An older copy of the app in another tab, in a real browser.** It is checked two ways now: the unit test writes storage the way such a tab does, and the review's script runs `main`'s own store as the old tab. Neither is a browser with a stale tab in it. What an old tab still gets wrong is in Still open.
+- **Three lines of the report's wording** have no check that would catch a break: the line kept after a save fails on a plan with nobody on it, a newer copy of your own being counted once and not twice, and the button's words before the migration is on the database.
+
+## Worth your eye
+
+1. **Your delete rule changed in the letter.** You agreed that the next sync brings a deleted record back from someone who still has it. As first built, that was literally true and it was a trap: each press took the record back from the other Admin's saved copy, saved it again, and so kept it alive in both copies for good. Two Admins could both delete a contact and never be rid of it. Now a delete stands until someone who still has the record saves again. It still never travels, and it still comes back if they kept it. It comes back one press later than you agreed.
+2. **A fight you ended stays ended on the browser that ended it.** That was one case short before the second review, and is fixed. The list of ended rows belongs to the browser, though. A second computer of yours has never ended those fights, so its blank Table takes a co-Admin's stale fight like any other. A GM file imported over the desktop replaces the list with the file's own, and a file from before this change has none, which leaves only the file's last fight kept off. And the list holds 500 rows, some fifty fights of ten: a co-Admin still sitting in a fight older than that could bring it back.
+3. **Two different Admins can still pay one fight twice, in two cases.** The ledger crosses, so a payday the other Admin made is held once you've synced. And since the second review, if they ended and awarded a fight and you press SYNC while it's still up on your Table, ending it on yours finds their award. What is left: you both end the fight before either of you presses, so it has two times and two cards. Or they have ended a later fight by the time you press, since a copy carries only its last fight. Before a sync, nothing has changed.
+4. **A co-Admin can put history in your ledger that reads as paid.** They can already pay and dock every sheet in the campaign, so this is inside the trust a co-Admin has. It can't be undone or removed from your desktop.
+5. **Your contacts, scenes and plans reach every co-Admin who presses.** That is the feature, and worth knowing before you promote someone.
+6. **If your own saved copy ever can't be read, SYNC stops saving for that campaign on your account,** and nothing in the app can clear it: every press adds what the others saved, saves nothing, and says why. That is the fix you chose (30), and it is the safe side, since saving would wipe whatever that copy holds. But it has no way out short of replacing that one row in the database by hand. The app can't write such a copy today, so it would take a damaged row or something other than the app. I didn't add a "save over it anyway" button for a case that can't arise. Say so if you want one.
+
+## Still open
+
+- **The views that build HTML from record fields.** A die's face (`ui.js`, `dieFaceSvg`), a Heat check's roll and a job's rolled number go into the page as markup. SYNC no longer feeds them anything with a `<` in it, but a GM file imported by hand still can, as it always could. Escaping them at the source was its own small job, done since on `claude/trusting-cray-fde91a`. That branch isn't on `main` or in this one.
+- **A payday taken back after the other Admin synced** still reads as paid on theirs, by your rule. With three desktops, the third can take "paid" from the stale copy: of two copies of a write it lacks, it keeps the one edited last, and UNDO doesn't count as an edit (the second review's 4). Its suggestion was to let "undone" win.
+- **A tab left open from before the update reads pay that came by SYNC as unpaid** (the second review's 3a). Only the new code counts a write named by its sheet's row. Until that tab reloads, it could offer to pay a fight or a job the other Admin has paid. And if such a tab is the only one open when it saves, the notes it never knew are still dropped: the next press then reads every copy once more.
+- **A hostile co-Admin** (the second review's 6). A copy's name has no length limit. A ledger write's time is believed. And one copy close to 2 MB makes your own next save too big, for good, since what it added is now on your desktop.
+- **Two things the report says** (the second review's 9). A press whose write to this browser's storage is refused still says "Synced. Added". And when a save is refused as moved and the press reads again, what the first read kept as yours isn't said.
+- **The size limit counts the stored form,** a little larger than what the app sends (the second review's 8).
+- **Names inside history.** A job's sent-to list, a payday's form and Heat's holders carry the ids of the browser that made them, so on another Admin's browser they name nobody. Nothing reads them for money.
+- **Someone who stopped running a campaign** leaves their saved copy in the database until the campaign is deleted.
+- **Two accounts on one browser share a campaign's desktop,** as they always have, so one of them deleting a record deletes it for both there.
+- **Heat through the inbox, and Vigor at the Table's END,** as before.

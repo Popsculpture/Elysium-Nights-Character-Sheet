@@ -21,8 +21,9 @@ declare
   n int;
   n2 int;
   campx uuid; campy uuid; campz uuid;
-  adv uuid; adv_t text; adv_a uuid; adv_c uuid; adv_d uuid;
+  adv uuid; adv_t text; adv_a uuid; adv_c uuid; adv_d uuid; adv_n int;
   t5 text;
+  dk uuid; dk2 uuid; dk_t text; r1 bigint; d1 jsonb; d2 jsonb; d3 jsonb; pad int;
   v text;
   f text;
   j jsonb;
@@ -1322,8 +1323,14 @@ begin
   select count(*) into n from public.character_inbox where campaign_id = adv;
   out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' none of the refusals sent a letter (' || n || E')\n';
 
+  -- how many other campaigns hold a type before anything is set here. On a live project some real ones do, so the
+  -- check further down asks that the number has not moved, not that it is nothing
+  perform set_config('role', 'postgres', true);
+  select count(*) into adv_n from public.campaigns where id <> adv and advancement is not null;
+  perform set_config('role', 'authenticated', true);
+
   -- the first press: a co-Admin sets Milestones, and every character in the campaign is written to
-  n := public.set_advancement(adv, 'milestone', '{"from": "  Campaign  ", "subj": " Advancement Type: Milestone ", "body": "Advancement Table now levels on Milestones. Your XP is kept as it is."}');
+  n := public.set_advancement(adv, 'milestone','{"from": "  Campaign  ", "subj": " Advancement Type: Milestone ", "body": "Advancement Table now levels on Milestones. Your XP is kept as it is."}');
   out := out || case when n = 3 then 'PASS' else 'FAIL' end || ' a co-Admin can set the type, and three letters go (' || n || E')\n';
   select advancement into v from public.campaigns where id = adv;
   out := out || case when v = 'milestone' then 'PASS' else 'FAIL' end || ' the type is stored (' || coalesce(v, 'null') || E')\n';
@@ -1363,7 +1370,7 @@ begin
   perform set_config('role', 'postgres', true);
   select count(*) into n from public.campaigns where id <> adv and advancement is not null;
   perform set_config('role', 'authenticated', true);
-  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' no other campaign took the type (' || n || E')\n';
+  out := out || case when n = adv_n then 'PASS' else 'FAIL' end || ' no other campaign took the type (' || n || ', and ' || adv_n || E' before)\n';
   select count(*) into n from public.character_inbox where campaign_id = adv and mail ->> 'subj' = 'Advancement Type: XP' and character_id in (adv_c, adv_d);
   out := out || case when n = 2 then 'PASS' else 'FAIL' end || ' both players got the flip''s letter (' || n || E')\n';
   select count(*) into n from public.character_inbox where character_id = adv_a and mail ->> 'subj' = 'Advancement Type: XP';
@@ -1384,6 +1391,228 @@ begin
   err := null;
   begin update public.campaigns set advancement = null where id = adv; exception when others then err := sqlstate; end;
   out := out || case when err is null then 'PASS' else 'FAIL' end || ' but the database owner can clear it (' || coalesce(err, 'no error') || E')\n';
+
+  /* ---- the SYNC button's saved desktops (the campaign desks migration) ----
+     a runs a fresh campaign, b is a co-Admin, c is a player and e is outside it. dk2 is a second
+     campaign that a runs alone. */
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  dk := public.create_campaign('Desk Table');
+  dk2 := public.create_campaign('Desk Solo');
+  select token into dk_t from public.campaign_invites where campaign_id = dk;
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(dk_t);
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(dk_t);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.set_role(dk, b, 'coadmin');
+  d1 := '{"v": 2, "jobs": {"j1": {"id": "j1", "title": "The Toll"}}}';
+  d2 := '{"v": 2, "contacts": {"k1": {"id": "k1", "name": "Mox"}}}';
+  d3 := '{"v": 2, "jobs": {"j1": {"id": "j1", "title": "The Toll"}, "j2": {"id": "j2", "title": "Side job"}}}';
+
+  select count(*) into n from public.desk_read(dk);
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' a campaign nobody has saved a desktop for reads as nothing (' || n || E')\n';
+
+  -- who may not: a player, someone outside it, and anyone on a campaign that does not exist
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.desk_read(dk); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot read the saved desktops (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.desk_save(dk, d1, 0); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot save one (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.desk_read(dk); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' someone outside the campaign cannot read them (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.desk_save(dk, d1, 0); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' or save one (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.desk_read(gen_random_uuid()); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a campaign that does not exist answers a read the same way (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.desk_save(gen_random_uuid(), d1, 0); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' and a save (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.campaign_desks;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = 0 then 'PASS' else 'FAIL' end || ' none of the refusals stored anything (' || n || E')\n';
+
+  -- what is not a desktop
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  v := '';
+  foreach bad in array array['null'::jsonb, '[]'::jsonb, '"desk"'::jsonb, '7'::jsonb, 'true'::jsonb, '[{"v": 2}]'::jsonb] loop
+    err := null;
+    begin perform public.desk_save(dk, bad, 0); exception when others then err := sqlerrm; end;
+    if err is distinct from 'EN_BAD_DESK' then v := v || bad::text || ' = ' || coalesce(err, 'no error') || '; '; end if;
+  end loop;
+  out := out || case when v = '' then 'PASS' else 'FAIL' end || ' anything but an object is refused as EN_BAD_DESK (' || v || E')\n';
+  err := null;
+  begin perform public.desk_save(dk, null, 0); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_DESK' then 'PASS' else 'FAIL' end || ' and so is no desktop at all (' || coalesce(err, 'no error') || E')\n';
+
+  -- the first save, and what each of the two then reads
+  r1 := public.desk_save(dk, d1, 0);
+  out := out || case when r1 = 1 then 'PASS' else 'FAIL' end || ' the Admin''s first save answers 1 (' || coalesce(r1::text, 'null') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.campaign_desks where campaign_id = dk and user_id = a and doc = d1 and rev = 1;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' and stores the desktop under the Admin, as it was sent (' || n || E')\n';
+  select count(*) into n from public.desk_read(dk) t where t.mine and t.rev = 1 and t.doc = d1 and t.saved_at is not null;
+  select count(*) into n2 from public.desk_read(dk);
+  out := out || case when n = 1 and n2 = 1 then 'PASS' else 'FAIL' end || ' the Admin reads it back as their own (' || n || ' of ' || n2 || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.desk_read(dk) t where not t.mine and t.rev = 1 and t.doc = d1;
+  select count(*) into n2 from public.desk_read(dk);
+  out := out || case when n = 1 and n2 = 1 then 'PASS' else 'FAIL' end || ' a co-Admin reads it as somebody else''s (' || n || ' of ' || n2 || E')\n';
+  r1 := public.desk_save(dk, d2, 0, b);
+  out := out || case when r1 = 1 then 'PASS' else 'FAIL' end || ' a co-Admin can save their own, naming themselves (' || coalesce(r1::text, 'null') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.campaign_desks where campaign_id = dk and user_id = a and doc = d1 and rev = 1;
+  select count(*) into n2 from public.campaign_desks where campaign_id = dk and user_id = b and doc = d2 and rev = 1;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = 1 and n2 = 1 then 'PASS' else 'FAIL' end || ' a save changes the caller''s copy and nobody else''s (' || n || ', ' || n2 || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  select count(*) into n from public.desk_read(dk) t where (t.mine and t.doc = d1) or (not t.mine and t.doc = d2);
+  select count(*) into n2 from public.desk_read(dk) t where t.mine;
+  out := out || case when n = 2 and n2 = 1 then 'PASS' else 'FAIL' end || ' the Admin then reads both, one of them their own (' || n || ', ' || n2 || E')\n';
+
+  -- a save says which copy it read
+  err := null;
+  begin perform public.desk_save(dk, d3, 0); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_MOVED' then 'PASS' else 'FAIL' end || ' a save that read no copy is refused once there is one (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.desk_save(dk, d3, 5); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_MOVED' then 'PASS' else 'FAIL' end || ' and so is one that names a copy that is not the one stored (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.desk_save(dk, d3, null); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_MOVED' then 'PASS' else 'FAIL' end || ' and one that names nothing at all (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.campaign_desks where campaign_id = dk and user_id = a and doc = d1 and rev = 1;
+  update public.campaign_desks set saved_at = '2026-01-01T00:00:00Z' where campaign_id = dk and user_id = a;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' neither refusal changed the stored copy (' || n || E')\n';
+  r1 := public.desk_save(dk, d3, 1);
+  out := out || case when r1 = 2 then 'PASS' else 'FAIL' end || ' a save that read the stored copy lands, and answers the next number (' || coalesce(r1::text, 'null') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.campaign_desks where campaign_id = dk and user_id = a and doc = d3 and rev = 2;
+  select count(*) into n2 from public.campaign_desks where campaign_id = dk and user_id = a and saved_at > '2026-06-01T00:00:00Z';
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' it replaces the desktop and counts the save (' || n || E')\n';
+  out := out || case when n2 = 1 then 'PASS' else 'FAIL' end || ' and says when (' || n2 || E')\n';
+
+  -- the app says which account it means
+  err := null;
+  begin perform public.desk_save(dk, d3, 2, b); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_MINE' then 'PASS' else 'FAIL' end || ' a save that names another account is refused (' || coalesce(err, 'no error') || E')\n';
+  r1 := public.desk_save(dk, d3, 2, a);
+  out := out || case when r1 = 3 then 'PASS' else 'FAIL' end || ' and one that names its own lands (' || coalesce(r1::text, 'null') || E')\n';
+  select count(*) into n from public.desk_read(dk) t where t.mine and t.rev = 3 and t.doc = d3;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a read answers the copy''s own number, for the next save to name (' || n || E')\n';
+
+  -- newest save first
+  perform set_config('role', 'postgres', true);
+  update public.campaign_desks set saved_at = '2026-11-01T00:00:00Z' where campaign_id = dk and user_id = a;
+  update public.campaign_desks set saved_at = '2026-11-02T00:00:00Z' where campaign_id = dk and user_id = b;
+  perform set_config('role', 'authenticated', true);
+  select string_agg(case when t.mine then 'me' else 'them' end, ',' order by t.ord) into v
+    from public.desk_read(dk) with ordinality as t(mine, rev, saved_at, doc, ord);
+  perform set_config('role', 'postgres', true);
+  update public.campaign_desks set saved_at = '2026-11-03T00:00:00Z' where campaign_id = dk and user_id = a;
+  perform set_config('role', 'authenticated', true);
+  select string_agg(case when t.mine then 'me' else 'them' end, ',' order by t.ord) into f
+    from public.desk_read(dk) with ordinality as t(mine, rev, saved_at, doc, ord);
+  out := out || case when v = 'them,me' and f = 'me,them' then 'PASS' else 'FAIL' end || ' the copies come newest save first (' || coalesce(v, 'null') || ' then ' || coalesce(f, 'null') || E')\n';
+
+  -- a campaign's desktops are its own, and a first save has no copy to name
+  err := null;
+  begin perform public.desk_save(dk2, d2, 3); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_MOVED' then 'PASS' else 'FAIL' end || ' a first save that names a copy is refused (' || coalesce(err, 'no error') || E')\n';
+  r1 := public.desk_save(dk2, d2, null);
+  out := out || case when r1 = 1 then 'PASS' else 'FAIL' end || ' a first save that names none lands (' || coalesce(r1::text, 'null') || E')\n';
+  select count(*) into n from public.desk_read(dk);
+  select count(*) into n2 from public.desk_read(dk2) t where t.mine and t.doc = d2;
+  out := out || case when n = 2 and n2 = 1 then 'PASS' else 'FAIL' end || ' one campaign''s read never answers with another''s copy (' || n || ', ' || n2 || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.desk_read(dk2); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a co-Admin of one campaign cannot read another''s (' || coalesce(err, 'no error') || E')\n';
+
+  -- 2 MB at most: exactly that is fine, one byte more is not
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  pad := 2000000 - octet_length(jsonb_build_object('pad', '')::text);
+  r1 := null; err := null;
+  begin r1 := public.desk_save(dk2, jsonb_build_object('pad', repeat('x', pad)), 1); exception when others then err := sqlerrm; end;
+  out := out || case when r1 = 2 then 'PASS' else 'FAIL' end || ' a desktop of exactly 2,000,000 bytes is saved (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.desk_save(dk2, jsonb_build_object('pad', repeat('x', pad + 1)), 2); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_TOO_BIG' then 'PASS' else 'FAIL' end || ' one byte more is refused (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.campaign_desks where campaign_id = dk2 and user_id = a and rev = 2 and octet_length(doc::text) = 2000000;
+  select count(*) into n2 from public.campaign_desks where campaign_id = dk and user_id = a and doc = d3 and rev = 3;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' and leaves the stored copy as it was (' || n || E')\n';
+  out := out || case when n2 = 1 then 'PASS' else 'FAIL' end || ' saving one campaign''s desktop leaves the same account''s copy for another alone (' || n2 || E')\n';
+
+  -- nobody reads or writes the table itself
+  err := null;
+  begin select count(*) into n from public.campaign_desks; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a client cannot read the table of saved desktops (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin insert into public.campaign_desks (campaign_id, user_id, doc) values (dk, a, d1); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or insert into it (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.campaign_desks set doc = d1; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or change a copy (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin delete from public.campaign_desks; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or delete one (' || coalesce(err, 'no error') || E')\n';
+
+  -- someone who stops running the campaign: their copy stays, and nobody reads it
+  perform public.set_role(dk, b, 'player');
+  select count(*) into n from public.desk_read(dk);
+  select count(*) into n2 from public.desk_read(dk) t where t.mine;
+  out := out || case when n = 1 and n2 = 1 then 'PASS' else 'FAIL' end || ' a demoted co-Admin''s copy is no longer read (' || n || ', ' || n2 || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.desk_read(dk); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' and they cannot read any more, their own copy included (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.desk_save(dk, d2, 1); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' or save (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.campaign_desks where campaign_id = dk and user_id = b and doc = d2 and rev = 1;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' their copy is still stored as they left it (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.set_role(dk, b, 'coadmin');
+  select count(*) into n from public.desk_read(dk) t where not t.mine and t.doc = d2;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' made co-Admin again, their copy is read again (' || n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  r1 := public.desk_save(dk, d2, 1);
+  out := out || case when r1 = 2 then 'PASS' else 'FAIL' end || ' and they save over it from where it stood (' || coalesce(r1::text, 'null') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.remove_member(dk, b, false);
+  select count(*) into n from public.desk_read(dk);
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' a removed co-Admin''s copy is not read either (' || n || E')\n';
+
+  -- the table holds the rules too, and a campaign's copies go with it
+  perform set_config('role', 'postgres', true);
+  err := null;
+  begin insert into public.campaign_desks (campaign_id, user_id, doc) values (dk, c, '[]'); exception when others then err := sqlstate; end;
+  out := out || case when err = '23514' then 'PASS' else 'FAIL' end || ' the table itself takes only an object (' || coalesce(err, 'no error') || E')\n';
+  select count(*) into n from pg_catalog.pg_class k where k.oid = 'public.campaign_desks'::regclass and k.relrowsecurity;
+  out := out || case when n = 1 then 'PASS' else 'FAIL' end || ' row security is on, with no policy to let anyone through (' || n || E')\n';
+  select count(*) into n from pg_catalog.pg_policies p where p.schemaname = 'public' and p.tablename = 'campaign_desks';
+  select count(*) into n2 from pg_catalog.pg_publication_tables p where p.schemaname = 'public' and p.tablename = 'campaign_desks';
+  out := out || case when n = 0 and n2 = 0 then 'PASS' else 'FAIL' end || ' and the table is in no policy and no publication (' || n || ', ' || n2 || E')\n';
+  perform set_config('role', 'authenticated', true);
+  perform public.delete_campaign(dk2);
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.campaign_desks where campaign_id = dk2;
+  select count(*) into n2 from public.campaign_desks where campaign_id = dk;
+  out := out || case when n = 0 and n2 = 2 then 'PASS' else 'FAIL' end || ' deleting a campaign deletes its saved desktops and no other''s (' || n || ', ' || n2 || E')\n';
 
   -- clean_mail stays private
   perform set_config('role', 'authenticated', true);
@@ -1409,7 +1638,7 @@ begin
     'transfer_leadership(%1$L, %1$L)', 'rename_campaign(%1$L, ''x'')', 'delete_campaign(%1$L)',
     'send_to_character(%1$L, ''{}'')', 'send_to_crew(%1$L, ''{}'')', 'recall_send(%1$L)', 'mark_delivered(%1$L)', 'mark_taken(%1$L)',
     'send_write(%1$L, ''k'', ''{}'')', 'take_back(%1$L, ''k'', ''{}'')', 'mark_applied(%1$L)',
-    'set_advancement(%1$L, ''xp'', ''{}'')'
+    'set_advancement(%1$L, ''xp'', ''{}'')', 'desk_read(%1$L)', 'desk_save(%1$L, ''{}'')'
   ] loop
     err := null;
     begin execute 'select * from public.' || format(f, a); exception when others then err := sqlerrm; end;
@@ -1447,6 +1676,15 @@ begin
   err := null;
   begin select count(*) into n from public.character_inbox; exception when others then err := sqlstate; end;
   out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot read the inbox (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.desk_read(camp4); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' anon cannot read a saved desktop (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.desk_save(camp4, '{}', 0); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or save one (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin select count(*) into n from public.campaign_desks; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or read their table (' || coalesce(err, 'no error') || E')\n';
   perform set_config('role', 'postgres', true);
 
   -- the error text is cut off after about 1 KB, so the result is the count and any failures in full
