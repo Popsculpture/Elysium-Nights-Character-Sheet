@@ -672,11 +672,21 @@ EN.cloud = (function () {
     // the Admin's list of sends, when it is open
     if (row.sender_id === user.id && ev.eventType === "UPDATE" && EN.gmCampaign && EN.gmCampaign.sendsChanged) EN.gmCampaign.sendsChanged(row.campaign_id);
   }
+  /* The GM's mailbox (the GM mailbox migration) has a channel of its own, so a project that does not have the table in
+     Realtime yet cannot disturb the inbox channel above: a failed join here is given up quietly until the next listen. */
+  var mailChannel = null;
+  function onMailboxEvent(ev) {
+    if (!user || !ev) return;
+    if (EN.gmPost && EN.gmPost.heard) { try { EN.gmPost.heard(ev); } catch (e) { inboxWarn(e); } }
+  }
   function stopListening() {
     if (channel && channelOf && typeof channelOf.removeChannel === "function") {
       try { channelOf.removeChannel(channel); } catch (e) {}
     }
-    channel = null; channelOf = null;
+    if (mailChannel && channelOf && typeof channelOf.removeChannel === "function") {
+      try { channelOf.removeChannel(mailChannel); } catch (e) {}
+    }
+    channel = null; channelOf = null; mailChannel = null;
   }
   function listen() {
     stopListening();
@@ -687,6 +697,19 @@ EN.cloud = (function () {
       channel = client.channel("inbox:" + me)
         .on("postgres_changes", { event: "*", schema: "public", table: "character_inbox" }, onInboxEvent)
         .subscribe(function (state) { if (state === "SUBSCRIBED" && user && user.id === me) sync({ pull: true }); });
+    } catch (e) { inboxWarn(e); }
+    try {
+      var mc = client.channel("gmbox:" + me);
+      mailChannel = mc;
+      mc.on("postgres_changes", { event: "*", schema: "public", table: "gm_mailbox" }, onMailboxEvent)
+        .subscribe(function (state) {
+          if (state === "SUBSCRIBED" && user && user.id === me && EN.gmPost && EN.gmPost.heard) { try { EN.gmPost.heard(null); } catch (e) {} }
+          // no such table in Realtime, or no way to join: give it up until the next listen, rather than retrying for ever
+          if ((state === "CHANNEL_ERROR" || state === "TIMED_OUT") && mailChannel === mc) {
+            try { channelOf.removeChannel(mc); } catch (e) {}
+            mailChannel = null;
+          }
+        });
     } catch (e) { inboxWarn(e); }
   }
 

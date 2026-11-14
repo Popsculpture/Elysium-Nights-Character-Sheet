@@ -109,9 +109,13 @@ EN.app = (function () {
        with items from the catalog attached; SENT lists what this account has sent, with RECALL while it waits. */
     { key: "gmpost",     label: "#POST",      glyph: "✉", sub: "mail to the crew", portal: "admin", gated: adminReady, group: "LIVE",
       subs: [
+        { key: "inbox", label: "INBOX", sub: "what your players wrote",
+          stub: "Letters your players write to you, in threads, with REPLY." },
         { key: "write", label: "WRITE", sub: "a letter, signed as anyone" },
         { key: "sent",  label: "SENT",  sub: "what you have sent" }
       ],
+      // unread letters from players raise the rail's dot, as unread mail does on the Freelancer's #POST
+      badge: function () { try { return EN.gmPost && EN.gmPost.unread ? EN.gmPost.unread() : 0; } catch (e) { return 0; } },
       view: function (m) { groupView(m, "gmpost", "#POST", gmpostPage); },
       stub: "#POST: write in-game mail to the crew or to one character, and read what you have sent." },
     { key: "jobs",       label: "Jobs",       glyph: "▣", sub: "roll a job", portal: "admin", gated: adminReady, group: "PREP",
@@ -201,8 +205,9 @@ EN.app = (function () {
     EN.gmCampaign.renderPage(mount, sub);
     return true;
   }
-  // #POST: WRITE and SENT are pages of the campaign module (the composer and the sends list it already held)
+  // #POST: INBOX is the mailbox module's; WRITE and SENT are pages of the campaign module (the composer and the sends list it already held)
   function gmpostPage(sub, mount) {
+    if (sub === "inbox") return nestedPage("gmPost", "renderInbox")(mount);
     if (!EN.gmCampaign || typeof EN.gmCampaign.renderPage !== "function") return false;
     EN.gmCampaign.renderPage(mount, sub);
     return true;

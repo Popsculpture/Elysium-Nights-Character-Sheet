@@ -313,6 +313,7 @@ EN.campaigns = (function () {
     EN_BAD_MAIL: "A message needs a From, and a subject, a message or a package.",
     EN_BAD_TYPE: "A campaign levels on XP or on Milestones.",
     EN_BAD_RULES: "Those are not rules this table can set.",
+    EN_SLOW_DOWN: "Slow down. A player can send ten letters in five minutes.",
     EN_TOO_LATE: "Too late to recall that one.",
     EN_BAD_DESK: "This desktop could not be saved to your account.",
     EN_TOO_BIG: "This desktop is too big to save to your account.",
@@ -379,6 +380,25 @@ EN.campaigns = (function () {
       return afterRoster(n);
     });
   }
+  /* ---- #POST TO THE GM (14 Nov 2026) -----------------------------------------------------------
+     A player writes to the people who run their campaign, or answers a letter they were sent (the GM mailbox
+     migration). `rowId` is the character's row in the database, `replyTo` the inbox row being answered, if any:
+     the database takes who the reply is to from that letter, and who it is from from the character. Text only.
+     gmMail is what the people who run a campaign read, newest first (the read policy gives a player only the
+     letters they sent), and mySentToGm is the sender's own. A project without the migration has no such table:
+     both answer null, and the pages say the mailbox is not open yet instead of failing. */
+  function sendToGm(rowId, mail, replyTo) { return rpc("send_to_gm", { p_character: rowId, p_mail: mail, p_reply_to: replyTo || null }); }
+  function markGmRead(id) { return rpc("mark_gm_mail_read", { p_id: id }); }
+  function noMailbox(e) { return !!e && (e.code === "42P01" || e.code === "PGRST205" || /gm_mailbox/i.test(String(e.message || ""))); }
+  var MAIL_COLS = "id, character_id, sender_id, mail, reply_to, persona, status, created_at, read_at";
+  function readMailbox(q) {
+    return q.order("created_at", { ascending: false }).limit(200).then(function (res) {
+      if (res && res.error && noMailbox(res.error)) return null;
+      return check(res);
+    });
+  }
+  function gmMail(id) { return readMailbox(client().from("gm_mailbox").select(MAIL_COLS).eq("campaign_id", id)); }
+  function mySentToGm(id) { return readMailbox(client().from("gm_mailbox").select(MAIL_COLS).eq("campaign_id", id).eq("sender_id", me())); }
   function inviteUrl(token) { return cloud().appUrl() + "?join=" + encodeURIComponent(token); }
 
   /* #POST from the Admin (batch 3). The sends list asks by sender_id and by campaign: the read policy
@@ -809,6 +829,7 @@ EN.campaigns = (function () {
     create: create, leave: leave, roster: roster, blocked: blocked, invite: invite, resetInvite: resetInvite,
     removeMember: removeMember, unblock: unblock, setRole: setRole, transfer: transfer, rename: rename, remove: remove,
     setHouseRules: setHouseRules, houseRules: HOUSE_RULES, settingsOf: settingsOf, settingsOfCampaign: settingsOfCampaign, ruleValues: ruleValues, houseRulesLetter: houseRulesLetter,
+    sendToGm: sendToGm, markGmRead: markGmRead, gmMail: gmMail, mySentToGm: mySentToGm,
     campaignOf: campaignOf, setAdvancement: setAdvancement, advancementOf: advancementOf, advancementOfCampaign: typeOf, usesXp: usesXp, lockedBy: lockedBy, advancementLetter: advancementLetter,
     inviteUrl: inviteUrl, viewSheet: viewSheet, refreshView: refreshView, backToCampaign: backToCampaign,
     sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sendWrite: sendWrite, takeBack: takeBack, sends: sends,

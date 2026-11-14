@@ -389,6 +389,92 @@ EN.faceView = (function () {
     ]);
   }
 
+  /* ---- #POST TO YOUR GM (14 Nov 2026) -----------------------------------------------------------
+     A Freelancer in a campaign can write to the people who run it, or answer a letter they were sent. Both go through
+     the database (EN.campaigns.sendToGm, the GM mailbox migration): who it is from is the character's name, as the
+     database stamps it, and an answer is to the name the letter it answers was signed with. Text only. It needs the
+     cloud link and a record that is in a campaign and is the player's own, so a viewed sheet, an example and a record
+     with no row never offer it. What was sent is read back from the database (a player reads only what they sent) and
+     listed under the inbox, with whether the GM has read it. Nothing about it is kept on the record. */
+  var _gmDraft = null;   // { lid, replyTo (an inbox row id or null), persona, subj, body, busy }
+  var _sentGm = { cid: null, rows: [], at: 0, asking: false, sig: "" };
+  function gmContext(ch) {
+    var lid = ch && ch.meta && ch.meta.id, C = EN.campaigns, cl = EN.cloud;
+    if (!lid || readOnlyRecord() || !C || !C.sendToGm || !cl || !cl.rowOf || !cl.signedIn || !cl.signedIn()) return null;
+    var row = cl.rowOf(lid), cid = C.campaignOf(ch);
+    if (!row || !cid) return null;
+    var camp = C.find ? C.find(cid) : null;
+    return { lid: lid, row: row, campaignId: cid, campaignName: camp && camp.name ? camp.name : "your campaign" };
+  }
+  function ensureSentGm(ctx) {
+    var C = EN.campaigns;
+    if (_sentGm.cid !== ctx.campaignId) _sentGm = { cid: ctx.campaignId, rows: [], at: 0, asking: false, sig: "" };
+    if (_sentGm.asking || (_sentGm.at && Date.now() - _sentGm.at < 30000) || !C.mySentToGm) return;
+    var mine = _sentGm;
+    mine.asking = true;
+    Promise.resolve().then(function () { return C.mySentToGm(ctx.campaignId); }).then(function (rows) {
+      mine.asking = false; mine.at = Date.now();
+      var list = rows || [], sig = list.map(function (r) { return r.id + ":" + r.status; }).join(",");
+      var changed = sig !== mine.sig;
+      mine.rows = list; mine.sig = sig;
+      if (changed && _sentGm === mine && EN.app && EN.app.activeTab() === "face") EN.app.render();
+    }, function (e) { mine.asking = false; mine.at = Date.now(); console.warn("Could not read your letters to the GM", e); });
+  }
+  function openGmDraft(ctx, rec) {
+    var subj = rec && rec.subj ? (/^re:/i.test(rec.subj) ? rec.subj : "Re: " + rec.subj) : "";
+    _gmDraft = { lid: ctx.lid, replyTo: rec && rec.inboxId ? rec.inboxId : null, persona: rec ? String(rec.from || "") : "", subj: subj, body: "", busy: false };
+    EN.app.render();
+  }
+  function sendGm(ctx) {
+    var d = _gmDraft, C = EN.campaigns;
+    if (!d || d.busy) return;
+    var subj = String(d.subj || "").trim(), body = String(d.body || "").trim();
+    if (!subj && !body) { EN.ui.toast("Add a subject or a message."); return; }
+    d.busy = true;
+    C.sendToGm(ctx.row, { subj: subj, body: body }, d.replyTo).then(function () {
+      if (_gmDraft === d) _gmDraft = null;
+      _sentGm.at = 0;
+      EN.ui.toast(d.persona ? "Sent. It is on its way to " + d.persona + "." : "Sent to your GM.");
+      EN.app.render();
+    }, function (e) {
+      console.warn("Could not send to the GM", e);
+      d.busy = false;
+      EN.ui.toast(C.errText(e));
+      EN.app.render();
+    });
+  }
+  function gmCompose(ctx) {
+    var d = _gmDraft;
+    var sendBtn = el("button.btn.sm.primary", { type: "button", disabled: !!d.busy, dataset: { post: "gm-send" }, onclick: function () { sendGm(ctx); } }, "SEND");
+    return el("div.feature", { dataset: { post: "gm-compose" }, style: { borderLeftColor: "var(--accent)", marginBottom: "10px" } }, [
+      el("div.mono", { style: { fontSize: "11px", letterSpacing: ".1em", color: "var(--accent)", margin: "0 0 6px" },
+        text: d.persona ? "REPLYING TO " + d.persona.toUpperCase() : "TO YOUR GM, " + ctx.campaignName.toUpperCase() }),
+      el("div.field", { style: { margin: "0 0 6px" } }, [
+        el("label.fl", { style: { margin: "0 0 2px" }, text: "Subject" }),
+        el("input", { type: "text", maxlength: "140", value: d.subj, dataset: { post: "gm-subj" }, "aria-label": "Subject", style: { width: "100%", fontSize: "12px" },
+          oninput: function (e) { d.subj = e.target.value; } })
+      ]),
+      el("textarea", { maxlength: "4000", value: d.body, placeholder: "The message\u2026", dataset: { post: "gm-body" }, "aria-label": "Message",
+        oninput: function (e) { d.body = e.target.value; }, style: { width: "100%", minHeight: "96px", fontSize: "12px" } }),
+      el("div.row.wrap", { style: { gap: "6px", marginTop: "7px" } }, [
+        sendBtn,
+        el("button.btn.sm", { type: "button", dataset: { post: "gm-cancel" }, onclick: function () { _gmDraft = null; EN.app.render(); } }, "CANCEL")
+      ])
+    ]);
+  }
+  function gmSentPanel(ctx) {
+    ensureSentGm(ctx);
+    if (!_sentGm.rows.length) return null;
+    var rows = _sentGm.rows.slice(0, 20).map(function (r) {
+      var m = r.mail || {};
+      return el("div.row.between.wrap", { dataset: { post: "gm-sent", status: r.status }, style: { gap: "8px", padding: "5px 0", borderBottom: "1px solid var(--border)" } }, [
+        el("span", { style: { minWidth: 0, flex: "1 1 200px" }, text: (r.persona ? "To " + r.persona + ": " : "To your GM: ") + (m.subj || m.body || "(no subject)") }),
+        el("span.mono", { style: { fontSize: "10px", letterSpacing: ".08em", color: r.status === "read" ? "var(--text3)" : "var(--gold)" }, text: r.status === "read" ? "READ" : "NOT READ YET" })
+      ]);
+    });
+    return EN.ui.panel("Sent to your GM", String(_sentGm.rows.length), rows, { corners: true });
+  }
+
   function postRow(rec, i) {
     var key = rec.id || String(i);
     var open = !!_open["post-" + key];
@@ -457,6 +543,13 @@ EN.faceView = (function () {
         el("button.btn.sm", { title: rec.read ? "Put it back in the unread pile." : "Clear it off the rail's badge without closing it.",
           onclick: function () { var to = !rec.read; fset(function (f) { if (f.post[i]) f.post[i].read = to; }); } },
           rec.read ? "● MARK UNREAD" : "○ MARK READ"),
+        // a letter that came through the campaign's inbox can be answered, to the name it was signed with
+        (function () {
+          var ctx = rec.inboxId ? gmContext(store.active()) : null;
+          if (!ctx) return null;
+          return el("button.btn.sm.primary", { type: "button", dataset: { post: "reply" }, title: "Answer this letter. It goes to the GM, as " + (rec.from || "you") + "'s reply.",
+            onclick: function () { openGmDraft(ctx, rec); } }, "\u21a9 REPLY");
+        })(),
         // a package nobody has taken goes with the message, so that one asks first
         waiting
           ? EN.ui.armButton("postdel:" + key, { label: "✕ DELETE", armedLabel: "SURE? THE PACKAGE GOES TOO",
@@ -487,8 +580,18 @@ EN.faceView = (function () {
         _open["post-" + m.id] = true;   // a new message opens straight into its own editor
         fset(function (f) { f.post.unshift(m); });
       } }, "+ NEW MESSAGE"));
+    var gmCtx = gmContext(ch);
+    if (_gmDraft && (!gmCtx || _gmDraft.lid !== gmCtx.lid)) _gmDraft = null;
+    if (gmCtx) {
+      kids[kids.length - 1].style.marginRight = "8px";
+      kids.push(el("button.btn.sm", { style: { marginBottom: "12px" }, dataset: { post: "gm-write" }, title: "Write to the people who run " + gmCtx.campaignName + ".",
+        onclick: function () { openGmDraft(gmCtx, null); } }, "\u2709 WRITE TO YOUR GM"));
+      if (_gmDraft) kids.push(gmCompose(gmCtx));
+    }
     if (list.length) list.forEach(function (rec, i) { kids.push(postRow(rec, i)); });
     else kids.push(help("No traffic. #POST is holding nothing for this handle.", "var(--text4)"));
+    var sentPanel = gmCtx ? gmSentPanel(gmCtx) : null;
+    if (sentPanel) { kids.push(el("div", { style: { height: "12px" } })); kids.push(sentPanel); }
     var p = EN.ui.panel("#POST", "SECURE COMM CHANNEL", kids, { corners: true,
       headerRight: n ? [el("span.mono", { style: { fontSize: "11px", color: "var(--gold)", letterSpacing: ".08em" }, text: n + " UNREAD" })] : null });
     // skin hooks: the '98 mail client reads its folder pane and status bar off these

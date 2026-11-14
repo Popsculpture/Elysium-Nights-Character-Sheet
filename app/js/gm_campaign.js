@@ -250,6 +250,15 @@ EN.gmCampaign = (function () {
     EN.app.gotoTab("gmpost", "write");
   }
   function me() { return EN.cloud && EN.cloud.userId ? EN.cloud.userId() : null; }
+  /* REPLY, from the #POST tab's INBOX: points WRITE at one character, signed with the name the thread is with and
+     a subject of "Re: ...", in the campaign this tab is on. Words already being written are not kept: a reply is a new letter. */
+  function draftTo(charId, preset) {
+    var d = EN.gmStore && EN.gmStore.desk ? EN.gmStore.desk() : null;
+    if (!d || !charId) return;
+    preset = preset || {};
+    _send = { uid: me(), campaign: d.id, to: charId, from: String(preset.from || ""), subj: String(preset.subj || ""), body: "", pkg: [], search: "" };
+    EN.app.gotoTab("gmpost", "write");
+  }
   function npcCards() {
     var list = EN.gmStore && EN.gmStore.list ? EN.gmStore.list("contacts") : [];
     return list.map(function (k) { return k && typeof k.name === "string" ? k.name.trim() : ""; })
@@ -729,5 +738,5 @@ EN.gmCampaign = (function () {
   }
   function render(mount) { renderPage(mount, "all"); }
 
-  return { render: render, renderPage: renderPage, stale: stale, invalidate: invalidate, sendsChanged: sendsChanged, headsUp: headsUp, typeButtons: typeButtons, crewRead: crewRead };
+  return { render: render, renderPage: renderPage, draftTo: draftTo, stale: stale, invalidate: invalidate, sendsChanged: sendsChanged, headsUp: headsUp, typeButtons: typeButtons, crewRead: crewRead };
 })();
