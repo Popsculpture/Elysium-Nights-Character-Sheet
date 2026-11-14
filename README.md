@@ -209,6 +209,27 @@ It stays on the device: `en_gm_camp_<campaign id>_v1` for a campaign, and `en_gm
 imports one desktop at a time. Work from before this stays in `en_gm_v1` until the Admin moves it. A one-time card asks, and Settings offers the same
 move later, with a copy of the old document kept first.
 
+### SYNC, between browsers
+
+A desktop lives in one browser, so a co-Admin's Table starts blank, and so does the Admin's own on a second computer. SYNC, beside the campaign picker
+above the Table, is the one way across: a press saves that campaign's desktop to the account and adds what the others who run the campaign saved. It
+only ever adds. A record this desktop has is left exactly as it is, and the report under the picker says what was added and what was kept.
+
+- A delete doesn't travel. It stands on the desktop that made it until someone who still has the record saves again: the press after that brings it
+  back. An edit reaches only someone who doesn't have the record yet.
+- A saved copy is read once. Each save carries a name, and a desktop notes the copies it already holds, its own last save among them.
+- A Table that isn't in use takes the other fight whole. One in use gains rows, and keeps its own round, turn and clock. A fight a desktop has ended
+  doesn't come back onto its Table from someone still in it: the desktop keeps the rows of the fights it has ended, the last 500 of them.
+- A fight the other Admin ended first keeps the time they gave it when it is ended here too. An award names its fight by that time, so the award
+  they made answers for both Tables.
+- This account's own saved copy is never saved over when it can't be read here, whether it is from a newer version of the app or not.
+- Payroll's ledger arrives as history, like an imported file: it counts as paid, and only the desktop that made a write can UNDO it. A send still
+  waiting, an UNDO still waiting, one that never landed, and one that ended with its campaign stay where they are.
+- Saved Threats and custom Hazards stay on the browser.
+- A copy is somebody else's data in this page, so it loses every `<` and `>` before it is read, as another player's sheet does.
+- `supabase/migrations/20261110180000_campaign_desks.sql` holds the rules: one saved desktop to a campaign and an account, read and written only
+  by those who run the campaign, through `desk_read` and `desk_save`. It has to be on the database before the button can do anything.
+
 ## Two tabs
 
 One account can be open in two tabs, each on its own character and its own campaign. A save reaches the other tab at once, and each tab keeps both
