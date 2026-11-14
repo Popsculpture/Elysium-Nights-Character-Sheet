@@ -132,6 +132,15 @@ a{ color:var(--accent); text-decoration:none; }
   padding:3px 4px 0 10px; margin-left:6px; border-left:1px solid var(--border); white-space:nowrap; user-select:none; }
 .os-tabs-scroll > .os-group:first-child{ margin-left:0; border-left:0; padding-left:2px; }
 html.skin-98 .os-group, html.skin-droid .os-group{ display:none; }
+/* A grouped rail (the Admin desktop's: nine tabs and five labels) tightens its tabs' sides the way the old
+   eleven-tab rule did, by what it holds rather than a count of tabs: 12px below 1360px, 8px below 1290px,
+   so all of it fits beside the gear down to a 1264 window. Classic only. */
+@media (max-width:1360px){
+  html:not(.skin-98):not(.skin-droid) .os-tabs-scroll:has(.os-group) > .os-tab{ padding-left:12px; padding-right:12px; }
+}
+@media (max-width:1290px){
+  html:not(.skin-98):not(.skin-droid) .os-tabs-scroll:has(.os-group) > .os-tab{ padding-left:8px; padding-right:8px; }
+}
 /* A rail of eleven tabs or more (the Admin desktop's, twelve since the Campaign tab) tightens its
    sides in two steps, so all of them fit beside the gear down to a 1264 window: 12px below 1430px,
    and 8px below 1330px. Classic only: '98 draws a taskbar and #GRIDroid a list. A shorter rail, the

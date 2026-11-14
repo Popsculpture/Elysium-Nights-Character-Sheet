@@ -564,7 +564,7 @@ EN.gmPeople = (function () {
     if (!x) { toast("Give the contact a name first."); return; }
     gm.saveThreat(x.block, x.inputs);
     toast(x.block.name + " saved as a threat" + (x.block.resolve ? ", Resolve " + x.block.resolve : "") + ". It is under Saved Threats.");
-    if (EN.app && typeof EN.app.gotoTab === "function") EN.app.gotoTab("threats");
+    if (EN.app && typeof EN.app.gotoTab === "function") EN.app.gotoTab("threats", "saved");
     else EN.app.render();
   }
   function promoteToPlan() {

@@ -1268,7 +1268,7 @@ EN.gmJobs = (function () {
     _paint = {};
     var B = book();
     if (!B) {
-      mount.appendChild(el("div", null, [heading("Job Board", "// roll a job"), undoStrip(),
+      mount.appendChild(el("div", null, [heading("Jobs", "// roll a job"), undoStrip(),
         el("div.muted-box", { text: "Job Board data did not load. Check app/data/gm_jobs.js." })]));
       return;
     }
@@ -1292,7 +1292,7 @@ EN.gmJobs = (function () {
     var log = logPanel();
     _paint.log = log;
     mount.appendChild(el("div", null, [
-      heading("Job Board", "// roll a job"),
+      heading("Jobs", "// roll a job"),
       undoStrip(),
       el("p.help", { style: { margin: "-6px 0 14px", maxWidth: "860px" }, text: B.intro }),
       generatorPanel(), gap(),

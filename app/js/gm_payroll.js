@@ -1037,7 +1037,7 @@ EN.gmPayroll = (function () {
       ]));
     }
     kids.push(codexLine("bounties", "The Toolkit on bounties:", [["gmy-pay/bounties", "Bounties"]]));
-    return EN.ui.panel("Bounties", "PRICED OFF THE TARGET'S XP", kids);
+    return EN.ui.panel("Bounties Collected", "PRICED OFF THE TARGET'S XP", kids);
   }
 
   /* ---- 4. salvage and parts --------------------------------------------- */

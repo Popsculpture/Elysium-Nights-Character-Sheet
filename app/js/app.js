@@ -83,48 +83,56 @@ EN.app = (function () {
        all. The module tabs from Encounters on each live in their own file
        (js/gm_*.js); one of those missing degrades only its own tab to the
        MODULE PENDING page below, which is what `stub` is still kept for. */
-    { key: "campaign",   label: "Campaign",   glyph: "◫", sub: "players, invites, sheets", portal: "admin", gated: adminReady,
+    { key: "campaign",   label: "Campaign",   glyph: "◫", sub: "players, invites, sheets", portal: "admin", gated: adminReady, group: "CONTROL",
       view: gmModule("campaign", "gmCampaign"),
       onSelect: function () { if (EN.gmCampaign && EN.gmCampaign.stale) EN.gmCampaign.stale(); },
       stub: "Campaigns: the invite link, the roster, and each player's sheet, read-only." },
-    { key: "table",      label: "Table",      glyph: "◆", sub: "initiative and the crew", portal: "admin", gated: adminReady,
+    /* The rail runs in the order a session does, in groups (the Admin reorganization, 14 Nov 2026):
+       LIVE at the table, PREP before it, AFTER it, REF always. Threats and Downtime each hold several
+       pages as sub-tabs; the keys that used to be tabs of their own (bestiary, hazards, payroll, heat)
+       are ALIASES below, so every handoff and gotoTab that names one still lands on its page. */
+    { key: "table",      label: "Table",      glyph: "◆", sub: "initiative and the crew", portal: "admin", gated: adminReady, group: "LIVE",
       view: function (m) { EN.gmView.renderTable(m); } },
-    { key: "threats",    label: "Threats",    glyph: "✦", sub: "build a threat", portal: "admin", gated: adminReady,
-      view: function (m) { EN.gmView.renderThreats(m); } },
-    { key: "bestiary",   label: "Bestiary",   glyph: "▤", sub: "gangers, sentries, cryptids", portal: "admin", gated: adminReady,
-      view: function (m) { EN.gmView.renderBestiary(m); } },
-    { key: "encounters", label: "Encounters", glyph: "⌗", sub: "budget and build a fight", portal: "admin", gated: adminReady,
+    { key: "scenes",     label: "Scenes",     glyph: "◧", sub: "sit-downs, chases, incursions", portal: "admin", gated: adminReady, group: "LIVE",
+      view: gmModule("scenes", "gmScenes"),
+      stub: "Scenes that aren't a fight: the Sit-Down with its Resolve and Pressure, the chase with " +
+            "its Lead and Chase Checks, and the Incursion from briefing to the return." },
+    { key: "jobs",       label: "Jobs",       glyph: "▣", sub: "roll a job", portal: "admin", gated: adminReady, group: "PREP",
+      view: gmModule("jobs", "gmJobs"),
+      stub: "The Job Board: five roll tables and twelve postings." },
+    { key: "encounters", label: "Encounters", glyph: "⌗", sub: "budget and build a fight", portal: "admin", gated: adminReady, group: "PREP",
       view: gmModule("encounters", "gmEncounters"),
       stub: "Budgeting an encounter: XP shares by crew Caliber, four difficulty bands from Milk Run " +
             "to Red Work, and the Toolkit's own line that past 2x is not an encounter, it is an ambush " +
             "you are writing on purpose." },
-    { key: "hazards",    label: "Hazards",    glyph: "⚠", sub: "set pieces and the room", portal: "admin", gated: adminReady,
-      view: gmModule("hazards", "gmHazards"),
-      stub: "Set Pieces: the eight pre-written hazards, all authored at Grade 3, plus the DC ladder " +
-            "and the Bite table the Game Master's Toolkit prices them by." },
-    { key: "jobs",       label: "Job Board",  glyph: "▣", sub: "roll a job", portal: "admin", gated: adminReady,
-      view: gmModule("jobs", "gmJobs"),
-      stub: "The Job Board: five roll tables and twelve postings." },
-    { key: "payroll",    label: "Payroll",    glyph: "◈", sub: "paying the crew", portal: "admin", gated: adminReady,
-      view: gmModule("payroll", "gmPayroll"),
-      stub: "Paying the Crew: contract pay bands, bounties, and salvage values, split by the same " +
-            "splitter the player's SPLIT panel uses." },
-    { key: "heat",       label: "Heat",       glyph: "◉", sub: "the downtime check", portal: "admin", gated: adminReady,
-      view: gmModule("heat", "gmHeat"),
-      stub: "The Downtime Heat check: a d10 for each source against the crew's highest Heat with it, " +
-            "the events each source sends, Bounties, and Cooling Off." },
-    { key: "people",     label: "People",     glyph: "◐", sub: "contacts and names", portal: "admin", gated: adminReady,
+    { key: "threats",    label: "Threats",    glyph: "✦", sub: "bestiary, builder, hazards", portal: "admin", gated: adminReady, group: "PREP",
+      subs: [
+        { key: "bestiary", label: "BESTIARY", sub: "Gangers, Sentries, and Cryptids. Oh my!" },
+        { key: "builder",  label: "BUILDER",  sub: "build a statblock from Grade, Designation and Role" },
+        { key: "saved",    label: "SAVED",    sub: "your statblocks" },
+        { key: "hazards",  label: "HAZARDS",  sub: "set pieces and the room",
+          stub: "Set Pieces: the eight pre-written hazards, all authored at Grade 3, plus the DC ladder " +
+                "and the Bite table the Game Master's Toolkit prices them by." }
+      ],
+      view: function (m) { groupView(m, "threats", "Threats", threatsPage); } },
+    { key: "people",     label: "People",     glyph: "◐", sub: "contacts and names", portal: "admin", gated: adminReady, group: "PREP",
       view: gmModule("people", "gmPeople"),
       stub: "People who aren't in initiative: contact cards, Resolve by role, their profile of you, " +
             "and the name and street handle tables." },
-    { key: "scenes",     label: "Scenes",     glyph: "◧", sub: "sit-downs, chases, incursions", portal: "admin", gated: adminReady,
-      view: gmModule("scenes", "gmScenes"),
-      stub: "Scenes that aren't a fight: the Sit-Down with its Resolve and Pressure, the chase with " +
-            "its Lead and Chase Checks, and the Incursion from briefing to the return." },
+    { key: "downtime",   label: "Downtime",   glyph: "◈", sub: "payday and heat", portal: "admin", gated: adminReady, group: "AFTER",
+      subs: [
+        { key: "payday", label: "PAYDAY", sub: "paying the crew",
+          stub: "Paying the Crew: contract pay bands, bounties, and salvage values, split by the same " +
+                "splitter the player's SPLIT panel uses." },
+        { key: "heat",   label: "HEAT",   sub: "the downtime check",
+          stub: "The Downtime Heat check: a d10 for each source against the crew's highest Heat with it, " +
+                "the events each source sends, Bounties, and Cooling Off." }
+      ],
+      view: function (m) { groupView(m, "downtime", "Downtime", downtimePage); } },
     /* The same Codex the Freelancer desktop reads, plus the Game Master's chapters, which
        exist on this desktop only. codex.js draws both; gmModule gives it the GM's Card and
        the MODULE PENDING page should that file ever be missing. */
-    { key: "gmcodex",    label: "Codex",      glyph: "❒", sub: "rules on hand", portal: "admin", gated: adminReady,
+    { key: "gmcodex",    label: "Codex",      glyph: "❒", sub: "rules on hand", portal: "admin", gated: adminReady, group: "REF",
       view: gmModule("gmcodex", "codexView"),
       stub: "The rules reference library: every chapter a player reads, and the Game Master's own." }
   ];
@@ -147,6 +155,30 @@ EN.app = (function () {
       ]));
     };
   }
+  /* A PARENT TAB (Threats, Downtime). groupView hands the tab's own subs to EN.gmView.renderGroup, which
+     draws the one heading, the undo strip and the chip row, and calls `page` for the sub-tab showing.
+     Each page renders the module's own view with { nested: true }, and answers false when the module's
+     file is missing, which renderGroup turns into the MODULE PENDING page with that sub-tab's stub. */
+  function groupView(mount, key, title, page) {
+    var tab = TABS.filter(function (t) { return t.key === key; })[0];
+    if (!EN.gmView || typeof EN.gmView.renderGroup !== "function" || !tab) return;
+    EN.gmView.renderGroup(mount, { tab: key, title: title, subs: tab.subs, draw: page });
+  }
+  function nestedPage(ns, fn) {
+    return function (mount) {
+      var mod = EN[ns];
+      if (!mod || typeof mod[fn] !== "function") return false;
+      mod[fn](mount, { nested: true });
+      return true;
+    };
+  }
+  var THREATS_PAGES = {
+    bestiary: nestedPage("gmView", "renderBestiary"), builder: nestedPage("gmView", "renderThreats"),   // BUILDER keeps the saved list under it, as the Threats tab always did
+    saved: nestedPage("gmView", "renderSaved"), hazards: nestedPage("gmHazards", "render")
+  };
+  var DOWNTIME_PAGES = { payday: nestedPage("gmPayroll", "render"), heat: nestedPage("gmHeat", "render") };
+  function threatsPage(sub, mount) { return THREATS_PAGES[sub](mount); }
+  function downtimePage(sub, mount) { return DOWNTIME_PAGES[sub](mount); }
   /* THE GM'S CARD on every Admin tab. gm.js draws its button (EN.gmView.cardDrawer)
      beside its own three headings, and a module may draw it beside its own the
      same way it draws the undo strip. A module tab that drew none gets it here,
@@ -176,7 +208,10 @@ EN.app = (function () {
      handoff aimed at the old tab keep working. An alias must never also be a real tab key (the
      alias would hide the tab), so a clash is dropped at load and said in the console. */
   var SUB = {};
-  var ALIAS = {};
+  var ALIAS = {
+    bestiary: ["threats", "bestiary"], hazards: ["threats", "hazards"],
+    payroll: ["downtime", "payday"], heat: ["downtime", "heat"]
+  };
   function tabByKey(k) { return TABS.filter(function (t) { return t.key === k; })[0] || null; }
   function subTab(k) {
     var t = tabByKey(k), list = t && t.subs;

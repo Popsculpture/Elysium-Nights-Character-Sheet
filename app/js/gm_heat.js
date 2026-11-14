@@ -1366,7 +1366,8 @@ EN.gmHeat = (function () {
       ["gmx-bounty/" + cxSlug(B.whoTakesIt.name), B.whoTakesIt.name.replace(/\.$/, "")],
       ["gmx-bounty/" + cxSlug(B.takingItDown.name), B.takingItDown.name.replace(/\.$/, "")]
     ]));
-    return EN.ui.panel(B.name, up.length + " UP", kids);
+    // "Bounty on the Crew" says whose it is: Payroll's "Bounties Collected" are the ones the crew takes. The book keeps B.name.
+    return EN.ui.panel("Bounty on the Crew", up.length + " UP", kids);
   }
 
   /* ---- writes to the crew's records -------------------------------------------

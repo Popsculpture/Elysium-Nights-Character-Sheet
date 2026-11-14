@@ -274,7 +274,7 @@ window.EN = window.EN || {};
         out.push(K.ruleBlock(V.title || "Hostile Vehicles", (V.intro || []).join("\n\n") +
           ((V.rules || []).length ? "\n" + V.rules.map(function (r) { return "- " + r.name + ": " + r.text; }).join("\n") : "")));
       }
-      if (out.length) out.push(K.note("The statblocks, the templates' traits and the vehicle profiles are on the Bestiary tab."));
+      if (out.length) out.push(K.note("The statblocks, the templates' traits and the vehicle profiles are on the Threats tab's Bestiary page."));
       return out;
     } }
   ] });
