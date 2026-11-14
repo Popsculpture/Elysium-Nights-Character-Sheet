@@ -75,7 +75,7 @@ EN.gmCampaign = (function () {
     });
     return slot;
   }
-  function repaint() { if (EN.app.activeTab() === "campaign" && EN.app.portal() === "admin") EN.app.render(); }
+  function repaint() { if (EN.app.activeTab() === "sysop" && EN.app.portal() === "admin") EN.app.render(); }
 
   // a change went through, or was refused: either way the page shows what the database now holds
   function act(id, p, okText) {
@@ -412,7 +412,7 @@ EN.gmCampaign = (function () {
   var _sendsAsk = 0;
   function sendsChanged(id) {
     var d = _d[id];
-    if (!d || EN.app.activeTab() !== "campaign" || EN.app.portal() !== "admin") return;
+    if (!d || EN.app.activeTab() !== "sysop" || EN.app.portal() !== "admin") return;
     if (d.loading) { d.again = true; return; }
     var ask = ++_sendsAsk;
     C().sends(id).then(function (rows) {
@@ -549,10 +549,16 @@ EN.gmCampaign = (function () {
     return EN.ui.panel("Campaign settings", null, kids);
   }
 
-  /* ---- the page --------------------------------------------------------------- */
-  function render(mount) {
+  /* ---- the pages ---------------------------------------------------------------
+     The Admin reorganization (14 Nov 2026) moved this page into the Sysop tab, where each part is a sub-tab:
+     CREW (the invite link, the roster, the sends, who is blocked), HOUSE RULES (Advancement Type, for now) and
+     CAMPAIGN (rename, transfer, delete). renderPage(mount, which) draws one of them under Sysop's own
+     heading; render(mount) is the whole page as it was, heading and all, kept for anything that still draws it.
+     The campaign picker is in the top bar now, so a nested page draws none. */
+  function renderPage(mount, which) {
+    var whole = which === "all";
     EN.ui.clear(mount);
-    mount.appendChild(heading());
+    if (whole) mount.appendChild(heading());
     if (!C() || !C().enabled()) {
       var online = !!(EN.cloud && EN.cloud.available && EN.cloud.available());
       mount.appendChild(el("div.muted-box", { "data-camp": "off", style: { padding: "26px" } }, [
@@ -570,10 +576,15 @@ EN.gmCampaign = (function () {
       return;
     }
     var want = C().pick();
+    // this tab is on this device's own desktop: there is no campaign here to read or change (the top bar's picker moves it)
+    if (!whole && want === C().NO_CAMPAIGN) {
+      mount.appendChild(el("div.muted-box", { "data-camp": "nopick", style: { padding: "26px" }, text: "No campaign picked. This tab is on this device's own desktop. Pick a campaign in the top bar to see its crew, rules and settings." }));
+      return;
+    }
     var c = mine.filter(function (x) { return x.id === want; })[0] || mine[0];
-    // the Table's picker changes the campaign as well, so what is half done here is checked against it on the way in
+    // the top bar's picker changes the campaign as well, so what is half done here is checked against it on the way in
     if (_for !== c.id) { _for = c.id; _remove = null; _typed = null; _renameDraft = null; _transferTo = ""; }
-    if (mine.length > 1) {
+    if (whole && mine.length > 1) {
       mount.appendChild(el("div.camp-line.camp-pick", null, [
         el("label.fl", { style: { margin: 0 }, text: "Campaign" }),
         el("select.camp-input", { "aria-label": "Campaign", "data-camp": "picker", onchange: function (e) {
@@ -584,10 +595,10 @@ EN.gmCampaign = (function () {
     mount.appendChild(el("p.camp-title", { "data-camp": "title" }, [
       el("b", { text: c.name }),
       el("span.chip.camp-role", { text: c.role === "admin" ? "ADMIN" : "CO-ADMIN" }),
-      el("button.btn.sm", { type: "button", "data-camp": "refresh", title: "Read the campaign again", onclick: function () { delete _d[c.id]; C().refresh(); EN.app.render(); } }, "↻ REFRESH")
+      el("button.btn.sm", { type: "button", "data-camp": "refresh", title: "Read the campaign again", onclick: function () { delete _d[c.id]; C().refresh(); EN.app.render(); } }, "\u21bb REFRESH")
     ]));
     var d = _d[c.id] || load(c.id);
-    if (d.loading) { mount.appendChild(el("div.muted-box", { style: { padding: "26px" }, text: "Reading the campaign…" })); return; }
+    if (d.loading) { mount.appendChild(el("div.muted-box", { style: { padding: "26px" }, text: "Reading the campaign\u2026" })); return; }
     if (d.error) {
       mount.appendChild(el("div.muted-box", { style: { padding: "26px" } }, [
         el("p", { style: { margin: "0 0 12px" }, text: d.error }),
@@ -598,15 +609,17 @@ EN.gmCampaign = (function () {
     var isAdmin = c.role === "admin";
     // a message being written belongs to one account and one campaign
     if (_send && (_send.uid !== me() || _send.campaign !== c.id)) _send = null;
-    mount.appendChild(el("div.camp-sections", null, [
-      inviteSection(c, d),
-      advancementSection(c),
-      rosterSection(c, d, isAdmin),
-      sendsSection(c, d),
-      blockedSection(c, d),
-      isAdmin ? settingsSection(c, d) : null
-    ]));
+    var parts = [];
+    if (whole || which === "crew") parts.push(inviteSection(c, d));
+    if (whole || which === "rules") parts.push(advancementSection(c));
+    if (whole || which === "crew") parts = parts.concat([rosterSection(c, d, isAdmin), sendsSection(c, d), blockedSection(c, d)]);
+    if (whole || which === "manage") {
+      if (isAdmin) parts.push(settingsSection(c, d));
+      else if (which === "manage") parts.push(el("div.muted-box", { "data-camp": "admin-only", style: { padding: "26px" }, text: "Only the campaign's Admin renames it, hands it on or deletes it." }));
+    }
+    mount.appendChild(el("div.camp-sections", null, parts));
   }
+  function render(mount) { renderPage(mount, "all"); }
 
-  return { render: render, stale: stale, invalidate: invalidate, sendsChanged: sendsChanged, headsUp: headsUp, typeButtons: typeButtons, crewRead: crewRead };
+  return { render: render, renderPage: renderPage, stale: stale, invalidate: invalidate, sendsChanged: sendsChanged, headsUp: headsUp, typeButtons: typeButtons, crewRead: crewRead };
 })();

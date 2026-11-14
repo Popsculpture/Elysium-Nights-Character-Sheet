@@ -105,6 +105,11 @@ a{ color:var(--accent); text-decoration:none; }
    the way */
 #active-name .an-role, #active-name .an-meta, #active-name .an-pick{ display:none; }
 /* the opt-in Edit freely switch (builder.js): shown on every skin so a GM sees it */
+/* The Admin desktop's campaign picker, in the top bar beside the round (js/app.js paintActiveName) */
+#active-name .an-desk{ display:inline-block; margin-left:10px; flex:none; }
+#active-name .an-desk select{ font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; background:var(--bg2);
+  color:var(--text2); border:1px solid var(--border2); padding:2px 6px; max-width:190px; cursor:pointer; }
+#active-name .an-desk select:focus-visible{ outline:1px solid var(--accent); outline-offset:1px; }
 #active-name .an-flag{ display:inline-block; margin-left:8px; padding:0 6px; border:1px solid var(--warn); border-radius:3px; color:var(--warn); font-size:10px; letter-spacing:.1em; white-space:nowrap; flex:none; }
 .chip.edit-freely{ color:var(--warn); border-color:var(--warn); font-size:10px; vertical-align:middle; }
 .os-status{ font-family:var(--mono); font-size:11px; color:var(--text3); letter-spacing:.12em; display:flex; gap:14px; align-items:center; }

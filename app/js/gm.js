@@ -1150,22 +1150,26 @@ EN.gmView = (function () {
 
   /* WHICH DESKTOP. Each campaign has its own Table, plans, jobs and so on (js/gmstore.js), so this picker
      switches all of it, for this tab. No campaign is this browser's own desktop and its own characters.
-     Above the fight, not under it: this decides whose fight it is. Null for an account that runs no
-     campaign, which has nothing to switch to. */
-  function deskBar() {
+     It lives in the top bar now (js/app.js paintActiveName), where it reads on every Admin tab, and used to
+     sit above the Table's fight. Null for an account that runs no campaign, which has nothing to switch to. */
+  function deskSelect() {
     var C = EN.campaigns, mine = C && C.running ? C.running() : [];
     if (!mine.length) return null;
     var now = C.desktop();
-    var line = el("div.camp-line.camp-pick", { dataset: { gm: "desk-bar" } }, [
-      el("label.fl", { style: { margin: 0 }, text: "Campaign" }),
-      el("select.camp-input.gm-crew-pick", { "aria-label": "Campaign", dataset: { gm: "crew-pick" }, onchange: function (e) { C.setPick(e.target.value); EN.app.render(); } },
-        mine.map(function (x) { return el("option", { value: x.id, selected: !!now && x.id === now.id, text: x.name }); })
-          .concat([el("option", { value: C.NO_CAMPAIGN, selected: !now, text: "No campaign" })])),
-      // the button syncs the desktop this tab is ON. A switch this device refused leaves the tab on the old one (NOT SAVED
-      // says why), and a button under the new name would then save the old campaign's desktop: no button until they agree
-      now && onDesk(now) ? syncButton(now) : null
-    ]);
-    if (!now || !onDesk(now) || !_sync.said) return line;
+    return el("select.camp-input.gm-crew-pick", { "aria-label": "Campaign", title: "Which campaign's desktop this tab is on", dataset: { gm: "crew-pick" },
+      onchange: function (e) { C.setPick(e.target.value); EN.app.render(); } },
+      mine.map(function (x) { return el("option", { value: x.id, selected: !!now && x.id === now.id, text: x.name }); })
+        .concat([el("option", { value: C.NO_CAMPAIGN, selected: !now, text: "No campaign" })]));
+  }
+  /* The SYNC button and what a press said, for Sysop's DATA page. The button syncs the desktop this tab is ON. A
+     switch this device refused leaves the tab on the old one (NOT SAVED says why), and a button under the new
+     name would then save the old campaign's desktop: no button until they agree. */
+  function syncBlock() {
+    var C = EN.campaigns, mine = C && C.running ? C.running() : [];
+    if (!mine.length) return null;
+    var now = C.desktop();
+    var line = el("div.camp-line", { dataset: { gm: "desk-bar" } }, [now && onDesk(now) ? syncButton(now) : null]);
+    if (!now || !onDesk(now) || !_sync.said) return el("div", { dataset: { gm: "desk" } }, [line]);
     line.style.marginBottom = "6px";
     return el("div", { dataset: { gm: "desk" } }, [line,
       el("div.row.between.wrap", { dataset: { gm: "sync-said" }, style: { gap: "8px", alignItems: "center", marginBottom: "12px" } }, [
@@ -2306,7 +2310,7 @@ EN.gmView = (function () {
     });
     if (unsaved) {
       kids.push(el("p.help", { style: { margin: u ? "0 0 6px" : 0, color: "var(--danger)" },
-        text: "NOT SAVED. This device refused the last write of the GM data. Export it from Settings, under GM DATA, to keep a copy." }));
+        text: "NOT SAVED. This device refused the last write of the GM data. Export it from the Sysop tab, under DATA, to keep a copy." }));
     }
     if (u) {
       var label = u.label || "A GM write";
@@ -2440,7 +2444,7 @@ EN.gmView = (function () {
     // two rows sharing a name are numbered however they arrived (addThreat
     // numbers on the way in; this catches a row written by any other path)
     if (gm.numberThreats) gm.numberThreats();
-    var blocks = [heading("Table", "// initiative and the order"), undoStrip(), deskBar(), trackerPanel()].filter(Boolean);
+    var blocks = [heading("Table", "// initiative and the order"), undoStrip(), trackerPanel()].filter(Boolean);
     mount.appendChild(el("div", null, blocks.concat(tableExtras())));
   }
 
@@ -2518,6 +2522,8 @@ EN.gmView = (function () {
   return {
     renderTable: renderTable, renderThreats: renderThreats, renderBestiary: renderBestiary,
     renderBuilder: renderBuilder, renderSaved: renderSaved, renderGroup: renderGroup,
+    // the campaign picker for the top bar, and the SYNC button for Sysop's DATA page (they sat above the Table)
+    deskSelect: deskSelect, syncBlock: syncBlock,
     // the module tabs' hooks (see "hooks for the module tabs" above)
     handoff: handoff, takeHandoff: takeHandoff, registerTableExtra: registerTableExtra,
     // the newest standing GM write with its armed UNDO, for the top of every Admin tab

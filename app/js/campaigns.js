@@ -463,7 +463,7 @@ EN.campaigns = (function () {
       if (!name) { EN.ui.toast(WORDS.EN_BAD_NAME); return; }
       create(name).then(function () {
         shut();
-        EN.ui.toast(EN.app && EN.app.portal() === "admin" ? "Campaign created." : "Campaign created. Your invite link is on the Admin desktop's Campaign tab.");
+        EN.ui.toast(EN.app && EN.app.portal() === "admin" ? "Campaign created." : "Campaign created. Your invite link is on the Admin desktop's Sysop tab.");
         if (EN.app) EN.app.render();
       }, function (e) { console.warn("Could not create the campaign", e); EN.ui.toast(errText(e)); });
     }
@@ -686,8 +686,8 @@ EN.campaigns = (function () {
   }
   function repaintCrew() {
     if (!(EN.app && EN.app.portal && EN.app.portal() === "admin")) return;
-    if (EN.app.activeTab() !== "campaign") { EN.app.render(); return; }
-    // the Campaign tab is not redrawn under a message being written; the advancement panel redraws in its own node
+    if (EN.app.activeTab() !== "sysop") { EN.app.render(); return; }
+    // the Sysop tab is not redrawn under a message being written; the advancement panel redraws in its own node
     if (EN.gmCampaign && EN.gmCampaign.crewRead) EN.gmCampaign.crewRead();
   }
   // what is known of a campaign's crew: asking starts a read if there is none, or the last is old

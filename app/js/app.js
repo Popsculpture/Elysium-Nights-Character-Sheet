@@ -83,10 +83,18 @@ EN.app = (function () {
        all. The module tabs from Encounters on each live in their own file
        (js/gm_*.js); one of those missing degrades only its own tab to the
        MODULE PENDING page below, which is what `stub` is still kept for. */
-    { key: "campaign",   label: "Campaign",   glyph: "◫", sub: "players, invites, sheets", portal: "admin", gated: adminReady, group: "CONTROL",
-      view: gmModule("campaign", "gmCampaign"),
+    /* SYSOP replaces the Campaign tab: everything the GM keeps about the table itself, as four sub-tabs.
+       "campaign" is an alias for its CREW page, so the old key still lands. */
+    { key: "sysop",      label: "Sysop",      glyph: "◫", sub: "crew, rules, data", portal: "admin", gated: adminReady, group: "CONTROL",
+      subs: [
+        { key: "crew",   label: "CREW",        sub: "players, invites, sheets" },
+        { key: "rules",  label: "HOUSE RULES", sub: "how this table levels up and plays" },
+        { key: "data",   label: "DATA",        sub: "sync, back up, restore" },
+        { key: "manage", label: "CAMPAIGN",    sub: "name, leadership, delete" }
+      ],
+      view: function (m) { groupView(m, "sysop", "Sysop", sysopPage); },
       onSelect: function () { if (EN.gmCampaign && EN.gmCampaign.stale) EN.gmCampaign.stale(); },
-      stub: "Campaigns: the invite link, the roster, and each player's sheet, read-only." },
+      stub: "Sysop: the invite link, the roster, the table's rules, and backing up the desktop." },
     /* The rail runs in the order a session does, in groups (the Admin reorganization, 14 Nov 2026):
        LIVE at the table, PREP before it, AFTER it, REF always. Threats and Downtime each hold several
        pages as sub-tabs; the keys that used to be tabs of their own (bestiary, hazards, payroll, heat)
@@ -177,6 +185,13 @@ EN.app = (function () {
     saved: nestedPage("gmView", "renderSaved"), hazards: nestedPage("gmHazards", "render")
   };
   var DOWNTIME_PAGES = { payday: nestedPage("gmPayroll", "render"), heat: nestedPage("gmHeat", "render") };
+  // Sysop: CREW, HOUSE RULES and CAMPAIGN are pages of the campaign module, DATA is the Sysop module's own
+  function sysopPage(sub, mount) {
+    if (sub === "data") return nestedPage("gmSysop", "renderData")(mount);
+    if (!EN.gmCampaign || typeof EN.gmCampaign.renderPage !== "function") return false;
+    EN.gmCampaign.renderPage(mount, sub);
+    return true;
+  }
   function threatsPage(sub, mount) { return THREATS_PAGES[sub](mount); }
   function downtimePage(sub, mount) { return DOWNTIME_PAGES[sub](mount); }
   /* THE GM'S CARD on every Admin tab. gm.js draws its button (EN.gmView.cardDrawer)
@@ -210,7 +225,7 @@ EN.app = (function () {
   var SUB = {};
   var ALIAS = {
     bestiary: ["threats", "bestiary"], hazards: ["threats", "hazards"],
-    payroll: ["downtime", "payday"], heat: ["downtime", "heat"]
+    payroll: ["downtime", "payday"], heat: ["downtime", "heat"], campaign: ["sysop", "crew"]
   };
   function tabByKey(k) { return TABS.filter(function (t) { return t.key === k; })[0] || null; }
   function subTab(k) {
@@ -606,6 +621,9 @@ EN.app = (function () {
   function paintActiveName() {
     var node = document.getElementById("active-name");
     if (!node) return;
+    // a campaign picker with the focus is left alone: redrawing it under an open menu would close the menu
+    var held = portal === "admin" ? node.querySelector('[data-gm="crew-pick"]') : null;
+    if (held && document.activeElement === held) return;
     EN.ui.clear(node);
     if (portal === "admin") {
       var enc = null;
@@ -617,7 +635,13 @@ EN.app = (function () {
         if (here) deskName = here.name;
         else if (EN.campaigns && EN.campaigns.running && EN.campaigns.running().length) deskName = "No campaign";
       } catch (e) {}
-      node.appendChild(el("span.an-name", { dataset: { gm: "desk-name" }, text: ((enc && enc.round > 0) ? ("ROUND " + enc.round) : "NO ENCOUNTER") + (deskName ? " · " + deskName.toUpperCase() : "") }));
+      /* The campaign picker, here so it reads on every Admin tab (it sat above the Table's fight). It is the
+         tab's one picker; with no campaign to pick, or the Gizmo fence up, the old name stands instead. A
+         select that has focus is left alone: a render under a menu that is open would close it. */
+      var pickSel = null;
+      try { pickSel = EN.gmView && EN.gmView.deskSelect ? EN.gmView.deskSelect() : null; } catch (e) { pickSel = null; }
+      node.appendChild(el("span.an-name", { dataset: { gm: "desk-name" }, text: ((enc && enc.round > 0) ? ("ROUND " + enc.round) : "NO ENCOUNTER") + (deskName && !pickSel ? " · " + deskName.toUpperCase() : "") }));
+      if (pickSel) node.appendChild(el("span.an-desk", null, [pickSel]));
       return;
     }
     var ch = store.active();

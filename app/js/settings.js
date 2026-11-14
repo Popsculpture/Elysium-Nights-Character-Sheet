@@ -584,8 +584,6 @@ EN.settings = (function () {
 
   // theme-editor state: the palette currently being authored/edited, or null when just picking
   var _editing = null;
-  // a GM data file read and checked but not yet imported: {name, text, counts}, or null
-  var _gmImport = null;
   // the six core slots exposed as color wheels, with a plain-language note on what each paints
   var SLOTS = [
     { k: "accent",  label: "Accent",     hint: "buttons, numbers, active tab, glow, and the '98 title bars" },
@@ -1150,150 +1148,6 @@ EN.settings = (function () {
     return kids;
   }
 
-  /* GM DATA, Admin desktop only. Everything the GM side keeps lives in one key on
-     this device (en_gm_v1, owned by EN.gmStore), and until this section there was
-     no copy of it anywhere else: clearing site data or changing device started
-     the GM empty. Export downloads the document the same way #PRINT downloads a
-     Freelancer; import replaces it whole.
-
-     Import is two steps on purpose. Picking a file only READS it and checks it
-     (EN.gmStore.inspectDoc), then the tray names the file and what it holds next
-     to an armed REPLACE button. Nothing is replaced until that second click, so a
-     wrong file costs a cancel, not a campaign. */
-  function gmPlural(n, one, many) { return n + " " + (n === 1 ? one : many); }
-  function gmCountText(c) { return EN.gmStore.countText(c); }
-  function gmDateStamp() {
-    var d = new Date();
-    function p(n) { return (n < 10 ? "0" : "") + n; }
-    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
-  }
-  // a campaign's name as part of a file name: letters and digits, the rest as single dashes
-  function gmSlug(name) { return String(name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40); }
-  function gmDownload(text, stem) {
-    var blob = new Blob([text], { type: "application/json" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "elysium-gm-" + (stem ? stem + "-" : "") + gmDateStamp() + ".json";
-    a.click();
-  }
-  function exportGmData() {
-    var text, here = EN.gmStore.desk ? EN.gmStore.desk() : null;
-    try { text = EN.gmStore.exportDoc(); } catch (e) { EN.ui.toast("GM data could not be exported."); return; }
-    gmDownload(text, here ? gmSlug(here.name) : "");
-    EN.ui.toast("GM data exported.");
-  }
-  function importGmData() {
-    var pending = _gmImport;
-    if (!pending) return;
-    _gmImport = null;
-    var c;
-    try { c = EN.gmStore.importDoc(pending.text); }
-    catch (err) { EN.ui.toast((err && err.message) || "That file could not be imported."); rebuild(); return; }
-    EN.app.render();
-    rebuild();
-    var msg = "GM data imported: " + gmCountText(c) + ".";
-    if (c.droppedCrew) msg += " " + gmPlural(c.droppedCrew, "crew row was", "crew rows were") + " dropped, for Freelancers not on this device.";
-    // imported writes are history only: they were made to records on the device that exported them
-    if (c.importedWrites) msg += " " + gmPlural(c.importedWrites, "write to a Freelancer record is", "writes to Freelancer records are") + " kept as history and cannot be undone here.";
-    if (!c.saved) msg += " NOT SAVED: this device refused the write, so it lasts until reload.";
-    EN.ui.toast(msg);
-  }
-  function gmDataSection() {
-    var picker = el("input", { type: "file", accept: ".json,application/json", style: { display: "none" },
-      onchange: function (e) {
-        var f = e.target.files && e.target.files[0];
-        e.target.value = "";   // the same file can be picked again after a cancel
-        if (!f) return;
-        var r = new FileReader();
-        r.onerror = function () { EN.ui.toast("Could not read that file."); };
-        r.onload = function () {
-          var text = String(r.result || "");
-          try { _gmImport = { name: f.name, text: text, counts: EN.gmStore.inspectDoc(text) }; }
-          catch (err) { _gmImport = null; EN.ui.toast((err && err.message) || "That file is not GM data."); }
-          if (EN.ui.disarm) EN.ui.disarm();
-          rebuild();
-        };
-        r.readAsText(f);
-      } });
-    var G = EN.gmStore, here = G.desk ? G.desk() : null;
-    var running = EN.campaigns && EN.campaigns.running ? EN.campaigns.running() : [];
-    // an Admin with no campaign reads exactly what they always have
-    var hint = here
-      ? "This is " + here.name + "'s desktop: its Table, encounters, job log, ledger, Heat log, contact cards and saved scenes, with the saved threats and custom hazards every desktop shares. It is stored on this device only. Export it to keep a copy or to move it to another device. Importing replaces this desktop and adds the file's threats and hazards to the shared ones."
-      : running.length
-        ? "This is this device's own desktop, for play with no campaign. It also holds the saved threats and custom hazards every desktop shares. It is stored on this device only. Export it to keep a copy or to move it to another device. Importing replaces all of it, shared threats and hazards too."
-        : "Everything the Admin desktop keeps: saved threats and encounters, custom hazards, the job log, the ledger, the Heat log, contact cards, saved scenes, and the live encounter. It is stored on this device only. Export it to keep a copy or to move it to another device. Importing replaces all of it.";
-    var kids = [
-      el("div.set-sectitle", { text: "// GM DATA" }),
-      el("label.set-label", { text: "Back up and restore" }),
-      el("p.set-hint", { text: hint }),
-      el("div.row.wrap", { style: { gap: "8px" } }, [
-        el("button.btn.sm", { title: "Download this desktop's GM data as a .json file", onclick: exportGmData }, "⤓ EXPORT GM DATA"),
-        el("button.btn.sm", { title: "Pick a GM data file to import; nothing is replaced until you confirm",
-          onclick: function () { picker.click(); } }, "⤒ IMPORT GM DATA")
-      ]),
-      picker
-    ];
-    if (_gmImport) {
-      var from = _gmImport.counts.campaign ? " It was exported from " + _gmImport.counts.campaign + "." : "";
-      kids.push(el("p.set-hint", { style: { marginTop: "12px", color: "var(--text2)" },
-        text: "Ready to import " + _gmImport.name + ": " + gmCountText(_gmImport.counts) + "." + from + (here ? " This replaces " + here.name + "'s desktop on this device." : " This replaces all GM data on this device.") }));
-      kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
-        EN.ui.armButton("gmimport", { label: "⤒ REPLACE GM DATA", armedLabel: here ? "SURE? REPLACES THIS DESKTOP" : "SURE? REPLACES ALL GM DATA", onArm: rebuild,
-          title: here ? "Replace this desktop's GM data with the file" : "Replace this device's GM data with the file",
-          armedTitle: here ? "Click again to replace " + here.name + "'s desktop with the file." : "Click again to replace all GM data on this device with the file.",
-          onConfirm: importGmData }),
-        el("button.btn.sm", { title: "Forget the picked file", onclick: function () { _gmImport = null; if (EN.ui.disarm) EN.ui.disarm(); rebuild(); } }, "CANCEL")
-      ]));
-    }
-    // this device's own desktop still holds work, and this tab is on a campaign it could go to
-    var held = here && G.deviceHolds ? G.deviceHolds() : null;
-    if (held) {
-      kids.push(el("label.set-label", { style: { marginTop: "12px" }, text: "Work on this device" }));
-      kids.push(el("p.set-hint", { dataset: { gm: "move-held" }, text: "This device's own desktop holds " + gmCountText(held) + ". Moving it never writes over anything here, and a copy of the old document is kept first." }));
-      kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
-        EN.ui.armButton("gmmove", { label: "MOVE IT TO " + here.name.toUpperCase(), armedLabel: "SURE? MOVES IT TO THIS CAMPAIGN", onArm: rebuild,
-          title: "Move this device's own desktop into " + here.name, armedTitle: "Click again to move it. The shared threats and hazards stay shared.",
-          onConfirm: function () {
-            var res = EN.campaigns.moveInto(here.id);
-            EN.app.render();
-            rebuild();
-            EN.ui.toast(EN.campaigns.moveWords(res));
-          } })
-      ]));
-    }
-    var before = G.premove ? G.premove() : null;
-    if (before) {
-      kids.push(el("label.set-label", { style: { marginTop: "12px" }, text: "From before the last move" }));
-      kids.push(el("p.set-hint", { dataset: { gm: "premove" }, text: "The document as it stood on " + new Date(before.at).toLocaleDateString() + ", in case a move took something you wanted to stay." }));
-      kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
-        el("button.btn.sm", { dataset: { gm: "premove-export" }, title: "Download it as a .json file you can import", onclick: function () { gmDownload(before.text, "before-move"); EN.ui.toast("Exported."); } }, "⤓ EXPORT IT"),
-        EN.ui.armButton("gmpremove", { label: "DELETE IT", armedLabel: "SURE? THIS CAN'T BE UNDONE", onArm: rebuild,
-          title: "Delete this copy", armedTitle: "Click again to delete this copy from this device.",
-          onConfirm: function () { G.dropPremove(); rebuild(); } })
-      ]));
-    }
-    // jacked out, nothing says which campaigns this account runs, so nothing can be called left behind and offered for deleting
-    var signedIn = !!(EN.campaigns && EN.campaigns.enabled && EN.campaigns.enabled());
-    var left = signedIn && G.leftBehind ? G.leftBehind(running.map(function (c) { return c.id; })) : [];
-    if (left.length) {
-      kids.push(el("label.set-label", { style: { marginTop: "12px" }, text: "Other desktops on this device" }));
-      kids.push(el("p.set-hint", { text: "From campaigns this account isn't running right now. Their work stays here until you delete it." }));
-      left.forEach(function (d) {
-        kids.push(el("p.set-hint", { dataset: { gm: "left-desk" }, style: { color: "var(--text2)" }, text: d.name + ": " + gmCountText(d.counts) + "." }));
-        kids.push(el("div.row.wrap", { style: { gap: "8px" } }, [
-          el("button.btn.sm", { dataset: { gm: "left-export" }, title: "Download this desktop as a .json file you can import", onclick: function () {
-            try { gmDownload(G.exportLeft(d.id), gmSlug(d.name)); EN.ui.toast("Exported."); } catch (e) { EN.ui.toast("That desktop could not be exported."); }
-          } }, "⤓ EXPORT"),
-          EN.ui.armButton("gmleft:" + d.id, { label: "DELETE", armedLabel: "SURE? THIS CAN'T BE UNDONE", onArm: rebuild,
-            title: "Delete this desktop from this device", armedTitle: "Click again to delete " + d.name + "'s desktop from this device.",
-            onConfirm: function () { G.dropLeft(d.id); rebuild(); } })
-        ]));
-      });
-    }
-    return kids;
-  }
-
   /* CONTENT. Which books the pickers offer from. The Freelancer's Companion is a content pack
      (js/packs.js): it downloads for a signed-in account and leaves with it, so this section
      first says where the pack stands:
@@ -1595,8 +1449,7 @@ EN.settings = (function () {
     if (!EN.theme.inAdmin() && EN.combatView && EN.combatView.diceMode) sections.push(diceSection());
     // general sections, shown regardless of which tab settings was opened from
     sections.push(portalSection());
-    // the GM document's backup, on the Admin desktop only, right under WORKSPACE
-    if (EN.theme.inAdmin() && EN.gmStore && EN.gmStore.exportDoc) sections.push(gmDataSection());
+    // the GM document's backup and restore moved to the Admin desktop's Sysop tab (DATA), out of a player's reach
     // which books the pickers offer from, on both desktops
     if (EN.launch && EN.launch.setSupplemental) sections.push(supplementalSection());
     // GM controls and the optional rules, on both desktops
@@ -1646,7 +1499,6 @@ EN.settings = (function () {
     // list folds now rather than still standing open when the tray closes. Inert elsewhere.
     try { document.documentElement.classList.remove("rail-open"); } catch (e) {}
     _editing = null;   // always open on the picker, never a stale editor
-    _gmImport = null;  // and never on a GM import picked in an earlier visit
     var ov = el("div#set-ov", {
       onclick: function (e) { if (e.target === ov) close(); }
     }, [
@@ -1673,7 +1525,6 @@ EN.settings = (function () {
   function close() {
     // if closed mid-edit, drop the unsaved live preview back to the recorded selection
     if (_editing) { _editing = null; EN.theme.apply(EN.theme.get()); }
-    _gmImport = null;   // a picked GM file is dropped with the tray, so its text is not held
     closeGm();          // the GM controls pop-out goes with the tray
     var ov = document.getElementById("set-ov");
     var had = !!(ov && ov.parentNode);
