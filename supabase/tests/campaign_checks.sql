@@ -23,6 +23,7 @@ declare
   campx uuid; campy uuid; campz uuid;
   adv uuid; adv_t text; adv_a uuid; adv_c uuid; adv_d uuid; adv_n int;
   hr uuid; hr_t text; hr_a uuid; hr_c uuid; hr_d uuid; hr_n int;
+  gm uuid; gm_t text; gm_a uuid; gm_c uuid; gm_d uuid; gm_i uuid; gm_m1 uuid; gm_m2 uuid; gm_n int; gm2 uuid; gm2_t text;
   t5 text;
   dk uuid; dk2 uuid; dk_t text; r1 bigint; d1 jsonb; d2 jsonb; d3 jsonb; pad int;
   v text;
@@ -1570,6 +1571,245 @@ begin
   begin perform public.set_house_rules(hr, '{"morale": false}', '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlerrm; end;
   out := out || case when err = 'EN_SIGNED_OUT' then 'PASS' else 'FAIL' end || ' and with no account behind the call it says so (' || coalesce(err, 'no error') || E')\n';
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+
+  /* ---- #POST to the GM (the GM mailbox migration) ----
+     a runs a fresh campaign with their own character, b is a co-Admin, c and d are players with one character each,
+     e is outside it, and ch_c2 is c's second character, in no campaign. */
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  gm := public.create_campaign('Mailbox Table');
+  select token into gm_t from public.campaign_invites where campaign_id = gm;
+  insert into public.characters (name, data, campaign_id) values ('Gm Ada', '{"name": "Gm Ada"}', gm) returning id into gm_a;
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(gm_t);
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(gm_t);
+  insert into public.characters (name, data, campaign_id) values ('Gm Cee', '{"name": "Gm Cee"}', gm) returning id into gm_c;
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(gm_t);
+  insert into public.characters (name, data, campaign_id) values ('Gm Dee', '{"name": "Gm Dee"}', gm) returning id into gm_d;
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.set_role(gm, b, 'coadmin');
+  -- the GM writes to c's character as Mama Ruiz, and to d's as someone else: the letters a player can answer
+  gm_i := public.send_to_character(gm_c, '{"from": "Mama Ruiz", "subj": "The drive", "body": "Pier 9. Tomorrow."}');
+  gm_m1 := public.send_to_character(gm_d, '{"from": "Fixer Okoye", "subj": "Payday"}');
+
+  -- who may write
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  select count(*) into gm_n from public.gm_mailbox;
+  err := null;
+  begin perform public.clean_gm_mail('{"subj": "x"}', 'y'); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a client cannot call the letter cleaner itself (' || coalesce(err, 'no error') || E')\n';
+  out := out || case when gm_n = 0 then 'PASS' else 'FAIL' end || ' a fresh mailbox is empty (' || gm_n || E')\n';
+  err := null;
+  begin perform public.send_to_gm(gm_d, '{"subj": "As Dee"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot write as another player''s character (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.send_to_gm(ch_c2, '{"subj": "Nobody to write to"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a character in no campaign has no GM to write to (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.send_to_gm(gen_random_uuid(), '{"subj": "Nobody"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a character that does not exist answers the same way (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.send_to_gm(gm_c, '{"subj": "As the Admin"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' the Admin cannot write as a player''s character either (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.send_to_gm(gm_c, '{"subj": "From outside"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' someone outside the campaign cannot (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'anon', true);
+  err := null;
+  begin perform public.send_to_gm(gm_c, '{"subj": "Signed out"}'); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a signed-out client cannot call it (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.send_to_gm(gm_c, '{"subj": "No account"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_SIGNED_OUT' then 'PASS' else 'FAIL' end || ' and with no account behind the call it says so (' || coalesce(err, 'no error') || E')\n';
+
+  -- a bad letter, from the right player
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  v := '';
+  foreach bad in array array[
+    'null'::jsonb, '[]'::jsonb, '{}'::jsonb, '{"subj": ""}'::jsonb, '{"subj": "  ", "body": " "}'::jsonb, '{"subj": 7}'::jsonb, '{"body": ["x"]}'::jsonb,
+    '{"subj": "Hi", "from": "Mama Ruiz"}'::jsonb, '{"subj": "Hi", "package": [{"name": "Medkit", "qty": 1}]}'::jsonb, '{"subj": "Hi", "op": "xp"}'::jsonb,
+    json_build_object('subj', repeat('x', 141))::jsonb, json_build_object('body', repeat('x', 4001))::jsonb
+  ] loop
+    err := null;
+    begin perform public.send_to_gm(gm_c, bad); exception when others then err := sqlerrm; end;
+    if err is distinct from 'EN_BAD_MAIL' then v := v || left(bad::text, 40) || ' = ' || coalesce(err, 'no error') || '; '; end if;
+  end loop;
+  out := out || case when v = '' then 'PASS' else 'FAIL' end || ' a malformed letter is refused as EN_BAD_MAIL, a package and a chosen sender among them (' || v || E')\n';
+  err := null;
+  begin perform public.send_to_gm(gm_c, null); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_MAIL' then 'PASS' else 'FAIL' end || ' no letter at all is refused (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select count(*) into gm_n from public.gm_mailbox where campaign_id = gm;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when gm_n = 0 then 'PASS' else 'FAIL' end || ' none of the refusals stored a letter (' || gm_n || E')\n';
+
+  -- the first letter: plain, stamped with the character's own name, stored trimmed, unread
+  gm_m2 := public.send_to_gm(gm_c, '{"subj": "  Need a word  ", "body": "  Can we talk about the drive?  "}');
+  perform set_config('role', 'postgres', true);
+  select count(*) into gm_n from public.gm_mailbox m
+    where m.id = gm_m2 and m.campaign_id = gm and m.character_id = gm_c and m.sender_id = c and m.status = 'unread' and m.read_at is null
+      and m.reply_to is null and m.persona is null
+      and m.mail = '{"from": "Gm Cee", "subj": "Need a word", "body": "Can we talk about the drive?"}'::jsonb;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when gm_n = 1 then 'PASS' else 'FAIL' end || ' a letter is stored trimmed, signed with the character''s name, unread, and to no one in particular (' || gm_n || E')\n';
+  perform set_config('role', 'postgres', true);
+  update public.characters set name = 'Gm Cee Renamed' where id = gm_c;
+  perform set_config('role', 'authenticated', true);
+  gm_m1 := public.send_to_gm(gm_c, '{"body": "A body alone is a letter."}');
+  perform set_config('role', 'postgres', true);
+  select count(*) into gm_n from public.gm_mailbox m where m.id = gm_m1 and m.mail ->> 'from' = 'Gm Cee Renamed' and m.mail ->> 'subj' = '';
+  update public.characters set name = 'Gm Cee' where id = gm_c;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when gm_n = 1 then 'PASS' else 'FAIL' end || ' a body alone is a letter, and the name is the one the character has now (' || gm_n || E')\n';
+
+  -- answering a letter: the name it was signed with is who this is to
+  gm_m2 := public.send_to_gm(gm_c, '{"subj": "Re: The drive"}', gm_i);
+  perform set_config('role', 'postgres', true);
+  select count(*) into gm_n from public.gm_mailbox m where m.id = gm_m2 and m.reply_to = gm_i and m.persona = 'Mama Ruiz';
+  perform set_config('role', 'authenticated', true);
+  out := out || case when gm_n = 1 then 'PASS' else 'FAIL' end || ' a reply names the letter and the name it was signed with (' || gm_n || E')\n';
+  err := null;
+  begin perform public.send_to_gm(gm_c, '{"subj": "Re"}', gen_random_uuid()); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a reply to a letter that is not there is refused (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'postgres', true);
+  select i.id into v from public.character_inbox i where i.character_id = gm_d and i.mail ->> 'from' = 'Fixer Okoye' limit 1;
+  perform set_config('role', 'authenticated', true);
+  err := null;
+  begin perform public.send_to_gm(gm_c, '{"subj": "Re"}', v::uuid); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' nor can one player answer a letter sent to another''s character (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin perform public.send_to_gm(gm_c, '{"subj": "Re", "from": "Mama Ruiz"}', gm_i); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_BAD_MAIL' then 'PASS' else 'FAIL' end || ' a reply cannot choose who it is from either (' || coalesce(err, 'no error') || E')\n';
+
+  -- who reads the mailbox
+  select count(*) into gm_n from public.gm_mailbox;
+  out := out || case when gm_n = 3 then 'PASS' else 'FAIL' end || ' a player reads the letters they sent, and only those (' || gm_n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  select count(*) into gm_n from public.gm_mailbox;
+  out := out || case when gm_n = 0 then 'PASS' else 'FAIL' end || ' another player reads none of them (' || gm_n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  select count(*) into gm_n from public.gm_mailbox;
+  out := out || case when gm_n = 0 then 'PASS' else 'FAIL' end || ' someone outside the campaign reads none (' || gm_n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  select count(*) into gm_n from public.gm_mailbox where campaign_id = gm;
+  out := out || case when gm_n = 3 then 'PASS' else 'FAIL' end || ' the Admin reads all three (' || gm_n || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  select count(*) into gm_n from public.gm_mailbox where campaign_id = gm;
+  out := out || case when gm_n = 3 then 'PASS' else 'FAIL' end || ' so does a co-Admin (' || gm_n || E')\n';
+  err := null;
+  begin insert into public.gm_mailbox (campaign_id, character_id, sender_id, mail) values (gm, gm_c, b, '{"from": "x"}'); exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a client cannot write the table directly (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.gm_mailbox set status = 'read' where campaign_id = gm; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or change a letter (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin delete from public.gm_mailbox where campaign_id = gm; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' or delete one (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'anon', true);
+  err := null;
+  begin perform count(*) from public.gm_mailbox; exception when others then err := sqlstate; end;
+  out := out || case when err = '42501' then 'PASS' else 'FAIL' end || ' a signed-out client cannot read it (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'authenticated', true);
+
+  -- reading a letter
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_gm_mail_read(gm_m2); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a player cannot mark a letter read, not even their own (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', e, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_gm_mail_read(gm_m2); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' nor can someone outside (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_gm_mail_read(gm_m2); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_SIGNED_OUT' then 'PASS' else 'FAIL' end || ' with no account behind the call, marking says so (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('request.jwt.claims', json_build_object('sub', b, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_gm_mail_read(gen_random_uuid()); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_NOT_ALLOWED' then 'PASS' else 'FAIL' end || ' a letter that is not there answers the same way (' || coalesce(err, 'no error') || E')\n';
+  perform public.mark_gm_mail_read(gm_m2);
+  select count(*) into gm_n from public.gm_mailbox where id = gm_m2 and status = 'read' and read_at is not null;
+  out := out || case when gm_n = 1 then 'PASS' else 'FAIL' end || ' a co-Admin marks it read, with the time (' || gm_n || E')\n';
+  select count(*) into gm_n from public.gm_mailbox where campaign_id = gm and status = 'unread';
+  out := out || case when gm_n = 2 then 'PASS' else 'FAIL' end || ' and only that one (' || gm_n || E')\n';
+  perform set_config('role', 'postgres', true);
+  select read_at::text into v from public.gm_mailbox where id = gm_m2;
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.mark_gm_mail_read(gm_m2); exception when others then err := sqlerrm; end;
+  perform set_config('role', 'postgres', true);
+  select count(*) into gm_n from public.gm_mailbox where id = gm_m2 and read_at::text = v;
+  perform set_config('role', 'authenticated', true);
+  out := out || case when err is null and gm_n = 1 then 'PASS' else 'FAIL' end || ' marking it again is no error and keeps the first time (' || coalesce(err, 'no error') || ', ' || gm_n || E')\n';
+
+  -- ten in five minutes, per player and campaign
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  v := '';
+  for n in 1..7 loop
+    err := null;
+    begin perform public.send_to_gm(gm_c, json_build_object('subj', 'Spam ' || n)::jsonb); exception when others then err := sqlerrm; end;
+    if err is not null then v := v || n || ' = ' || err || '; '; end if;
+  end loop;
+  out := out || case when v = '' then 'PASS' else 'FAIL' end || ' up to ten letters go through (' || v || E')\n';
+  err := null;
+  begin perform public.send_to_gm(gm_c, '{"subj": "The eleventh"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err = 'EN_SLOW_DOWN' then 'PASS' else 'FAIL' end || ' the eleventh in five minutes is refused (' || coalesce(err, 'no error') || E')\n';
+  -- c's second character joins a second campaign: the ten are counted in each campaign on its own
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  gm2 := public.create_campaign('Second Mailbox Table');
+  select token into gm2_t from public.campaign_invites where campaign_id = gm2;
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  perform public.join_campaign(gm2_t);
+  update public.characters set campaign_id = gm2 where id = ch_c2;
+  err := null;
+  begin perform public.send_to_gm(ch_c2, '{"subj": "Another table"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err is null then 'PASS' else 'FAIL' end || ' and it is the campaign''s own: the same player writes in another (' || coalesce(err, 'no error') || E')\n';
+  update public.characters set campaign_id = null where id = ch_c2;
+  perform set_config('request.jwt.claims', json_build_object('sub', d, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.send_to_gm(gm_d, '{"subj": "Dee is not held to Cee''s ten"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err is null then 'PASS' else 'FAIL' end || ' and the limit is the sender''s own (' || coalesce(err, 'no error') || E')\n';
+  perform set_config('role', 'postgres', true);
+  update public.gm_mailbox set created_at = now() - interval '6 minutes' where sender_id = c and campaign_id = gm;
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', c, 'role', 'authenticated')::text, true);
+  err := null;
+  begin perform public.send_to_gm(gm_c, '{"subj": "Later"}'); exception when others then err := sqlerrm; end;
+  out := out || case when err is null then 'PASS' else 'FAIL' end || ' and it lifts once the five minutes are up (' || coalesce(err, 'no error') || E')\n';
+
+  -- the table holds the shape too
+  perform set_config('role', 'postgres', true);
+  err := null;
+  begin update public.gm_mailbox set status = 'archived' where id = gm_m2; exception when others then err := sqlstate; end;
+  out := out || case when err = '23514' then 'PASS' else 'FAIL' end || ' a letter is unread or read and nothing else (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.gm_mailbox set mail = '[]'::jsonb where id = gm_m2; exception when others then err := sqlstate; end;
+  out := out || case when err = '23514' then 'PASS' else 'FAIL' end || ' and holds an object (' || coalesce(err, 'no error') || E')\n';
+  err := null;
+  begin update public.gm_mailbox set persona = '' where id = gm_m2; exception when others then err := sqlstate; end;
+  out := out || case when err = '23514' then 'PASS' else 'FAIL' end || ' and a persona is a name or nothing (' || coalesce(err, 'no error') || E')\n';
+
+  -- the mailbox goes with its campaign and its characters, and is in Realtime
+  select count(*) into gm_n from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'gm_mailbox';
+  out := out || case when gm_n = 1 then 'PASS' else 'FAIL' end || ' the table is in Realtime (' || gm_n || E')\n';
+  delete from public.characters where id = gm_d;
+  select count(*) into gm_n from public.gm_mailbox where character_id = gm_d;
+  out := out || case when gm_n = 0 then 'PASS' else 'FAIL' end || ' a deleted character takes its letters with it (' || gm_n || E')\n';
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
+  perform public.delete_campaign(gm);
+  perform set_config('role', 'postgres', true);
+  select count(*) into gm_n from public.gm_mailbox where campaign_id = gm;
+  out := out || case when gm_n = 0 then 'PASS' else 'FAIL' end || ' a deleted campaign takes its mailbox with it (' || gm_n || E')\n';
+  perform set_config('role', 'authenticated', true);
 
   /* ---- the SYNC button's saved desktops (the campaign desks migration) ----
      a runs a fresh campaign, b is a co-Admin, c is a player and e is outside it. dk2 is a second
