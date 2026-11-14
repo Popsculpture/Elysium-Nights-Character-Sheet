@@ -622,6 +622,8 @@ EN.gmCampaign = (function () {
           onclick: function () {
             var next = !on;
             if (next === base[k]) delete st.rules[k]; else st.rules[k] = next;
+            // APPLY may have been pressed once already: what it would send has changed, so it has to ask again
+            if (EN.ui.disarm) EN.ui.disarm();
             EN.app.render();
           } }, "\u25c8 " + ruleName(k).toUpperCase() + ": " + (on ? "ON" : "OFF"))
       ]));
@@ -647,6 +649,7 @@ EN.gmCampaign = (function () {
           var dev = L.deviceValues();
           st.rules = {};
           L.houseKeys.forEach(function (k) { if (dev[k] !== base[k]) st.rules[k] = dev[k]; });
+          if (EN.ui.disarm) EN.ui.disarm();
           EN.app.render();
         } }, "START FROM THIS DEVICE"));
     } else {

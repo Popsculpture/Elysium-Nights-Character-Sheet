@@ -80,6 +80,8 @@ EN.gmSysop = (function () {
   function backupPanel() {
     var G = EN.gmStore, here = G.desk ? G.desk() : null;
     var running = EN.campaigns && EN.campaigns.running ? EN.campaigns.running() : [];
+    // a file picked on another desktop is not offered over this one
+    if (_import && _import.desk !== (here ? here.id : "")) _import = null;
     var picker = el("input", { type: "file", accept: ".json,application/json", style: { display: "none" },
       onchange: function (e) {
         var f = e.target.files && e.target.files[0];
@@ -89,7 +91,7 @@ EN.gmSysop = (function () {
         r.onerror = function () { toast("Could not read that file."); };
         r.onload = function () {
           var text = String(r.result || "");
-          try { _import = { name: f.name, text: text, counts: G.inspectDoc(text) }; }
+          try { _import = { name: f.name, text: text, counts: G.inspectDoc(text), desk: here ? here.id : "" }; }
           catch (err) { _import = null; toast((err && err.message) || "That file is not GM data."); }
           if (EN.ui.disarm) EN.ui.disarm();
           repaint();

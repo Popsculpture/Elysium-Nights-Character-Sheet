@@ -398,6 +398,12 @@ EN.faceView = (function () {
      listed under the inbox, with whether the GM has read it. Nothing about it is kept on the record. */
   var _gmDraft = null;   // { lid, replyTo (an inbox row id or null), persona, subj, body, busy }
   var _sentGm = { cid: null, rows: [], at: 0, asking: false, sig: "" };
+  /* Who the app writes as when it sends a notice or a receipt rather than a person: House Rules and Advancement Type
+     come from "Campaign", and the paydays and awards from the names below. A letter signed so carries an inbox row
+     like any other, but there is nobody to answer, so it offers no REPLY. A GM who signs a letter with one of these
+     names by hand is signing as the system, and gets the same. */
+  var SYSTEM_SENDERS = { "campaign": 1, "payroll": 1, "xp award": 1, "milestones": 1 };
+  function fromSystem(rec) { return !!SYSTEM_SENDERS[String(rec && rec.from || "").trim().toLowerCase()]; }
   function gmContext(ch) {
     var lid = ch && ch.meta && ch.meta.id, C = EN.campaigns, cl = EN.cloud;
     if (!lid || readOnlyRecord() || !C || !C.sendToGm || !cl || !cl.rowOf || !cl.signedIn || !cl.signedIn()) return null;
@@ -545,7 +551,7 @@ EN.faceView = (function () {
           rec.read ? "● MARK UNREAD" : "○ MARK READ"),
         // a letter that came through the campaign's inbox can be answered, to the name it was signed with
         (function () {
-          var ctx = rec.inboxId ? gmContext(store.active()) : null;
+          var ctx = rec.inboxId && !fromSystem(rec) ? gmContext(store.active()) : null;
           if (!ctx) return null;
           return el("button.btn.sm.primary", { type: "button", dataset: { post: "reply" }, title: "Answer this letter. It goes to the GM, as " + (rec.from || "you") + "'s reply.",
             onclick: function () { openGmDraft(ctx, rec); } }, "\u21a9 REPLY");

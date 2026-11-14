@@ -369,15 +369,20 @@ EN.campaigns = (function () {
      the letter says what changed and a press that changes nothing goes nowhere. Answers how many letters went.
      The cache follows at once, then the list is read again. */
   function setHouseRules(id, rules) {
-    var c = find(id), now = ruleValues(id), changed = {}, any = false;
-    Object.keys(rules || {}).forEach(function (k) {
-      if (ruleOf(k) && typeof rules[k] === "boolean" && rules[k] !== now[k]) { changed[k] = rules[k]; any = true; }
-    });
-    if (!any) return Promise.resolve(0);
-    return rpc("set_house_rules", { p_campaign: id, p_rules: changed, p_mail: houseRulesLetter(c ? c.name : "", changed) }).then(function (n) {
-      var c2 = find(id);
-      if (c2) { c2.settings = Object.assign({}, c2.settings || {}, changed); save(); repaint(); }
-      return afterRoster(n);
+    /* The campaigns are read first, so what a press changes is judged against what the table holds now: another
+       co-Admin may have changed a rule since this device last read, and a press that matches a stale cache would
+       go nowhere while its GM believed it had applied. Offline, refresh() answers false and the cache is all there is. */
+    return refresh().then(function () {
+      var c = find(id), now = ruleValues(id), changed = {}, any = false;
+      Object.keys(rules || {}).forEach(function (k) {
+        if (ruleOf(k) && typeof rules[k] === "boolean" && rules[k] !== now[k]) { changed[k] = rules[k]; any = true; }
+      });
+      if (!any) return 0;
+      return rpc("set_house_rules", { p_campaign: id, p_rules: changed, p_mail: houseRulesLetter(c ? c.name : "", changed) }).then(function (n) {
+        var c2 = find(id);
+        if (c2) { c2.settings = Object.assign({}, c2.settings || {}, changed); save(); repaint(); }
+        return afterRoster(n);
+      });
     });
   }
   /* ---- #POST TO THE GM (14 Nov 2026) -----------------------------------------------------------

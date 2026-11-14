@@ -201,6 +201,7 @@ EN.app = (function () {
   // Sysop: CREW, HOUSE RULES and CAMPAIGN are pages of the campaign module, DATA is the Sysop module's own
   function sysopPage(sub, mount) {
     if (sub === "data") return nestedPage("gmSysop", "renderData")(mount);
+    if (EN.gmSysop && EN.gmSysop.reset) EN.gmSysop.reset();   // another page of Sysop: a file picked on DATA is let go
     if (!EN.gmCampaign || typeof EN.gmCampaign.renderPage !== "function") return false;
     EN.gmCampaign.renderPage(mount, sub);
     return true;
@@ -596,6 +597,8 @@ EN.app = (function () {
        it was simply unreachable until a tab could disappear. */
     var tab = vis.filter(function (t) { return t.key === LAST[portal]; })[0];
     if (!tab) { tab = vis[0]; LAST[portal] = tab.key; }
+    // a GM data file picked on Sysop's DATA page is held only while that page is open
+    if (tab.key !== "sysop" && EN.gmSysop && EN.gmSysop.reset) EN.gmSysop.reset();
     if (tab.view) {
       // another player's sheet is not a record this device vouched for: a bad one costs the view, not the app
       if (store.activeIsViewing && store.activeIsViewing() && portal === "freelancer") {
