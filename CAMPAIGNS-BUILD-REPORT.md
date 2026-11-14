@@ -1321,7 +1321,7 @@ Made on 10 Nov 2026, on your word, after the look check. Asset stamp `20261110.3
 
 # Campaigns build report: the SYNC button
 
-Designed and built on 10 Nov 2026 on `claude/vigilant-kare-2e3a45`, cut from `main` at `81f3711` and brought up to `main` at `39f5782`. **The migration went onto the live project on your word, 10 Nov 2026. The code is not merged and not pushed.** The design below is the design as built. An independent review changed it in a few places, and each of those says so. A second independent review on 12 Nov 2026 found nine more things. You chose five fixes to make before the push, and they are made: How it was reviewed has them, and Still open has what you left.
+Designed and built on 10 Nov 2026 on `claude/vigilant-kare-2e3a45`, cut from `main` at `81f3711` and brought up to `main` at `39f5782`. **The migration went onto the live project on your word, 10 Nov 2026, and the code went live on your "push it", 14 Nov 2026.** The live round is the last section of this part. The design below is the design as built. An independent review changed it in a few places, and each of those says so. A second independent review on 12 Nov 2026 found nine more things. You chose five fixes to make before the push, and they are made: How it was reviewed has them, and Still open has what you left.
 
 ## What you decided
 
@@ -1486,7 +1486,7 @@ The checks said **378 PASS, 0 FAIL** on the live project, rolled back, with the 
 
 **The first live run said 377 PASS, 1 FAIL,** and the one failure was an older check, not a new one and not the migration. The Advancement Type's "no other campaign took the type" counted every campaign in the database that has a type, and expected none. One of your real campaigns has had its type set since that check was written. The check now asks that the number hasn't moved, which is what it meant. It still catches the broken copy it guards, and the file went 378 and 0 on the live project after that. Nothing on the live project was changed to get there.
 
-What is left is step 2: the code, on "push it".
+**Step 2 is done, 14 Nov 2026, on your "push it".** `main` was fast-forwarded to `1b3881e` and pushed, with no merge commit. The live site was serving stamp `20261112.3` within a couple of minutes, and its `index.html`, `gm.js`, `gmstore.js` and `campaigns.js` matched `main` byte for byte.
 
 ## How it was reviewed
 
@@ -1536,8 +1536,8 @@ The rest of what it found (its 3a, 4, 6, 8 and 9) is not fixed, by your choice: 
 
 ## What was not checked
 
-- **The app hasn't run against the live project.** The migration and its checks have. Supabase's own PostgREST and Discord sign-in aren't in any of the app's rounds: the bridge imitates them, as before. A press of the real button on the live site is the live round, after the push.
-- **Two real browsers.** The story plays the co-Admin's browser on one page, by putting the campaign's document aside and signing the other account in. The unit test gives each browser its own storage, in Node. Neither is two machines.
+- **The app hasn't run against the live project.** The migration and its checks have. Supabase's own PostgREST and Discord sign-in aren't in any of the app's rounds: the bridge imitates them, as before. A press of the real button on the live site is the live round, after the push. That round is done since: see The live round.
+- **Two real browsers.** The story plays the co-Admin's browser on one page, by putting the campaign's document aside and signing the other account in. The unit test gives each browser its own storage, in Node. Neither is two machines. The live round since used two real browsers, on one machine.
 - **Two saves racing inside the database.** The row lock and the save count are there, and PGlite has one connection, so neither has ever contended. PGlite is also Postgres 18.6 where the project is 17.11.
 - **A big desktop.** The 2 MB limit is the database's. Whether Supabase's gateway takes a request that size hasn't been tried, and nobody has measured a real desktop.
 - **The second review's five fixes have had no review of their own.** '98 and #GRIDroid weren't looked at again after either round of fixes, and the one new line of words (your own copy that can't be read) was read off the real page by the story, not looked at by eye.
@@ -1556,7 +1556,7 @@ The rest of what it found (its 3a, 4, 6, 8 and 9) is not fixed, by your choice: 
 
 ## Still open
 
-- **The views that build HTML from record fields.** A die's face (`ui.js`, `dieFaceSvg`), a Heat check's roll and a job's rolled number go into the page as markup. SYNC no longer feeds them anything with a `<` in it, but a GM file imported by hand still can, as it always could. Escaping them at the source was its own small job, done since on `claude/trusting-cray-fde91a`. That branch isn't on `main` or in this one.
+- **The views that build HTML from record fields.** A die's face (`ui.js`, `dieFaceSvg`), a Heat check's roll and a job's rolled number go into the page as markup. SYNC no longer feeds them anything with a `<` in it, but a GM file imported by hand still can, as it always could. Escaping them at the source was its own small job, done since on `claude/trusting-cray-fde91a`. It went onto `main` on 14 Nov 2026 with the Freelancer views' half of the same job (`8458b39`, stamp `20261114.1`).
 - **A payday taken back after the other Admin synced** still reads as paid on theirs, by your rule. With three desktops, the third can take "paid" from the stale copy: of two copies of a write it lacks, it keeps the one edited last, and UNDO doesn't count as an edit (the second review's 4). Its suggestion was to let "undone" win.
 - **A tab left open from before the update reads pay that came by SYNC as unpaid** (the second review's 3a). Only the new code counts a write named by its sheet's row. Until that tab reloads, it could offer to pay a fight or a job the other Admin has paid. And if such a tab is the only one open when it saves, the notes it never knew are still dropped: the next press then reads every copy once more.
 - **A hostile co-Admin** (the second review's 6). A copy's name has no length limit. A ledger write's time is believed. And one copy close to 2 MB makes your own next save too big, for good, since what it added is now on your desktop.
@@ -1566,3 +1566,30 @@ The rest of what it found (its 3a, 4, 6, 8 and 9) is not fixed, by your choice: 
 - **Someone who stopped running a campaign** leaves their saved copy in the database until the campaign is deleted.
 - **Two accounts on one browser share a campaign's desktop,** as they always have, so one of them deleting a record deletes it for both there.
 - **Heat through the inbox, and Vigor at the Table's END,** as before.
+
+## The live round
+
+Run on the live site on 14 Nov 2026, after the push, with two real accounts on 5th flavor, the campaign they both run: Popsculpture as Admin in Chrome, and MyGalFRIDAY as co-Admin in Firefox. After each step I read the saved desktops from the database, read only: each one's save count, its size, its own name, and the names and counts of what it holds. You said each step looked as described on screen.
+
+**The site it ran on:** stamp `20261114.1`. SYNC went up as `20261112.3` at `1b3881e`. Before the first press, the Freelancer views' markup fix was pushed from its own session (`8458b39`). That moved the stamp and left `gm.js`, `gmstore.js` and `campaigns.js` byte for byte as they were. I compared the live files with `main` after each push.
+
+**The start:** no saved desktop in the database. 2 campaigns, 4 memberships, 6 characters and 62 inbox rows.
+
+| Step | Result | The database says |
+|---|---|---|
+| The Admin's first press | **Pass** | One saved desktop, the Admin's, as save 1, 40,550 bytes: the Table's one row (a Ganger Shotcaller, round 1), one logged job and 34 ledger records. Nothing else in the database moved |
+| The co-Admin's first press | **Pass** | A second saved desktop, as save 1. Its Table already had two rows of its own, a crew row and a Chained Watchdog, so the Ganger Shotcaller joined after them. It gained the job and all 34 ledger records, and the 27 writes among them are marked as history there |
+| The Admin presses again (your own extra) | **Pass** | The Admin's Table gained the co-Admin's two rows, after its own. The crew row crossed by the sheet's row |
+| A contact card made by the co-Admin, and both press | **Pass** | "Sanitation Frame 12" is in both saved copies |
+| The Admin edits it, and both press | **Pass** | The Admin's copy reads "Sanitation Frame 12 edited", and the co-Admin's still reads "Sanitation Frame 12" |
+| The Admin deletes it, and presses | **Pass**, on your word | The database keeps only each account's latest copy, so the card being gone after this press was seen on screen and not read by me |
+| The co-Admin presses, then the Admin again | **Pass** | The card is back in the Admin's copy, in the co-Admin's wording, without "edited" |
+| A press with Firefox offline, then one online | **Pass** | The co-Admin's save count was 14 before the two presses and 15 after: the failed press saved nothing |
+
+**What you saw, and said was as described:** the button beside the Campaign picker on the Table tab; SYNC NOW? on the first press; "Synced. Nobody else has saved a desktop for 5th flavor yet."; the Ganger Shotcaller on the co-Admin's Table, "Claim work" on its Job Board and the 34 records in its Payroll ledger; "Synced. Added: 1 contact card."; "Synced. Nothing new to add." with "Kept as yours, where the two differ: 1 contact card." under it, on both desktops; the deleted card staying gone through one press and coming back at the Admin's next; and the toast "Could not reach your account. Nothing was saved or added." with no line left under the picker. For the co-Admin's first press I gave two outcomes, and the database shows it was the second: its Table had rows already.
+
+**The desktops at the end:** each side holds 1 logged job, 34 ledger records, 1 contact card and 3 Table rows, in its own order. The Admin saved 9 times and the co-Admin 15, more than the steps asked for, and nothing is doubled. Neither copy has a `<` or a `>` in it, and each is about 42 KB. No sheet was saved and no inbox row was made during the round.
+
+**Outside the round:** during the second step, two character rows and the Test campaign's one player membership left the database. You said you had removed them yourself. SYNC's two functions write the saved desktops' table and nothing else.
+
+**Not tried live:** a blank Table taking a fight whole, with its round, clock and name, since the co-Admin's Table had rows; a payday made after the first sync arriving as history, the hold it puts on paying twice, and no UNDO being offered for it there (the 34 older records did cross); one fight on two Tables and its one award; a second computer on one account; two presses at the same moment; a desktop near the size limit; a tab left open from before the update; and '98, #GRIDroid, Light and a phone.
