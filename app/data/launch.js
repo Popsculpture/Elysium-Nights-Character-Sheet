@@ -66,7 +66,7 @@ EN.launch = (function () {
      its effect either way; only the control to make or undo it is hidden. */
   var GM_KEY = "en_gm_controls_v1";
   function gmControls() { try { return localStorage.getItem(GM_KEY) === "1"; } catch (e) { return false; } }
-  function setGmControls(on) { try { localStorage.setItem(GM_KEY, on ? "1" : "0"); } catch (e) {} }
+  function setGmControls(on) { try { localStorage.setItem(GM_KEY, on ? "1" : "0"); } catch (e) {} invalidate(); }
   /* Each control can also be switched on its own (30 Oct 2026). The master switch above gates
      them all; under it, each is on until someone turns it off. gmControl(key) is the one test
      a view asks: both the master and that control on. */
@@ -79,7 +79,7 @@ EN.launch = (function () {
   ];
   function gmItemMap() { try { var m = JSON.parse(localStorage.getItem(GM_ITEMS_KEY) || "{}"); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } }
   function gmItem(key) { return gmItemMap()[key] !== false; }
-  function setGmItem(key, on) { var m = gmItemMap(); m[key] = !!on; try { localStorage.setItem(GM_ITEMS_KEY, JSON.stringify(m)); } catch (e) {} }
+  function setGmItem(key, on) { var m = gmItemMap(); m[key] = !!on; try { localStorage.setItem(GM_ITEMS_KEY, JSON.stringify(m)); } catch (e) {} invalidate(); }
   // what this device's own switches say (the Admin desktop's Sysop sets them; see TABLE RULES below)
   function deviceControl(key) { return gmControls() && gmItem(key); }
 
@@ -107,7 +107,7 @@ EN.launch = (function () {
   ];
   function ruleMap() { try { var m = JSON.parse(localStorage.getItem(RULES_KEY) || "{}"); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } }
   function deviceRule(key) { var m = ruleMap(); return m[key] !== false; }
-  function setRule(key, on) { var m = ruleMap(); m[key] = !!on; try { localStorage.setItem(RULES_KEY, JSON.stringify(m)); } catch (e) {} }
+  function setRule(key, on) { var m = ruleMap(); m[key] = !!on; try { localStorage.setItem(RULES_KEY, JSON.stringify(m)); } catch (e) {} invalidate(); }
 
   /* ---- TABLE RULES: the rules in force (14 Nov 2026) --------------------------------------------
      The five rules above (Encumbrance, Weapon Jam, Morale, GM -1 Load, Five-Finger Supply) are the TABLE's, not a
@@ -141,8 +141,28 @@ EN.launch = (function () {
     var r = (C.houseRules || []).filter(function (x) { return x.key === key; })[0];
     return r ? r.def : null;
   }
-  function rule(key, ch) { var v = decided(key, ch); return v === null ? deviceRule(key) : v; }
-  function gmControl(key, ch) { var v = decided(key, ch); return v === null ? deviceControl(key) : v; }
+  /* Views ask these inside loops (Inventory asks gmControl("loadLower") for every item it draws, derive asks about Encumbrance
+     for every sheet), and each answer is a campaign lookup and a read of this device's switches. An answer is kept until
+     something that could change it says so: a render starts (js/app.js), a switch on this device is written (above),
+     or the campaigns this account holds change (js/campaigns.js: a read that found a change, a pick, a record's move, an
+     apply). The key is the sheet asked about (or the open sheet, for no sheet named) and the desktop, which are all an
+     answer depends on besides those. */
+  var _gen = 0, _memo = {}, _memoGen = 0;
+  function invalidate() { _gen++; }
+  function memoed(kind, key, ch, compute) {
+    var id;
+    if (ch) id = (ch.meta && ch.meta.id) || "?";
+    else { var a = EN.store && EN.store.active ? EN.store.active() : null; id = "~" + ((a && a.meta && a.meta.id) || ""); }
+    var k = kind + "|" + key + "|" + id + "|" + (EN.app && EN.app.portal ? EN.app.portal() : "");
+    if (_memoGen !== _gen) { _memo = {}; _memoGen = _gen; }
+    return Object.prototype.hasOwnProperty.call(_memo, k) ? _memo[k] : (_memo[k] = compute());
+  }
+  function rule(key, ch) {
+    return memoed("r", key, ch, function () { var v = decided(key, ch); return v === null ? deviceRule(key) : v; });
+  }
+  function gmControl(key, ch) {
+    return memoed("c", key, ch, function () { var v = decided(key, ch); return v === null ? deviceControl(key) : v; });
+  }
   function inForce(key, ch) { return isControl(key) ? gmControl(key, ch) : rule(key, ch); }
   // every rule with its value in force for a sheet, and the campaign that decides it, or null when this device does
   function tableRules(ch) {
@@ -580,7 +600,7 @@ EN.launch = (function () {
            gmControls: gmControls, setGmControls: setGmControls,
            gmControlList: GM_CONTROLS, gmItem: gmItem, setGmItem: setGmItem, gmControl: gmControl,
            optionalRules: OPTIONAL_RULES, rule: rule, setRule: setRule,
-           houseKeys: HOUSE_KEYS, tableRules: tableRules, deviceValues: deviceValues, setDeviceRules: setDeviceRules,
+           houseKeys: HOUSE_KEYS, tableRules: tableRules, deviceValues: deviceValues, setDeviceRules: setDeviceRules, invalidate: invalidate,
            isHeld: isHeld, isCompanion: isCompanion, source: source, offer: offer,
            isToolkit: isToolkit, isToolkitItem: isToolkitItem,
            showAvailability: showAvailability };

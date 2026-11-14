@@ -91,13 +91,6 @@ EN.gmCampaign = (function () {
     });
   }
 
-  function heading() {
-    return el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
-      el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" },
-        html: 'CAMPAIGN <span class="dim3" style="font-size:13px">// players, invites, sheets</span>' })
-    ]);
-  }
-
   function copyLink(url, field) {
     var answered = false;
     function say(text) { if (!answered) { answered = true; toast(text); } }
@@ -664,14 +657,11 @@ EN.gmCampaign = (function () {
 
   /* ---- the pages ---------------------------------------------------------------
      The Admin reorganization (14 Nov 2026) moved this page into the Sysop tab, where each part is a sub-tab:
-     CREW (the invite link, the roster, the sends, who is blocked), HOUSE RULES (Advancement Type, for now) and
-     CAMPAIGN (rename, transfer, delete). renderPage(mount, which) draws one of them under Sysop's own
-     heading; render(mount) is the whole page as it was, heading and all, kept for anything that still draws it.
-     The campaign picker is in the top bar now, so a nested page draws none. */
+     CREW (the invite link, the roster, who is blocked), HOUSE RULES (Advancement Type and the table's rules), CAMPAIGN
+     (rename, transfer, delete), and on the #POST tab WRITE and SENT. renderPage(mount, which) draws one of them under
+     the tab's own heading. The campaign picker is in the top bar, so a page draws none. */
   function renderPage(mount, which) {
-    var whole = which === "all";
     EN.ui.clear(mount);
-    if (whole) mount.appendChild(heading());
     // a GM with no campaign still sets the rules: they are this device's own switches (the sheets in no campaign follow them)
     if (which === "rules" && (!C() || !C().enabled() || !C().running().length || C().pick() === C().NO_CAMPAIGN)) {
       mount.appendChild(el("div.camp-sections", null, [housePanel("device")]));
@@ -695,21 +685,13 @@ EN.gmCampaign = (function () {
     }
     var want = C().pick();
     // this tab is on this device's own desktop: there is no campaign here to read or change (the top bar's picker moves it)
-    if (!whole && want === C().NO_CAMPAIGN) {
+    if (want === C().NO_CAMPAIGN) {
       mount.appendChild(el("div.muted-box", { "data-camp": "nopick", style: { padding: "26px" }, text: "No campaign picked. This tab is on this device's own desktop. Pick a campaign in the top bar to see its crew, rules and settings." }));
       return;
     }
     var c = mine.filter(function (x) { return x.id === want; })[0] || mine[0];
     // the top bar's picker changes the campaign as well, so what is half done here is checked against it on the way in
     if (_for !== c.id) { _for = c.id; _remove = null; _typed = null; _renameDraft = null; _transferTo = ""; }
-    if (whole && mine.length > 1) {
-      mount.appendChild(el("div.camp-line.camp-pick", null, [
-        el("label.fl", { style: { margin: 0 }, text: "Campaign" }),
-        el("select.camp-input", { "aria-label": "Campaign", "data-camp": "picker", onchange: function (e) {
-          C().setPick(e.target.value); EN.app.render();
-        } }, mine.map(function (x) { return el("option", { value: x.id, selected: x.id === c.id, text: x.name }); }))
-      ]));
-    }
     mount.appendChild(el("p.camp-title", { "data-camp": "title" }, [
       el("b", { text: c.name }),
       el("span.chip.camp-role", { text: c.role === "admin" ? "ADMIN" : "CO-ADMIN" }),
@@ -728,18 +710,16 @@ EN.gmCampaign = (function () {
     // a message being written belongs to one account and one campaign
     if (_send && (_send.uid !== me() || _send.campaign !== c.id)) _send = null;
     var parts = [];
-    if (whole || which === "crew") parts.push(inviteSection(c, d));
-    if (whole || which === "rules") { parts.push(advancementSection(c)); parts.push(housePanel(c.id)); }
-    if (whole || which === "crew") parts = parts.concat([rosterSection(c, d, isAdmin), blockedSection(c, d)]);
-    if (which === "write") parts.push(writePanel(c, d));
-    if (whole || which === "sent") parts.push(sendsSection(c, d));
-    if (whole || which === "manage") {
-      if (isAdmin) parts.push(settingsSection(c, d));
-      else if (which === "manage") parts.push(el("div.muted-box", { "data-camp": "admin-only", style: { padding: "26px" }, text: "Only the campaign's Admin renames it, hands it on or deletes it." }));
+    if (which === "crew") parts = [inviteSection(c, d), rosterSection(c, d, isAdmin), blockedSection(c, d)];
+    else if (which === "rules") parts = [advancementSection(c), housePanel(c.id)];
+    else if (which === "write") parts = [writePanel(c, d)];
+    else if (which === "sent") parts = [sendsSection(c, d)];
+    else if (which === "manage") {
+      parts = [isAdmin ? settingsSection(c, d)
+        : el("div.muted-box", { "data-camp": "admin-only", style: { padding: "26px" }, text: "Only the campaign's Admin renames it, hands it on or deletes it." })];
     }
     mount.appendChild(el("div.camp-sections", null, parts));
   }
-  function render(mount) { renderPage(mount, "all"); }
 
-  return { render: render, renderPage: renderPage, draftTo: draftTo, stale: stale, invalidate: invalidate, sendsChanged: sendsChanged, headsUp: headsUp, typeButtons: typeButtons, crewRead: crewRead };
+  return { renderPage: renderPage, draftTo: draftTo, stale: stale, invalidate: invalidate, sendsChanged: sendsChanged, headsUp: headsUp, typeButtons: typeButtons, crewRead: crewRead };
 })();

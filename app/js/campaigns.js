@@ -216,6 +216,7 @@ EN.campaigns = (function () {
   function setRecord(lid, campaignId) {
     var c = cloud(), to = campaignId || null;
     pending[lid] = to;
+    if (EN.launch && EN.launch.invalidate) EN.launch.invalidate();
     return c.ensureRow(lid).then(function (row) {
       return client().from("characters").update({ campaign_id: to }).eq("id", row).select("id").then(check)
         .then(function (rows) {
@@ -224,11 +225,13 @@ EN.campaigns = (function () {
           var d = data();
           if (to) d.rows[row] = to; else delete d.rows[row];
           save();
+          if (EN.launch && EN.launch.invalidate) EN.launch.invalidate();
           crewStale();
           if (EN.app) EN.app.render();
         });
     }).catch(function (e) {
       delete pending[lid];
+      if (EN.launch && EN.launch.invalidate) EN.launch.invalidate();
       console.warn("Could not save the campaign", e);
       EN.ui.toast(errText(e, "Could not save that. It stays where it was."));
       if (EN.app) EN.app.render();
@@ -287,6 +290,9 @@ EN.campaigns = (function () {
   // an attempt on the Admin desktop asks again, unless someone just did
   function refreshSoon() { if (Date.now() - lastRead > 5000) refresh(); }
   function repaint() {
+    if (EN.launch && EN.launch.invalidate) EN.launch.invalidate();   // the rules in force read the campaigns
+    // the campaigns this account runs may have changed: the GM mailbox channel follows (js/cloud.js watchMail)
+    if (EN.cloud && EN.cloud.watchMail) { try { EN.cloud.watchMail(); } catch (e) {} }
     if (!EN.app) return;
     if (EN.gmCampaign && EN.gmCampaign.invalidate) EN.gmCampaign.invalidate();   // a change was seen: the tab reads again
     crewStale();
@@ -446,6 +452,7 @@ EN.campaigns = (function () {
     return tabPick;
   }
   function setPick(id) {
+    if (EN.launch && EN.launch.invalidate) EN.launch.invalidate();
     tabPick = id || "";
     setKey(PICK, tabPick);
     pinTab();

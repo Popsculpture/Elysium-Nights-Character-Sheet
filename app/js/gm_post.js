@@ -21,6 +21,10 @@ EN.gmPost = (function () {
   function C() { return EN.campaigns; }
 
   var FRESH_MS = 20000;
+  /* Who the characters are changes rarely (a player joins, a sheet is renamed), and the roster is a round trip of its
+     own, so it is read once per campaign and again only on REFRESH, when a letter comes from a character it did not
+     list, or after this long. The mailbox and the sends are what move, and are read each time. */
+  var ROSTER_MS = 300000;
   /* What this tab's campaign's mailbox held when it was last read:
      { id, rows (null where the project has no mailbox yet), sends, names: { character row id: { name, player } }, at, sig, loading, again }.
      Thrown away when the tab moves to another campaign. */
@@ -43,31 +47,40 @@ EN.gmPost = (function () {
   function sigOf(rows) { return rows === null ? "none" : rows.map(function (r) { return r.id + ":" + r.status; }).join(","); }
 
   /* Read the mailbox for this tab's campaign, unless that was done a moment ago or is under way. A change to what the
-     page or the rail shows redraws; a read that found nothing new draws nothing, so asking from every render is safe. */
-  function ensure(force) {
+     page or the rail shows redraws; a read that found nothing new draws nothing, so asking from every render is safe.
+     `force` skips the cache; `withRoster` reads who the characters are as well (see ROSTER_MS). */
+  function ensure(force, withRoster) {
     var id = deskId();
     if (!id || !C() || !C().gmMail || !C().enabled()) return;
     if (!_c || _c.id !== id) { _c = { id: id, rows: [], sends: [], names: {}, at: 0, sig: "", loading: false }; _sel = null; }
     if (_c.loading) { _c.again = true; return; }
     if (!force && _c.at && Date.now() - _c.at < FRESH_MS) return;
     var mine = _c;
+    var needRoster = !!withRoster || mine.wantRoster || !mine.rosterAt || Date.now() - mine.rosterAt > ROSTER_MS;
+    mine.wantRoster = false;
     mine.loading = true;
     Promise.all([
       Promise.resolve().then(function () { return C().gmMail(id); }),
       Promise.resolve().then(function () { return C().sends(id); }).then(function (r) { return r || []; }, function () { return []; }),
-      Promise.resolve().then(function () { return C().roster(id); }).then(function (r) { return r || []; }, function () { return []; })
+      needRoster ? Promise.resolve().then(function () { return C().roster(id); }).then(function (r) { return r || []; }, function () { return []; }) : null
     ]).then(function (all) {
       if (_c !== mine) return;
-      var names = {};
-      all[2].forEach(function (m) {
-        (Array.isArray(m.characters) ? m.characters : []).forEach(function (sheet) {
-          names[sheet.id] = { name: typeof sheet.name === "string" && sheet.name ? sheet.name : "Unnamed Freelancer", player: m.discord_name || "" };
+      var names = mine.names;
+      if (all[2]) {
+        names = {};
+        all[2].forEach(function (m) {
+          (Array.isArray(m.characters) ? m.characters : []).forEach(function (sheet) {
+            names[sheet.id] = { name: typeof sheet.name === "string" && sheet.name ? sheet.name : "Unnamed Freelancer", player: m.discord_name || "" };
+          });
         });
-      });
+        mine.rosterAt = Date.now();
+      }
       applyMarked(all[0]);
       var sig = sigOf(all[0]) + "|" + (all[1] || []).length + "|" + Object.keys(names).length;
       var changed = sig !== mine.sig;
       mine.rows = all[0]; mine.sends = all[1]; mine.names = names; mine.at = Date.now(); mine.sig = sig; mine.loading = false;
+      // a letter from a character the roster did not list (a sheet that joined since): read the roster once more
+      if (!all[2] && (all[0] || []).some(function (r) { return !names[r.character_id]; })) { mine.wantRoster = true; mine.again = true; }
       if (changed && EN.app && EN.app.portal() === "admin") EN.app.render();
       if (mine.again) { mine.again = false; ensure(true); }
     }, function (e) {
@@ -126,20 +139,22 @@ EN.gmPost = (function () {
     return isNaN(d.getTime()) ? "" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   }
 
-  // opening a thread reads what is in it: the database first, then the page
+  /* Opening a thread reads what is in it: the database first, then the page, once for the whole thread however many
+     letters it holds, and one refusal is said once. */
   function readThread(t) {
-    t.msgs.forEach(function (m) {
-      if (m.dir !== "in" || m.row.status !== "unread") return;
-      var row = m.row;
-      C().markGmRead(row.id).then(function () {
-        _marked[row.id] = true;
-        row.status = "read";
-        if (_c) {
-          applyMarked(_c.rows);
-          _c.sig = sigOf(_c.rows) + "|" + (_c.sends || []).length + "|" + Object.keys(_c.names).length;
-        }
-        if (EN.app && EN.app.portal() === "admin") EN.app.render();
-      }, function (e) { console.warn("Could not mark a letter read", e); toast(C().errText(e)); });
+    var rows = t.msgs.filter(function (m) { return m.dir === "in" && m.row.status === "unread"; }).map(function (m) { return m.row; });
+    if (!rows.length) return;
+    var refused = null;
+    Promise.all(rows.map(function (row) {
+      return C().markGmRead(row.id).then(function () { return row; }, function (e) { refused = e; return null; });
+    })).then(function (done) {
+      done.forEach(function (row) { if (row) { _marked[row.id] = true; row.status = "read"; } });
+      if (_c) {
+        applyMarked(_c.rows);
+        _c.sig = sigOf(_c.rows) + "|" + (_c.sends || []).length + "|" + Object.keys(_c.names).length;
+      }
+      if (refused) { console.warn("Could not mark a letter read", refused); toast(C().errText(refused)); }
+      if (EN.app && EN.app.portal() === "admin") EN.app.render();
     });
   }
 
@@ -194,7 +209,7 @@ EN.gmPost = (function () {
       mount.appendChild(el("div.muted-box", { dataset: { post: "nopick" }, style: { padding: "26px" }, text: "No campaign picked. Pick one in the top bar to read its mail." }));
       return true;
     }
-    ensure(_c && _c.id === id && _c.at && Date.now() - _c.at > 4000);
+    ensure(false);
     if (!_c || _c.id !== id || !_c.at) {
       mount.appendChild(el("div.muted-box", { style: { padding: "26px" }, text: "Reading the mailbox…" }));
       return true;
@@ -205,7 +220,7 @@ EN.gmPost = (function () {
     }
     var list = threads();
     var bar = el("div.row.wrap", { style: { gap: "8px", alignItems: "center", margin: "0 0 10px" } }, [
-      el("button.btn.sm", { type: "button", dataset: { post: "refresh" }, title: "Read the mailbox again", onclick: function () { ensure(true); } }, "↻ REFRESH"),
+      el("button.btn.sm", { type: "button", dataset: { post: "refresh" }, title: "Read the mailbox again", onclick: function () { ensure(true, true); } }, "↻ REFRESH"),
       el("span.help", { style: { margin: 0 }, dataset: { post: "count" }, text: list.length ? list.length + (list.length === 1 ? " THREAD" : " THREADS") + " · " + unread() + " UNREAD" : "" })
     ]);
     if (!list.length) {

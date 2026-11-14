@@ -583,6 +583,7 @@ EN.app = (function () {
     var wells = Array.prototype.map.call(document.querySelectorAll(WELLS), function (w) { return w.scrollTop; });
     var view = document.getElementById("view");
     var keep = focusMark(view);
+    if (EN.launch && EN.launch.invalidate) EN.launch.invalidate();   // the rules in force are re-read once per render (data/launch.js)
     renderTabs();
     EN.ui.clear(view);
     var vis = visibleTabs();

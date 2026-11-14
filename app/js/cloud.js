@@ -698,13 +698,27 @@ EN.cloud = (function () {
         .on("postgres_changes", { event: "*", schema: "public", table: "character_inbox" }, onInboxEvent)
         .subscribe(function (state) { if (state === "SUBSCRIBED" && user && user.id === me) sync({ pull: true }); });
     } catch (e) { inboxWarn(e); }
+    watchMail();
+  }
+  /* The mailbox channel is for the people who run a campaign: only they read the GM's mailbox, and a player's own letters
+     are not news to the player. So it is joined once this account is known to run one (js/campaigns.js tells us when
+     its list changes), and let go when it stops. A failed join is given up until the list changes again, rather than
+     retried for ever on a project that does not have the table in Realtime. */
+  function watchMail() {
+    var runs = !!(EN.campaigns && EN.campaigns.running && EN.campaigns.running().length);
+    if (!client || !user || !channelOf || typeof client.channel !== "function") return;
+    if (!runs) {
+      if (mailChannel) { try { channelOf.removeChannel(mailChannel); } catch (e) {} mailChannel = null; }
+      return;
+    }
+    if (mailChannel) return;
+    var me = user.id;
     try {
       var mc = client.channel("gmbox:" + me);
       mailChannel = mc;
       mc.on("postgres_changes", { event: "*", schema: "public", table: "gm_mailbox" }, onMailboxEvent)
         .subscribe(function (state) {
           if (state === "SUBSCRIBED" && user && user.id === me && EN.gmPost && EN.gmPost.heard) { try { EN.gmPost.heard(null); } catch (e) {} }
-          // no such table in Realtime, or no way to join: give it up until the next listen, rather than retrying for ever
           if ((state === "CHANNEL_ERROR" || state === "TIMED_OUT") && mailChannel === mc) {
             try { channelOf.removeChannel(mc); } catch (e) {}
             mailChannel = null;
@@ -1072,6 +1086,7 @@ EN.cloud = (function () {
     signInButtons: signInButtons, recheck: function () { return jackIn("discord"); },
     available: available,
     signedIn: function () { return !!user; },
+    watchMail: watchMail,
     status: function () { return status; },
     // whether deleting this record also deletes a row in the player's account (the delete warnings)
     linked: function (id) { var b = user ? book() : null; return !!(b && b.links[id]); },
