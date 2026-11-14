@@ -49,7 +49,7 @@ EN.gmCampaign = (function () {
   var _sendsHost = null;  // the Sends list's own node, so a status change never redraws what is being typed
   var MAX_ITEMS = 20, MAX_QTY = 99, RESULTS = 12;
 
-  function stale() { _d = {}; _remove = null; _typed = null; _renameDraft = null; _transferTo = ""; }
+  function stale() { _d = {}; _remove = null; _typed = null; _renameDraft = null; _transferTo = ""; _stage = null; }
   // what the campaign holds is out of date, but a confirm that is open stays open
   function invalidate() { _d = {}; }
 
@@ -549,6 +549,84 @@ EN.gmCampaign = (function () {
     return EN.ui.panel("Campaign settings", null, kids);
   }
 
+  /* ---- HOUSE RULES (14 Nov 2026) --------------------------------------------------
+     The five rules a table decides: Encumbrance, Weapon Jam, Morale, and the GM's -1 Load and Five-Finger Supply
+     (data/launch.js holds their words). On a campaign they are the campaign's: each press is STAGED here and
+     nothing leaves until APPLY TO THE TABLE, which asks once more, then sends the changed rules and one letter
+     to every character in a single step (EN.campaigns.setHouseRules). With no campaign they are this device's own
+     switches, which a sheet in no campaign follows, and APPLY writes them at once. Staged edits are this page's
+     alone and are dropped with the tab. START FROM THIS DEVICE stages what this device's switches say, for a
+     campaign that has decided nothing, so a table that had been playing with them can keep playing that way. */
+  var _stage = null;   // { scope: a campaign id or "device", rules: { rule: true | false } }
+  function stageFor(scope) {
+    if (!_stage || _stage.scope !== scope) _stage = { scope: scope, rules: {} };
+    return _stage;
+  }
+  function ruleWords(key, on) {
+    var L = EN.launch, r = (L.optionalRules || []).filter(function (x) { return x.key === key; })[0];
+    if (r) return on ? r.on : r.off;
+    var g = (L.gmControlList || []).filter(function (x) { return x.key === key; })[0];
+    return g ? g.hint : "";
+  }
+  function ruleName(key) {
+    var r = (C().houseRules || []).filter(function (x) { return x.key === key; })[0];
+    return r ? r.name : key;
+  }
+  function housePanel(scope) {
+    var L = EN.launch, onCampaign = scope !== "device", st = stageFor(scope);
+    var base = onCampaign ? C().ruleValues(scope) : L.deviceValues();
+    function shown(k) { return typeof st.rules[k] === "boolean" ? st.rules[k] : base[k]; }
+    var pending = L.houseKeys.filter(function (k) { return typeof st.rules[k] === "boolean" && st.rules[k] !== base[k]; });
+    var kids = [el("p.help", { style: { margin: "0 0 10px" }, text: onCampaign
+      ? "These apply to every sheet in this campaign. Players see them locked in their Settings. Change what you like, then APPLY TO THE TABLE: nothing is sent until you do."
+      : "No campaign is picked, so these are this device's own switches, which a Freelancer here in no campaign follows. They apply as soon as you press APPLY." })];
+    L.houseKeys.forEach(function (k) {
+      var on = shown(k), changed = pending.indexOf(k) !== -1;
+      kids.push(el("div", { dataset: { rule: k }, style: { padding: "8px 0", borderTop: "1px solid var(--border)" } }, [
+        el("label.fl", { text: ruleName(k) + (changed ? "  (CHANGED)" : "") }),
+        el("p.help", { style: { margin: "0 0 6px" }, text: ruleWords(k, on) }),
+        el("button.btn.sm" + (on ? ".primary" : ""), { type: "button", dataset: { rule: k, state: on ? "on" : "off" },
+          title: "Turn " + ruleName(k) + (on ? " off" : " on"),
+          onclick: function () {
+            var next = !on;
+            if (next === base[k]) delete st.rules[k]; else st.rules[k] = next;
+            EN.app.render();
+          } }, "\u25c8 " + ruleName(k).toUpperCase() + ": " + (on ? "ON" : "OFF"))
+      ]));
+    });
+    var actions = [];
+    function applied(n) {
+      _stage = null;
+      toast(onCampaign ? (n ? "Rules applied. " + n + (n === 1 ? " letter" : " letters") + " went out." : "Rules applied.") : "Rules applied on this device.");
+      EN.app.render();
+    }
+    var send = {};
+    pending.forEach(function (k) { send[k] = st.rules[k]; });
+    if (onCampaign) {
+      actions.push(EN.ui.armButton("hrapply", { label: "APPLY TO THE TABLE", armedLabel: "SURE? A LETTER GOES TO EACH PLAYER", onArm: function () { EN.app.render(); },
+        title: pending.length ? "Send these rules and a letter to every character in the campaign" : "Nothing is changed yet",
+        armedTitle: "Click again to apply. Every player's sheet follows at once.",
+        onConfirm: function () {
+          if (!pending.length) return;
+          C().setHouseRules(scope, send).then(applied, function (e) { console.warn("The rules could not be set", e); toast(C().errText(e)); EN.app.render(); });
+        } }));
+      actions.push(el("button.btn.sm", { type: "button", dataset: { rule: "device" }, title: "Stage what this device's own switches say",
+        onclick: function () {
+          var dev = L.deviceValues();
+          st.rules = {};
+          L.houseKeys.forEach(function (k) { if (dev[k] !== base[k]) st.rules[k] = dev[k]; });
+          EN.app.render();
+        } }, "START FROM THIS DEVICE"));
+    } else {
+      actions.push(el("button.btn.sm.primary", { type: "button", dataset: { rule: "apply" }, title: "Write these to this device",
+        onclick: function () { if (!pending.length) return; L.setDeviceRules(send); applied(0); } }, "APPLY"));
+    }
+    actions.push(el("button.btn.sm", { type: "button", dataset: { rule: "discard" }, title: "Forget what is staged", onclick: function () { _stage = null; EN.ui.disarm && EN.ui.disarm(); EN.app.render(); } }, "DISCARD"));
+    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", marginTop: "10px", paddingTop: "10px", borderTop: "1px solid var(--border)" } },
+      actions.concat([el("span.help", { dataset: { rule: "count" }, style: { margin: 0 }, text: pending.length ? (pending.length + (pending.length === 1 ? " CHANGE" : " CHANGES") + " WAITING") : "NOTHING TO APPLY" })])));
+    return EN.ui.panel("House rules", pending.length ? String(pending.length) + " STAGED" : null, kids);
+  }
+
   /* ---- the pages ---------------------------------------------------------------
      The Admin reorganization (14 Nov 2026) moved this page into the Sysop tab, where each part is a sub-tab:
      CREW (the invite link, the roster, the sends, who is blocked), HOUSE RULES (Advancement Type, for now) and
@@ -559,6 +637,11 @@ EN.gmCampaign = (function () {
     var whole = which === "all";
     EN.ui.clear(mount);
     if (whole) mount.appendChild(heading());
+    // a GM with no campaign still sets the rules: they are this device's own switches (the sheets in no campaign follow them)
+    if (which === "rules" && (!C() || !C().enabled() || !C().running().length || C().pick() === C().NO_CAMPAIGN)) {
+      mount.appendChild(el("div.camp-sections", null, [housePanel("device")]));
+      return;
+    }
     if (!C() || !C().enabled()) {
       var online = !!(EN.cloud && EN.cloud.available && EN.cloud.available());
       mount.appendChild(el("div.muted-box", { "data-camp": "off", style: { padding: "26px" } }, [
@@ -611,7 +694,7 @@ EN.gmCampaign = (function () {
     if (_send && (_send.uid !== me() || _send.campaign !== c.id)) _send = null;
     var parts = [];
     if (whole || which === "crew") parts.push(inviteSection(c, d));
-    if (whole || which === "rules") parts.push(advancementSection(c));
+    if (whole || which === "rules") { parts.push(advancementSection(c)); parts.push(housePanel(c.id)); }
     if (whole || which === "crew") parts = parts.concat([rosterSection(c, d, isAdmin), sendsSection(c, d), blockedSection(c, d)]);
     if (whole || which === "manage") {
       if (isAdmin) parts.push(settingsSection(c, d));

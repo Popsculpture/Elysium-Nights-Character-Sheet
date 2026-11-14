@@ -80,7 +80,8 @@ EN.launch = (function () {
   function gmItemMap() { try { var m = JSON.parse(localStorage.getItem(GM_ITEMS_KEY) || "{}"); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } }
   function gmItem(key) { return gmItemMap()[key] !== false; }
   function setGmItem(key, on) { var m = gmItemMap(); m[key] = !!on; try { localStorage.setItem(GM_ITEMS_KEY, JSON.stringify(m)); } catch (e) {} }
-  function gmControl(key) { return gmControls() && gmItem(key); }
+  // what this device's own switches say (the Admin desktop's Sysop sets them; see TABLE RULES below)
+  function deviceControl(key) { return gmControls() && gmItem(key); }
 
   /* ---- Optional rules: device settings (29 Oct 2026) -------------------------
      A table can switch a rule off. Each is on by default, the book as written. Stored as one
@@ -105,8 +106,66 @@ EN.launch = (function () {
       off: "Off: Hostiles fight until the fight is settled some other way. The GM Codex leaves Morale out, and nothing links to it." }
   ];
   function ruleMap() { try { var m = JSON.parse(localStorage.getItem(RULES_KEY) || "{}"); return m && typeof m === "object" ? m : {}; } catch (e) { return {}; } }
-  function rule(key) { var m = ruleMap(); return m[key] !== false; }
+  function deviceRule(key) { var m = ruleMap(); return m[key] !== false; }
   function setRule(key, on) { var m = ruleMap(); m[key] = !!on; try { localStorage.setItem(RULES_KEY, JSON.stringify(m)); } catch (e) {} }
+
+  /* ---- TABLE RULES: the rules in force (14 Nov 2026) --------------------------------------------
+     The five rules above (Encumbrance, Weapon Jam, Morale, GM -1 Load, Five-Finger Supply) are the TABLE's, not a
+     player's. A sheet in a campaign follows what its campaign decided (EN.campaigns, set from the Admin desktop's
+     Sysop tab, HOUSE RULES): a rule the campaign has not named reads its book default (the rules on, the GM's
+     controls off). A sheet in no campaign, or one read from a project that cannot say what a campaign decided,
+     follows this device's own switches, which only the Admin desktop sets. Nothing a view reads changed shape:
+     rule(key) and gmControl(key) answer for the sheet that is open, and take a sheet when the caller is not
+     drawing that one (the engine drawing a crew sheet on the Admin desktop).
+       the sheet     with one: its campaign. Without: this tab's campaign on the Admin desktop, the open sheet's
+                     on the Freelancer desktop. */
+  var HOUSE_KEYS = ["encumbrance", "weaponJam", "morale", "loadLower", "fiveFinger"];
+  function isControl(key) { return key === "loadLower" || key === "fiveFinger"; }
+  function tableId(ch) {
+    var C = EN.campaigns;
+    if (!C || !C.settingsOfCampaign || !C.campaignOf) return "";
+    try {
+      if (ch) return C.campaignOf(ch) || "";
+      if (EN.app && EN.app.portal && EN.app.portal() === "admin") { var d = EN.gmStore && EN.gmStore.desk ? EN.gmStore.desk() : null; return d ? d.id : ""; }
+      var a = EN.store && EN.store.active ? EN.store.active() : null;
+      return a ? (C.campaignOf(a) || "") : "";
+    } catch (e) { return ""; }
+  }
+  // the campaign's answer for a rule, or null when there is none to give: no campaign, or no way to read what it decided
+  function decided(key, ch) {
+    var C = EN.campaigns, id = tableId(ch);
+    if (!id) return null;
+    var set = C.settingsOfCampaign(id);
+    if (!set) return null;
+    if (typeof set[key] === "boolean") return set[key];
+    var r = (C.houseRules || []).filter(function (x) { return x.key === key; })[0];
+    return r ? r.def : null;
+  }
+  function rule(key, ch) { var v = decided(key, ch); return v === null ? deviceRule(key) : v; }
+  function gmControl(key, ch) { var v = decided(key, ch); return v === null ? deviceControl(key) : v; }
+  function inForce(key, ch) { return isControl(key) ? gmControl(key, ch) : rule(key, ch); }
+  // every rule with its value in force for a sheet, and the campaign that decides it, or null when this device does
+  function tableRules(ch) {
+    var id = tableId(ch), C = EN.campaigns, camp = id && C.find ? C.find(id) : null, values = {};
+    HOUSE_KEYS.forEach(function (k) { values[k] = inForce(k, ch); });
+    return { values: values, campaign: camp && C.settingsOfCampaign(id) ? { id: camp.id, name: camp.name } : null };
+  }
+  // what this device's own switches say, as one map, for the sheets that follow the device
+  function deviceValues() {
+    var out = {};
+    HOUSE_KEYS.forEach(function (k) { out[k] = isControl(k) ? deviceControl(k) : deviceRule(k); });
+    return out;
+  }
+  /* Writes this device's switches from a map of rule to true or false. The GM controls are stored as a master and
+     one switch each, where a control nobody has touched reads as on once the master is, so each is written
+     out in full: the master follows whether any is on, and the rest are set off by name, never left to default. */
+  function setDeviceRules(map) {
+    var now = deviceValues(), next = {};
+    HOUSE_KEYS.forEach(function (k) { next[k] = typeof (map || {})[k] === "boolean" ? map[k] : now[k]; });
+    HOUSE_KEYS.forEach(function (k) { if (!isControl(k)) setRule(k, next[k]); });
+    setGmControls(HOUSE_KEYS.some(function (k) { return isControl(k) && next[k]; }));
+    HOUSE_KEYS.forEach(function (k) { if (isControl(k)) setGmItem(k, next[k]); });
+  }
 
   /* ---- the core lineup: what is gated (everything else is the Handbook's) ----
      Core lineages: freeborn, floral, laborframes, ryn, grinling.
@@ -521,6 +580,7 @@ EN.launch = (function () {
            gmControls: gmControls, setGmControls: setGmControls,
            gmControlList: GM_CONTROLS, gmItem: gmItem, setGmItem: setGmItem, gmControl: gmControl,
            optionalRules: OPTIONAL_RULES, rule: rule, setRule: setRule,
+           houseKeys: HOUSE_KEYS, tableRules: tableRules, deviceValues: deviceValues, setDeviceRules: setDeviceRules,
            isHeld: isHeld, isCompanion: isCompanion, source: source, offer: offer,
            isToolkit: isToolkit, isToolkitItem: isToolkitItem,
            showAvailability: showAvailability };

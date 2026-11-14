@@ -2908,9 +2908,9 @@ EN.combatView = (function () {
      automatically by the loader." Never applied for you: a Natural 1 offers MARK JAMMED, the GM's
      call. A Jammed weapon is ch.weaponJams[its piece key]; it can't fire until CLEAR. With the rule
      off nothing is offered and a stored Jam blocks nothing. */
-  function jamOn() { return !(EN.launch && EN.launch.rule) || EN.launch.rule("weaponJam"); }
+  function jamOn(ch) { return !(EN.launch && EN.launch.rule) || EN.launch.rule("weaponJam", ch); }
   function jamKeyOf(key, name) { return key || name; }
-  function isJammed(ch, key) { return jamOn() && !!(ch && ch.weaponJams && ch.weaponJams[key]); }
+  function isJammed(ch, key) { return jamOn(ch) && !!(ch && ch.weaponJams && ch.weaponJams[key]); }
   function setJammed(key, on) {
     store.update(function (c) {
       c.weaponJams = c.weaponJams || {};
@@ -6377,7 +6377,7 @@ EN.combatView = (function () {
       if (!enc.enabled) kids.push(el("div.load-off", { style: { padding: "9px 11px", border: "1px solid " + (enc.state === "unencumbered" ? "var(--border)" : stateColor), borderRadius: "4px", background: "rgba(0,0,0,.15)", margin: "2px 0 10px" } }, [
         el("div.row.wrap", { style: { gap: "10px", alignItems: "center" } }, [
           el("span.mono", { style: { fontSize: "11px", color: "var(--text3)", letterSpacing: ".08em" }, text: "ENCUMBRANCE OFF" }),
-          el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "An optional rule, switched off in Settings. Gear carries no Load." }),
+          el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "An optional rule, switched off at this table. Gear carries no Load." }),
           el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em", marginLeft: "auto" }, text: "HAUL" }),
           el("select", { style: { fontSize: "11px", width: "auto" }, title: "A Haul (body, crate, machine) still sets your state with Encumbrance off.",
             onchange: function () { var v = this.value; store.update(function (c) { c.haul = v; }); } },

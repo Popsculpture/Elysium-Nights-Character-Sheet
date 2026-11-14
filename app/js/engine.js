@@ -3358,7 +3358,7 @@ EN.engine = (function () {
     // ("something that clearly belongs on a dolly, cart, vehicle, forklift, or
     // exoframe"), not by a numeric band.
     // Optional rule (Settings): with Encumbrance off, carried Load and the Loadout never encumber; a Haul still does
-    var encOn = !(EN.launch && EN.launch.rule) || EN.launch.rule("encumbrance");
+    var encOn = !(EN.launch && EN.launch.rule) || EN.launch.rule("encumbrance", ch);
     var state = "unencumbered";
     if (encOn && current > budget) state = "encumbered";
     if (encOn && tier === "heavy") state = "encumbered";           // a Heavy loadout is Encumbered for the run
