@@ -567,6 +567,18 @@ EN.gmPeople = (function () {
     if (EN.app && typeof EN.app.gotoTab === "function") EN.app.gotoTab("threats", "saved");
     else EN.app.render();
   }
+  /* SIT DOWN: the Scenes tab's Sit-Down, started across the table from this person. The handoff Scenes already takes
+     ({ page: "sitdown", opposition }) carries the name, the Resolve as the threat blocks write it, their profile of the
+     crew and the weak spots the card names; if the open Sit-Down holds changes that are not saved, Scenes asks before it
+     replaces them. */
+  function sitDown() {
+    var d = _p.draft, name = trim(d.name);
+    if (!name) { toast("Give the contact a name first."); return; }
+    var w = d.weak || {};
+    var opp = { name: name, resolve: resolveLine(d), profile: trim(d.profile),
+                weak: { double: w.double || "", doubleWhy: trim(w.doubleWhy), none: w.none || "", noneWhy: trim(w.noneWhy) } };
+    if (EN.gmView && typeof EN.gmView.handoff === "function") EN.gmView.handoff("scenes", { page: "sitdown", opposition: opp });
+  }
   function promoteToPlan() {
     var x = buildFor(_p.draft);
     if (!x) { toast("Give the contact a name first."); return; }
@@ -872,6 +884,8 @@ EN.gmPeople = (function () {
         onclick: function () { save(_p.draft); EN.app.render(); } }, d.id ? (dirty ? "SAVE CHANGES" : "SAVED") : "SAVE TO CONTACTS"),
       el("button.btn.sm", { disabled: !any, dataset: { act: "copy" },
         onclick: function () { copyText(cardText(_p.draft), "The card"); } }, "COPY THE CARD"),
+      el("button.btn.sm", { disabled: !trim(d.name), dataset: { act: "sit-down" }, title: "Start a Sit-Down on the Scenes tab, across the table from this person",
+        onclick: sitDown }, "SIT DOWN"),
       guarded("gmpeople:new", "NEW CARD", "The card has unsaved changes. Click again to clear it.", fresh, dirty),
       guarded("gmpeople:example", "LOAD THE TOOLKIT'S EXAMPLE",
         "The card has unsaved changes. Click again to put the Toolkit's example over them.", loadExample, dirty)

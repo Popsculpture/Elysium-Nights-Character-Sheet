@@ -2501,6 +2501,53 @@ EN.gmScenes = (function () {
     ]);
   }
 
+  /* ---- NOW RUNNING, on the Table (14 Nov 2026) ----------------------------------------
+     A Sit-Down, a chase or an Incursion that has been STARTED (a result logged or a round on, a round run or a Lead
+     logged, a push into the Dive) is live, and the GM running it is usually looking at the Table. So the Table
+     carries one line for each, with OPEN, which sends the GM to that page of this tab ({ page } is the handoff
+     this file already takes). A scene only prepared, saved or not, is not running and is not listed. Read-only: it
+     draws from the open drafts and changes nothing. Slot 15 in gm.js's draw order, between the running Encounter
+     plan (10) and the Room (20). */
+  function runningLine(kind, d) {
+    var t = isObj(d.track) ? d.track : {};
+    if (kind === "sitdown") {
+      var log = Array.isArray(t.log) ? t.log.length : 0;
+      return "Round " + (int(t.round) || 1) + DOT + log + " " + plural(log, "result") + " logged";
+    }
+    if (kind === "chase") {
+      var cl = Array.isArray(t.log) ? t.log.length : 0;
+      return "Round " + (int(t.round) || 0) + DOT + "Lead " + (isObj(d.lead) ? int(d.lead.now) : "") + (cl ? DOT + cl + " " + plural(cl, "check") + " logged" : "");
+    }
+    var dv = isObj(d.dive) ? d.dive : {}, pushes = Array.isArray(dv.pushes) ? dv.pushes.length : 0;
+    return "Rating " + (int(d.rating) || 1) + DOT + "stage " + (int(dv.stage) || 0) + (pushes ? DOT + pushes + " " + plural(pushes, "push", "pushes") : "");
+  }
+  // has the scene gone live: something logged or moved on, which a scene only prepared has not
+  function started(kind, d) {
+    if (!isObj(d)) return false;
+    var t = isObj(d.track) ? d.track : {};
+    if (kind === "sitdown") return (Array.isArray(t.log) && t.log.length > 0) || (int(t.round) || 1) > 1 || !!int(t.adj);
+    if (kind === "chase") return (int(t.round) || 0) > 0 || (Array.isArray(t.log) && t.log.length > 0);
+    var dv = isObj(d.dive) ? d.dive : {};
+    return (int(dv.stage) || 0) > 0 || (Array.isArray(dv.pushes) && dv.pushes.length > 0);
+  }
+  function tableExtra() {
+    if (!S() || !S().sitdown) return null;
+    var live = PAGES.filter(function (p) { return started(p.k, _v.d[p.k]); });
+    if (!live.length) return null;
+    var rows = live.map(function (p) {
+      var d = _v.d[p.k];
+      return el("div.row.between.wrap", { dataset: { sc: "now", page: p.k }, style: { gap: "8px", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--border)" } }, [
+        el("div", { style: { minWidth: 0, flex: "1 1 220px" } }, [
+          el("div", { style: { fontWeight: "600" }, text: p.label + DOT + (str(d.name).trim() || "Untitled") }),
+          el("div.help", { style: { margin: 0 }, text: runningLine(p.k, d) })
+        ]),
+        el("button.btn.sm", { type: "button", dataset: { sc: "now-open", page: p.k }, title: "Open this on the Scenes tab",
+          onclick: function () { if (EN.gmView && EN.gmView.handoff) EN.gmView.handoff("scenes", { page: p.k }); else EN.app.gotoTab("scenes"); } }, "OPEN \u203a")
+      ]);
+    });
+    return EN.ui.panel("Now running", live.length + (live.length === 1 ? " SCENE" : " SCENES"), rows);
+  }
+
   /* ---- the tab ----------------------------------------------------------------- */
   // the tab's content, built from the open scenes and the store: render() mounts it, retype() grafts it
   function build() {
@@ -2535,9 +2582,15 @@ EN.gmScenes = (function () {
   }
 
   return {
-    render: render,
+    render: render, tableExtra: tableExtra,
     // pure helpers, for anything else that wants the same arithmetic
     firstResponse: function (heat) { return S() ? firstResponse(heat) : null; },
     breachDC: function (rating) { return S() ? breachDC(rating) : null; }
   };
 })();
+
+/* Looked up through the namespace on every call, so the Table always draws the current tableExtra. Slot 15 of gm.js's
+   draw order: under the running Encounter plan (10) and above the Hazards Room (20). */
+if (EN.gmView && EN.gmView.registerTableExtra) {
+  EN.gmView.registerTableExtra("scenes", function (ctx) { return EN.gmScenes.tableExtra(ctx); }, 15);
+}
