@@ -2444,15 +2444,64 @@ EN.gmView = (function () {
     mount.appendChild(el("div", null, blocks.concat(tableExtras())));
   }
 
-  function renderThreats(mount) {
+  /* `opts.nested` is set when a parent tab draws this one under its own heading, GM's Card, undo
+     strip and chip row (renderGroup below): the page then leaves its own out, so there is one of each. */
+  function renderThreats(mount, opts) {
     EN.ui.clear(mount);
-    var blocks = [heading("Threats", "// build a statblock from Grade, Designation and Role"), undoStrip(), builderPanel()].filter(Boolean);
+    var nested = !!(opts && opts.nested);
+    var blocks = [nested ? null : heading("Threats", "// build a statblock from Grade, Designation and Role"), nested ? null : undoStrip(), builderPanel()].filter(Boolean);
     var saved = savedPanel();
     if (saved) { blocks.push(el("div", { style: { height: "12px" } })); blocks.push(saved); }
     mount.appendChild(el("div", null, blocks));
   }
+  // the builder and the saved list on their own, for the Threats tab's BUILDER and SAVED sub-tabs
+  function renderBuilder(mount, opts) {
+    EN.ui.clear(mount);
+    var nested = !!(opts && opts.nested);
+    mount.appendChild(el("div", null, [nested ? null : heading("Builder", "// build a statblock from Grade, Designation and Role"), nested ? null : undoStrip(), builderPanel()].filter(Boolean)));
+  }
+  function renderSaved(mount, opts) {
+    EN.ui.clear(mount);
+    var nested = !!(opts && opts.nested);
+    var saved = savedPanel();
+    mount.appendChild(el("div", null, [nested ? null : heading("Saved Threats", "// your statblocks"), nested ? null : undoStrip(),
+      saved || el("div.muted-box", { text: "No threats saved yet. Build one on BUILDER and SAVE it." })].filter(Boolean)));
+  }
 
-  function renderBestiary(mount) {
+  /* A PARENT TAB WITH SUB-TABS (Threats and Downtime, from the Admin reorganization). It draws the
+     page's one heading with the GM's Card, one undo strip and a chip row, then hands a mount to the
+     active sub-tab's own renderer, which is called with { nested: true } so it leaves its own heading
+     and strip out. The sub-tab chosen lives in EN.app (setSub / subTab), in memory like the tab.
+       spec.tab    the parent's tab key              spec.title   the page heading
+       spec.subs   [{ key, label, sub }]             spec.draw(key, mount)  draws a sub-tab; false = its module is missing
+     Chips carry data-subtab (not data-view: Hazards' own chips use that). A sub-tab whose module is
+     missing keeps its chip and says so, so the rail never loses a place the book has. */
+  function renderGroup(mount, spec) {
+    EN.ui.clear(mount);
+    var subs = spec.subs || [];
+    if (!subs.length) return;
+    var active = EN.app.subTab(spec.tab);
+    var cur = subs.filter(function (s) { return s.key === active; })[0] || subs[0];
+    var chips = el("div.row.wrap", { style: { gap: "6px", margin: "0 0 12px" } }, subs.map(function (s) {
+      return el("span.chip" + (s.key === cur.key ? ".on" : ""), { dataset: { subtab: s.key }, role: "button", tabindex: "0",
+        style: { cursor: "pointer", fontSize: "10.5px" },
+        onclick: function () {
+          // a confirm armed on one sub-tab is not left armed for a later single click on another
+          if (EN.ui.disarm) EN.ui.disarm();
+          EN.app.setSub(spec.tab, s.key); EN.app.render();
+        },
+        onkeydown: function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.click(); } }
+      }, s.label);
+    }));
+    var body = el("div", { dataset: { subbody: cur.key } });
+    mount.appendChild(el("div", null, [heading(spec.title, "// " + (cur.sub || "")), undoStrip(), chips, body].filter(Boolean)));
+    var ok = false;
+    try { ok = spec.draw(cur.key, body) !== false; }
+    catch (e) { console.error("Sub-tab " + cur.key + " could not be drawn", e); EN.ui.clear(body); body.appendChild(el("div.muted-box", { style: { padding: "24px" }, text: "This page could not be drawn." })); return; }
+    if (!ok) { EN.ui.clear(body); body.appendChild(el("div.muted-box", { style: { padding: "40px" }, html: "MODULE PENDING<br><br>" + (cur.stub || cur.label) })); }
+  }
+
+  function renderBestiary(mount, opts) {
     EN.ui.clear(mount);
     // another tab sent a name to look up (the Job Board's VIEW): it becomes the
     // search, taken once, and stays editable like any typed search
@@ -2462,11 +2511,13 @@ EN.gmView = (function () {
     // bestiaryPanel() returns null when EN.bestiary never loaded. A tab that
     // is entirely absent reads as broken, so say so rather than showing nothing.
     var body = best || el("div.muted-box", { text: "Bestiary data did not load. Check app/data/bestiary.js." });
-    mount.appendChild(el("div", null, [heading("Bestiary", "// Gangers, Sentries, and Cryptids. Oh my!"), undoStrip(), body].filter(Boolean)));
+    var nested = !!(opts && opts.nested);
+    mount.appendChild(el("div", null, [nested ? null : heading("Bestiary", "// Gangers, Sentries, and Cryptids. Oh my!"), nested ? null : undoStrip(), body].filter(Boolean)));
   }
 
   return {
     renderTable: renderTable, renderThreats: renderThreats, renderBestiary: renderBestiary,
+    renderBuilder: renderBuilder, renderSaved: renderSaved, renderGroup: renderGroup,
     // the module tabs' hooks (see "hooks for the module tabs" above)
     handoff: handoff, takeHandoff: takeHandoff, registerTableExtra: registerTableExtra,
     // the newest standing GM write with its armed UNDO, for the top of every Admin tab

@@ -147,6 +147,9 @@ EN.gmPayroll = (function () {
   }
   var _p = fresh();
   var _mount = null;
+  /* render()'s second argument, kept so a redraw in place (refresh, retype) draws the page the way it was
+     first drawn: { nested: true } when a parent tab draws it, which leaves out its heading and undo strip. */
+  var _opts = null;
   var _pend = null;                  // a handoff waiting on the GM's word, because the form had unsaved changes (F18)
 
   /* UNSAVED CHANGES (F18). The form is compared with how it stood when it was
@@ -626,6 +629,8 @@ EN.gmPayroll = (function () {
     return null;
   }
   function heading(title, sub) {
+    // drawn under a parent tab's own heading (EN.gmView.renderGroup): there is one heading, theirs
+    if (_opts && _opts.nested) return null;
     return el("div.row.between.wrap", { style: { marginBottom: "14px", gap: "8px", alignItems: "center" } }, [
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" },
         html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" }),
@@ -2228,7 +2233,7 @@ EN.gmPayroll = (function () {
     var a = document.activeElement, key = (a && a.getAttribute) ? a.getAttribute("data-pf") : null, s0 = null, s1 = null;
     if (key) { try { s0 = a.selectionStart; s1 = a.selectionEnd; } catch (e) { s0 = null; } }
     var sx = window.scrollX, sy = window.scrollY;
-    render(_mount);
+    render(_mount, _opts);
     window.scrollTo(sx, sy);
     if (key) {
       var n = _mount.querySelector('[data-pf="' + key + '"]');
@@ -2304,7 +2309,7 @@ EN.gmPayroll = (function () {
     var blocks = [heading("Payroll", "// paying the crew")];
     // the last write to a Freelancer record, with its UNDO, on every Admin tab (gm.js, F4)
     var strip = null;
-    try { strip = (EN.gmView && typeof EN.gmView.undoStrip === "function") ? EN.gmView.undoStrip() : null; } catch (e) { strip = null; }
+    try { strip = (!(_opts && _opts.nested) && EN.gmView && typeof EN.gmView.undoStrip === "function") ? EN.gmView.undoStrip() : null; } catch (e) { strip = null; }
     if (strip && strip.nodeType) blocks.push(strip);
     var pend = pendPanel();
     if (pend) { blocks.push(pend); blocks.push(gap()); }
@@ -2387,8 +2392,9 @@ EN.gmPayroll = (function () {
     gm.put("jobs", next, { silent: true });
   }
 
-  function render(mount) {
+  function render(mount, opts) {
     _mount = mount;
+    _opts = opts || null;
     EN.ui.clear(mount);
     try { reconcile(); } catch (e) { try { console.warn("Payroll: could not reconcile the paydays.", e); } catch (e2) {} }
     var h = null;

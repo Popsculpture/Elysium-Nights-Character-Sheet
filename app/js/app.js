@@ -168,6 +168,37 @@ EN.app = (function () {
   var portal = "freelancer";
   var LAST = { freelancer: "print", admin: "table" };
 
+  /* SUB-TABS AND ALIASES (the Admin reorganization, 14 Nov 2026). A tab may carry `subs`, a list of
+     { key, label, sub } for a chip row its own view draws; the one showing is held here, in memory
+     only, like LAST, so it survives a tab switch and not a reload. subTab(k) answers a valid key
+     always: a missing or stale one means the tab's first. ALIAS maps a tab key that no longer has a
+     tab of its own to [the tab that holds it, the sub-tab to open], so gotoTab("bestiary") and every
+     handoff aimed at the old tab keep working. An alias must never also be a real tab key (the
+     alias would hide the tab), so a clash is dropped at load and said in the console. */
+  var SUB = {};
+  var ALIAS = {};
+  function tabByKey(k) { return TABS.filter(function (t) { return t.key === k; })[0] || null; }
+  function subTab(k) {
+    var t = tabByKey(k), list = t && t.subs;
+    if (!list || !list.length) return "";
+    var s = SUB[k];
+    return list.some(function (x) { return x.key === s; }) ? s : list[0].key;
+  }
+  function setSub(k, s) {
+    var t = tabByKey(k), list = t && t.subs;
+    if (list && list.some(function (x) { return x.key === s; })) SUB[k] = s;
+  }
+  function subLabel(k) {
+    var t = tabByKey(k), s = subTab(k);
+    var hit = t && t.subs ? t.subs.filter(function (x) { return x.key === s; })[0] : null;
+    return hit ? hit.label : "";
+  }
+  // the key the view is drawn under: a sub-tab switch counts as a view change (scroll to the top)
+  function viewKey() { return LAST[portal] + "/" + subTab(LAST[portal]); }
+  Object.keys(ALIAS).forEach(function (k) {
+    if (tabByKey(k)) { console.error("Tab alias \"" + k + "\" is also a tab key; the alias is dropped."); delete ALIAS[k]; }
+  });
+
   function storedPortal() {
     try {
       var v = localStorage.getItem(PORTAL_KEY);
@@ -236,7 +267,7 @@ EN.app = (function () {
     // tab left in LAST by an earlier session cannot be announced as the open folder
     var t = visibleTabs().filter(function (x) { return x.key === LAST[portal]; })[0];
     box.textContent = "C:\\GRIDOS\\" + (portal === "admin" ? "Admin" : "Freelancer")
-      + "\\" + (t ? t.label : "Desktop");
+      + "\\" + (t ? t.label : "Desktop") + (t && subLabel(t.key) ? "\\" + subLabel(t.key) : "");
   }
   function renderTabs() {
     var nav = document.getElementById("os-tabs");
@@ -255,7 +286,13 @@ EN.app = (function () {
        on Classic and '98, where every row is on screen wearing its own dot. */
     var railAttn = false;
     if (!(portal === "freelancer" && !registered())) {
+      var lastGroup = null;
       visibleTabs().forEach(function (t) {
+        // a tab may name a group; its label stands before the group's first tab. It is not an .os-tab,
+        // so the rail's order, the swipe and every count of tabs are unchanged, and it is decoration
+        // (aria-hidden) because the tabs name themselves
+        if (t.group && t.group !== lastGroup) scroll.appendChild(el("div.os-group", { "aria-hidden": "true", text: t.group }));
+        lastGroup = t.group || null;
         // a tab may report something waiting on it; the dot is decorative and the tap
         // falls through to the tab itself, which is where the reader wants to go anyway
         var badge = t.badge ? t.badge() : 0;
@@ -507,15 +544,15 @@ EN.app = (function () {
     if (portal === "freelancer" && tab.key !== "print" && EN.builder && EN.builder.managerOpen && EN.builder.managerOpen())
       view.appendChild(EN.builder.managerPanel());
     lockedSheet(view, portal === "freelancer" ? tab.key : null);
-    if (_lastTab === LAST[portal]) {                       // same view → stay put
+    if (_lastTab === viewKey()) {                          // same view → stay put
       window.scrollTo(sx, sy);
       Array.prototype.forEach.call(document.querySelectorAll(WELLS), function (w, i) {
         if (wells[i]) w.scrollTop = wells[i];
       });
     } else window.scrollTo(0, 0);                          // tab switch → start at top
-    if (_lastTab === LAST[portal]) focusRestore(view, keep);
+    if (_lastTab === viewKey()) focusRestore(view, keep);
     applyPin(view);
-    _lastTab = LAST[portal];
+    _lastTab = viewKey();
     paintActiveName();
     if (portal === "admin" && EN.campaigns && EN.campaigns.checkMove) EN.campaigns.checkMove();
     revealActive();
@@ -834,15 +871,19 @@ EN.app = (function () {
        every existing caller (all of which name a Freelancer tab today) stays
        correct with zero edits, and the function can never strand the app on
        an unknown key. */
-    gotoTab: function (k) {
+    gotoTab: function (k, sub) {
       foldRail();
+      // a key that folded into another tab goes to that tab, on the sub-tab it became (see ALIAS)
+      if (Object.prototype.hasOwnProperty.call(ALIAS, k)) { if (!sub) sub = ALIAS[k][1]; k = ALIAS[k][0]; }
       var t = TABS.filter(function (x) { return x.key === k; })[0];
       if (!t) return;
       usePortal(t.portal);
       // the fence said no: stay on this desktop rather than file an Admin tab under Freelancer
-      if (portal === t.portal) LAST[portal] = k;
+      if (portal === t.portal) { LAST[portal] = k; if (sub) setSub(k, sub); }
       render();
     },
+    subTab: subTab,
+    setSub: setSub,
     portal: function () { return portal; },
     setPortal: setPortal,
     hasAdmin: hasAdmin,

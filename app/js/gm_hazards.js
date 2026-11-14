@@ -311,7 +311,11 @@ EN.gmHazards = (function () {
   }
 
   /* ---- small view helpers (each view file carries its own, per gm.js) ---- */
+  // render()'s second argument: { nested: true } when a parent tab (Threats) draws this page under its own
+  // heading, GM's Card and undo strip, so the page leaves its own out
+  var _opts = null;
   function heading(title, sub) {
+    if (_opts && _opts.nested) return null;
     return el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" },
         html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" })
@@ -321,6 +325,7 @@ EN.gmHazards = (function () {
      heading, so the newest GM write can always be undone from any Admin tab
      (F4). Null while gm.js has no strip or nothing is undoable. */
   function undoStrip() {
+    if (_opts && _opts.nested) return null;
     try {
       return (EN.gmView && typeof EN.gmView.undoStrip === "function") ? (EN.gmView.undoStrip() || null) : null;
     } catch (e) {
@@ -1404,7 +1409,8 @@ EN.gmHazards = (function () {
     ]);
   }
 
-  function render(mount) {
+  function render(mount, opts) {
+    _opts = opts || null;
     EN.ui.clear(mount);
     // a handoff ("show me this one") is taken once and copied into the view state
     var ho = (EN.gmView && EN.gmView.takeHandoff) ? EN.gmView.takeHandoff("hazards") : null;

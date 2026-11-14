@@ -228,7 +228,11 @@ EN.gmHeat = (function () {
     return null;
   }
   // the same heading every Admin tab draws for itself (see gm.js)
+  // render()'s second argument: { nested: true } when a parent tab (Downtime) draws this page under its own
+  // heading, GM's Card and undo strip, so the page leaves its own out
+  var _opts = null;
   function heading(title, sub) {
+    if (_opts && _opts.nested) return null;
     return el("div.row.between.wrap", { style: { marginBottom: "14px", gap: "8px", alignItems: "center" } }, [
       el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" },
         html: title + ' <span class="dim3" style="font-size:13px">' + sub + "</span>" }),
@@ -237,6 +241,7 @@ EN.gmHeat = (function () {
   }
   // the newest standing GM write with its armed UNDO, as every Admin tab shows it
   function undoStrip() {
+    if (_opts && _opts.nested) return null;
     try {
       return (EN.gmView && typeof EN.gmView.undoStrip === "function") ? (EN.gmView.undoStrip() || null) : null;
     } catch (e) {
@@ -1817,7 +1822,8 @@ EN.gmHeat = (function () {
   }
 
   /* ---- the tab ---------------------------------------------------------------- */
-  function render(mount) {
+  function render(mount, opts) {
+    _opts = opts || null;
     EN.ui.clear(mount);
     _crew = null;
     _board = null;
