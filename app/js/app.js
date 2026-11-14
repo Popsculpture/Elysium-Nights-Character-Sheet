@@ -105,6 +105,15 @@ EN.app = (function () {
       view: gmModule("scenes", "gmScenes"),
       stub: "Scenes that aren't a fight: the Sit-Down with its Resolve and Pressure, the chase with " +
             "its Lead and Chase Checks, and the Incursion from briefing to the return." },
+    /* #POST: the GM's mail. WRITE a letter to the crew or to one character, signed as the GM or any People card,
+       with items from the catalog attached; SENT lists what this account has sent, with RECALL while it waits. */
+    { key: "gmpost",     label: "#POST",      glyph: "✉", sub: "mail to the crew", portal: "admin", gated: adminReady, group: "LIVE",
+      subs: [
+        { key: "write", label: "WRITE", sub: "a letter, signed as anyone" },
+        { key: "sent",  label: "SENT",  sub: "what you have sent" }
+      ],
+      view: function (m) { groupView(m, "gmpost", "#POST", gmpostPage); },
+      stub: "#POST: write in-game mail to the crew or to one character, and read what you have sent." },
     { key: "jobs",       label: "Jobs",       glyph: "▣", sub: "roll a job", portal: "admin", gated: adminReady, group: "PREP",
       view: gmModule("jobs", "gmJobs"),
       stub: "The Job Board: five roll tables and twelve postings." },
@@ -188,6 +197,12 @@ EN.app = (function () {
   // Sysop: CREW, HOUSE RULES and CAMPAIGN are pages of the campaign module, DATA is the Sysop module's own
   function sysopPage(sub, mount) {
     if (sub === "data") return nestedPage("gmSysop", "renderData")(mount);
+    if (!EN.gmCampaign || typeof EN.gmCampaign.renderPage !== "function") return false;
+    EN.gmCampaign.renderPage(mount, sub);
+    return true;
+  }
+  // #POST: WRITE and SENT are pages of the campaign module (the composer and the sends list it already held)
+  function gmpostPage(sub, mount) {
     if (!EN.gmCampaign || typeof EN.gmCampaign.renderPage !== "function") return false;
     EN.gmCampaign.renderPage(mount, sub);
     return true;

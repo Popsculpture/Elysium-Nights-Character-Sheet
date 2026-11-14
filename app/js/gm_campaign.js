@@ -75,7 +75,7 @@ EN.gmCampaign = (function () {
     });
     return slot;
   }
-  function repaint() { if (EN.app.activeTab() === "sysop" && EN.app.portal() === "admin") EN.app.render(); }
+  function repaint() { var t = EN.app.activeTab(); if ((t === "sysop" || t === "gmpost") && EN.app.portal() === "admin") EN.app.render(); }
 
   // a change went through, or was refused: either way the page shows what the database now holds
   function act(id, p, okText) {
@@ -233,7 +233,7 @@ EN.gmCampaign = (function () {
           title: "Send #POST mail to this character, signed as anyone you like.",
           onclick: function () { openSend(c, sheet.id); } }, "SEND")
       ]),
-      writing ? composer(c, "To " + charName(sheet)) : null
+      writing ? el("p.help", { style: { margin: "4px 0 0" }, text: "Writing to " + charName(sheet) + " on the #POST tab." }) : null
     ]);
   }
 
@@ -241,14 +241,13 @@ EN.gmCampaign = (function () {
      Nothing here redraws the page while it is being typed in: each field writes to _send, and only
      the search's results and the attached list redraw, in place, inside their own nodes. */
   function sendingTo(c, to) { return !!_send && _send.campaign === c.id && _send.to === to; }
+  /* The letter is written on the #POST tab (WRITE). A SEND button on the roster points the draft at that
+     character, or at the crew, and goes there: a message half written keeps its words when it is pointed at someone else. */
   function openSend(c, to) {
-    // a second press folds it away with its words kept: Cancel is the one that throws them out
-    if (sendingTo(c, to)) { _send.to = null; EN.app.render(); return; }
     var was = _send && _send.campaign === c.id && _send.uid === me() ? _send : null;
-    // a message half written keeps its words when it is pointed at someone else
     _send = { uid: me(), campaign: c.id, to: to, from: was ? was.from : "", subj: was ? was.subj : "", body: was ? was.body : "",
               pkg: was ? was.pkg : [], search: "" };
-    EN.app.render();
+    EN.app.gotoTab("gmpost", "write");
   }
   function me() { return EN.cloud && EN.cloud.userId ? EN.cloud.userId() : null; }
   function npcCards() {
@@ -369,6 +368,32 @@ EN.gmCampaign = (function () {
     return box;
   }
 
+  /* WRITE, on the #POST tab. One letter, to the whole crew or to one character picked here, signed as the GM or
+     any People card. The draft is _send and lasts until it is sent or cancelled; a recipient who has left the
+     campaign puts it back on the crew. */
+  function writePanel(c, d) {
+    var opts = [], crew = 0;
+    d.roster.forEach(function (m) {
+      (Array.isArray(m.characters) ? m.characters : []).forEach(function (sheet) {
+        crew++;
+        opts.push({ id: sheet.id, label: charName(sheet) + " (" + (m.discord_name || "Freelancer") + ")" });
+      });
+    });
+    if (!crew) return EN.ui.panel("New letter", null, [el("p.help", { "data-camp": "write-none", style: { margin: 0 }, text: "Nobody has a character in this campaign yet." })]);
+    if (!_send || _send.campaign !== c.id || _send.uid !== me()) _send = { uid: me(), campaign: c.id, to: "crew", from: "", subj: "", body: "", pkg: [], search: "" };
+    if (!_send.to || (_send.to !== "crew" && !opts.some(function (o) { return o.id === _send.to; }))) _send.to = "crew";
+    var to = _send.to;
+    var sel = el("select.camp-input", { "aria-label": "To", "data-camp": "send-to", onchange: function (e) { _send.to = e.target.value; EN.app.render(); } },
+      [el("option", { value: "crew", selected: to === "crew", text: "The whole crew (" + crew + (crew === 1 ? " character)" : " characters)") })]
+        .concat(opts.map(function (o) { return el("option", { value: o.id, selected: o.id === to, text: o.label }); })));
+    var title = to === "crew" ? (crew === 1 ? "To the crew: 1 character" : "To the crew: " + crew + " characters")
+      : "To " + opts.filter(function (o) { return o.id === to; })[0].label;
+    return EN.ui.panel("New letter", null, [
+      el("div.camp-line", null, [el("label.fl", { style: { margin: 0 }, text: "To" }), sel]),
+      composer(c, title)
+    ]);
+  }
+
   /* ---- #POST from the Admin: the list of sends --------------------------------------
      Their own sends only: that is what the read policy gives them, and js/campaigns.js asks for. A
      row whose character has left the campaign is off the roster, so it has no name to show. */
@@ -412,7 +437,7 @@ EN.gmCampaign = (function () {
   var _sendsAsk = 0;
   function sendsChanged(id) {
     var d = _d[id];
-    if (!d || EN.app.activeTab() !== "sysop" || EN.app.portal() !== "admin") return;
+    if (!d || EN.app.activeTab() !== "gmpost" || EN.app.portal() !== "admin") return;
     if (d.loading) { d.again = true; return; }
     var ask = ++_sendsAsk;
     C().sends(id).then(function (rows) {
@@ -471,14 +496,12 @@ EN.gmCampaign = (function () {
   function rosterSection(c, d, isAdmin) {
     var crew = 0;
     d.roster.forEach(function (m) { crew += Array.isArray(m.characters) ? m.characters.length : 0; });
-    var writing = sendingTo(c, "crew");
     return EN.ui.panel("Roster", String(d.roster.length), [
       el("div.camp-line.camp-crew", null, [
         el("button.btn.sm", { type: "button", "data-camp": "send-crew", disabled: !crew,
           title: crew ? "Send the same #POST mail to every character in this campaign." : "Nobody has a character in this campaign yet.",
           onclick: function () { openSend(c, "crew"); } }, "SEND TO THE CREW")
       ]),
-      writing ? composer(c, crew === 1 ? "To the crew: 1 character" : "To the crew: " + crew + " characters") : null
     ].concat(d.roster.map(function (m) { return memberRow(c, m, isAdmin); })));
   }
   function blockedSection(c, d) {
@@ -695,7 +718,9 @@ EN.gmCampaign = (function () {
     var parts = [];
     if (whole || which === "crew") parts.push(inviteSection(c, d));
     if (whole || which === "rules") { parts.push(advancementSection(c)); parts.push(housePanel(c.id)); }
-    if (whole || which === "crew") parts = parts.concat([rosterSection(c, d, isAdmin), sendsSection(c, d), blockedSection(c, d)]);
+    if (whole || which === "crew") parts = parts.concat([rosterSection(c, d, isAdmin), blockedSection(c, d)]);
+    if (which === "write") parts.push(writePanel(c, d));
+    if (whole || which === "sent") parts.push(sendsSection(c, d));
     if (whole || which === "manage") {
       if (isAdmin) parts.push(settingsSection(c, d));
       else if (which === "manage") parts.push(el("div.muted-box", { "data-camp": "admin-only", style: { padding: "26px" }, text: "Only the campaign's Admin renames it, hands it on or deletes it." }));
