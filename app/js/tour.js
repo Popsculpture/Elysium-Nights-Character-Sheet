@@ -29,7 +29,8 @@ window.EN = window.EN || {};
 EN.tour = (function () {
   var KEY = "en_tour_v1";
   var Z = 3950;   // above the contacts dialog (3900), under the filing animation (4000) and every other overlay
-  var PAUSE_IDS = ["filed-ov", "mgr", "set-ov", "gmc-ov", "gate", "gate-coach", "recov", "codex-peek", "boot"];
+  var PAUSE_IDS = ["filed-ov", "mgr", "set-ov", "gmc-ov", "gate", "gate-coach", "recov", "codex-peek", "boot",
+                   "dk-rec", "dk-find"];   // #GRIDeck's Record drawer and search own the screen the same way (P6)
   var S = null;   // { steps, i, entered, wasDone, scrolledFor, clickedAt }
   var spot = null, card = null, caret = null, gz = null, obs = null, timer = null, raf = 0;
 

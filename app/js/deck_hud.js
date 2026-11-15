@@ -271,7 +271,7 @@ EN.deck.hud = (function () {
   }
 
   function openRest(view) {
-    if (!N || !can()) return false;
+    if (!N || !N.root.parentNode || !can()) return false;   // no bar on the page (creation puts it away): nowhere to open
     if (P && P.kind === "rest") closePop();
     openPop("rest", null, N.restWrap, "Rest", function (root) { return restPop(root, view); });
     return true;

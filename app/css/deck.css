@@ -1,5 +1,5 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS · #GRIDeck (P1 14 Nov 2026, P2 to P5 15 Nov 2026): the fourth OS skin's own look.
+   ELYSIUM NIGHTS · #GRIDeck (P1 14 Nov 2026, P2 to P6 15 Nov 2026): the fourth OS skin's own look.
    Loaded after theme.css. Every rule here is under html.skin-deck, which settings.js puts on the Freelancer
    desktop alone, so none of it can reach Classic, #GRIDroid, '98 or the Admin desktop.
 
@@ -562,6 +562,21 @@ html.skin-deck .dk .dk-scale button.on.dk-s-warn{ color:var(--dk-warn); }
 html.skin-deck .dk .dk-scale button.on.dk-s-acc{ color:var(--dk-accent); }
 html.skin-deck .dk .dk-st-foot{ margin:14px 4px 0; }
 
+/* ---- creation (js/deck_shell.js createBar): #PRINT takes the whole screen. The dock is put away (it stays in the page, so the
+   rail it stands in for stays hidden too) and the status bar is not drawn; one bar says whose record, which step, and the way back. ---- */
+html.skin-deck #os.dk-creating:has(#dk-dock){ padding-left:0; padding-bottom:0; }
+html.skin-deck #os.dk-creating #dk-dock{ display:none; }
+html.skin-deck .dk-crt{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin:0 0 16px; padding:14px 18px; border-radius:16px; background:var(--dk-s1);
+  box-shadow:inset 0 0 0 1px var(--dk-line); }
+html.skin-deck .dk .dk-crt-t{ flex:1 1 220px; min-width:0; }
+html.skin-deck .dk .dk-crt-t b{ display:block; font:700 22px/1.15 var(--dk-disp); letter-spacing:.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+html.skin-deck .dk .dk-crt-t span{ font:500 11px var(--dk-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--dk-t3); }
+html.skin-deck .dk .dk-crt-p{ flex:1 1 180px; display:flex; gap:5px; max-width:340px; }
+html.skin-deck .dk .dk-crt-p i{ flex:1 1 0; height:6px; border-radius:3px; background:rgba(255,255,255,.1); }
+html.skin-deck .dk .dk-crt-p i.done{ background:color-mix(in srgb, var(--dk-accent) 45%, transparent); }
+html.skin-deck .dk .dk-crt-p i.on{ background:var(--dk-accent); }
+html.skin-deck .dk .dk-crt-n{ font-size:12.5px; color:var(--dk-t3); }
+
 /* ---- the stage: a bar of its own where an app has more than one face, then the view it hosts ---- */
 html.skin-deck .dk-bar{ margin:0 0 16px; }
 html.skin-deck .dk .dk-seg{ display:inline-flex; padding:3px; border-radius:12px; background:rgba(255,255,255,.07); }
@@ -661,7 +676,10 @@ html.skin-deck .dk-host .face-bar{ display:none; }
   html.skin-deck #dk-hud .dk-has-pop{ position:static; }
   html.skin-deck #dk-hud .dk-pop, html.skin-deck #dk-hud .dk-pop[data-dk-pop="cond"]{ left:0 !important; right:0; top:calc(100% + 8px); width:auto; }
   html.skin-deck .dk .dk-pal{ top:10px; }
+  html.skin-deck .dk .dk-x{ top:10px; right:10px; width:40px; height:40px; }   /* a thumb's width, not a pointer's */
   html.skin-deck .toast{ bottom:calc(78px + env(safe-area-inset-bottom, 0px)); }   /* clear of the dock along the bottom edge */
+  /* the guided tour's card is a sheet along the bottom edge on a phone (js/tour.js): it stands on the dock, not over it */
+  html.skin-deck body:has(#os:not(.dk-creating) > #dk-dock) #tour-card.tour-sheet:not(.tour-sheet-top){ bottom:calc(74px + env(safe-area-inset-bottom, 0px)); }
   html.skin-deck .os-topbar:has(#dk-hud) > .os-status:not(#active-name){ display:none; }
 }
 @media (prefers-reduced-motion:reduce){

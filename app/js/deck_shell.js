@@ -103,7 +103,8 @@ EN.deck.shell = (function () {
      js/app.js puts the read-only banner in front of #view's first child, so the stage must be that one child. */
   function segBar(items) {
     return el("div.dk.dk-bar", null, [el("div.dk-seg", { role: "group" }, items.map(function (i) {
-      return el("button.dk-segb" + (i.on ? ".on" : ""), { type: "button", dataset: { dkSeg: i.key }, "aria-pressed": i.on ? "true" : "false", onclick: i.go },
+      var data = { dkSeg: i.key }; if (i.tour) data.tour = i.tour;
+      return el("button.dk-segb" + (i.on ? ".on" : ""), { type: "button", dataset: data, "aria-pressed": i.on ? "true" : "false", onclick: i.go },
         [i.icon ? el("span.dk-ic", { html: i.icon }) : null, document.createTextNode(i.label)]);
     }))]);
   }
@@ -138,16 +139,34 @@ EN.deck.shell = (function () {
     if (app === "post") {
       var s = faceSub();
       return segBar([["post", "Messages", icon("post")], ["contacts", "Contacts", (EN.faceView.icons || {}).contacts]].map(function (x) {
-        return { key: x[0], label: x[1], icon: x[2], on: s === x[0], go: function () { EN.faceView.setSub(x[0]); EN.app.render(); } };
+        // the guided tour's last step points at Contacts (data-tour, js/tour.js)
+        return { key: x[0], label: x[1], icon: x[2], on: s === x[0], tour: x[0] === "contacts" ? "social-contacts" : null, go: function () { EN.faceView.setSub(x[0]); EN.app.render(); } };
       }));
     }
     return null;
+  }
+  /* CREATION IS ITS OWN ENVIRONMENT (P6). #PRINT is where a record is made and where a filed one is edited; under this skin it
+     takes the whole screen (chrome() puts the dock and the status bar away) under one bar that says whose record it is, which
+     step of the builder is up, and the way back. The builder itself is hosted as it is, with its own rail and its tour. */
+  function createBar(c) {
+    var ch = c && c.ch, filed = EN.app.registered(), steps = [], key = null, at = -1;
+    try { steps = EN.builder.steps(); key = EN.builder.stepKey(); } catch (e) { steps = []; }
+    steps.forEach(function (s, i) { if (s.key === key) at = i; });
+    var name = ch && typeof ch.name === "string" ? ch.name.trim() : "";
+    return el("div.dk.dk-crt", { dataset: { dkCreate: filed ? "edit" : "new", dkStep: key || "" } }, [
+      el("div.dk-crt-t", null, [
+        el("b", { text: filed ? (name || "Your Freelancer") + ": the record" : name ? "Creating " + name : "Creating a Freelancer" }),
+        el("span", { text: at >= 0 ? "Step " + (at + 1) + " of " + steps.length + " \u00b7 " + steps[at].t : "#PRINT" })]),
+      el("div.dk-crt-p", { "aria-hidden": "true" }, steps.map(function (s, i) { return el("i" + (i < at ? ".done" : i === at ? ".on" : "")); })),
+      filed ? el("button.dk-btn.pri", { type: "button", dataset: { dkDo: "leave-create" }, onclick: function () { EN.app.gotoTab("combat"); } }, "Back to your Sheet")
+            : el("span.dk-crt-n", { text: "File the record to open your deck." })
+    ]);
   }
   function nativeSheet(c) { return !!(c && c.d && c.st && c.fx && EN.deck.sheet); }
   function view(mount, tab) {
     var c = _ctx = context(), app = appOf(tab.key);
     var stage = el("div.dk-stage", { dataset: { dkApp: app } });
-    var bar = stageBar(tab.key, app, c);
+    var bar = app === "record" && c ? createBar(c) : stageBar(tab.key, app, c);
     if (bar) stage.appendChild(bar);
     mount.appendChild(stage);
     // the Sheet is this skin's own; if it cannot be drawn, the Freelancer tab stands in rather than a blank page
@@ -190,8 +209,9 @@ EN.deck.shell = (function () {
 
   /* ---- the dock: its own node inside #os (so print.css hides it with the rest), made when the skin needs it
      and removed when it does not, which leaves every other skin's page exactly as it was. */
-  function dockBtn(name, label, cur, onclick, badge) {
-    return el("button.dk-app" + (cur ? ".on" : ""), { type: "button", title: label, dataset: { dk: name }, "aria-current": cur ? "page" : null, onclick: onclick }, [
+  function dockBtn(name, label, cur, onclick, badge, tour) {
+    var data = { dk: name }; if (tour) data.tour = tour;
+    return el("button.dk-app" + (cur ? ".on" : ""), { type: "button", title: label, dataset: data, "aria-current": cur ? "page" : null, onclick: onclick }, [
       el("span.dk-ic", { html: icon(name) }), el("span.dk-lb", { text: label }),
       badge ? el("span.dk-badge", { title: badge + (badge === 1 ? " unread message" : " unread messages") + " in #POST", text: String(badge) }) : null
     ]);
@@ -208,7 +228,9 @@ EN.deck.shell = (function () {
     clear(dock);
     dock.appendChild(el("div.dk-mark", { "aria-hidden": "true", text: "#" }));
     APPS.forEach(function (a) {
-      dock.appendChild(dockBtn(a.key, a.label, cur === a.key, function () { go(a.key); }, a.key === "post" && cur !== "post" ? unread : 0));
+      // away from #POST, the way to Contacts is the dock's #POST button: the tour points there until the switch is on screen
+      dock.appendChild(dockBtn(a.key, a.label, cur === a.key, function () { go(a.key); }, a.key === "post" && cur !== "post" ? unread : 0,
+        a.key === "post" && cur !== "post" ? "social-contacts" : null));
     });
     dock.appendChild(el("span.dk-grow"));
     dock.appendChild(dockBtn("codex", "Codex", cur === "codex", function () { EN.app.gotoTab("codex"); }));
@@ -229,6 +251,7 @@ EN.deck.shell = (function () {
     var os = document.getElementById("os"), top = document.querySelector(".os-topbar");
     var c = _ctx; _ctx = null;
     var show = !!os && !!top && on() && portal === "freelancer" && !!EN.store.active() && EN.app.registered();
+    if (os) os.classList.toggle("dk-creating", show && key === "print");
     if (!show) {
       drop("dk-dock");
       if (EN.deck.hud) EN.deck.hud.remove();
@@ -242,7 +265,8 @@ EN.deck.shell = (function () {
     var cls = c.ch.class, CI = EN.classIdentity;
     if (cls && CI && CI.has(cls)) os.style.setProperty("--dk-accent", CI.colors[cls].main); else os.style.removeProperty("--dk-accent");
     paintDock(os, key, c);
-    if (EN.deck.hud) EN.deck.hud.paint(top, c);
+    // in creation the status bar is put away with the dock (css/deck.css hides the dock, which stays so the rail stays hidden)
+    if (EN.deck.hud) { if (key === "print") EN.deck.hud.remove(); else EN.deck.hud.paint(top, c); }
     // the Record drawer, when it is out, shows the record as it is now (js/deck_record.js)
     if (EN.deck.record) EN.deck.record.sync(c);
   }

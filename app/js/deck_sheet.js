@@ -460,7 +460,8 @@ EN.deck.sheet = (function () {
     var al = alerts(X);
     if (al.length) root.appendChild(el("div.dk-alerts", null, al));
     root.appendChild(el("div.dk-col.dk-c-checks", { dataset: { dkColumn: "checks" } }, checks(X)));
-    root.appendChild(el("div.dk-col.dk-c-actions", { dataset: { dkColumn: "actions" } }, slotStrip(X).concat(resource(X)).concat(attacks(X)).concat(abilities(X))));
+    // data-tour: the guided tour's "You're on the #GRID" step points at the Actions column (js/tour.js)
+    root.appendChild(el("div.dk-col.dk-c-actions", { dataset: { dkColumn: "actions", tour: "sheet-actions" } }, slotStrip(X).concat(resource(X)).concat(attacks(X)).concat(abilities(X))));
     root.appendChild(el("div.dk-col.dk-c-defense", { dataset: { dkColumn: "defense" } }, tiles(X).concat(defenses(X)).concat(effects(X)).concat(pinned(X))));
     stage.appendChild(root);
     // the roll, damage and defense trays are the Freelancer tab's own, drawn outside the .dk root so they look as tested

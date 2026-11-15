@@ -358,7 +358,7 @@ EN.theme = (function () {
        Admin desktop keeps the Classic look while it is picked; see effectiveSkin. `note` is said under the
        picker while the skin is on. It has no SKIN_SEED on purpose: picking it writes no palette to the record. */
     { key: "deck",    name: "#GRIDeck",    sub: "a dock of apps and a status bar that never leaves", cls: "skin-deck", only: "freelancer",
-      note: "#GRIDeck is still being built. The dock and the status bar are in; the screens inside are the ones you know until each is replaced. It is the Freelancer desktop's: the Admin desktop keeps the Classic look." }
+      note: "#GRIDeck is the Freelancer desktop's: the Admin desktop keeps the Classic look. A few pages still open as Classic draws them, from the bar at the top of the Sheet, Gear and Standing." }
   ];
   function findSkin(k) { for (var i = 0; i < SKINS.length; i++) { if (SKINS[i].key === k) return SKINS[i]; } return SKINS[0]; }
   /* A PHONE OPENS IN #GRIDroid (the author, 31 Oct 2026). Only the default: a skin the player
@@ -1295,10 +1295,10 @@ EN.settings = (function () {
       pending
         ? el("p.set-hint", { style: { color: "var(--warn)", marginTop: "8px" }, text: "This skin is wired but not yet styled: it looks like Classic until its design lands." })
         : null,
-      // what a skin wants said while it is the one picked (#GRIDeck: still being built, Freelancer only)
+      // what a skin wants said while it is the one picked (#GRIDeck: it is the Freelancer desktop's). A plain hint, not a warning.
       (function () {
         var s = EN.theme.SKINS.filter(function (x) { return x.key === cur; })[0];
-        return s && s.note ? el("p.set-hint", { dataset: { skinNote: s.key }, style: { color: "var(--warn)", marginTop: "8px" }, text: s.note }) : null;
+        return s && s.note ? el("p.set-hint", { dataset: { skinNote: s.key }, style: { marginTop: "8px" }, text: s.note }) : null;
       })()
     ];
   }

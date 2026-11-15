@@ -154,7 +154,7 @@ EN.deck.gear = (function () {
       var cur = x.rack ? I().entryKey(x.rack) : (stale || "");
       var o2 = [el("option", { value: "", selected: !cur, text: "Not racked" })].concat(targets.map(function (g) { var gk = I().entryKey(g); return el("option", { value: gk, selected: cur === gk, text: "Racked in " + g.name }); }));
       if (cur && !targets.some(function (g) { return I().entryKey(g) === cur; })) o2.push(el("option", { value: cur, selected: true, text: x.rack ? "Racked in " + x.rack.name : "Racked (adrift)" }));
-      out.push(el("div.dk-row", null, [el("span.dk-lab", { text: "Rack" }), el("select.dk-in.dk-sel", { "aria-label": "Rack it in worn Carry Gear", title: "Racked in worn Carry Gear it costs 1 less Load", dataset: { dkRack: "1" },
+      out.push(el("div.dk-row", null, [el("span.dk-lab", { text: "Rack" }), el("select.dk-in.dk-sel", { "aria-label": "Rack it in worn Carry Gear", title: "Racked in worn Carry Gear it costs 1 less Load", dataset: { dkRack: "1", tour: "inventory-rack" },
         onchange: function () { var v = this.value; I().setCarry(key, v ? "racked|" + v : "carried"); } }, o2)]));
     }
     var extra = [];
@@ -318,7 +318,7 @@ EN.deck.gear = (function () {
   /* ---- the page -------------------------------------------------------------------------------------- */
   function topBar(X) {
     var ch = X.ch, enc = (X.d && X.d.encumbrance) || {}, kids = [];
-    if (enc.enabled !== false) kids.push(el("div.dk-load", { dataset: { dkLoad: (enc.current != null ? enc.current : 0) + "/" + (enc.budget != null ? enc.budget : "?") }, title: "On-person Load against your Load Budget" }, [
+    if (enc.enabled !== false) kids.push(el("div.dk-load", { dataset: { tour: "inventory-load", dkLoad: (enc.current != null ? enc.current : 0) + "/" + (enc.budget != null ? enc.budget : "?") }, title: "On-person Load against your Load Budget" }, [
       el("i", { text: "Load" }), el("b", { text: (enc.current != null ? enc.current : 0) + " / " + (enc.budget != null ? enc.budget : "?") }),
       enc.tier ? chip(enc.tier.charAt(0).toUpperCase() + enc.tier.slice(1) + " loadout", "", "Your declared Loadout sets your Load Budget") : null,
       enc.state ? chip(enc.state.charAt(0).toUpperCase() + enc.state.slice(1), enc.state === "overloaded" ? "bad" : enc.state === "encumbered" ? "warn" : "ok") : null,
@@ -358,6 +358,16 @@ EN.deck.gear = (function () {
     if (!(mode === "market" ? S.msel : S.sel)) S.pane = "list";
     root.setAttribute("data-dk-pane", S.pane);
     root.appendChild(el("div.dk-g2c", null, [el("div.dk-col.dk-glist", { dataset: { dkGearList: mode } }, list), el("div.dk-col.dk-card.dk-gdet", { dataset: { dkGearDetail: mode === "market" ? (S.msel || "") : (S.sel || "") } }, detail)]));
+    /* The guided tour's "Rack your carry gear" step (js/tour.js) points at the rack control of the piece that is picked. With
+       none picked, or one that cannot be racked, it points at the first piece in the list that would show that control (it is
+       on the Freelancer and fits worn Carry Gear), which is the one to pick; with no such piece, at the list. */
+    if (mode !== "market" && !root.querySelector('[data-tour="inventory-rack"]')) {
+      var E = eng(), fit = (items || []).filter(function (i) {
+        return i.e && i.it && !E.isCarryGear(i.it) && (i.inHand || i.slotOn || i.cs === "carried" || i.cs === "racked") && (E.rackTargets(X.ch, i.e) || []).length > 0;
+      })[0];
+      var at = fit ? Array.prototype.filter.call(root.querySelectorAll("[data-dk-row]"), function (n) { return n.getAttribute("data-dk-row") === fit.key; })[0] : null;
+      (at || root.querySelector(".dk-glist")).setAttribute("data-tour", "inventory-rack");
+    }
     stage.appendChild(root);   // js/app.js gives the search box its cursor back after the redraw, as it does for any field in #view
   }
   // search and the Sheet can ask for a piece to be shown: it is picked, and Mine opens on it

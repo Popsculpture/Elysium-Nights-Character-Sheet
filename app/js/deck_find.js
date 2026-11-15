@@ -25,10 +25,12 @@ EN.deck.find = (function () {
   function actions(c) {
     var canAct = !!(c && !c.readOnly && c.st);
     var rec = EN.deck.record, hud = EN.deck.hud, shell = EN.deck.shell;
+    // a rest opens from the status bar, which creation puts away (js/deck_shell.js): asked for there, it opens on the Sheet
+    function rest(view) { if (EN.app.activeTab() === "print") EN.app.gotoTab("combat"); hud.openRest(view); }
     return [
-      { label: "Take a short rest", hint: "Rest", when: canAct, go: function () { hud.openRest("short"); } },
-      { label: "Take a long rest", hint: "Rest", when: canAct, go: function () { hud.openRest("long"); } },
-      { label: "Downtime", hint: "Rest", when: canAct, go: function () { hud.openRest("down"); } },
+      { label: "Take a short rest", hint: "Rest", when: canAct, go: function () { rest("short"); } },
+      { label: "Take a long rest", hint: "Rest", when: canAct, go: function () { rest("long"); } },
+      { label: "Downtime", hint: "Rest", when: canAct, go: function () { rest("down"); } },
       { label: "Level up", hint: "Record", when: !!rec, go: function () { rec.open("level"); } },
       { label: "Switch character", hint: "Record", when: !!rec, go: function () { rec.open("chars"); } },
       { label: "Create a new character", hint: "Record", when: !!(EN.builder && EN.builder.newRecord), go: function () { EN.builder.newRecord(); } },
