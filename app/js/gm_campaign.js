@@ -249,6 +249,13 @@ EN.gmCampaign = (function () {
     var d = EN.gmStore && EN.gmStore.desk ? EN.gmStore.desk() : null;
     if (!d || !charId) return;
     preset = preset || {};
+    /* A letter can come from a character this page's roster was read before: the player's sheet joined the campaign after the
+       last read. WRITE would then find no such recipient (an empty crew, or worse, put the reply back on the whole crew), so a
+       roster that does not hold the character is read again. One that does is left alone. */
+    var held = _d[d.id];
+    if (held && held.roster && !held.roster.some(function (m) {
+      return (Array.isArray(m.characters) ? m.characters : []).some(function (sheet) { return sheet.id === charId; });
+    })) delete _d[d.id];
     _send = { uid: me(), campaign: d.id, to: charId, from: String(preset.from || ""), subj: String(preset.subj || ""), body: "", pkg: [], search: "" };
     EN.app.gotoTab("gmpost", "write");
   }
