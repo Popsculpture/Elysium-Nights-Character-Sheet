@@ -131,11 +131,11 @@ a{ color:var(--accent); text-decoration:none; }
 .os-tab.locked{ color:var(--text4); cursor:not-allowed; }
 .os-tab .tk{ font-family:var(--mono); font-size:10px; color:var(--text4); }
 /* A group label on the Admin rail (CONTROL, LIVE, PREP...): a small mono caption standing before the
-   group's first tab, with a hairline between groups. Decoration only; '98 and #GRIDroid draw their
-   rails their own way and leave it out. */
+   group's first tab. No divider line (the author, 14 Nov 2026): the gap alone separates the groups.
+   Decoration only; '98 and #GRIDroid draw their rails their own way and leave it out. */
 .os-group{ font-family:var(--mono); font-size:10px; letter-spacing:.16em; color:var(--text4); align-self:flex-start;
-  padding:3px 4px 0 10px; margin-left:6px; border-left:1px solid var(--border); white-space:nowrap; user-select:none; }
-.os-tabs-scroll > .os-group:first-child{ margin-left:0; border-left:0; padding-left:2px; }
+  padding:3px 4px 0 10px; margin-left:6px; white-space:nowrap; user-select:none; }
+.os-tabs-scroll > .os-group:first-child{ margin-left:0; padding-left:2px; }
 html.skin-98 .os-group, html.skin-droid .os-group{ display:none; }
 /* A grouped rail (the Admin desktop's: nine tabs and five labels) tightens its tabs' sides the way the old
    eleven-tab rule did, by what it holds rather than a count of tabs: 12px below 1430px, 8px below 1345px (ten tabs and five
