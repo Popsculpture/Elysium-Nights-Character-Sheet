@@ -158,10 +158,42 @@ EN.deck.shell = (function () {
         el("b", { text: filed ? (name || "Your Freelancer") + ": the record" : name ? "Creating " + name : "Creating a Freelancer" }),
         el("span", { text: at >= 0 ? "Step " + (at + 1) + " of " + steps.length + " \u00b7 " + steps[at].t : "#PRINT" })]),
       el("div.dk-crt-p", { "aria-hidden": "true" }, steps.map(function (s, i) { return el("i" + (i < at ? ".done" : i === at ? ".on" : "")); })),
-      filed ? el("button.dk-btn.pri", { type: "button", dataset: { dkDo: "leave-create" }, onclick: function () { EN.app.gotoTab("combat"); } }, "Back to your Sheet")
+      // data-ro-keep: on a read-only record the whole view ignores clicks (theme.css, #view.en-ro); with the dock put away this is the way out
+      filed ? el("button.dk-btn.pri", { type: "button", "data-ro-keep": "1", dataset: { dkDo: "leave-create" }, onclick: function () { EN.app.gotoTab("combat"); } }, "Back to your Sheet")
             : el("span.dk-crt-n", { text: "File the record to open your deck." })
     ]);
   }
+  /* THE CREATION BAR STAYS ON SCREEN while the builder scrolls (15 Nov 2026, the author's call). It is sticky (css/deck.css)
+     under whatever is already pinned above it: the top bar, and the rail when no dock stands in for it (a record not filed
+     yet). The builder's own step rail is sticky too and reads --sticky-top, so the stage tells it how far down that is now:
+     under the bar, not behind it. Both figures are measured, because the bar's height turns on the name, the width and the
+     font. chrome() calls this on every render; a bar that changes size afterwards (a web font landing, the window turning)
+     is measured again. */
+  var _pinWatch = null;
+  function pinMeasure(bar) {
+    var top = 0;
+    [".os-topbar", "#os-tabs"].forEach(function (s) {
+      var n = document.querySelector(s), cs = n ? getComputedStyle(n) : null;
+      if (!cs || cs.display === "none" || cs.position !== "sticky") return;
+      top = Math.max(top, (parseFloat(cs.top) || 0) + n.offsetHeight);
+    });
+    var stage = bar.parentNode, stuck = getComputedStyle(bar).position === "sticky";
+    stage.style.setProperty("--dk-crt-top", (top + 8) + "px");
+    // a bar that scrolls away (a record not filed yet, on a phone) leaves the step rail right under what is pinned
+    stage.style.setProperty("--sticky-top", (stuck ? top + 8 + bar.offsetHeight : top + 6) + "px");
+  }
+  function pinnedBar() { return document.querySelector("#view .dk-stage > .dk-crt"); }
+  function pinCreate() {
+    var bar = pinnedBar();
+    if (_pinWatch) _pinWatch.disconnect();
+    if (!bar) return;
+    pinMeasure(bar);
+    if (window.ResizeObserver) {
+      _pinWatch = _pinWatch || new ResizeObserver(function () { var b = pinnedBar(); if (b) pinMeasure(b); });
+      _pinWatch.observe(bar);
+    }
+  }
+  window.addEventListener("resize", function () { var b = pinnedBar(); if (b) pinMeasure(b); });
   function nativeSheet(c) { return !!(c && c.d && c.st && c.fx && EN.deck.sheet); }
   function view(mount, tab) {
     var c = _ctx = context(), app = appOf(tab.key);
@@ -258,6 +290,7 @@ EN.deck.shell = (function () {
       if (EN.deck.record) EN.deck.record.sync(null);
       if (EN.deck.find) EN.deck.find.sync(false);
       if (os) os.style.removeProperty("--dk-accent");
+      pinCreate();   // a record not filed yet has no dock and no status bar, but it has the creation bar
       return;
     }
     if (!c || c.ch !== EN.store.active()) c = context();
@@ -269,6 +302,8 @@ EN.deck.shell = (function () {
     if (EN.deck.hud) { if (key === "print") EN.deck.hud.remove(); else EN.deck.hud.paint(top, c); }
     // the Record drawer, when it is out, shows the record as it is now (js/deck_record.js)
     if (EN.deck.record) EN.deck.record.sync(c);
+    // last, once the dock and the status bar are as they will be: where the creation bar pins
+    pinCreate();
   }
 
   return { on: on, appOf: appOf, subKey: subKey, view: view, chrome: chrome, go: go, reading: context, gearView: gearView, standingView: standingView, apps: function () { return APPS.map(function (a) { return a.key; }); } };

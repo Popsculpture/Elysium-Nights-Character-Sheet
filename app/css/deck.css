@@ -566,8 +566,19 @@ html.skin-deck .dk .dk-st-foot{ margin:14px 4px 0; }
    rail it stands in for stays hidden too) and the status bar is not drawn; one bar says whose record, which step, and the way back. ---- */
 html.skin-deck #os.dk-creating:has(#dk-dock){ padding-left:0; padding-bottom:0; }
 html.skin-deck #os.dk-creating #dk-dock{ display:none; }
-html.skin-deck .dk-crt{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin:0 0 16px; padding:14px 18px; border-radius:16px; background:var(--dk-s1);
+html.skin-deck .dk-crt{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin:0 0 16px; padding:14px 18px; border-radius:16px; }
+/* The bar stays on screen while the builder scrolls (15 Nov 2026): sticky under whatever is pinned above it. js/deck_shell.js
+   pinCreate() measures that into --dk-crt-top, and sets --sticky-top on the stage so the builder's own step rail (z-index 60)
+   sticks under the bar and not behind it. The bar is two layers under its words: a square that reaches up over the gap above
+   it and blurs what scrolls through that gap and past the round corners (as the step rail blurs what passes under it), and
+   on that the card itself, with its fill and its line. */
+html.skin-deck .dk-crt{ position:sticky; top:var(--dk-crt-top, calc(var(--dk-hud) + 8px)); z-index:61; }
+html.skin-deck .dk-crt::before{ content:""; position:absolute; inset:-8px 0 0 0; z-index:-2; pointer-events:none; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+html.skin-deck .dk-crt::after{ content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; border-radius:inherit; background:var(--dk-s1);
   box-shadow:inset 0 0 0 1px var(--dk-line); }
+/* With no dock (a record not filed yet, or no record) the rail is on screen, holding the gear. It sticks under this skin's
+   taller top bar, not 50px down where Classic's ends, which left it half behind the top bar and over the step rail. */
+html.skin-deck:not(.skin-98):not(.skin-droid) #os:not(:has(#dk-dock)) #os-tabs{ top:var(--dk-hud); }
 html.skin-deck .dk .dk-crt-t{ flex:1 1 220px; min-width:0; }
 html.skin-deck .dk .dk-crt-t b{ display:block; font:700 22px/1.15 var(--dk-disp); letter-spacing:.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 html.skin-deck .dk .dk-crt-t span{ font:500 11px var(--dk-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--dk-t3); }
@@ -677,6 +688,18 @@ html.skin-deck .dk-host .face-bar{ display:none; }
   html.skin-deck #dk-hud .dk-pop, html.skin-deck #dk-hud .dk-pop[data-dk-pop="cond"]{ left:0 !important; right:0; top:calc(100% + 8px); width:auto; }
   html.skin-deck .dk .dk-pal{ top:10px; }
   html.skin-deck .dk .dk-x{ top:10px; right:10px; width:40px; height:40px; }   /* a thumb's width, not a pointer's */
+  /* creation: the top bar scrolls away here, so the rail (when there is one) and the creation bar pin at the top edge. The bar
+     is one line, the name beside the way back; its progress strip is put away, since the step rail pinned under it shows the
+     steps. A record not filed yet has nothing to press on the bar, so there it scrolls away and leaves the phone its room. */
+  html.skin-deck:not(.skin-98):not(.skin-droid) #os:not(:has(#dk-dock)) #os-tabs{ top:0; }
+  html.skin-deck .dk-crt{ top:var(--dk-crt-top, 8px); gap:6px 12px; margin:0 0 12px; padding:8px 12px; border-radius:14px; }
+  html.skin-deck .dk-crt[data-dk-create="new"]{ position:relative; top:auto; }
+  html.skin-deck .dk .dk-crt-t{ flex:1 1 0; }
+  html.skin-deck .dk .dk-crt-t b{ font-size:17px; }
+  html.skin-deck .dk .dk-crt-t span{ font-size:10px; }
+  html.skin-deck .dk .dk-crt-p{ display:none; }
+  html.skin-deck .dk .dk-crt > .dk-btn{ flex:none; padding:0 12px; font-size:12.5px; }
+  html.skin-deck .dk .dk-crt-n{ flex:1 1 100%; }
   html.skin-deck .toast{ bottom:calc(78px + env(safe-area-inset-bottom, 0px)); }   /* clear of the dock along the bottom edge */
   /* the guided tour's card is a sheet along the bottom edge on a phone (js/tour.js): it stands on the dock, not over it */
   html.skin-deck body:has(#os:not(.dk-creating) > #dk-dock) #tour-card.tour-sheet:not(.tour-sheet-top){ bottom:calc(74px + env(safe-area-inset-bottom, 0px)); }
