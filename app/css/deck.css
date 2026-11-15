@@ -1,10 +1,10 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS · #GRIDeck (P1 14 Nov 2026, P2 15 Nov 2026): the fourth OS skin's own look.
+   ELYSIUM NIGHTS · #GRIDeck (P1 14 Nov 2026, P2 and P3 15 Nov 2026): the fourth OS skin's own look.
    Loaded after theme.css. Every rule here is under html.skin-deck, which settings.js puts on the Freelancer
    desktop alone, so none of it can reach Classic, #GRIDroid, '98 or the Admin desktop.
 
    WHAT THIS FILE MAY STYLE.
-   1. What this skin draws itself (js/deck_shell.js, deck_hud.js, deck_record.js, deck_find.js): nodes under a `.dk` root, with
+   1. What this skin draws itself (js/deck_shell.js, deck_hud.js, deck_record.js, deck_find.js, deck_sheet.js): nodes under a `.dk` root, with
       `dk-` classes. Colours come from the --dk-* tokens below, never from the palette's own variables, so the
       shell looks the same on every palette. Its accent, --dk-accent, is the open Freelancer's class colour
       (js/deck_shell.js sets it on #os), or the palette's accent when there is no class.
@@ -254,6 +254,168 @@ html.skin-deck .dk .dk-pall{ max-height:min(420px, 56vh); overflow:auto; padding
 html.skin-deck .dk .dk-palg{ font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); margin:8px 10px 4px; }
 html.skin-deck .dk .dk-pall .dk-empty{ margin:8px 10px; }
 
+/* ---- the Sheet (js/deck_sheet.js): three columns that stay put. It carries its own dark ground, so it reads the same on
+   every palette, light ones included. ---- */
+html.skin-deck .dk-sheet{ display:grid; grid-template-columns:292px minmax(0,1fr) 326px; grid-template-areas:"seg seg seg" "al al al" "chk act def";
+  gap:14px 18px; align-items:start; padding:16px; border-radius:20px; background:rgba(8,7,13,.78); box-shadow:inset 0 0 0 1px var(--dk-line); }
+html.skin-deck .dk .dk-seg.dk-colseg{ grid-area:seg; display:none; }
+html.skin-deck .dk .dk-alerts{ grid-area:al; display:grid; gap:10px; }
+html.skin-deck .dk .dk-c-checks{ grid-area:chk; }
+html.skin-deck .dk .dk-c-actions{ grid-area:act; min-width:0; }
+html.skin-deck .dk .dk-c-defense{ grid-area:def; min-width:0; }
+html.skin-deck .dk-sheet .dk-card{ background:var(--dk-s1); }
+html.skin-deck .dk .dk-sec{ margin:18px 0 9px; font:500 10.5px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); display:flex; align-items:center;
+  gap:8px; line-height:1.4; }
+html.skin-deck .dk .dk-col > .dk-sec:first-child{ margin-top:0; }
+html.skin-deck .dk .dk-dim{ color:var(--dk-t3); }
+html.skin-deck .dk .dk-warnt{ color:var(--dk-warn); }
+html.skin-deck .dk .dk-badt{ color:var(--dk-bad); }
+html.skin-deck .dk .dk-lab{ font:500 10px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); white-space:nowrap; }
+html.skin-deck .dk .dk-chip.gold{ background:color-mix(in srgb, var(--dk-gold) 15%, transparent); color:var(--dk-gold); }
+html.skin-deck .dk .dk-chip.dim{ color:var(--dk-t3); }
+/* alerts: what cannot wait, across all three columns */
+html.skin-deck .dk .dk-alert{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; padding:12px 16px; border-radius:14px; background:var(--dk-s2);
+  border:1px solid var(--dk-line2); border-left:4px solid var(--dk-t3); }
+html.skin-deck .dk .dk-alert > div:first-child{ flex:1 1 320px; min-width:0; }
+html.skin-deck .dk .dk-alert .dk-row{ margin-top:0; }
+html.skin-deck .dk .dk-alert b{ font-size:14px; }
+html.skin-deck .dk .dk-alert p{ margin:3px 0 0; font-size:13px; line-height:1.5; color:var(--dk-t2); }
+html.skin-deck .dk .dk-alert.bad{ border-left-color:var(--dk-bad); background:color-mix(in srgb, var(--dk-bad) 9%, var(--dk-s2)); }
+html.skin-deck .dk .dk-alert.warn{ border-left-color:var(--dk-warn); }
+html.skin-deck .dk .dk-alert.ok{ border-left-color:var(--dk-ok); }
+/* checks */
+html.skin-deck .dk .dk-att{ padding:12px 12px 8px; margin-bottom:10px; }
+html.skin-deck .dk .dk-att header{ display:flex; align-items:center; gap:11px; margin-bottom:6px; }
+html.skin-deck .dk .dk-mod{ font:700 30px/1 var(--dk-disp); min-width:44px; }
+html.skin-deck .dk .dk-nm b{ display:block; font-size:14.5px; font-weight:700; }
+html.skin-deck .dk .dk-nm span{ font:500 10.5px var(--dk-mono); color:var(--dk-t3); letter-spacing:.06em; }
+html.skin-deck .dk .dk-save{ height:28px; padding:0 10px; border-radius:9px; background:rgba(255,255,255,.06); font-size:12px; color:var(--dk-t2); font-weight:600;
+  display:inline-flex; gap:6px; align-items:center; white-space:nowrap; }
+html.skin-deck .dk .dk-save b{ font-size:15px; color:var(--dk-text); }
+html.skin-deck .dk .dk-save:not([disabled]):hover{ background:color-mix(in srgb, var(--dk-accent) 22%, transparent); color:var(--dk-text); }
+html.skin-deck .dk .dk-save.dk-foc{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--dk-accent) 55%, transparent); }
+html.skin-deck .dk .dk-save.dk-off{ color:var(--dk-bad); cursor:not-allowed; opacity:.7; }
+html.skin-deck .dk .dk-save .dk-chip, html.skin-deck .dk .dk-sk .dk-chip{ height:18px; font-size:10px; padding:0 7px; }
+html.skin-deck .dk .dk-sk{ display:flex; align-items:center; gap:9px; width:100%; height:31px; padding:0 8px; border-radius:9px; font-size:13.5px; }
+html.skin-deck .dk .dk-sk:hover{ background:rgba(255,255,255,.06); }
+html.skin-deck .dk .dk-sk em{ margin-left:auto; font:600 16px var(--dk-disp); font-style:normal; }
+html.skin-deck .dk .dk-sk .dk-chip + em{ margin-left:0; }
+html.skin-deck .dk .dk-sk .dk-chip{ margin-left:auto; }
+html.skin-deck .dk .dk-sk.dk-un{ color:var(--dk-t2); }
+html.skin-deck .dk .dk-pf{ width:8px; height:8px; border-radius:50%; border:1.5px solid var(--dk-t3); flex:none; }
+html.skin-deck .dk .dk-pf.dk-t-proficient{ background:var(--dk-accent); border-color:var(--dk-accent); }
+html.skin-deck .dk .dk-pf.dk-t-expertise{ background:var(--dk-ok); border-color:var(--dk-ok); }
+html.skin-deck .dk .dk-pf.dk-t-mastery{ background:var(--dk-gold); border-color:var(--dk-gold); box-shadow:0 0 8px var(--dk-gold); }
+/* the slot strip, and the list a slot opens */
+html.skin-deck .dk .dk-slots{ display:grid; grid-template-columns:repeat(auto-fit, minmax(118px, 1fr)); gap:10px; margin-bottom:12px; }
+html.skin-deck .dk .dk-slot{ display:block; width:100%; min-width:0; padding:11px 13px; border-radius:14px; background:var(--dk-s1); border:1px solid var(--dk-line);
+  transition:border-color .15s, background .15s; }
+html.skin-deck .dk .dk-slot:hover, html.skin-deck .dk .dk-slot.on{ border-color:var(--dk-line2); background:var(--dk-s2); }
+html.skin-deck .dk .dk-slot.on{ border-color:var(--dk-accent); }
+html.skin-deck .dk .dk-slot i{ display:block; font:500 10px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; margin-bottom:4px; }
+html.skin-deck .dk .dk-slot b{ display:block; font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+html.skin-deck .dk .dk-slot span{ display:block; font-size:12px; color:var(--dk-t2); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+html.skin-deck .dk .dk-slot.dk-empty-slot b{ color:var(--dk-t3); font-weight:500; }
+html.skin-deck .dk .dk-swap{ padding:12px; border-color:var(--dk-accent); }
+html.skin-deck .dk .dk-swap .dk-opt.dk-on b{ color:var(--dk-accent); }
+/* the class resource */
+html.skin-deck .dk .dk-res-card{ padding:14px 16px; }
+html.skin-deck .dk .dk-gauge{ display:flex; align-items:center; gap:14px; }
+html.skin-deck .dk .dk-big{ font:700 44px/1 var(--dk-disp); color:var(--dk-accent); white-space:nowrap; }
+html.skin-deck .dk .dk-big em{ font-style:normal; font-size:20px; color:var(--dk-t3); }
+html.skin-deck .dk .dk-big.dk-over{ color:var(--dk-gold); text-shadow:0 0 14px color-mix(in srgb, var(--dk-gold) 60%, transparent); }
+html.skin-deck .dk .dk-two b{ font-size:14.5px; font-weight:700; }
+html.skin-deck .dk .dk-two small{ color:var(--dk-t3); font-size:12px; }
+html.skin-deck .dk .dk-pipset.dk-press{ display:inline-flex; gap:4px; }
+html.skin-deck .dk .dk-press .dk-pip{ width:16px; height:16px; border-radius:5px; background:rgba(255,255,255,.1); }
+html.skin-deck .dk .dk-press .dk-pip:hover{ background:rgba(255,255,255,.22); }
+html.skin-deck .dk .dk-press .dk-pip.on{ background:var(--dk-accent); }
+html.skin-deck .dk .dk-press.ok .dk-pip.on{ background:var(--dk-ok); }
+html.skin-deck .dk .dk-press.bad .dk-pip.on{ background:var(--dk-bad); }
+html.skin-deck .dk .dk-press.warn .dk-pip.on{ background:var(--dk-warn); }
+/* attacks */
+html.skin-deck .dk .dk-atk{ padding:11px 12px 11px 15px; margin-bottom:8px; }
+html.skin-deck .dk .dk-atk-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+html.skin-deck .dk .dk-atk-i{ flex:1 1 150px; min-width:0; }
+html.skin-deck .dk .dk-atk-i b{ display:block; font-size:15px; font-weight:700; }
+html.skin-deck .dk .dk-atk-i > span{ display:block; font-size:12.5px; line-height:1.45; color:var(--dk-t2); }
+html.skin-deck .dk .dk-atk-i .dk-chips{ display:flex; margin-top:5px; }
+html.skin-deck .dk .dk-atk-i .dk-chips:empty{ display:none; }
+html.skin-deck .dk .dk-rolls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+html.skin-deck .dk .dk-rb{ display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:74px; height:46px; padding:0 12px; border-radius:11px;
+  background:rgba(255,255,255,.06); text-align:center; transition:transform .1s, background .15s; }
+html.skin-deck .dk .dk-rb i{ font:500 9.5px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; }
+html.skin-deck .dk .dk-rb b{ font:700 19px/1.05 var(--dk-disp); white-space:nowrap; }
+html.skin-deck .dk button.dk-rb:hover{ background:rgba(255,255,255,.12); }
+html.skin-deck .dk button.dk-rb:active{ transform:scale(.96); }
+html.skin-deck .dk .dk-rb.dk-hit{ background:color-mix(in srgb, var(--dk-accent) 20%, transparent); }
+html.skin-deck .dk .dk-rb.dk-hit b{ color:var(--dk-accent); }
+html.skin-deck .dk button.dk-rb.dk-hit:hover{ background:color-mix(in srgb, var(--dk-accent) 32%, transparent); }
+html.skin-deck .dk .dk-btn.warn{ color:var(--dk-warn); }
+html.skin-deck .dk .dk-ammo-row{ margin-top:9px; }
+html.skin-deck .dk .dk-ammo{ display:inline-flex; align-items:center; gap:3px; }
+html.skin-deck .dk .dk-ammo u{ width:6px; height:13px; border-radius:2px; background:rgba(255,255,255,.12); text-decoration:none; }
+html.skin-deck .dk .dk-ammo u.on{ background:var(--dk-gold); }
+html.skin-deck .dk .dk-ammo small{ margin-left:6px; font:500 12px var(--dk-mono); color:var(--dk-t2); }
+html.skin-deck .dk .dk-ammo.dk-dry small{ color:var(--dk-bad); }
+html.skin-deck .dk select.dk-sel{ width:auto; max-width:190px; height:28px; padding:0 26px 0 9px; font-size:12px; border:1px solid var(--dk-line2) !important;
+  border-radius:8px !important; background-color:var(--dk-s2); color:var(--dk-text); box-shadow:none; }
+html.skin-deck .dk .dk-chip.dk-tog{ box-shadow:inset 0 0 0 1px var(--dk-line2); color:var(--dk-text); }
+html.skin-deck .dk .dk-ftrow{ display:flex; align-items:center; gap:6px; }
+html.skin-deck .dk .dk-ftrow .dk-fth{ flex:1 1 0; min-width:0; }
+html.skin-deck .dk .dk-star{ flex:none; width:30px; height:30px; border-radius:9px; color:var(--dk-t3); font-size:16px; display:grid; place-items:center; text-align:center; }
+html.skin-deck .dk .dk-star:hover{ background:rgba(255,255,255,.07); }
+html.skin-deck .dk .dk-star.on{ color:var(--dk-gold); }
+html.skin-deck .dk .dk-traits{ margin-top:9px; padding-top:9px; border-top:1px solid var(--dk-line); }
+html.skin-deck .dk .dk-atk .dk-note{ margin-top:8px; }
+html.skin-deck .dk .dk-atk.dk-stowed{ border-style:dashed; }
+/* abilities and Active Defenses share one row shape */
+html.skin-deck .dk .dk-abl{ padding:10px 12px 10px 15px; margin-bottom:8px; }
+html.skin-deck .dk .dk-abl-top{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+html.skin-deck .dk .dk-abl-n{ display:inline-flex; align-items:center; gap:7px; min-width:0; }
+html.skin-deck .dk .dk-abl-n b{ font-size:14.5px; font-weight:700; }
+html.skin-deck .dk .dk-abl-n:hover b{ color:var(--dk-accent); }
+html.skin-deck .dk .dk-abl .dk-note{ margin-top:6px; }
+html.skin-deck .dk .dk-abl .dk-ftx{ padding:8px 0 0; }
+html.skin-deck .dk .dk-abl .dk-row{ margin-top:8px; }
+html.skin-deck .dk .dk-abl.dk-dead{ opacity:.5; }
+html.skin-deck .dk .dk-chip.dk-act-swift{ color:var(--dk-gold); }
+html.skin-deck .dk .dk-chip.dk-act-impulse{ color:#c58bff; }
+html.skin-deck .dk .dk-chip.dk-act-free{ color:var(--dk-ok); }
+html.skin-deck .dk .dk-chip.dk-act-complex{ color:#ff8a4c; }
+html.skin-deck .dk .dk-chip.dk-act-action, html.skin-deck .dk .dk-chip.dk-act-active{ color:var(--dk-accent); }
+html.skin-deck .dk .dk-boxes{ font:500 13px var(--dk-mono); color:var(--dk-t2); letter-spacing:.08em; }
+/* defense */
+html.skin-deck .dk .dk-tiles{ display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:7px; margin-bottom:10px; }
+html.skin-deck .dk .dk-tile{ display:block; width:100%; min-width:0; padding:10px 4px 8px; text-align:center; border-radius:12px; background:var(--dk-s1); border:1px solid var(--dk-line); }
+html.skin-deck .dk .dk-tile i{ display:block; font:500 9.5px var(--dk-mono); letter-spacing:.14em; color:var(--dk-t3); font-style:normal; text-transform:uppercase; }
+html.skin-deck .dk .dk-tile b{ display:block; font:700 24px/1.15 var(--dk-disp); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+html.skin-deck .dk .dk-tile[data-dk-stat="SIZE"] b{ font-size:14px; line-height:28px; letter-spacing:0; }
+html.skin-deck .dk .dk-tile:hover{ border-color:var(--dk-line2); background:var(--dk-s2); }
+html.skin-deck .dk .dk-tile.on{ border-color:var(--dk-accent); }
+html.skin-deck .dk .dk-tile.dk-zero b{ color:var(--dk-t3); }
+html.skin-deck .dk .dk-tile.dk-down b{ color:var(--dk-bad); }
+html.skin-deck .dk .dk-bd{ border-color:var(--dk-accent); }
+html.skin-deck .dk .dk-bd-h{ margin-top:0; }
+html.skin-deck .dk .dk-bd-h b{ font:600 12px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-accent); }
+html.skin-deck .dk .dk-bd-h .dk-bd-t{ font:700 22px var(--dk-disp); letter-spacing:0; color:var(--dk-text); }
+html.skin-deck .dk .dk-bd .dk-seg{ display:flex; margin:10px 0 4px; }
+html.skin-deck .dk .dk-bd .dk-segb{ flex:1 1 0; justify-content:center; padding:0 6px; font-size:12px; }
+html.skin-deck .dk .dk-bd .dk-srow{ font-size:12.5px; }
+html.skin-deck .dk .dk-bd .dk-srow b{ font-size:15px; color:var(--dk-text); }
+html.skin-deck .dk .dk-loadout{ margin:10px 0 0; }
+html.skin-deck .dk .dk-chip.dk-gear{ height:auto; min-height:24px; padding:3px 10px; white-space:normal; text-align:left; gap:7px; font-family:var(--dk-body); font-size:12px;
+  font-weight:600; color:var(--dk-text); }
+html.skin-deck .dk .dk-chip.dk-gear i{ font:500 9px var(--dk-mono); letter-spacing:.12em; font-style:normal; color:var(--dk-accent); }
+html.skin-deck .dk .dk-chip.dk-gear.bad i{ color:var(--dk-bad); }
+html.skin-deck .dk .dk-chip.dk-gear.warn i{ color:var(--dk-warn); }
+html.skin-deck .dk .dk-chip.dk-gear.ok i{ color:var(--dk-ok); }
+html.skin-deck .dk .dk-chip.dk-gear.gold i{ color:var(--dk-gold); }
+html.skin-deck .dk .dk-chip.dk-gear.dim i{ color:var(--dk-t3); }
+html.skin-deck .dk .dk-fx .dk-note:first-child{ margin-top:0; }
+/* the Freelancer tab's trays are drawn in a host of their own under the Sheet */
+html.skin-deck .dk-trays:empty{ display:none; }
+
 /* ---- the stage: a bar of its own where an app has more than one face, then the view it hosts ---- */
 html.skin-deck .dk-bar{ margin:0 0 16px; }
 html.skin-deck .dk .dk-seg{ display:inline-flex; padding:3px; border-radius:12px; background:rgba(255,255,255,.07); }
@@ -278,8 +440,12 @@ html.skin-deck .dk-host .face-bar{ display:none; }
   html.skin-deck #dk-hud .dk-find{ width:38px; padding:0; justify-content:center; }
   html.skin-deck #dk-hud .dk-find span:not(.dk-ic), html.skin-deck #dk-hud .dk-find kbd{ display:none; }
 }
+@media (max-width:1319px){
+  html.skin-deck .dk-sheet{ grid-template-columns:270px minmax(0,1fr); grid-template-areas:"seg seg" "al al" "chk act" "chk def"; }
+}
 @media (max-width:1239px){
   html.skin-deck #dk-hud{ gap:16px; }
+  html.skin-deck #dk-hud .dk-wal i{ display:none; }
   html.skin-deck #dk-hud .dk-meter{ width:140px; }
   html.skin-deck #dk-hud .dk-meter.dk-wd{ width:108px; }
 }
@@ -294,6 +460,15 @@ html.skin-deck .dk-host .face-bar{ display:none; }
 }
 /* A phone, for now: the dock goes to the bottom edge and the bar wraps. #GRIDroid is the phone skin; this
    skin's own phone layout is a later phase, and this much keeps it usable until then. */
+@media (max-width:900px){
+  /* one column at a time, picked on the switch across the top */
+  html.skin-deck .dk-sheet{ grid-template-columns:minmax(0,1fr); grid-template-areas:"seg" "al" "col"; padding:12px; }
+  html.skin-deck .dk .dk-seg.dk-colseg{ display:flex; }
+  html.skin-deck .dk .dk-colseg .dk-segb{ flex:1 1 0; justify-content:center; }
+  html.skin-deck .dk-sheet .dk-col{ grid-area:col; display:none; }
+  html.skin-deck .dk-sheet[data-dk-col="checks"] .dk-c-checks, html.skin-deck .dk-sheet[data-dk-col="actions"] .dk-c-actions,
+  html.skin-deck .dk-sheet[data-dk-col="defense"] .dk-c-defense{ display:block; }
+}
 @media (max-width:760px){
   html.skin-deck{ --dk-hud:auto; --sticky-top:8px; }
   html.skin-deck #os:has(#dk-dock){ padding-left:0; padding-bottom:calc(62px + env(safe-area-inset-bottom, 0px)); }

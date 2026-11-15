@@ -1,8 +1,9 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · #GRIDeck: the Record drawer (P2, 15 Nov 2026).
    The Freelancer's own record, pulled out over whatever screen is open from the name in the status bar:
-     DOSSIER      features, proficiencies, senses and the freeform notes (read from the engine; nothing here
-                  works a number out)
+     DOSSIER      the features a Freelancer simply has (the abilities they use are on the Sheet), each with a
+                  star that pins it to the Sheet; proficiencies, senses and the freeform notes. All read from
+                  the engine and the Freelancer tab's own feature list; nothing here works a number out
      LEVEL UP     where the level stands, and whichever choices are waiting; the choosing itself is still the
                   Advance step of #PRINT, one press away, until this skin grows its own
      EDIT RECORD  each step of the #PRINT builder, opened where it lives; the hardcopy and the PDF
@@ -121,13 +122,21 @@ EN.deck.record = (function () {
     var at = document.activeElement;
     if (!force && at && D.body.contains(at) && /^(TEXTAREA|INPUT)$/.test(at.tagName)) return;
     // a button pressed in the page is redrawn with it (Switch, a feature's fold): the one that takes its place keeps the focus
-    var heldIn = at && D.body.contains(at) ? (at.getAttribute("data-dk-do") ? '[data-dk-do="' + at.getAttribute("data-dk-do") + '"]'
-      : at.parentNode && at.parentNode.getAttribute("data-dk-feat") ? '[data-dk-feat="' + String(at.parentNode.getAttribute("data-dk-feat")).replace(/["\\]/g, "\\$&") + '"] .dk-fth' : "*") : null;
+    var held = null;
+    if (at && D.body.contains(at)) {
+      var row = at.closest ? at.closest("[data-dk-feat]") : null;
+      held = { act: at.getAttribute("data-dk-do"), feat: row ? row.getAttribute("data-dk-feat") : null, cls: at.className };
+    }
     clear(D.body);
     D.body.setAttribute("data-dk-rec-tab", D.tab);
     (D.tab === "level" ? level : D.tab === "edit" ? edit : D.tab === "chars" ? chars : dossier)(c).forEach(function (n) { if (n) D.body.appendChild(n); });
-    if (heldIn) {
-      var keep = heldIn === "*" ? null : D.body.querySelector(heldIn);
+    if (held) {
+      // found by comparing values, never by building a selector out of a feature's name
+      var keep = Array.prototype.filter.call(D.body.querySelectorAll("button"), function (b) {
+        if (held.act) return b.getAttribute("data-dk-do") === held.act;
+        var r = b.closest("[data-dk-feat]");
+        return !!held.feat && !!r && r.getAttribute("data-dk-feat") === held.feat && b.className.split(" ")[0] === held.cls.split(" ")[0];
+      })[0];
       try { (keep || D.x).focus({ preventScroll: true }); } catch (e) {}
     }
   }
@@ -135,15 +144,22 @@ EN.deck.record = (function () {
   function dossier(c) {
     var ch = c.ch, d = c.d, eng = EN.engine, R = EN.rules, out = [];
     if (!d) return [note("This record could not be read.")];
-    // features: the name and where it comes from; a press unfolds the text as the book has it
-    out.push(h("Features", "press one to read it"));
-    var feats = d.features || [];
+    /* features: the ones a Freelancer simply has, as the Freelancer tab's Features list has them (its abilities are on
+       the Sheet, with their costs and uses). The star is that list's own pin: a starred feature shows on the Sheet. */
+    var K = EN.combatView && EN.combatView.core, feats = [], pins = ch.featureAnnotations || {};
+    try { feats = ch.class && K && K.feats ? K.feats(ch, d).passiveFeats : (d.features || []).map(function (f) { return { name: f.name, text: f.text, src: f.source }; }); }
+    catch (e) { feats = (d.features || []).map(function (f) { return { name: f.name, text: f.text, src: f.source }; }); }
+    out.push(h("Features", "press one to read it, star it to pin it to your Sheet"));
     if (!feats.length) out.push(note("No features yet."));
     feats.forEach(function (f) {
-      var on = !!OPENED[f.name];
+      var on = !!OPENED[f.name], pinned = !!((pins[f.name] || {}).pinned);
       out.push(el("div.dk-ft" + (on ? ".on" : ""), { dataset: { dkFeat: f.name } }, [
-        el("button.dk-fth", { type: "button", "aria-expanded": on ? "true" : "false", onclick: function () { OPENED[f.name] = !on; paint(reading() || c, true); } },
-          [el("b", { text: f.name }), typeof f.action === "string" && f.action ? chip(f.action) : null, el("small", { text: f.source || "" }), el("span.dk-caret", { text: on ? "▾" : "▸" })]),
+        el("div.dk-ftrow", null, [
+          el("button.dk-fth", { type: "button", "aria-expanded": on ? "true" : "false", onclick: function () { OPENED[f.name] = !on; paint(reading() || c, true); } },
+            [el("b", { text: f.name }), el("small", { text: f.src || "" }), el("span.dk-caret", { text: on ? "▾" : "▸" })]),
+          K && K.setFeatureAnnot && !c.readOnly ? el("button.dk-star" + (pinned ? ".on" : ""), { type: "button", "aria-pressed": pinned ? "true" : "false", "aria-label": (pinned ? "Unpin " : "Pin ") + f.name,
+            title: pinned ? "Pinned to your Sheet: press to unpin" : "Pin to your Sheet", dataset: { dkDo: "pin:" + f.name }, onclick: function () { K.setFeatureAnnot(f.name, { pinned: !pinned }); } }, "\u2605") : null
+        ]),
         on ? el("div.dk-ftx", null, [EN.ui.renderText(f.text || "", {})]) : null
       ]));
     });
@@ -175,7 +191,7 @@ EN.deck.record = (function () {
       out.push(el("div.dk-srow", { dataset: { dkPassive: k } }, [el("span", { text: "Passive " + s.name }), el("b", { text: String(s.passive) })]));
       (s.passiveFocus || []).forEach(function (pf) { out.push(el("div.dk-srow.dk-sub", null, [el("span", { text: eng.fmtPassiveFocus(pf) })])); });
     });
-    (eng.senseGrants ? eng.senseGrants(feats.map(function (f) { return f.name; })) : []).forEach(function (g) {
+    (eng.senseGrants ? eng.senseGrants((d.features || []).map(function (f) { return f.name; })) : []).forEach(function (g) {
       out.push(el("div.dk-srow", { title: g.note || null }, [el("span", null, [g.sense, " ", chip(g.feature)]), el("b", { text: g.range })]));
     });
 

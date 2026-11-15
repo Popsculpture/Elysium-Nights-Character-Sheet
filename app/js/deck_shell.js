@@ -10,9 +10,11 @@
    land where they should with no edits: combat, flow and grid are the Sheet; gear is Gear; face is Standing or
    #POST by the Social tab's own page (EN.faceView.sub()); codex is the Codex; print is the record.
 
-   STRANGLER BUILD. In this phase every app HOSTS THE EXISTING VIEW (tab.view) inside a stage, so the skin is
-   usable from the first day. Later phases swap one app at a time for a screen of its own, and this file is the
-   only place that decides which is drawn.
+   STRANGLER BUILD. Every app began by HOSTING THE EXISTING VIEW (tab.view) inside a stage, so the skin was
+   usable from the first day; each phase swaps one for a screen of its own, and this file is the only place
+   that decides which is drawn. The Sheet is its own since P3 (js/deck_sheet.js). The Freelancer tab as
+   Classic draws it stays one press away on the stage's bar ("Classic sheet"), for the few things the Sheet
+   does not hold yet.
 
    DOM RULES. Everything this skin draws itself sits under a `.dk` root and uses `dk-` classes only: never
    .panel, .btn, .chip or .stat, and never an inline border-radius. The Classic rules in theme.css
@@ -45,7 +47,8 @@ EN.deck.shell = (function () {
     return "record";
   }
   // what else decides the view under a tab key: js/app.js adds it to the key a scroll position is kept under
-  function subKey(key) { return key === "face" ? faceSub() : ""; }
+  var _classic = false;   // the Sheet app is showing the Freelancer tab as Classic draws it (transient, like a sub-tab)
+  function subKey(key) { return key === "face" ? faceSub() : (key === "combat" && _classic) ? "classic" : ""; }
 
   // the author's own icons, from where they already live: nothing is redrawn here
   function icon(name) {
@@ -103,11 +106,13 @@ EN.deck.shell = (function () {
       // open is always listed, so a jump from a card (a Relay's FIRE ON #GRID) never leaves the player with no way back.
       var flow = !!(d && d.flow) || key === "flow";
       var grid = !!(d && d.grid && (d.grid.isCodebreaker || d.grid.deck)) || key === "grid";
-      if (!flow && !grid) return null;
+      var own = nativeSheet(c);   // a record with no class yet has no Sheet of this skin's to offer
+      if (!flow && !grid && !own) return null;
       var items = [{ key: "combat", label: "Sheet", icon: icon("sheet") }];
       if (flow) items.push({ key: "flow", label: "Flow", icon: icon("flow") });
       if (grid) items.push({ key: "grid", label: "#GRID", icon: icon("grid") });
-      items.forEach(function (i) { i.on = i.key === key; i.go = function () { EN.app.gotoTab(i.key); }; });
+      items.forEach(function (i) { i.on = i.key === key && !(key === "combat" && _classic && own); i.go = function () { _classic = false; EN.app.gotoTab(i.key); EN.app.render(); }; });
+      if (own) items.push({ key: "classic", label: "Classic sheet", on: key === "combat" && _classic, go: function () { _classic = true; EN.app.gotoTab("combat"); EN.app.render(); } });
       return segBar(items);
     }
     if (app === "post") {
@@ -118,14 +123,24 @@ EN.deck.shell = (function () {
     }
     return null;
   }
+  function nativeSheet(c) { return !!(c && c.d && c.st && c.fx && EN.deck.sheet); }
   function view(mount, tab) {
     var c = _ctx = context(), app = appOf(tab.key);
     var stage = el("div.dk-stage", { dataset: { dkApp: app } });
     var bar = stageBar(tab.key, app, c);
     if (bar) stage.appendChild(bar);
+    mount.appendChild(stage);
+    // the Sheet is this skin's own; if it cannot be drawn, the Freelancer tab stands in rather than a blank page
+    if (app === "sheet" && tab.key === "combat" && !_classic && nativeSheet(c)) {
+      try { EN.deck.sheet.render(stage, c); stage.setAttribute("data-dk-native", "sheet"); return; }
+      catch (e) {
+        console.error("#GRIDeck could not draw the Sheet; showing the Freelancer tab", e);
+        clear(stage);
+        if (bar) stage.appendChild(bar);
+      }
+    }
     var host = el("div.dk-host");
     stage.appendChild(host);
-    mount.appendChild(stage);
     tab.view(host);
   }
 

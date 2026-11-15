@@ -4151,6 +4151,749 @@ EN.combatView = (function () {
     [rollTrayModal(), dmgTrayModal(), defTrayModal()].forEach(function (t) { if (t) mount.appendChild(t); });
   }
 
+  /* SMALL WRITES AND READS THE TAB'S OWN CONTROLS MADE INLINE (P3, 15 Nov 2026), at file level so a second screen makes the very
+     same ones. Each is the code that stood in the control, moved; the controls now call these. */
+  function featUsesSpent(ch, f) { return f.uses ? Math.min((((ch.featureUses || {})[f.name] || {}).n) || 0, f.uses.max) : 0; }
+  function setFeatUses(f, n) {
+    store.update(function (c) {
+      c.featureUses = c.featureUses || {};
+      if (n <= 0) delete c.featureUses[f.name];
+      else c.featureUses[f.name] = { n: n, r: f.uses.recharge };
+    });
+  }
+  // the class resource as it stands: clamped to the maximum, unless Maximum Overdrive holds it past
+  function resourceNow(ch, d) {
+    var cur = (ch.resources && ch.resources.current && ch.resources.current[d.resource.name] != null) ? ch.resources.current[d.resource.name] : d.resource.max;
+    return eng.clamp(cur, 0, maxOverdriveOn(ch) ? Math.max(d.resource.max, cur) : d.resource.max);
+  }
+  // down spends (never below 0); up stops at the maximum and never takes away overflow already held
+  function resourceStep(ch, d, by) {
+    var cur = resourceNow(ch, d), next = by < 0 ? Math.max(0, cur + by) : Math.max(cur, Math.min(d.resource.max, cur + by));
+    store.update(function (c) { c.resources.current[d.resource.name] = next; });
+  }
+  function flowNow(ch, d) { return (ch.flow && ch.flow.current != null) ? eng.clamp(ch.flow.current, 0, d.flow.max) : d.flow.max; }
+  function flowStep(ch, d, by) {
+    var cur = flowNow(ch, d), next = by < 0 ? Math.max(0, cur + by) : Math.min(d.flow.max, cur + by);
+    store.update(function (c) { c.flow.current = next; });
+  }
+  function maxOdNewRound() { store.update(function (c) { if (c.resources) delete c.resources.maxOdWound; }); }
+  function maxOdEndEncounter(d) {
+    store.update(function (c) {
+      var cur = c.resources.current[d.resource.name]; if (cur == null) cur = d.resource.max;
+      c.resources.current[d.resource.name] = Math.min(cur, d.resource.max);
+      delete c.resources.maxOdWound;
+    });
+  }
+  function setWeaponGrip(key, two) {
+    store.update(function (c) {
+      c.weaponGrip = c.weaponGrip || {};
+      if (two) c.weaponGrip[key] = "two"; else delete c.weaponGrip[key];
+    });
+  }
+  function toggleAttackOffer(key, feature) {
+    store.update(function (c) {
+      c.attackAttr = c.attackAttr || Object.create(null);
+      if (c.attackAttr[key] === feature) delete c.attackAttr[key];
+      else c.attackAttr[key] = feature;
+    });
+  }
+  // three successes stabilize, and the count starts over
+  function setDeathSaves(kind, n) {
+    store.update(function (c) {
+      if (kind === "s") { c.deathSaves.s = n; if (n >= 3) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; } }
+      else c.deathSaves.f = n;
+    });
+  }
+  function stabilize() { store.update(function (c) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; }); toast("Stabilized, unconscious at 0 Wounds."); }
+  function setInitAttr(key) { store.update(function (c) { if (key) c.initAttr = key; else delete c.initAttr; }); }
+  function setFeatureAnnot(name, patch, silent) {
+    store.update(function (c) {
+      c.featureAnnotations = c.featureAnnotations || {};
+      var a = c.featureAnnotations[name] || {};
+      Object.keys(patch).forEach(function (k) { a[k] = patch[k]; });
+      if (!a.note && !a.pinned && !a.important && !a.hidden) delete c.featureAnnotations[name];
+      else c.featureAnnotations[name] = a;
+    }, silent ? { silent: true } : undefined);
+  }
+  // a weapon or deck Racked in ordinary Carry Gear: out into the hand, or back
+  function setInHand(key, on) { store.update(function (c) { eng.setInHand(c, key, on); }); }
+
+  /* THE UNARMED STRIKE AS AN ATTACK (P3). null when it is not listed: it always is once anything replaces, steps, rides on or
+     lengthens the strike, and otherwise only with no real weapon in hand (`armed` false). Lifted whole from the Weapons list. */
+  function unarmedAttackFor(ch, d, fx, armed) {
+    var uStrike = d.unarmed;
+    if (!(uStrike.replacers.length || uStrike.increases.count || uStrike.riders.length || uStrike.reach.spaces || !armed)) return null;
+    var atkSnag = fx.snagAtk ? "Active condition \u00b7 Snag on all attack rolls" : null;
+    var uBase = d.unarmedBase;
+    var lu = uStrike.replacer, luFin = !!(uStrike.traits && /Finesse/.test(uStrike.traits));
+    var luAttr = luFin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
+    // "Unarmed strikes use your Simple Weapons Proficiency Bonus, and follow the
+    // usual Untrained rule if you lack it."
+    var swTier = eng.effectiveGearTier(ch, "weapons", "Simple Weapons");
+    var swProf = R.profTiers[swTier].d20, swUntrained = swTier === "untrained";
+    var luMod = luAttr + swProf;
+    var luKind = lu ? (UNARMED_KIND[lu.kind] || "Natural Weapon") : "Unarmed Strike";
+    var luName = lu ? luKind + " · " + lu.source : "Unarmed Strike";
+    var luAttrLabel = (luFin ? "Body/Agility" : "Body") + " Modifier";
+    var luSnag = atkSnag || swUntrained;
+    // proficiency rides the attack roll only; damage keeps the attribute
+    // modifier. A strike with no die is a flat 1, so it has nothing to roll
+    // and opens no damage tray; the row states its damage instead. Riders are
+    // situational (a Surge that is not up adds nothing), so they stay in the
+    // row text rather than being pre-loaded into the tray.
+    var luDmg = uStrike.die
+      ? { weaponName: luName, subtype: luKind.toUpperCase(), dice: uStrike.die, types: [uStrike.type],
+          flat: luAttr, flatLabel: luAttrLabel, versatile: null, cheapEligible: false, cheapDice: d.caliber || 1, crit: false }
+      : null;
+    var luDmgText = (uStrike.die ? uStrike.die : uBase.flat) + " " + uStrike.type
+      + (uStrike.traits ? " (" + uStrike.traits + ")" : "") + " + " + (luFin ? "mod" : "Body mod");
+    uStrike.riders.forEach(function (r) { luDmgText += " + " + r.damage + (r.when ? " " + r.when : ""); });
+    var luSubtype = (lu ? luKind + " · " + uStrike.type : "UNARMED STRIKE").toUpperCase();
+    return { name: luName, hit: luMod, snag: luSnag, attrLabel: luAttrLabel, dmgText: luDmgText, note: uStrike.note || "", untrained: swUntrained, strike: uStrike, base: uBase,
+             ctx: function () {
+               return simpleAttackCtxFor(ch, d, luName, luSubtype,
+                 [{ label: luAttrLabel, value: luAttr }].concat(swProf ? [{ label: "Simple Weapons Proficiency Bonus", value: swProf }] : []),
+                 { snag: luSnag, dmg: luDmg });
+             } };
+  }
+  /* THE TWO ATTACKS THAT ARE NOT A WEAPON (P3): a Codebreaker's Cipher Attack and a Shaper's Flow Attack, in the order the
+     Weapons list draws them. Lifted whole from that list. */
+  function specialAttacksFor(ch, d) {
+    var out = [];
+    if (ch.class === "codebreaker") {
+      /* The Cipher Attack is the engine's effectiveAttack: Tech Modifier + Systems Proficiency Bonus + the
+         Smartdeck's Device Bonus, which "applies to both" the Cipher Attack and the Quick Hack (PHB 9094).
+         For a B&E Buddy it is the Buddy's own bonus. The fallbacks are for a record the grid block can't read. */
+      var gdk = d.grid || {};
+      var cipherBonus = gdk.effectiveAttack != null ? gdk.effectiveAttack
+        : gdk.cipherAttackBonus != null ? gdk.cipherAttackBonus : d.attributes.TEC.mod;
+      var cipherGloss = (gdk.deck && gdk.deck.type === "buddy")
+        ? "d20 + your B&E Buddy's attack bonus vs Node"
+        : "d20 + Tech Modifier + Systems Proficiency Bonus + Device Bonus vs Node";
+      out.push({ name: "Cipher Attack", hit: cipherBonus, note: cipherGloss + " \u00b7 Quick Hacks under fire", color: "var(--accent)",
+                 subtype: "CIPHER \u00b7 VS NODE DEFENSE", mods: [{ label: "Cipher Attack", value: cipherBonus }] });
+    }
+    // the same bonus covers the Flow Attribute Check, which is why the gloss names both
+    if (d.flow) out.push({ name: "Flow Attack", hit: d.flow.attackBonus, note: "d20 + " + d.flow.attributeName + " + Caliber \u00b7 also your Flow Attribute Check \u00b7 Invocation Save DC " + d.flow.dc, color: "var(--flow)",
+                           subtype: "FLOW \u00b7 SAVE DC " + d.flow.dc, mods: [{ label: d.flow.attributeName + " + Caliber", value: d.flow.attackBonus }] });
+    return out;
+  }
+
+  /* THE STAT STRIP'S NUMBERS (#GRIDeck P3, 15 Nov 2026): Defense, DR, Speed, Initiative and Size, each with the rows that
+     add up to it. Lifted whole from render so a second screen shows the same breakdowns; the Initiative picker, which is
+     DOM, stays with each screen. */
+  function statModelFor(ch, d, fx) {
+    var dg = d.defenseGear || {};
+    var agiMod = d.attributes.AGI.mod;
+    /* Initiative rolls d20 + Caliber + Agility OR Wits, the player's pick (the higher by
+       default); init.total carries Caliber. eng.initiative is
+       THE resolver, and it takes this view's condition delta because conditions are assembled
+       here rather than in the engine. Summing it inline is exactly what let the print sheet and
+       the PDF drift to a shorter sum and under-report a chromed character. */
+    var init = eng.initiative(d, fx.init);
+    var initAttr = init.attr;
+    var initMod = init.mod;
+    var initVal = init.total;
+    var spPath = speedPath(d, fx), spDisplay = spPath.total;
+    var lineFeats = (eng.activeLineageFeatures ? eng.activeLineageFeatures(ch) : []) || [];
+    var defAttrName = d.defenseAttr === "BOD" ? "Body" : "Agility";
+    var defAttrReason = d.defenseAttr === "BOD"
+      ? (lineFeats.indexOf("Dermal Plating") !== -1 ? "Dermal Plating" : "lineage")
+      : null;
+    // chrome that moves Speed, attributed to the specific installed piece
+    var cyberSpeedRows = [];
+    var _cwItems = (EN.cyberware && EN.cyberware.items) || [];
+    (ch.cyberware || []).forEach(function (cw) {
+      if (!cw || typeof cw !== "object") return;
+      var cdef = _cwItems.find(function (i) { return i.key === cw.key; });
+      var ctier = cdef && (cdef.tiers || []).find(function (t) { return t.tier === cw.tier; });
+      if (ctier && ctier.bonus && ctier.bonus.speed) cyberSpeedRows.push({ label: cw.name || cw.base || "chrome", val: ctier.bonus.speed });
+    });
+    var baseMove = Math.max(3, 6 + agiMod), spdFloored = (6 + agiMod) < 3;
+    /* The SPD breakdown follows speedSteps' own path, so its rows add up to the total in the
+       book's order: the flat Load and condition reductions, then ONE row for whatever the
+       halvings (and a stated minimum, or a Speed 0 condition) did after them. */
+    var spBase = typeof d.speedBase === "number" ? d.speedBase : d.speed;
+    var spEnc = d.encumbrance || {}, spLoadFlat = ((spEnc.speedMods || {}).flat || 0) + (spPath.swapped ? (spEnc.speedMods || {}).halveInstead || 0 : 0);
+    var spCondFlat = fx.speedZero ? 0 : (fx.speedDelta || 0);
+    var spRest = spDisplay - (spBase + spLoadFlat + spCondFlat);
+    var spWhy = fx.speedZero ? [] : [spEnc.state === "overloaded" ? "Overloaded" : null, spPath.swapped ? "dragging" : null, fx.speedHalvings > 1 ? fx.speedHalvings + " conditions" : fx.speedHalvings ? "a condition" : null].filter(Boolean);
+    var spRestLabel = fx.speedZero ? "Conditions (Speed 0)"
+      : spWhy.length ? "Halved, round down (" + spWhy.join(", ") + ")" + (fx.speedMin && spDisplay === fx.speedMin ? ", minimum " + fx.speedMin : "")
+      : "Can't fall below " + (fx.speedMin || 0);
+    var spReduced = spDisplay !== spBase;
+    function bdRow(label, val, note, raw) { return { label: label, val: val, note: note || null, raw: !!raw }; }
+    /* The cover bonuses come off EN.combat.cover ("+2 Defense"), not typed here, so the
+       breakdown and Cover & Sight cannot disagree. */
+    var coverFoot = ((EN.combat || {}).cover || []).map(function (cv) {
+      var m = /\+(\d+) (?:bonus to )?Defense/.exec(cv.effect || "");
+      return m ? "+" + m[1] + " " + String(cv.name).replace(/ Cover$/, "").replace(/^Three-Quarter$/, "¾") : null;
+    }).filter(Boolean).join(" / ");
+    function chromeNote(k) { var cb = d.attributes[k].cyberBonus; return cb ? "score includes +" + cb + " from chrome" : null; }
+    var BD = {
+      DEF: { title: "Defense", total: d.defense, sign: false,
+        formula: "10 + " + defAttrName + " modifier" + (dg.shield ? " + shield" : "") + " + cover & active defenses (situational)",
+        rows: [bdRow("Base", 10, null, true),
+               bdRow(defAttrName + " modifier" + (defAttrReason ? " (" + defAttrReason + ")" : ""), d.attributes[d.defenseAttr].mod, chromeNote(d.defenseAttr))]
+          .concat(dg.shield ? [bdRow("Shield · " + dg.shield.name, dg.shieldDef)] : []),
+        foot: "Cover" + (coverFoot ? " (" + coverFoot + ")" : "") + " and a declared Active Defense add more against a specific attack, see Defend.",
+        rules: [["ref-def/defense", "Defense"], ["ref-cover", "Cover & Sight"], ["ref-def", "Active Defenses"]] },
+      DR: { title: "Damage Reduction", total: d.totalDR || 0, sign: false,
+        // "Armor DR stops only Standard Physical Damage; other types take it only where an entry says so."
+        formula: "Worn armor + armor mods + chrome + natural lineage DR vs Standard Physical Damage (Nonlethal, Ballistic, Piercing, Bludgeoning, Slashing) only",
+        rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : "") + (dg.armorDRLost ? " (" + dg.armorDR + " of " + dg.armorBaseDR + ", " + dg.armorDRLost + " lost)" : ""), dg.armorDR, null, true)] : [])
+          .concat(dg.armorModDR ? [bdRow("Armor Mod (highest flat DR)", dg.armorModDR)] : [])
+          .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : [])
+          .concat(d.cyberDR ? [bdRow("Chrome · Subdermal Armor", d.cyberDR)] : [])
+          .concat((d.resistances || []).map(function (r) {
+            return bdRow(r.type + " · " + r.level, r.sources.join(", "));
+          })),
+        empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
+        foot: ((dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
+              (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top. " : "") +
+              // the one entry that carries armor DR past Standard Physical Damage
+              (dg.armor && !dg.armorLapsed && (dg.armor.traits || []).indexOf("Resonant Plating") !== -1 ? "Resonant Plating: " + dg.armor.name + "'s DR (" + ((d.armorDR || 0) + (dg.armorModDR || 0)) + ") also applies against Resonant damage." : "") +
+              /* Conditional Resistances (Street Scrapper's Upgrade) turn on what is hitting you,
+                 which the sheet cannot see, so they are a note here and never a row above: the
+                 author's decision 5, 2026-10-16. */
+              (d.resistNotes || []).map(function (n) { return " " + n.label + ": " + n.text + " Apply it when it fits."; }).join("")).trim() || null,
+        rules: [["ref-damage/damage-order", "Damage Order"]]
+          .concat((d.resistances || []).length ? [["ref-damage/resistance-vulnerability-and-immunity", "Resistance, Vulnerability & Immunity"]] : [])
+          .concat([["ref-dmg", "Damage Types"]]) },
+      SPD: { title: "Speed", total: spDisplay, sign: false,
+        formula: "max(3, 6 + Agility Modifier) + chrome + lineage − Bulky − flat load and condition reductions, then any halving (round down)",
+        rows: (spdFloored ? [bdRow("Base move (Agility floored to min 3)", baseMove, null, true)]
+                          : [bdRow("Base move", 6, null, true), bdRow("Agility modifier", agiMod, chromeNote("AGI"))])
+          .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
+          .concat(d.lineageSpeed ? [bdRow("Lineage", d.lineageSpeed)] : [])
+          // Speed a Talent or class feature grants (Asphalt Rider's Upgrade, Blitz Logic, Speed Freak, First Responder): the engine's own rows
+          .concat((d.speedFeatures || []).map(function (r) { return bdRow(r.label, r.val); }))
+          .concat(dg.speedPenalty ? [bdRow("Bulky · " + dg.armor.name, dg.speedPenalty)] : [])
+          .concat(spLoadFlat ? [bdRow("Encumbered", spLoadFlat)] : [])
+          .concat(spCondFlat ? [bdRow("Conditions", spCondFlat)] : [])
+          .concat(spRest ? [bdRow(spRestLabel, spRest)] : []),
+        foot: [d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null,
+               spEnc.noDash ? (spEnc.dragging ? "Dragging: no Dash." : "Overloaded: no Dash.") : null].filter(Boolean).join(" ") || null,
+        // Movement & Terrain holds what Speed buys (costs, Difficult Terrain); its Speed reductions
+        // entry is listed while something here is reducing it
+        rules: [["bx-space", "Space, Speed & Area"], ["mv-move", "Movement & Terrain"]]
+          .concat(spReduced || dg.speedPenalty ? [["mv-move/speed-reductions", "Speed reductions"]] : [])
+          .concat(d.encumbrance && d.encumbrance.speedDelta ? [["sk-load", "Encumbrance & Load"]] : []) },
+      /* PHB p. 58: "Roll d20 + Caliber + Agility Modifier or Wits Modifier." The player picks the
+         modifier (ch.initAttr), defaulting to the higher; the picker sits in the panel. */
+      INIT: { title: "Initiative", total: initVal, sign: true,
+        formula: "Caliber + Agility or Wits Modifier (your pick" + (init.chosen ? "" : ", the higher by default") + ")" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (d.cyberInit ? " + chrome" : "") + (fx.init ? " + conditions" : ""),
+        rows: [bdRow("Caliber", init.caliber), bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier" + (init.chosen ? " (your pick)" : " (the higher of Agility/Wits)"), initMod, chromeNote(initAttr))]
+          .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
+          .concat(d.cyberInit ? [bdRow("Chrome · Reflex Booster", d.cyberInit)] : [])
+          .concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
+        // the Edge names every source the engine found (Tuned Synapses, First Responder, Veteran Instincts); it never stacks
+        foot: ("Initiative roll = d20 + this. A tie goes to the higher modifier used (" + init.attrName + " " + eng.fmtMod(initMod) + ")." + (init.edge
+          ? " Roll with Edge (" + ((init.edgeSources && init.edgeSources.length) ? init.edgeSources.join(", ") : "Tuned Synapses") + ")." : "")
+          + (init.overrides || []).filter(function (o) { return o.source === "Risk Assessment"; }).map(function () { return " Risk Assessment: Wits in place of Agility."; }).join("")
+          + (init.social ? " Social Encounters (Cold Reader): " + init.social.label + ", with Edge; Presence in place of Wits." : "")),
+        rules: [["ref-round", "Initiative & the Round"]] },
+      // Size is derived from height, and its only mechanical reach is the
+      // Encumbrance Threshold and comparison (grappling, moving through a
+      // space, the Body Gate). It never touches a d20 roll, Defense, or Speed.
+      SIZE: (function () {
+        var band = (R.lineageHeight || {})[ch.lineage] || null;
+        var foot = (R.sizeFootprint || {})[d.size];
+        var trait = (R.sizeTraits || {})[d.size];
+        var rows = [];
+        // stored as decimal feet, shown as feet and inches (engine.fmtFtIn): 5.5 reads "5 ft 6 in"
+        if (d.heightFt != null) rows.push({ label: "Height", val: eng.fmtFtIn(d.heightFt), raw: true });
+        if (band) rows.push({ label: "Lineage range", val: band.fixed ? eng.fmtFtIn(band.min) + ", no variance" : eng.fmtFtIn(band.min) + " to " + eng.fmtFtIn(band.max), raw: true });
+        if (foot) rows.push({ label: "Footprint", val: foot.square, raw: true });
+        if (trait && trait.encumbrance) rows.push(bdRow("Encumbrance Threshold", trait.encumbrance));
+        /* Heavy Payload counts you one Size larger FOR GRAPPLING ONLY. Stated as a row here
+           rather than moved into d.size, which would be wrong twice: Size also feeds
+           sizeEncumbranceAdj, and the feature already grants its own separate +2 Threshold
+           at engine.js, so promoting the Size would pay that bonus a second time. */
+        if (eng.activeLineageFeatures(ch).indexOf("Heavy Payload") !== -1) {
+          rows.push({ label: "Grappling only (Heavy Payload)", val: "counts one Size larger", raw: true });
+        }
+        return { title: "Size", total: d.size || "not set", sign: false,
+          formula: "derived from height; a boundary height takes the larger category",
+          empty: d.size ? null : "Pick a height on the #PRINT tab to set your Size.",
+          rows: rows,
+          foot: trait ? trait.text : null,
+          rules: [["ref-size", "Size"], ["sk-load", "Encumbrance & Load"]] };
+      })()
+    };
+    return { dg: dg, init: init, initAttr: initAttr, initVal: initVal, spDisplay: spDisplay, defAttrName: defAttrName, BD: BD };
+  }
+
+  /* THE DEFENSIVE LOADOUT, as data (P3): worn armor, its mods, a wielded shield and an attuned Focus, one chip each, with
+     what it contributes. { label, name, tip, color, onclick }: onclick only on the Ablative Coating, the one with live state. */
+  function defenseLoadoutFor(ch, d, dg) {
+    function gchip(label, name, parts, color, onclick) { return { label: label, name: name, tip: parts, color: color, onclick: onclick || null }; }
+    var chips = [];
+    var DUE_TIP = "Lease installment due; it grants none of its benefits until you pay (Inventory > Stash).";
+    if (dg.armor) {
+      if (dg.armorLapsed) chips.push(gchip("ARMOR · LEASE DUE", dg.armor.name, DUE_TIP, "var(--danger)"));
+      else { var ap = [dg.armorDRLost ? dg.armorDR + " of " + dg.armorBaseDR + " DR" : dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
+      /* An unanswered damage-type menu on the suit you are WEARING. The Resistances list
+         cannot show it, because an unanswered menu grants nothing and so has no row there,
+         and the ARMOR chip beside this one never asks. The Ablative Coating got its own
+         play-time chip when it shipped and the four suits did not, which is the third time
+         this exact hole has been filled: a marker that only the player who had already
+         opened the control could see. engine.armorResistOwed was written for it and had no
+         caller in the app until now. Not drawn for a lapsed suit, which grants nothing
+         either way and says so one chip to the left. */
+      if (!dg.armorLapsed && eng.armorResistOwed) {
+        var resOwed = eng.armorResistOwed(ch, dg.armorKey, dg.armor);
+        if (resOwed > 0) {
+          /* Two sentences rather than one, because the Reliquary Shell picks TWO and owing one
+             of them is a real state: the type already chosen is granting, and a tooltip saying
+             the suit "is granting none" would be flatly false while a row for it sits in the
+             Resistances list one panel away. */
+          var resHave = eng.armorResistPicks ? eng.armorResistPicks(ch, dg.armorKey, dg.armor).length : 0;
+          var resTip = resHave
+            ? dg.armor.name + " grants Resistance to two damage types of your choice. You have chosen one, which applies; the second grants nothing until you choose it."
+            : dg.armor.name + " grants Resistance to " + (resOwed > 1 ? "two damage types" : "a damage type")
+                + " of your choice. Until you choose, it grants none.";
+          chips.push(gchip("ARMOR · RESISTANCE", resOwed + " unchosen",
+            resTip + " Choose on the suit's card in Inventory > Stash.", "var(--warn)"));
+        }
+      }
+    }
+    // installed Armor Mods (Impact Table) on the worn suit; a leased mod in arrears is dark
+    if (dg.armor && EN.armorMods) {
+      // dg.armorKey is the WORN suit's entry: since 2026-08-12 a spare of the same name
+      // carries its own mods, so the Block card has to name the piece, not the type.
+      (eng.armorModsOn ? eng.armorModsOn(ch, dg.armorKey) : []).forEach(function (k) {
+        var m = EN.armorMods.byKey[k]; if (!m) return;
+        var mLapsed = eng.leaseLapsed && eng.leaseLapsed(ch, m.name);
+        if (mLapsed) { chips.push(gchip("MOD · LEASE DUE", m.name, DUE_TIP, "var(--danger)")); return; }
+        /* A lapsed SUIT grants nothing and neither do its mods. The engine has always said so
+           in two places, armorModDR returning 0 and hazardMitigations answering "its lease has
+           lapsed, so its mods grant nothing", but this loop checked only the MOD's own lease
+           and printed the catalog line regardless. That was over-generous while every chip
+           here was a label. It stopped being harmless the moment one of them became a control:
+           an Ablative Coating on a lapsed Bailiff Rig would have read MOD BALLISTIC, claimed a
+           Resistance damageResistances was not granting, and offered to burn it. */
+        if (dg.armorLapsed) {
+          chips.push(gchip("MOD · INERT", m.name,
+            m.name + " is fitted to " + dg.armor.name + ", whose lease installment is due. A lapsed suit's mods grant nothing until you pay (Inventory > Stash).",
+            "var(--text3)"));
+          return;
+        }
+        /* The Ablative Coating is the only mod with live state, so its chip reports it and
+           flips it. The burn happens mid-fight, and the only other control for it is the mod
+           bench, three selections deep on another tab: nobody is walking there between a hit
+           and the next attack roll. Both controls read the same engine answer, so the chip and
+           the bench cannot disagree; the lapse gate above is what keeps the chip and the
+           RESISTANCE LIST in step, since ablativeState is asked about one suit by key and
+           knows nothing about which suit is worn or whether its lease is paid. */
+        if (m.key === "ablative-coating" && eng.ablativeState) {
+          var ab = eng.ablativeState(ch, dg.armorKey);
+          if (ab.options) {
+            if (!ab.type) {
+              chips.push(gchip("MOD · UNTUNED", m.name,
+                "Choose Ballistic, Piercing, Slashing or Bludgeoning for this coating on the Impact Table bench (Inventory > Workbench). Until you do, it grants nothing.",
+                "var(--warn)"));
+            } else {
+              chips.push(gchip(ab.spent ? "MOD · SPENT" : "MOD · " + ab.type.toUpperCase(), m.name,
+                ab.spent
+                  ? "Burned away; it grants no Resistance until you re-layer it in Downtime. Click to re-layer."
+                  : "Resistance to " + ab.type + ". Click when it burns away stopping a hit of that type that would have carried through to your Wounds.",
+                ab.spent ? "var(--text3)" : "var(--ember)",
+                function () {
+                  store.update(function (c) {
+                    c.ablativeCoating = c.ablativeCoating || Object.create(null);
+                    c.ablativeCoating[dg.armorKey] = { type: ab.type, spent: !ab.spent };
+                  });
+                }));
+            }
+            return;
+          }
+        }
+        chips.push(gchip("MOD", m.name, m.grants + ". " + m.effect, "var(--ember)"));
+      });
+    }
+    if (dg.shield) {
+      if (dg.shieldLapsed) chips.push(gchip("SHIELD · LEASE DUE", dg.shield.name, DUE_TIP, "var(--danger)"));
+      else if (!dg.shieldAlive) {
+        // 0 Durability boxes: a physical shield is wreckage, an emitter has gone dark
+        chips.push(gchip(dg.shieldEmitter ? "SHIELD · DARK" : "SHIELD · DESTROYED", dg.shield.name,
+          dg.shieldEmitter ? "Emitter overloaded; grants nothing until it resets or is repaired"
+                           : "Beyond repair; the wreck counts as salvage", "var(--danger)"));
+      } else {
+        var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"];
+        if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block");
+        if (dg.shieldWearThreshold) spv.push("Wear " + dg.shieldWearThreshold);
+        spv.push("□".repeat(dg.shieldBoxesLeft) + "■".repeat(dg.shieldSpent));
+        chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)"));
+      }
+    }
+    if (dg.focus) {
+      if (dg.focusLapsed) chips.push(gchip("FOCUS · LEASE DUE", dg.focus.name, DUE_TIP, "var(--danger)"));
+      else chips.push(gchip("FOCUS", dg.focus.name, (dg.focus.wardDie || "") + " Ward", "var(--flow)"));
+    }
+    return chips;
+  }
+
+  /* ACTIVE DEFENSES (P3): which the Freelancer can use right now, what each one does with the gear in hand, and the
+     spec the Defensive Impulse tray rolls. Lifted whole from the Defense panel; the Block row's wear controls are DOM and stay
+     with each screen. realWeaponRows is equippedRowsFor(ch) less the unarmed augments. */
+  function defenseModelFor(ch, d, dg, realWeaponRows) {
+    var resDie = d.resilienceDie ? "d" + d.resilienceDie : "Resilience Die";
+    var acro = d.skills.find(function (s) { return s.name === "Acrobatics"; });
+    // d.attuned is the derived predicate; d.flow stays the Reservoir object, which is what
+    // rebound actually reads. Two questions, two names, deliberately.
+    var attuned = !!d.attuned;
+    // Resurge rebounds your Flow Modifier with a floor of 1 (28 September rule text).
+    var rebound = d.flow ? Math.max(1, d.flow.attack) : null;
+    var focusDie = dg.wardDie || null, focusName = dg.focus ? dg.focus.name : (dg.armor && dg.armor.wardDie ? dg.armor.name : null);
+    /* A real melee weapon die for the Parry row. Unarmed AUGMENTS (Knuckles,
+       Shock Gloves) are deliberately skipped: their catalog `damage` is what they
+       ADD to a punch, not a die you roll instead of one, so reading it here made
+       strapping them on lower your Parry below the bare fist they improve. With
+       no real weapon the row falls through to the resolved unarmed strike, which
+       already has the augment folded into it. */
+    function realMeleeWeapon(n) {
+      var w = findWeapon(n);
+      if (!w || eng.isUnarmedAugmentName(w.name)) return null;
+      return (w.group === "Simple" || w.group === "Martial") ? w : null;
+    }
+    // Parry also accepts bare hands, so the unarmed strike's own damage is a
+    // parry source: the resolved die if anything granted one, else the flat 1.
+    var uParryDie = d.unarmed.die, uParryFlat = d.unarmed.flat;
+    /* THE PARRY SOURCES, resolved once, best first. Everything that renders or
+       rolls a Parry reads this list; there is no second place that decides.
+
+       It used to be a precedence CHAIN, weapon then shield then fists, first match
+       wins, written out twice (the row summary and the tray). Three things fell out
+       of that, and all three reproduced:
+         a 1d4 Scrap Shield beat a resolved 1d8 unarmed strike, so strapping on a
+           shield HALVED your Parry;
+         a Dagger listed before a Greatsword beat 2d6 with 1d4, purely on list order;
+         bare hands with no die read "Roll 1", which is not a die and not rollable.
+
+       The book does not describe a chain. Parry's Effect is "Roll your equipped
+       weapon's damage die, Oomph included ... or your unarmed strike damage if your
+       hands are what you brought", and it ends "If you are dual-wielding, choose which
+       weapon you parry with and roll its damage die." So this offers the CHOICE,
+       ordered by expected value so the default is the best one and the common case is
+       still one tap.
+
+       ONE SOURCE PER EQUIPPED PIECE, each rolling weaponGrip(ch, it, entryKey).dice:
+       the die for the grip it is held in, Oomph included (the author's decision 6,
+       2026-10-16), so a two-handed Longsword parries 1d10 and a Greatsword with a
+       Weighted Head parries 2d8. Parts and grip are per entry, so two copies of one
+       weapon can parry with different dice and are listed apart (by their row label).
+
+       A SHIELD IS NOT A SOURCE HERE, and that is the correction that matters most.
+       The app used to parry with the shield's `blockDie`, which is not a damage die:
+       it belongs to Block, whose Effect is "Roll your Shield's Block die (if you
+       carry one) and add your armor's flat Block Bonus". Parry rolls a DAMAGE die,
+       and no shield in the catalog has one. Verified against both live manuscripts
+       on 2026-08-11: Part 3's Physical Shields table is Name / Price / Defense /
+       Block / Traits with no damage column, there is no shield bash anywhere in
+       either book, and Parry never names a die for a shield.
+       A shield still SATISFIES Parry's Requirement ("a Simple Weapon, Martial
+       Weapon, or physical Shield equipped, or be fighting unarmed"), so carrying one
+       does not stop you parrying. It just contributes no die, and you roll a damage
+       die you actually have: a weapon's, or your fists'. */
+    function parryValue(s) { return s.sides ? s.n * (s.sides + 1) / 2 : (s.flat || 0); }
+    function parrySources() {
+      var out = [];
+      realWeaponRows.forEach(function (r) {
+        var w = realMeleeWeapon(r.name);
+        if (!w) return;
+        /* r56: a weapon still Racked (stowed, not taken out) parries nothing. Parry needs it
+           "equipped" in hand, and a Holster or Scabbard's free draw comes only with your first
+           attack, which a Parry is not. TAKE OUT puts it back on this list. */
+        var pE = eng.findEntry ? eng.findEntry(ch, r.key) : null;
+        if (pE && eng.stowedInfo && eng.stowedInfo(ch, pE)) return;
+        var g = eng.weaponGrip(ch, w, r.key);
+        var m = String(g.dice || "").match(/(\d*)d(\d+)/);
+        if (!m) return;
+        out.push({ key: "w:" + r.key, label: r.label || w.name, kind: "weapon",
+                   n: parseInt(m[1] || "1", 10), sides: parseInt(m[2], 10),
+                   why: g.why || "" });
+      });
+      var um = uParryDie ? /(\d*)d(\d+)/.exec(uParryDie) : null;
+      if (um) out.push({ key: "unarmed", label: "your unarmed strike", kind: "unarmed",
+                         n: parseInt(um[1] || "1", 10), sides: parseInt(um[2], 10) });
+      else out.push({ key: "unarmed", label: "your unarmed strike", kind: "unarmed", flat: uParryFlat });
+      out.sort(function (a, b) { return parryValue(b) - parryValue(a); });
+      return out;
+    }
+    function parryText(s) {
+      if (!s) return "nothing to parry with";
+      return s.sides ? "Roll " + s.n + "d" + s.sides + " (" + s.label + "), subtract from incoming damage"
+                     : "Bare hands with no die behind them: subtract " + (s.flat || 0) + " from incoming damage";
+    }
+    var pSources = parrySources(), pBest = pSources[0];
+    // Block works with a shield, a flat Block Bonus, or the Plated trait; a shield's
+    // die stacks on top. Gear whose lease is in arrears grants none of this.
+    var liveShield = (dg.shield && !dg.shieldLapsed && dg.shieldAlive) ? dg.shield : null;
+    var plated = !!(dg.armor && !dg.armorLapsed && (dg.armor.traits || []).indexOf("Plated") !== -1);
+    var blockBonus = dg.blockBonus || 0;
+    var platedHalf = plated ? Math.floor((dg.armorDR || 0) / 2) : 0;
+    var canBlock = !!liveShield || blockBonus > 0 || plated;
+    /* Reactive Plating is the one Block-boosting mod (PHB, Armor Mods: "When you choose Block, add
+       +1d6 to the damage prevented. This stacks with the Plated trait's Block benefit, the suit's
+       listed Block Bonus, and shield dice."), and the Block Effect names such mods: "any other Block
+       benefits you have (the Plated trait, Block-boosting mods)". Same guards as the Block card's
+       mod loop: a lapsed suit grants nothing and neither do its mods, and a leased mod in arrears
+       is dark. */
+    var reactive = !!(dg.armor && !dg.armorLapsed && eng.armorModsOn
+      && eng.armorModsOn(ch, dg.armorKey).indexOf("reactive-plating") !== -1
+      && !(eng.leaseLapsed && eng.leaseLapsed(ch, "Reactive Plating")));
+    var shieldRolls = !!(liveShield && dg.shieldBlockDie);
+    // in the Effect's order: "Roll your Shield's Block die (if you carry one) and add your armor's flat
+    // Block Bonus and any other Block benefits you have (the Plated trait, Block-boosting mods)"
+    var blockAdds = [];
+    if (shieldRolls) blockAdds.push(dg.shieldBlockDie + " (" + liveShield.name + ")");
+    if (blockBonus) blockAdds.push(blockBonus + " Block Bonus");
+    if (platedHalf) blockAdds.push(platedHalf + " half-DR (Plated)");
+    if (reactive) blockAdds.push("1d6 (Reactive Plating)");
+    // Shield Durability: a Blocked hit whose RAW damage meets the Wear Threshold
+    // marks a box, as does any Blocked critical. Offered as a one-tap control on
+    // the Block row, since that is the only moment it can happen.
+    // The one writer answers with what it did, and the toast reads THAT. It used to
+    // re-derive "boxes left" out here by adding the delta to ch.shieldWear again,
+    // after store.update had already added it to the same object, so every click
+    // counted twice: a 3-box Riot Shield announced its destruction at 2 boxes spent
+    // while still alive and still granting its Block die, and a 2-box Scrap Shield
+    // announced it on the first click. Nothing outside the engine derives this now.
+    function markShieldWear(delta) {
+      if (!dg.shield || !dg.shieldKey) return;
+      var res = null;
+      store.update(function (c) { res = eng.applyShieldWear(c, dg.shieldKey, delta); });
+      if (!res || !res.changed) return;
+      if (delta > 0 && res.destroyed) toast(res.emitter ? res.name + " overloaded and went dark." : res.name + " is destroyed; the wreck is salvage.");
+    }
+    /* Armor DR is mutable, and this is the moment it moves: Demolition Engine
+       attacking worn armor, a Blackware Hand Razors crit, a caustic environment.
+       Damage only; the two repair lanes (shop and bench) are priced work on the
+       Impact Table, and the one-point UNDO here is for a misclick, not a lane.
+       A clean repair's quality edge is spent first, absorbing the point for free. */
+    function markArmorDR(delta) {
+      var st = dg.armorState;
+      if (!st || !st.key || !st.base) return;
+      var res = null;
+      store.update(function (c) { res = eng.applyArmorDamage(c, st.key, delta); });
+      if (!res) return;
+      if (res.absorbed) { toast(st.name + ": the freshly seated plate absorbs the hit. No DR lost."); return; }
+      if (delta > 0 && res.breached) toast(st.name + " is breached at 0 DR; rebuilding it is a full Project on the Impact Table.");
+    }
+    // Per-defense roll specs for the Defensive Impulse tray. Dice come from live
+    // gear, so a Ward reads the attuned Focus and a Parry reads the equipped melee
+    // weapon rather than a fixed die.
+    function parseDie(str) { var m = /(\d*)d(\d+)/.exec(String(str || "")); return m ? { n: parseInt(m[1] || "1", 10), sides: parseInt(m[2], 10), label: (m[1] || "1") + "d" + m[2] } : null; }
+    // (firstMeleeDie lived here and was the first half of Parry's precedence chain:
+    //  "the first equipped melee weapon", which handed a Dagger the parry over a
+    //  Greatsword on list order alone. parrySources() replaced it and nothing else
+    //  called it, so it is gone rather than left for someone to wire back in.)
+    // Resurge and Siphon cost FP: the book says so once, in the Active Defense rules (no longer in the two entries)
+    var FP_NOTE = "Costs 1 FP on top of the Impulse Action; at 0 FP it counts as an Overdraw of 1 FP.";
+    function defSpec(name) {
+      var base = { name: name, baseDefense: d.defense, dice: [], flat: [],
+        // the Damage Order's step 3 for the tray's damage-type pick: DR only where the type takes it, then Resistance
+        mitigate: function (amount, type, opts) { return eng.netDamage(d, amount, type, opts); },
+        attuned: !!d.attuned };
+      if (name === "Block") {
+        var sd = liveShield ? parseDie(dg.shieldBlockDie) : null;
+        if (sd) { sd.label = liveShield.name; base.dice.push(sd); }
+        if (blockBonus) base.flat.push({ label: "Block Bonus", value: blockBonus });
+        if (platedHalf) base.flat.push({ label: "Plated half-DR", value: platedHalf });
+        // Reactive Plating's "+1d6 to the damage prevented" is a die, so it rolls with the shield's
+        if (reactive) base.dice.push({ n: 1, sides: 6, label: "Reactive Plating" });
+        // "Prevent that much of the incoming damage": Block is a step 2 reduction like Parry or Ward, and
+        // Armor DR comes off after it (Damage Order, step 3), so DR is not in this total any more
+        base.note = "Roll your Shield's Block die (if you carry one) and add your Block Bonus and any other Block benefits you have (the Plated trait's half DR, Block-boosting mods such as Reactive Plating's +1d6). Prevent that much of the incoming damage; your Armor DR (" + (d.armorDR || 0) + ") still comes off after, against Standard Physical Damage. Physical attack damage only." + wearNote;
+        return base;
+      }
+      if (name === "Brace") {
+        // "Roll 1d10 + Body Modifier and subtract the result from the incoming damage." (PHB,
+        // Active Defenses). The book prints no Requirement, so every Freelancer can use it;
+        // the Body Modifier is the live one.
+        base.dice.push({ n: 1, sides: 10, label: "d10" });
+        base.flat.push({ label: "Body Modifier", value: d.attributes.BOD.mod });
+        base.note = "Roll 1d10 + Body Modifier and subtract the result from the incoming damage. Falls, collisions, explosions, or forced impact only.";
+        return base;
+      }
+      if (name === "Dodge") {
+        // take the same Acrobatics total the row summary advertises, so the
+        // tray and the row cannot drift apart
+        base.mode = "defense";
+        base.bonus = acro ? acro.total : d.attributes.AGI.mod;
+        base.note = "Raise your Defense against this hit. On a miss you may shift 1 space. Melee or non-ballistic physical attacks only.";
+        return base;
+      }
+      if (name === "Parry") {
+        /* One list, best first, and the player picks. `applySource` is what the
+           tray's chips call, so switching implement re-reads this same resolver
+           rather than deriving a second answer somewhere else. */
+        base.sources = pSources;
+        base.applySource = function (key) {
+          var s = pSources.find(function (x) { return x.key === key; }) || pBest;
+          base.sourceKey = s.key;
+          base.dice = []; base.flat = [];
+          if (s.sides) base.dice.push({ n: s.n, sides: s.sides, label: s.label });
+          else base.flat.push({ label: s.label, value: s.flat || 0 });
+          base.note = (s.sides
+            ? "Roll " + s.n + "d" + s.sides + " (" + s.label + ") and subtract it from the incoming damage."
+            : "Bare hands with no die behind them: subtract " + (s.flat || 0) + " from the incoming damage.")
+            + " Melee or thrown attacks only." + (pSources.length > 1 ? " You choose what you parry with." : "");
+          return base;
+        };
+        return base.applySource(pBest && pBest.key);
+      }
+      if (name === "Resurge") {
+        base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
+        base.onZero = "Reduced to 0: the Flow attack rebounds for " + (rebound != null ? rebound : "your Flow Modifier (minimum 1)") + " Resonant damage.";
+        base.note = "Against a Flow attack. Roll your Resilience Die and subtract it; if the damage drops to 0, it rebounds. " + FP_NOTE;
+        return base;
+      }
+      if (name === "Siphon") {
+        base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
+        base.onRoll = function (t) { return "Restore " + t + " Vigor."; };
+        base.note = "Against elemental or Flow damage. Roll your Resilience Die, subtract it, and restore Vigor equal to the damage it negates. " + FP_NOTE;
+        return base;
+      }
+      if (name === "Ward") {
+        base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
+        var wd = parseDie(dg.wardDie);
+        if (wd) { wd.label = (dg.focus && dg.focus.name) || "Ward"; base.dice.push(wd); }
+        // the die it names is the one pushed above, the Resilience Die, not a fixed d6
+        base.note = "Roll your Resilience Die (d" + (d.resilienceDie || 6) + ")" + (wd ? " plus your Focus die" : "") + " and subtract the total from the incoming damage. Ward costs no FP.";
+        return base;
+      }
+      base.note = "";
+      return base;
+    }
+    var wearNote = dg.shield && dg.shieldWearThreshold
+      ? " Wear " + dg.shieldWearThreshold + ": a Blocked hit of " + dg.shieldWearThreshold + "+ raw damage, or any Blocked critical, marks a box (" + dg.shieldBoxesLeft + "/" + dg.shieldBoxesMax + " left)."
+      : "";
+    /* Dodge's Trigger Limit: "The GM may rule a Freelancer can't Dodge while wearing Heavy Armor or
+       while Grappled or Restrained." Flagged on the row when it applies, never enforced. */
+    var inHeavy = !!(dg.armor && dg.armor.group === "Heavy Armor");
+    var heldFast = (ch.conditions || []).filter(function (n) { return n === "Grappled" || n === "Restrained"; });
+    var dodgeGm = (inHeavy || heldFast.length)
+      ? " · the GM may rule you can't Dodge " + (inHeavy ? "in Heavy Armor" : "") + (inHeavy && heldFast.length ? " or " : "") + (heldFast.length ? "while " + heldFast.join(" or ") : "")
+      : "";
+    var DEF_LIVE = {
+      Block:   { avail: canBlock, req: "a shield, a Block Bonus, or Plated armor",
+                 summary: (blockAdds.length
+                   ? "Prevent " + blockAdds.join(" + ") + " of the incoming damage" + ((shieldRolls || reactive) ? "" : ", no roll")
+                   : "Prevent damage with your shield or plating") + "; physical attacks only" + wearNote },
+      // no requirement: every Freelancer can Brace, so the row is always listed
+      Brace:   { avail: true, req: "",
+                 summary: "Roll 1d10 " + eng.fmtMod(d.attributes.BOD.mod) + " (Body), subtract from incoming damage; falls, collisions, explosions, forced impact" },
+      Dodge:   { avail: true, req: "",
+                 summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + dodgeGm },
+      // "or be fighting unarmed": bare hands always satisfy the requirement, so
+      // Parry is never unavailable. The row names the BEST source and says how many
+      // others there are; the tray is where you switch. Both read parrySources().
+      Parry:   { avail: true, req: "a Simple or Martial weapon, a physical Shield, or bare hands",
+                 summary: parryText(pBest) + (pSources.length > 1 ? " · " + pSources.length + " to choose from" : "") },
+      Resurge: { avail: attuned, req: "Flow attunement",
+                 summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (rebound != null ? rebound : "your Flow Modifier (minimum 1)") + " Resonant" },
+      Siphon:  { avail: attuned, req: "Flow attunement",
+                 summary: "Roll " + resDie + " vs elemental/Flow damage; restore the damage it negates as Vigor" },
+      Ward:    { avail: !!focusDie || attuned, req: "a Warding Focus or class feature",
+                 // "Ward costs no FP." (16 October handoff); Resurge and Siphon still do
+                 summary: "Roll " + resDie + (focusDie ? " + " + focusDie + " (" + focusName + ")" : "") + ", subtract from incoming damage; no FP" }
+    };
+    return { markShieldWear: markShieldWear, markArmorDR: markArmorDR, defSpec: defSpec, DEF_LIVE: DEF_LIVE };
+  }
+
+  /* THE FEATURE LIST (P3): the record's features with the scaffolding dropped, the class resource's abilities broken out
+     one a row, and each one's action type, limit and use counter read. activeFeats are the abilities; passiveFeats the
+     features a Freelancer simply has. Lifted whole from render. */
+  function featsFor(ch, d) {
+    // only features with usable mechanics belong on the play-sheet; drop progression
+    // scaffolding ("choose a subclass / Universal Upgrade" prompts) and scaling
+    // reminders like "Cheap Shot (3d6)" whose base feature is already listed
+    var SCAFFOLD_FEATURE = /^(Universal Upgrade|Subclass Feature|Subclass Capstone|Awakening Milestone)$|\bSubclass$/;
+    var kept = d.features.filter(function (f) {
+      if (SCAFFOLD_FEATURE.test(f.name)) return false;
+      var base = f.name.replace(/\s*\(.*\)$/, "");
+      if (base !== f.name && d.features.some(function (o) { return o !== f && o.name === base; })) return false;
+      return true;
+    });
+    // break the bundled resource feature (Moxie/Overdrive/Triage/... ability list) into its own
+    // rows, each tagged with the ability's action type and per-ability resource cost chip
+    var FEATURE_EXPANSIONS = resourceExpansion(ch, d);
+    var resUp = (d.resource && d.resource.name) ? d.resource.name.toUpperCase() : "";
+    var expanded = [];
+    kept.forEach(function (f) {
+      var exp = FEATURE_EXPANSIONS[f.name];
+      if (exp) {
+        exp.subs.forEach(function (s) {
+          /* A variable spend shows its RANGE, not a flat 1. The ceiling is the general
+             Variable Costs rule (EN.resourceRules.variableCosts): no single activation may
+             spend more than your Caliber. Shown as the smaller of Caliber and the pool,
+             because a cap you cannot afford is not the real limit. A falsy cost renders no
+             chip at all, which is what Spite wants: it costs no Overdrive. */
+          var _chip = s.cost ? s.cost + " " + resUp : null;
+          if (s.costVariable) {
+            var _cap = Math.max(s.cost || 1, Math.min(d.caliber || 1, (d.resource && d.resource.max) || (d.caliber || 1)));
+            _chip = (s.cost || 1) + " to " + _cap + " " + resUp;
+          }
+          expanded.push({ key: s.key, name: s.name, source: f.source, level: f.level, text: s.text,
+                          _cost: s.action || actionCost(s.text), chip: _chip, requirements: s.requirements });
+        });
+      } else expanded.push(f);
+    });
+    var feats = expanded.map(function (f, i) {
+      // an explicit "(Active)"/"(Passive)" marker overrides the text-based cost parse,
+      // then comes off the displayed title
+      var forced = /\(Active\)\s*$/i.test(f.name) ? "active" : (/\(Passive\)\s*$/i.test(f.name) ? "passive" : null);
+      // an explicit `action` on the data row beats the text parse, which guessed from prose and
+      // read "cannot take Impulse Actions" in Pollen Haze as though the feature COST an Impulse
+      var cost = f._cost || f.action || actionCost(f.text);
+      if (forced === "active" && cost === "Passive") cost = "Active";
+      if (forced === "passive") cost = "Passive";
+      return { id: "act-" + i, key: f.key || null, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: f.source + " · L" + f.level,
+               // noTracker: the feature's "once per scene" is about something other than its own use (A Sucker Born Every Minute's new Mark)
+               text: f.text, cost: cost, limited: isLimited(f.text), chip: f.chip, uses: f.noTracker ? null : parseUses(f.text, d),
+               requirements: f.requirements };
+    });
+    // active vs passive split of the computed features (markers already folded into cost)
+    var activeFeats = feats.filter(function (f) { return f.cost !== "Passive"; });
+    var passiveFeats = feats.filter(function (f) { return f.cost === "Passive"; });
+    return { kept: kept, expanded: expanded, activeFeats: activeFeats, passiveFeats: passiveFeats };
+  }
+
+  /* HARDWARE-DEPENDENT ABILITIES (P3): a Codebreaker's Bandwidth runs through a Smartdeck and a Stitcher's Triage through a
+     Trauma Rig. null where the class needs none; else { state: ok | missing | bricked, ... }. Lifted whole from the Abilities tab. */
+  function hardwareDepFor(ch, d) {
+    if (!d.resource) return null;
+    if (d.triage) {
+      var t = d.rig || {};
+      // a Stitcher improvising on a Scrap Rig is equipped, just badly
+      if (t.scrapRig) return { state: "ok" };
+      if (!t.rigTier) return { state: "missing", what: "Triage Rig", cat: "Trauma Rigs",
+        title: "No Rig on you",
+        say: "You know exactly what to do and have nothing to do it with. Triage Protocols run through a Triage Rig; steady hands and good intentions do not close a chest wound." };
+      if (t.bricked) return { state: "bricked", what: "Triage Rig" };
+      return { state: "ok" };
+    }
+    if ((d.grid || {}).isCodebreaker) {
+      var dk = (d.grid || {}).deck;
+      if (!dk) return { state: "missing", what: "Smartdeck", cat: "Smartdecks & B&E Buddies",
+        title: "Nothing to jack into",
+        say: "Every cipher you know is sitting behind glass. The #GRID does not care how good you are if you turned up without hardware." };
+      if (dk.bricked) return { state: "bricked", what: "Smartdeck" };
+      /* A Racked deck is stowed (30 Oct 2026): it goes through this same gate as no deck at all,
+         so the Bandwidth abilities leave the list until it is taken out. The box offers TAKE OUT. */
+      var dkE = dk.key ? eng.findEntry(ch, dk.key) : null;
+      var stw = (dkE && eng.stowedInfo) ? eng.stowedInfo(ch, dkE) : null;
+      var dkName = dk.type === "buddy" ? "B&E Buddy" : "Smartdeck";
+      if (stw) return { state: "missing", stowed: stw, deckKey: dk.key, what: dkName,
+        title: "Racked in your " + stw.gearName,
+        say: "Your " + dk.tier + " " + dkName + " is stowed in your " + stw.gearName + ", not in hand. Nothing runs through it until you take it out." };
+      return { state: "ok" };
+    }
+    return null;
+  }
+
   function render(mount) {
     var ch = store.active();
     clear(mount);
@@ -4363,17 +5106,14 @@ EN.combatView = (function () {
     /* status strip; each stat is clickable (toggles a breakdown panel) and
        hoverable (native tooltip) so you can see exactly what feeds the number:
        base, attribute mods, gear, chrome, lineage features, and conditions. */
-    var dg = d.defenseGear || {};
-    var agiMod = d.attributes.AGI.mod;
-    /* Initiative rolls d20 + Caliber + Agility OR Wits, the player's pick (the higher by
-       default); init.total carries Caliber. eng.initiative is
-       THE resolver, and it takes this view's condition delta because conditions are assembled
-       here rather than in the engine. Summing it inline is exactly what let the print sheet and
-       the PDF drift to a shorter sum and under-report a chromed character. */
-    var init = eng.initiative(d, fx.init);
-    var initAttr = init.attr;
-    var initMod = init.mod;
-    var initVal = init.total;
+    var _SM = statModelFor(ch, d, fx);
+    var dg = _SM.dg;
+    var init = _SM.init;
+    var initAttr = _SM.initAttr;
+    var initVal = _SM.initVal;
+    var spDisplay = _SM.spDisplay;
+    var defAttrName = _SM.defAttrName;
+    var BD = _SM.BD;
     /* The Initiative modifier picker: AGILITY, WITS, or HIGHER (no pick stored, so it follows the
        scores). Stored on the character as initAttr; each button shows what that pick totals. */
     function initPicker() {
@@ -4381,7 +5121,7 @@ EN.combatView = (function () {
       function opt(key, label, total) {
         var on = key ? init.chosen && init.attr === key : !init.chosen;
         return el("button.btn.sm" + (on ? ".primary" : ""), { dataset: { initPick: key || "auto" }, "aria-pressed": on ? "true" : "false",
-          onclick: function () { store.update(function (c) { if (key) c.initAttr = key; else delete c.initAttr; }); } },
+          onclick: function () { setInitAttr(key); } },
           label + " " + eng.fmtMod(total));
       }
       return el("div.row.wrap", { dataset: { initPicker: "1" }, style: { gap: "6px", margin: "0 0 6px" } }, [
@@ -4390,134 +5130,7 @@ EN.combatView = (function () {
         opt(null, "HIGHER", cal + Math.max(init.agi, init.wit) + rest)
       ]);
     }
-    var spPath = speedPath(d, fx), spDisplay = spPath.total;
-    var lineFeats = (eng.activeLineageFeatures ? eng.activeLineageFeatures(ch) : []) || [];
-    var defAttrName = d.defenseAttr === "BOD" ? "Body" : "Agility";
-    var defAttrReason = d.defenseAttr === "BOD"
-      ? (lineFeats.indexOf("Dermal Plating") !== -1 ? "Dermal Plating" : "lineage")
-      : null;
-    // chrome that moves Speed, attributed to the specific installed piece
-    var cyberSpeedRows = [];
-    var _cwItems = (EN.cyberware && EN.cyberware.items) || [];
-    (ch.cyberware || []).forEach(function (cw) {
-      if (!cw || typeof cw !== "object") return;
-      var cdef = _cwItems.find(function (i) { return i.key === cw.key; });
-      var ctier = cdef && (cdef.tiers || []).find(function (t) { return t.tier === cw.tier; });
-      if (ctier && ctier.bonus && ctier.bonus.speed) cyberSpeedRows.push({ label: cw.name || cw.base || "chrome", val: ctier.bonus.speed });
-    });
-    var baseMove = Math.max(3, 6 + agiMod), spdFloored = (6 + agiMod) < 3;
-    /* The SPD breakdown follows speedSteps' own path, so its rows add up to the total in the
-       book's order: the flat Load and condition reductions, then ONE row for whatever the
-       halvings (and a stated minimum, or a Speed 0 condition) did after them. */
-    var spBase = typeof d.speedBase === "number" ? d.speedBase : d.speed;
-    var spEnc = d.encumbrance || {}, spLoadFlat = ((spEnc.speedMods || {}).flat || 0) + (spPath.swapped ? (spEnc.speedMods || {}).halveInstead || 0 : 0);
-    var spCondFlat = fx.speedZero ? 0 : (fx.speedDelta || 0);
-    var spRest = spDisplay - (spBase + spLoadFlat + spCondFlat);
-    var spWhy = fx.speedZero ? [] : [spEnc.state === "overloaded" ? "Overloaded" : null, spPath.swapped ? "dragging" : null, fx.speedHalvings > 1 ? fx.speedHalvings + " conditions" : fx.speedHalvings ? "a condition" : null].filter(Boolean);
-    var spRestLabel = fx.speedZero ? "Conditions (Speed 0)"
-      : spWhy.length ? "Halved, round down (" + spWhy.join(", ") + ")" + (fx.speedMin && spDisplay === fx.speedMin ? ", minimum " + fx.speedMin : "")
-      : "Can't fall below " + (fx.speedMin || 0);
-    var spReduced = spDisplay !== spBase;
-    function bdRow(label, val, note, raw) { return { label: label, val: val, note: note || null, raw: !!raw }; }
-    /* The cover bonuses come off EN.combat.cover ("+2 Defense"), not typed here, so the
-       breakdown and Cover & Sight cannot disagree. */
-    var coverFoot = ((EN.combat || {}).cover || []).map(function (cv) {
-      var m = /\+(\d+) (?:bonus to )?Defense/.exec(cv.effect || "");
-      return m ? "+" + m[1] + " " + String(cv.name).replace(/ Cover$/, "").replace(/^Three-Quarter$/, "¾") : null;
-    }).filter(Boolean).join(" / ");
-    function chromeNote(k) { var cb = d.attributes[k].cyberBonus; return cb ? "score includes +" + cb + " from chrome" : null; }
-    var BD = {
-      DEF: { title: "Defense", total: d.defense, sign: false,
-        formula: "10 + " + defAttrName + " modifier" + (dg.shield ? " + shield" : "") + " + cover & active defenses (situational)",
-        rows: [bdRow("Base", 10, null, true),
-               bdRow(defAttrName + " modifier" + (defAttrReason ? " (" + defAttrReason + ")" : ""), d.attributes[d.defenseAttr].mod, chromeNote(d.defenseAttr))]
-          .concat(dg.shield ? [bdRow("Shield · " + dg.shield.name, dg.shieldDef)] : []),
-        foot: "Cover" + (coverFoot ? " (" + coverFoot + ")" : "") + " and a declared Active Defense add more against a specific attack, see Defend.",
-        rules: [["ref-def/defense", "Defense"], ["ref-cover", "Cover & Sight"], ["ref-def", "Active Defenses"]] },
-      DR: { title: "Damage Reduction", total: d.totalDR || 0, sign: false,
-        // "Armor DR stops only Standard Physical Damage; other types take it only where an entry says so."
-        formula: "Worn armor + armor mods + chrome + natural lineage DR vs Standard Physical Damage (Nonlethal, Ballistic, Piercing, Bludgeoning, Slashing) only",
-        rows: (dg.armor ? [bdRow("Armor · " + dg.armor.name + (dg.armorLapsed ? " (LEASE DUE)" : "") + (dg.armorDRLost ? " (" + dg.armorDR + " of " + dg.armorBaseDR + ", " + dg.armorDRLost + " lost)" : ""), dg.armorDR, null, true)] : [])
-          .concat(dg.armorModDR ? [bdRow("Armor Mod (highest flat DR)", dg.armorModDR)] : [])
-          .concat(d.naturalDR ? [bdRow("Natural (lineage)", d.naturalDR)] : [])
-          .concat(d.cyberDR ? [bdRow("Chrome · Subdermal Armor", d.cyberDR)] : [])
-          .concat((d.resistances || []).map(function (r) {
-            return bdRow(r.type + " · " + r.level, r.sources.join(", "));
-          })),
-        empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
-        foot: ((dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
-              (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top. " : "") +
-              // the one entry that carries armor DR past Standard Physical Damage
-              (dg.armor && !dg.armorLapsed && (dg.armor.traits || []).indexOf("Resonant Plating") !== -1 ? "Resonant Plating: " + dg.armor.name + "'s DR (" + ((d.armorDR || 0) + (dg.armorModDR || 0)) + ") also applies against Resonant damage." : "") +
-              /* Conditional Resistances (Street Scrapper's Upgrade) turn on what is hitting you,
-                 which the sheet cannot see, so they are a note here and never a row above: the
-                 author's decision 5, 2026-10-16. */
-              (d.resistNotes || []).map(function (n) { return " " + n.label + ": " + n.text + " Apply it when it fits."; }).join("")).trim() || null,
-        rules: [["ref-damage/damage-order", "Damage Order"]]
-          .concat((d.resistances || []).length ? [["ref-damage/resistance-vulnerability-and-immunity", "Resistance, Vulnerability & Immunity"]] : [])
-          .concat([["ref-dmg", "Damage Types"]]) },
-      SPD: { title: "Speed", total: spDisplay, sign: false,
-        formula: "max(3, 6 + Agility Modifier) + chrome + lineage − Bulky − flat load and condition reductions, then any halving (round down)",
-        rows: (spdFloored ? [bdRow("Base move (Agility floored to min 3)", baseMove, null, true)]
-                          : [bdRow("Base move", 6, null, true), bdRow("Agility modifier", agiMod, chromeNote("AGI"))])
-          .concat(cyberSpeedRows.map(function (r) { return bdRow("Chrome · " + r.label, r.val); }))
-          .concat(d.lineageSpeed ? [bdRow("Lineage", d.lineageSpeed)] : [])
-          // Speed a Talent or class feature grants (Asphalt Rider's Upgrade, Blitz Logic, Speed Freak, First Responder): the engine's own rows
-          .concat((d.speedFeatures || []).map(function (r) { return bdRow(r.label, r.val); }))
-          .concat(dg.speedPenalty ? [bdRow("Bulky · " + dg.armor.name, dg.speedPenalty)] : [])
-          .concat(spLoadFlat ? [bdRow("Encumbered", spLoadFlat)] : [])
-          .concat(spCondFlat ? [bdRow("Conditions", spCondFlat)] : [])
-          .concat(spRest ? [bdRow(spRestLabel, spRest)] : []),
-        foot: [d.lineageSpeedFirstRound ? "+" + d.lineageSpeedFirstRound + " Speed during the first round of any combat (Tuned Synapses)." : null,
-               spEnc.noDash ? (spEnc.dragging ? "Dragging: no Dash." : "Overloaded: no Dash.") : null].filter(Boolean).join(" ") || null,
-        // Movement & Terrain holds what Speed buys (costs, Difficult Terrain); its Speed reductions
-        // entry is listed while something here is reducing it
-        rules: [["bx-space", "Space, Speed & Area"], ["mv-move", "Movement & Terrain"]]
-          .concat(spReduced || dg.speedPenalty ? [["mv-move/speed-reductions", "Speed reductions"]] : [])
-          .concat(d.encumbrance && d.encumbrance.speedDelta ? [["sk-load", "Encumbrance & Load"]] : []) },
-      /* PHB p. 58: "Roll d20 + Caliber + Agility Modifier or Wits Modifier." The player picks the
-         modifier (ch.initAttr), defaulting to the higher; the picker sits in the panel. */
-      INIT: { title: "Initiative", total: initVal, sign: true,
-        formula: "Caliber + Agility or Wits Modifier (your pick" + (init.chosen ? "" : ", the higher by default") + ")" + (d.lineageInit && d.lineageInit.caliber ? " + lineage" : "") + (d.cyberInit ? " + chrome" : "") + (fx.init ? " + conditions" : ""),
-        rows: [bdRow("Caliber", init.caliber), bdRow((initAttr === "WIT" ? "Wits" : "Agility") + " modifier" + (init.chosen ? " (your pick)" : " (the higher of Agility/Wits)"), initMod, chromeNote(initAttr))]
-          .concat(d.lineageInit && d.lineageInit.caliber ? [bdRow("Lineage · Static Premonition", d.lineageInit.caliber)] : [])
-          .concat(d.cyberInit ? [bdRow("Chrome · Reflex Booster", d.cyberInit)] : [])
-          .concat(fx.init ? [bdRow("Conditions", fx.init)] : []),
-        // the Edge names every source the engine found (Tuned Synapses, First Responder, Veteran Instincts); it never stacks
-        foot: ("Initiative roll = d20 + this. A tie goes to the higher modifier used (" + init.attrName + " " + eng.fmtMod(initMod) + ")." + (init.edge
-          ? " Roll with Edge (" + ((init.edgeSources && init.edgeSources.length) ? init.edgeSources.join(", ") : "Tuned Synapses") + ")." : "")
-          + (init.overrides || []).filter(function (o) { return o.source === "Risk Assessment"; }).map(function () { return " Risk Assessment: Wits in place of Agility."; }).join("")
-          + (init.social ? " Social Encounters (Cold Reader): " + init.social.label + ", with Edge; Presence in place of Wits." : "")),
-        controls: initPicker(),
-        rules: [["ref-round", "Initiative & the Round"]] },
-      // Size is derived from height, and its only mechanical reach is the
-      // Encumbrance Threshold and comparison (grappling, moving through a
-      // space, the Body Gate). It never touches a d20 roll, Defense, or Speed.
-      SIZE: (function () {
-        var band = (R.lineageHeight || {})[ch.lineage] || null;
-        var foot = (R.sizeFootprint || {})[d.size];
-        var trait = (R.sizeTraits || {})[d.size];
-        var rows = [];
-        // stored as decimal feet, shown as feet and inches (engine.fmtFtIn): 5.5 reads "5 ft 6 in"
-        if (d.heightFt != null) rows.push({ label: "Height", val: eng.fmtFtIn(d.heightFt), raw: true });
-        if (band) rows.push({ label: "Lineage range", val: band.fixed ? eng.fmtFtIn(band.min) + ", no variance" : eng.fmtFtIn(band.min) + " to " + eng.fmtFtIn(band.max), raw: true });
-        if (foot) rows.push({ label: "Footprint", val: foot.square, raw: true });
-        if (trait && trait.encumbrance) rows.push(bdRow("Encumbrance Threshold", trait.encumbrance));
-        /* Heavy Payload counts you one Size larger FOR GRAPPLING ONLY. Stated as a row here
-           rather than moved into d.size, which would be wrong twice: Size also feeds
-           sizeEncumbranceAdj, and the feature already grants its own separate +2 Threshold
-           at engine.js, so promoting the Size would pay that bonus a second time. */
-        if (eng.activeLineageFeatures(ch).indexOf("Heavy Payload") !== -1) {
-          rows.push({ label: "Grappling only (Heavy Payload)", val: "counts one Size larger", raw: true });
-        }
-        return { title: "Size", total: d.size || "not set", sign: false,
-          formula: "derived from height; a boundary height takes the larger category",
-          empty: d.size ? null : "Pick a height on the #PRINT tab to set your Size.",
-          rows: rows,
-          foot: trait ? trait.text : null,
-          rules: [["ref-size", "Size"], ["sk-load", "Encumbrance & Load"]] };
-      })()
-    };
+    BD.INIT.controls = initPicker();
     function fmtVal(r) { return r.raw ? String(r.val) : (r.val >= 0 ? "+" : "") + r.val; }
     function titleFor(bd) {
       var lines = [bd.title + " = " + (bd.sign ? eng.fmtMod(bd.total) : bd.total)];
@@ -4601,109 +5214,7 @@ EN.combatView = (function () {
           el("span", { style: { fontSize: "12px", fontWeight: 600, color: "var(--text)" }, text: name })
         ]);
       }
-      var chips = [];
-      var DUE_TIP = "Lease installment due; it grants none of its benefits until you pay (Inventory > Stash).";
-      if (dg.armor) {
-        if (dg.armorLapsed) chips.push(gchip("ARMOR · LEASE DUE", dg.armor.name, DUE_TIP, "var(--danger)"));
-        else { var ap = [dg.armorDRLost ? dg.armorDR + " of " + dg.armorBaseDR + " DR" : dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
-        /* An unanswered damage-type menu on the suit you are WEARING. The Resistances list
-           cannot show it, because an unanswered menu grants nothing and so has no row there,
-           and the ARMOR chip beside this one never asks. The Ablative Coating got its own
-           play-time chip when it shipped and the four suits did not, which is the third time
-           this exact hole has been filled: a marker that only the player who had already
-           opened the control could see. engine.armorResistOwed was written for it and had no
-           caller in the app until now. Not drawn for a lapsed suit, which grants nothing
-           either way and says so one chip to the left. */
-        if (!dg.armorLapsed && eng.armorResistOwed) {
-          var resOwed = eng.armorResistOwed(ch, dg.armorKey, dg.armor);
-          if (resOwed > 0) {
-            /* Two sentences rather than one, because the Reliquary Shell picks TWO and owing one
-               of them is a real state: the type already chosen is granting, and a tooltip saying
-               the suit "is granting none" would be flatly false while a row for it sits in the
-               Resistances list one panel away. */
-            var resHave = eng.armorResistPicks ? eng.armorResistPicks(ch, dg.armorKey, dg.armor).length : 0;
-            var resTip = resHave
-              ? dg.armor.name + " grants Resistance to two damage types of your choice. You have chosen one, which applies; the second grants nothing until you choose it."
-              : dg.armor.name + " grants Resistance to " + (resOwed > 1 ? "two damage types" : "a damage type")
-                  + " of your choice. Until you choose, it grants none.";
-            chips.push(gchip("ARMOR · RESISTANCE", resOwed + " unchosen",
-              resTip + " Choose on the suit's card in Inventory > Stash.", "var(--warn)"));
-          }
-        }
-      }
-      // installed Armor Mods (Impact Table) on the worn suit; a leased mod in arrears is dark
-      if (dg.armor && EN.armorMods) {
-        // dg.armorKey is the WORN suit's entry: since 2026-08-12 a spare of the same name
-        // carries its own mods, so the Block card has to name the piece, not the type.
-        (eng.armorModsOn ? eng.armorModsOn(ch, dg.armorKey) : []).forEach(function (k) {
-          var m = EN.armorMods.byKey[k]; if (!m) return;
-          var mLapsed = eng.leaseLapsed && eng.leaseLapsed(ch, m.name);
-          if (mLapsed) { chips.push(gchip("MOD · LEASE DUE", m.name, DUE_TIP, "var(--danger)")); return; }
-          /* A lapsed SUIT grants nothing and neither do its mods. The engine has always said so
-             in two places, armorModDR returning 0 and hazardMitigations answering "its lease has
-             lapsed, so its mods grant nothing", but this loop checked only the MOD's own lease
-             and printed the catalog line regardless. That was over-generous while every chip
-             here was a label. It stopped being harmless the moment one of them became a control:
-             an Ablative Coating on a lapsed Bailiff Rig would have read MOD BALLISTIC, claimed a
-             Resistance damageResistances was not granting, and offered to burn it. */
-          if (dg.armorLapsed) {
-            chips.push(gchip("MOD · INERT", m.name,
-              m.name + " is fitted to " + dg.armor.name + ", whose lease installment is due. A lapsed suit's mods grant nothing until you pay (Inventory > Stash).",
-              "var(--text3)"));
-            return;
-          }
-          /* The Ablative Coating is the only mod with live state, so its chip reports it and
-             flips it. The burn happens mid-fight, and the only other control for it is the mod
-             bench, three selections deep on another tab: nobody is walking there between a hit
-             and the next attack roll. Both controls read the same engine answer, so the chip and
-             the bench cannot disagree; the lapse gate above is what keeps the chip and the
-             RESISTANCE LIST in step, since ablativeState is asked about one suit by key and
-             knows nothing about which suit is worn or whether its lease is paid. */
-          if (m.key === "ablative-coating" && eng.ablativeState) {
-            var ab = eng.ablativeState(ch, dg.armorKey);
-            if (ab.options) {
-              if (!ab.type) {
-                chips.push(gchip("MOD · UNTUNED", m.name,
-                  "Choose Ballistic, Piercing, Slashing or Bludgeoning for this coating on the Impact Table bench (Inventory > Workbench). Until you do, it grants nothing.",
-                  "var(--warn)"));
-              } else {
-                chips.push(gchip(ab.spent ? "MOD · SPENT" : "MOD · " + ab.type.toUpperCase(), m.name,
-                  ab.spent
-                    ? "Burned away; it grants no Resistance until you re-layer it in Downtime. Click to re-layer."
-                    : "Resistance to " + ab.type + ". Click when it burns away stopping a hit of that type that would have carried through to your Wounds.",
-                  ab.spent ? "var(--text3)" : "var(--ember)",
-                  function () {
-                    store.update(function (c) {
-                      c.ablativeCoating = c.ablativeCoating || Object.create(null);
-                      c.ablativeCoating[dg.armorKey] = { type: ab.type, spent: !ab.spent };
-                    });
-                  }));
-              }
-              return;
-            }
-          }
-          chips.push(gchip("MOD", m.name, m.grants + ". " + m.effect, "var(--ember)"));
-        });
-      }
-      if (dg.shield) {
-        if (dg.shieldLapsed) chips.push(gchip("SHIELD · LEASE DUE", dg.shield.name, DUE_TIP, "var(--danger)"));
-        else if (!dg.shieldAlive) {
-          // 0 Durability boxes: a physical shield is wreckage, an emitter has gone dark
-          chips.push(gchip(dg.shieldEmitter ? "SHIELD · DARK" : "SHIELD · DESTROYED", dg.shield.name,
-            dg.shieldEmitter ? "Emitter overloaded; grants nothing until it resets or is repaired"
-                             : "Beyond repair; the wreck counts as salvage", "var(--danger)"));
-        } else {
-          var spv = [(dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " DEF"];
-          if (dg.shieldBlockDie) spv.push(dg.shieldBlockDie + " Block");
-          if (dg.shieldWearThreshold) spv.push("Wear " + dg.shieldWearThreshold);
-          spv.push("□".repeat(dg.shieldBoxesLeft) + "■".repeat(dg.shieldSpent));
-          chips.push(gchip("SHIELD", dg.shield.name, spv.join(" · "), "var(--accent)"));
-        }
-      }
-      if (dg.focus) {
-        if (dg.focusLapsed) chips.push(gchip("FOCUS · LEASE DUE", dg.focus.name, DUE_TIP, "var(--danger)"));
-        else chips.push(gchip("FOCUS", dg.focus.name, (dg.focus.wardDie || "") + " Ward", "var(--flow)"));
-      }
+      var chips = defenseLoadoutFor(ch, d, dg).map(function (c) { return gchip(c.label, c.name, c.tip, c.color, c.onclick); });
       if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped; buy defensive gear in Inventory → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." })];
       return [el("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", margin: "2px 0 8px" } }, chips)];
     }
@@ -5048,11 +5559,11 @@ EN.combatView = (function () {
       (s.dying || s.stable) ? el("div", { style: { marginTop: "8px" } }, [
         el("div.row.wrap", { style: { gap: "12px", alignItems: "center" } }, [
           el("span.help", { style: { margin: 0 } }, [cxLink("rc-dying/death-saves", "Death Saves"), " · ✓"]),
-          pips(ch.deathSaves.s || 0, 3, "var(--success)", function (n) { store.update(function (c) { c.deathSaves.s = n; if (n >= 3) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; } }); }),
+          pips(ch.deathSaves.s || 0, 3, "var(--success)", function (n) { setDeathSaves("s", n); }),
           el("span.help", { style: { margin: 0 }, text: "✗" }),
-          pips(ch.deathSaves.f || 0, 3, "var(--danger)", function (n) { store.update(function (c) { c.deathSaves.f = n; }); }),
+          pips(ch.deathSaves.f || 0, 3, "var(--danger)", function (n) { setDeathSaves("f", n); }),
           // the title is the book's Stabilize treatment (both checks); the button records a success
-          s.dying ? el("button.btn.sm", { title: rcStabilizeTitle(), onclick: function () { store.update(function (c) { c.stable = true; c.deathSaves = { s: 0, f: 0 }; }); toast("Stabilized, unconscious at 0 Wounds."); } }, "STABILIZE") : null,
+          s.dying ? el("button.btn.sm", { title: rcStabilizeTitle(), onclick: function () { stabilize(); } }, "STABILIZE") : null,
           s.dying ? EN.ui.ruleChip("rc-medical/stabilize", { title: "Stabilize" }) : null
         ]),
         (ch.deathSaves.f || 0) >= 3 ? el("p", { style: { color: "var(--danger)", fontFamily: "var(--mono)", marginTop: "6px" } },
@@ -5300,57 +5811,11 @@ EN.combatView = (function () {
 
     /* ACTIONS, tabbed, like a play-sheet */
     var C = EN.combat || {};
-    // only features with usable mechanics belong on the play-sheet; drop progression
-    // scaffolding ("choose a subclass / Universal Upgrade" prompts) and scaling
-    // reminders like "Cheap Shot (3d6)" whose base feature is already listed
-    var SCAFFOLD_FEATURE = /^(Universal Upgrade|Subclass Feature|Subclass Capstone|Awakening Milestone)$|\bSubclass$/;
-    var kept = d.features.filter(function (f) {
-      if (SCAFFOLD_FEATURE.test(f.name)) return false;
-      var base = f.name.replace(/\s*\(.*\)$/, "");
-      if (base !== f.name && d.features.some(function (o) { return o !== f && o.name === base; })) return false;
-      return true;
-    });
-    // break the bundled resource feature (Moxie/Overdrive/Triage/... ability list) into its own
-    // rows, each tagged with the ability's action type and per-ability resource cost chip
-    var FEATURE_EXPANSIONS = resourceExpansion(ch, d);
-    var resUp = (d.resource && d.resource.name) ? d.resource.name.toUpperCase() : "";
-    var expanded = [];
-    kept.forEach(function (f) {
-      var exp = FEATURE_EXPANSIONS[f.name];
-      if (exp) {
-        exp.subs.forEach(function (s) {
-          /* A variable spend shows its RANGE, not a flat 1. The ceiling is the general
-             Variable Costs rule (EN.resourceRules.variableCosts): no single activation may
-             spend more than your Caliber. Shown as the smaller of Caliber and the pool,
-             because a cap you cannot afford is not the real limit. A falsy cost renders no
-             chip at all, which is what Spite wants: it costs no Overdrive. */
-          var _chip = s.cost ? s.cost + " " + resUp : null;
-          if (s.costVariable) {
-            var _cap = Math.max(s.cost || 1, Math.min(d.caliber || 1, (d.resource && d.resource.max) || (d.caliber || 1)));
-            _chip = (s.cost || 1) + " to " + _cap + " " + resUp;
-          }
-          expanded.push({ key: s.key, name: s.name, source: f.source, level: f.level, text: s.text,
-                          _cost: s.action || actionCost(s.text), chip: _chip, requirements: s.requirements });
-        });
-      } else expanded.push(f);
-    });
-    var feats = expanded.map(function (f, i) {
-      // an explicit "(Active)"/"(Passive)" marker overrides the text-based cost parse,
-      // then comes off the displayed title
-      var forced = /\(Active\)\s*$/i.test(f.name) ? "active" : (/\(Passive\)\s*$/i.test(f.name) ? "passive" : null);
-      // an explicit `action` on the data row beats the text parse, which guessed from prose and
-      // read "cannot take Impulse Actions" in Pollen Haze as though the feature COST an Impulse
-      var cost = f._cost || f.action || actionCost(f.text);
-      if (forced === "active" && cost === "Passive") cost = "Active";
-      if (forced === "passive") cost = "Passive";
-      return { id: "act-" + i, key: f.key || null, name: f.name.replace(/\s*\((Active|Passive)\)\s*$/i, ""), src: f.source + " · L" + f.level,
-               // noTracker: the feature's "once per scene" is about something other than its own use (A Sucker Born Every Minute's new Mark)
-               text: f.text, cost: cost, limited: isLimited(f.text), chip: f.chip, uses: f.noTracker ? null : parseUses(f.text, d),
-               requirements: f.requirements };
-    });
-    // active vs passive split of the computed features (markers already folded into cost)
-    var activeFeats = feats.filter(function (f) { return f.cost !== "Passive"; });
-    var passiveFeats = feats.filter(function (f) { return f.cost === "Passive"; });
+    var _FM = featsFor(ch, d);
+    var kept = _FM.kept;
+    var expanded = _FM.expanded;
+    var activeFeats = _FM.activeFeats;
+    var passiveFeats = _FM.passiveFeats;
 
     /* shared across the Weapons tab, Defend section, and Loadout count */
     // GROUP_CAT is at file level (CHECK AND ATTACK CONTEXTS, above render)
@@ -5416,8 +5881,7 @@ EN.combatView = (function () {
           el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", marginLeft: "6px" }, text: "DC " + d.flow.dc + " · " + d.flow.attributeName }) ]));
         kids.push(el("div.row.between.wrap", { style: { alignItems: "center" } }, [
           el("div.mono", { style: { fontSize: "22px", color: resourceColor("Flow") }, html: fCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.flow.max + " FP · Attack " + eng.fmtMod(d.flow.attackBonus) + "</span>" }),
-          plusMinus(function () { store.update(function (c) { c.flow.current = Math.max(0, fCur - 1); }); },
-                    function () { store.update(function (c) { c.flow.current = Math.min(d.flow.max, fCur + 1); }); })
+          plusMinus(function () { flowStep(ch, d, -1); }, function () { flowStep(ch, d, 1); })
         ]));
         kids.push(bar(fCur, d.flow.max, resourceColor("Flow")));
         kids.push(el("div.row.wrap", { style: { gap: "10px", marginTop: "8px", alignItems: "center" } }, [
@@ -5467,60 +5931,21 @@ EN.combatView = (function () {
            BRICKED   the hardware is present and dead. Everything stays listed and the card,
                      the pool and the abilities all grey out together, matching the dead look
                      the #GRID tab already wears at full damage. */
-      var _dep = (function () {
-        if (!d.resource) return null;
-        if (d.triage) {
-          var t = d.rig || {};
-          // a Stitcher improvising on a Scrap Rig is equipped, just badly
-          if (t.scrapRig) return { state: "ok" };
-          if (!t.rigTier) return { state: "missing", what: "Triage Rig", cat: "Trauma Rigs",
-            title: "No Rig on you",
-            say: "You know exactly what to do and have nothing to do it with. Triage Protocols run through a Triage Rig; steady hands and good intentions do not close a chest wound." };
-          if (t.bricked) return { state: "bricked", what: "Triage Rig" };
-          return { state: "ok" };
-        }
-        if ((d.grid || {}).isCodebreaker) {
-          var dk = (d.grid || {}).deck;
-          if (!dk) return { state: "missing", what: "Smartdeck", cat: "Smartdecks & B&E Buddies",
-            title: "Nothing to jack into",
-            say: "Every cipher you know is sitting behind glass. The #GRID does not care how good you are if you turned up without hardware." };
-          if (dk.bricked) return { state: "bricked", what: "Smartdeck" };
-          /* A Racked deck is stowed (30 Oct 2026): it goes through this same gate as no deck at all,
-             so the Bandwidth abilities leave the list until it is taken out. The box offers TAKE OUT. */
-          var dkE = dk.key ? eng.findEntry(ch, dk.key) : null;
-          var stw = (dkE && eng.stowedInfo) ? eng.stowedInfo(ch, dkE) : null;
-          var dkName = dk.type === "buddy" ? "B&E Buddy" : "Smartdeck";
-          if (stw) return { state: "missing", stowed: stw, deckKey: dk.key, what: dkName,
-            title: "Racked in your " + stw.gearName,
-            say: "Your " + dk.tier + " " + dkName + " is stowed in your " + stw.gearName + ", not in hand. Nothing runs through it until you take it out." };
-          return { state: "ok" };
-        }
-        return null;
-      })();
+      var _dep = hardwareDepFor(ch, d);
       var _dead = !!(_dep && _dep.state === "bricked");
 
       function featNode(f) {
         var uses = f.uses ? {
           max: f.uses.max, recharge: f.uses.recharge,
-          spent: Math.min((((ch.featureUses || {})[f.name] || {}).n) || 0, f.uses.max),
-          onSet: function (n) {
-            store.update(function (c) {
-              c.featureUses = c.featureUses || {};
-              if (n <= 0) delete c.featureUses[f.name];
-              else c.featureUses[f.name] = { n: n, r: f.uses.recharge };
-            });
-          }
+          spent: featUsesSpent(ch, f),
+          onSet: function (n) { setFeatUses(f, n); }
         } : null;
         var onUse = null, canUse = false;
         if (d.resource && f.chip && f.chip.toUpperCase().indexOf(rName) !== -1) {
           var moxieCost = parseInt(f.chip, 10) || 1;
           canUse = rCur >= moxieCost;
           onUse = (function (cost) {
-            return function () {
-              store.update(function (c) {
-                c.resources.current[d.resource.name] = Math.max(0, rCur - cost);
-              });
-            };
+            return function () { resourceStep(ch, d, -cost); };
           })(moxieCost);
         }
         var entry = actionEntry(f.id, f.name, f.cost, f.src, f.text, f.limited, f.chip, uses, onUse, canUse, f.requirements);
@@ -5540,10 +5965,8 @@ EN.combatView = (function () {
       function pushFeat(f) { kids.push(featNode(f)); }
 
       if (d.resource) {
-        var rCur = (ch.resources.current[d.resource.name] != null) ? ch.resources.current[d.resource.name] : d.resource.max;
+        var rCur = resourceNow(ch, d);   // clamped to the maximum, unless Maximum Overdrive holds it past
         var _odOn = maxOverdriveOn(ch), rMax = d.resource.max;
-        // only Maximum Overdrive can hold the pool past its maximum; anything else reads clamped
-        rCur = eng.clamp(rCur, 0, _odOn ? Math.max(rMax, rCur) : rMax);
         var _over = Math.max(0, rCur - rMax);
 
         /* Build the pool's rows ONCE, then decide where they land. A class whose hardware
@@ -5559,8 +5982,7 @@ EN.combatView = (function () {
                   (_over ? " · <span style='color:var(--gold)'>+" + _over + " OVERFLOW, lost when the encounter ends</span>" : "") +
                   " · " + d.resource.attributeName + " · refresh on rest</span>" }),
           // the sheet's own + stops at the maximum; it never takes away overflow already held
-          plusMinus(function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.max(0, rCur - 1); }); },
-                    function () { store.update(function (c) { c.resources.current[d.resource.name] = Math.max(rCur, Math.min(d.resource.max, rCur + 1)); }); })
+          plusMinus(function () { resourceStep(ch, d, -1); }, function () { resourceStep(ch, d, 1); })
         ]));
         resKids.push(bar(Math.min(rCur, rMax), d.resource.max, resourceColor(d.resource.name)));
         if (_odOn) {
@@ -5582,15 +6004,9 @@ EN.combatView = (function () {
                 _woundUsed ? "Already gained from a Wound hit this round. NEW ROUND resets it." : "An Enemy's attack dealt you Wound damage: gain 1 Overdrive. Once per round; Vitality or Vigor damage alone doesn't count.",
                 !_woundUsed, function () { _odGain(true); }),
               _odBtn("mod-round", "NEW ROUND", "A new round: the Wound trigger is ready again", _woundUsed,
-                function () { store.update(function (c) { if (c.resources) delete c.resources.maxOdWound; }); }),
+                function () { maxOdNewRound(); }),
               _odBtn("mod-end", "END ENCOUNTER: SHED OVERFLOW", "The encounter is over: Overdrive above your maximum is lost (no damage), and the Wound trigger resets",
-                _over > 0 || _woundUsed, function () {
-                  store.update(function (c) {
-                    var cur = c.resources.current[d.resource.name]; if (cur == null) cur = rMax;
-                    c.resources.current[d.resource.name] = Math.min(cur, rMax);
-                    delete c.resources.maxOdWound;
-                  });
-                })
+                _over > 0 || _woundUsed, function () { maxOdEndEncounter(d); })
             ])
           ]));
         }
@@ -5677,15 +6093,7 @@ EN.combatView = (function () {
        Auto-built passive features (read-only rules text, player-annotatable) plus
        manual GM/player entries. Computed and custom features live in one place. */
     function annot(name) { return (ch.featureAnnotations || {})[name] || {}; }
-    function setAnnot(name, patch, silent) {
-      store.update(function (c) {
-        c.featureAnnotations = c.featureAnnotations || {};
-        var a = c.featureAnnotations[name] || {};
-        Object.keys(patch).forEach(function (k) { a[k] = patch[k]; });
-        if (!a.note && !a.pinned && !a.important && !a.hidden) delete c.featureAnnotations[name];
-        else c.featureAnnotations[name] = a;
-      }, silent ? { silent: true } : undefined);
-    }
+    function setAnnot(name, patch, silent) { setFeatureAnnot(name, patch, silent); }
     function flagBtn(glyph, on, title, onclick) {
       return el("button", { title: title, onclick: function (e) { e.stopPropagation(); onclick(); },
         style: { background: on ? "var(--accent)" : "transparent", color: on ? "var(--bg)" : "var(--text3)",
@@ -6132,12 +6540,7 @@ EN.combatView = (function () {
               style: { padding: "1px 8px", fontSize: "10.5px",
                        color: grip.twoHanded ? "var(--accent)" : "var(--text3)",
                        borderColor: grip.twoHanded ? "var(--accent)" : "var(--border2)" },
-              onclick: (function (k, now) { return function () {
-                store.update(function (c) {
-                  c.weaponGrip = c.weaponGrip || {};
-                  if (now) delete c.weaponGrip[k]; else c.weaponGrip[k] = "two";
-                });
-              }; })(wKey, grip.twoHanded) },
+              onclick: (function (k, now) { return function () { setWeaponGrip(k, !now); }; })(wKey, grip.twoHanded) },
               grip.twoHanded ? "TWO-HANDED · " + grip.versatile : "ONE-HANDED · " + grip.baseDice)
           : (grip.versatile && grip.forcedBy
               ? el("span.chip", { title: grip.why, style: { color: "var(--warn)", borderColor: "var(--warn)" } },
@@ -6188,13 +6591,7 @@ EN.combatView = (function () {
                      color: on ? "var(--bg)" : "var(--gold)",
                      background: on ? "var(--gold)" : "transparent",
                      borderColor: "var(--gold)" },
-            onclick: function () {
-              store.update(function (c) {
-                c.attackAttr = c.attackAttr || Object.create(null);
-                if (c.attackAttr[wKey] === o.feature) delete c.attackAttr[wKey];
-                else c.attackAttr[wKey] = o.feature;
-              });
-            } },
+            onclick: function () { toggleAttackOffer(wKey, o.feature); } },
             (on ? "\u2713 " : "") + o.attrName.toUpperCase() + " " + eng.fmtMod(hitOn)
               + " / " + eng.fmtMod(o.mod) + " \u00b7 " + o.feature.toUpperCase());
         });
@@ -6293,43 +6690,14 @@ EN.combatView = (function () {
          The fallback term is `realWeaponNames`, not `equippedNames`: holding only a
          pair of Knuckles is not holding a weapon. That term is belt and braces here,
          since an augment also pushes an increase and the gate is already true. */
-      var uStrike = d.unarmed;
-      if (uStrike.replacers.length || uStrike.increases.count || uStrike.riders.length
-          || uStrike.reach.spaces || !realWeaponNames.length) {
-        var uBase = d.unarmedBase;
-        var lu = uStrike.replacer, luFin = !!(uStrike.traits && /Finesse/.test(uStrike.traits));
-        var luAttr = luFin ? Math.max(d.attributes.BOD.mod, d.attributes.AGI.mod) : d.attributes.BOD.mod;
-        // "Unarmed strikes use your Simple Weapons Proficiency Bonus, and follow the
-        // usual Untrained rule if you lack it."
-        var swTier = eng.effectiveGearTier(ch, "weapons", "Simple Weapons");
-        var swProf = R.profTiers[swTier].d20, swUntrained = swTier === "untrained";
-        var luMod = luAttr + swProf;
-        var luKind = lu ? (UNARMED_KIND[lu.kind] || "Natural Weapon") : "Unarmed Strike";
-        var luName = lu ? luKind + " · " + lu.source : "Unarmed Strike";
-        var luAttrLabel = (luFin ? "Body/Agility" : "Body") + " Modifier";
-        var luSnag = atkSnag || swUntrained;
-        // proficiency rides the attack roll only; damage keeps the attribute
-        // modifier. A strike with no die is a flat 1, so it has nothing to roll
-        // and opens no damage tray; the row states its damage instead. Riders are
-        // situational (a Surge that is not up adds nothing), so they stay in the
-        // row text rather than being pre-loaded into the tray.
-        var luDmg = uStrike.die
-          ? { weaponName: luName, subtype: luKind.toUpperCase(), dice: uStrike.die, types: [uStrike.type],
-              flat: luAttr, flatLabel: luAttrLabel, versatile: null, cheapEligible: false, cheapDice: d.caliber || 1, crit: false }
-          : null;
-        var luDmgText = (uStrike.die ? uStrike.die : uBase.flat) + " " + uStrike.type
-          + (uStrike.traits ? " (" + uStrike.traits + ")" : "") + " + " + (luFin ? "mod" : "Body mod");
-        uStrike.riders.forEach(function (r) { luDmgText += " + " + r.damage + (r.when ? " " + r.when : ""); });
-        var luSubtype = (lu ? luKind + " · " + uStrike.type : "UNARMED STRIKE").toUpperCase();
+      var _UA = unarmedAttackFor(ch, d, fx, realWeaponNames.length > 0);
+      if (_UA) {
         // the damage readout shows its types as icons; the formula and the strike's note stay words
-        var luNote = [document.createTextNode("d20 + " + luAttrLabel + " + Simple Weapons Proficiency Bonus · "),
-          EN.ui.damageText(el("span.dmg-readout"), luDmgText),
-          document.createTextNode((uStrike.note ? " · " + uStrike.note : "") + (swUntrained ? " · Untrained (Simple Weapons): Snag" : ""))];
-        kids.push(attackRow(luName, eng.fmtMod(luMod), luNote, "var(--ember)", luSnag,
-          (function (nm, dmg) { return function () { openRollTray(simpleAttackCtx(nm, luSubtype,
-            [{ label: luAttrLabel, value: luAttr }].concat(swProf ? [{ label: "Simple Weapons Proficiency Bonus", value: swProf }] : []),
-            { snag: luSnag, dmg: dmg })); }; })(luName, luDmg),
-          unarmedPicker(uStrike, uBase)));
+        var luNote = [document.createTextNode("d20 + " + _UA.attrLabel + " + Simple Weapons Proficiency Bonus \u00b7 "),
+          EN.ui.damageText(el("span.dmg-readout"), _UA.dmgText),
+          document.createTextNode((_UA.note ? " \u00b7 " + _UA.note : "") + (_UA.untrained ? " \u00b7 Untrained (Simple Weapons): Snag" : ""))];
+        kids.push(attackRow(_UA.name, eng.fmtMod(_UA.hit), luNote, "var(--ember)", _UA.snag,
+          function () { openRollTray(_UA.ctx()); }, unarmedPicker(_UA.strike, _UA.base)));
       }
       /* The empty state, and it needs two branches now that it can actually appear
          for someone holding something. Telling a player who just pressed EQUIP on
@@ -6343,22 +6711,10 @@ EN.combatView = (function () {
             + " your unarmed strike rather than being a weapon in their own right, so there is no separate row: the strike above already counts them. Hit ⚔ EQUIP on an actual weapon in Inventory → Stash to list one here."
           : "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
       }
-      if (ch.class === "codebreaker") {
-        /* The Cipher Attack is the engine's effectiveAttack: Tech Modifier + Systems Proficiency Bonus + the
-           Smartdeck's Device Bonus, which "applies to both" the Cipher Attack and the Quick Hack (PHB 9094).
-           For a B&E Buddy it is the Buddy's own bonus. The fallbacks are for a record the grid block can't read. */
-        var gdk = d.grid || {};
-        var cipherBonus = gdk.effectiveAttack != null ? gdk.effectiveAttack
-          : gdk.cipherAttackBonus != null ? gdk.cipherAttackBonus : d.attributes.TEC.mod;
-        var cipherGloss = (gdk.deck && gdk.deck.type === "buddy")
-          ? "d20 + your B&E Buddy's attack bonus vs Node"
-          : "d20 + Tech Modifier + Systems Proficiency Bonus + Device Bonus vs Node";
-        kids.push(attackRow("Cipher Attack", eng.fmtMod(cipherBonus), cipherGloss + " · Quick Hacks under fire", "var(--accent)", null,
-          function () { openRollTray(simpleAttackCtx("Cipher Attack", "CIPHER · VS NODE DEFENSE", [{ label: "Cipher Attack", value: cipherBonus }], {})); }));
-      }
-      // the same bonus covers the Flow Attribute Check, which is why the gloss names both
-      if (d.flow) kids.push(attackRow("Flow Attack", eng.fmtMod(d.flow.attackBonus), "d20 + " + d.flow.attributeName + " + Caliber · also your Flow Attribute Check · Invocation Save DC " + d.flow.dc, "var(--flow)", null,
-        function () { openRollTray(simpleAttackCtx("Flow Attack", "FLOW · SAVE DC " + d.flow.dc, [{ label: d.flow.attributeName + " + Caliber", value: d.flow.attackBonus }], {})); }));
+      specialAttacksFor(ch, d).forEach(function (a) {
+        kids.push(attackRow(a.name, eng.fmtMod(a.hit), a.note, a.color, null,
+          function () { openRollTray(simpleAttackCtx(a.name, a.subtype, a.mods, {})); }));
+      });
       if (ch.class === "scoundrel") {
         var csdie = d.caliber + "d6";
         kids.push(el("div", { style: { padding: "8px 4px", borderBottom: "1px solid rgba(35,48,68,.5)" } }, [
@@ -6784,251 +7140,12 @@ EN.combatView = (function () {
        character and only lists defenses the character can actually use right now. ---- */
     function defendPanel() {
       var kids = [];
-      var resDie = d.resilienceDie ? "d" + d.resilienceDie : "Resilience Die";
-      var acro = d.skills.find(function (s) { return s.name === "Acrobatics"; });
-      // d.attuned is the derived predicate; d.flow stays the Reservoir object, which is what
-      // rebound actually reads. Two questions, two names, deliberately.
-      var attuned = !!d.attuned;
-      // Resurge rebounds your Flow Modifier with a floor of 1 (28 September rule text).
-      var rebound = d.flow ? Math.max(1, d.flow.attack) : null;
-      var focusDie = dg.wardDie || null, focusName = dg.focus ? dg.focus.name : (dg.armor && dg.armor.wardDie ? dg.armor.name : null);
-      /* A real melee weapon die for the Parry row. Unarmed AUGMENTS (Knuckles,
-         Shock Gloves) are deliberately skipped: their catalog `damage` is what they
-         ADD to a punch, not a die you roll instead of one, so reading it here made
-         strapping them on lower your Parry below the bare fist they improve. With
-         no real weapon the row falls through to the resolved unarmed strike, which
-         already has the augment folded into it. */
-      function realMeleeWeapon(n) {
-        var w = findWeapon(n);
-        if (!w || eng.isUnarmedAugmentName(w.name)) return null;
-        return (w.group === "Simple" || w.group === "Martial") ? w : null;
-      }
-      // Parry also accepts bare hands, so the unarmed strike's own damage is a
-      // parry source: the resolved die if anything granted one, else the flat 1.
-      var uParryDie = d.unarmed.die, uParryFlat = d.unarmed.flat;
-      /* THE PARRY SOURCES, resolved once, best first. Everything that renders or
-         rolls a Parry reads this list; there is no second place that decides.
-
-         It used to be a precedence CHAIN, weapon then shield then fists, first match
-         wins, written out twice (the row summary and the tray). Three things fell out
-         of that, and all three reproduced:
-           a 1d4 Scrap Shield beat a resolved 1d8 unarmed strike, so strapping on a
-             shield HALVED your Parry;
-           a Dagger listed before a Greatsword beat 2d6 with 1d4, purely on list order;
-           bare hands with no die read "Roll 1", which is not a die and not rollable.
-
-         The book does not describe a chain. Parry's Effect is "Roll your equipped
-         weapon's damage die, Oomph included ... or your unarmed strike damage if your
-         hands are what you brought", and it ends "If you are dual-wielding, choose which
-         weapon you parry with and roll its damage die." So this offers the CHOICE,
-         ordered by expected value so the default is the best one and the common case is
-         still one tap.
-
-         ONE SOURCE PER EQUIPPED PIECE, each rolling weaponGrip(ch, it, entryKey).dice:
-         the die for the grip it is held in, Oomph included (the author's decision 6,
-         2026-10-16), so a two-handed Longsword parries 1d10 and a Greatsword with a
-         Weighted Head parries 2d8. Parts and grip are per entry, so two copies of one
-         weapon can parry with different dice and are listed apart (by their row label).
-
-         A SHIELD IS NOT A SOURCE HERE, and that is the correction that matters most.
-         The app used to parry with the shield's `blockDie`, which is not a damage die:
-         it belongs to Block, whose Effect is "Roll your Shield's Block die (if you
-         carry one) and add your armor's flat Block Bonus". Parry rolls a DAMAGE die,
-         and no shield in the catalog has one. Verified against both live manuscripts
-         on 2026-08-11: Part 3's Physical Shields table is Name / Price / Defense /
-         Block / Traits with no damage column, there is no shield bash anywhere in
-         either book, and Parry never names a die for a shield.
-         A shield still SATISFIES Parry's Requirement ("a Simple Weapon, Martial
-         Weapon, or physical Shield equipped, or be fighting unarmed"), so carrying one
-         does not stop you parrying. It just contributes no die, and you roll a damage
-         die you actually have: a weapon's, or your fists'. */
-      function parryValue(s) { return s.sides ? s.n * (s.sides + 1) / 2 : (s.flat || 0); }
-      function parrySources() {
-        var out = [];
-        realWeaponRows.forEach(function (r) {
-          var w = realMeleeWeapon(r.name);
-          if (!w) return;
-          /* r56: a weapon still Racked (stowed, not taken out) parries nothing. Parry needs it
-             "equipped" in hand, and a Holster or Scabbard's free draw comes only with your first
-             attack, which a Parry is not. TAKE OUT puts it back on this list. */
-          var pE = eng.findEntry ? eng.findEntry(ch, r.key) : null;
-          if (pE && eng.stowedInfo && eng.stowedInfo(ch, pE)) return;
-          var g = eng.weaponGrip(ch, w, r.key);
-          var m = String(g.dice || "").match(/(\d*)d(\d+)/);
-          if (!m) return;
-          out.push({ key: "w:" + r.key, label: r.label || w.name, kind: "weapon",
-                     n: parseInt(m[1] || "1", 10), sides: parseInt(m[2], 10),
-                     why: g.why || "" });
-        });
-        var um = uParryDie ? /(\d*)d(\d+)/.exec(uParryDie) : null;
-        if (um) out.push({ key: "unarmed", label: "your unarmed strike", kind: "unarmed",
-                           n: parseInt(um[1] || "1", 10), sides: parseInt(um[2], 10) });
-        else out.push({ key: "unarmed", label: "your unarmed strike", kind: "unarmed", flat: uParryFlat });
-        out.sort(function (a, b) { return parryValue(b) - parryValue(a); });
-        return out;
-      }
-      function parryText(s) {
-        if (!s) return "nothing to parry with";
-        return s.sides ? "Roll " + s.n + "d" + s.sides + " (" + s.label + "), subtract from incoming damage"
-                       : "Bare hands with no die behind them: subtract " + (s.flat || 0) + " from incoming damage";
-      }
-      var pSources = parrySources(), pBest = pSources[0];
-      // Block works with a shield, a flat Block Bonus, or the Plated trait; a shield's
-      // die stacks on top. Gear whose lease is in arrears grants none of this.
-      var liveShield = (dg.shield && !dg.shieldLapsed && dg.shieldAlive) ? dg.shield : null;
-      var plated = !!(dg.armor && !dg.armorLapsed && (dg.armor.traits || []).indexOf("Plated") !== -1);
-      var blockBonus = dg.blockBonus || 0;
-      var platedHalf = plated ? Math.floor((dg.armorDR || 0) / 2) : 0;
-      var canBlock = !!liveShield || blockBonus > 0 || plated;
-      /* Reactive Plating is the one Block-boosting mod (PHB, Armor Mods: "When you choose Block, add
-         +1d6 to the damage prevented. This stacks with the Plated trait's Block benefit, the suit's
-         listed Block Bonus, and shield dice."), and the Block Effect names such mods: "any other Block
-         benefits you have (the Plated trait, Block-boosting mods)". Same guards as the Block card's
-         mod loop: a lapsed suit grants nothing and neither do its mods, and a leased mod in arrears
-         is dark. */
-      var reactive = !!(dg.armor && !dg.armorLapsed && eng.armorModsOn
-        && eng.armorModsOn(ch, dg.armorKey).indexOf("reactive-plating") !== -1
-        && !(eng.leaseLapsed && eng.leaseLapsed(ch, "Reactive Plating")));
-      var shieldRolls = !!(liveShield && dg.shieldBlockDie);
-      // in the Effect's order: "Roll your Shield's Block die (if you carry one) and add your armor's flat
-      // Block Bonus and any other Block benefits you have (the Plated trait, Block-boosting mods)"
-      var blockAdds = [];
-      if (shieldRolls) blockAdds.push(dg.shieldBlockDie + " (" + liveShield.name + ")");
-      if (blockBonus) blockAdds.push(blockBonus + " Block Bonus");
-      if (platedHalf) blockAdds.push(platedHalf + " half-DR (Plated)");
-      if (reactive) blockAdds.push("1d6 (Reactive Plating)");
-      // Shield Durability: a Blocked hit whose RAW damage meets the Wear Threshold
-      // marks a box, as does any Blocked critical. Offered as a one-tap control on
-      // the Block row, since that is the only moment it can happen.
-      // The one writer answers with what it did, and the toast reads THAT. It used to
-      // re-derive "boxes left" out here by adding the delta to ch.shieldWear again,
-      // after store.update had already added it to the same object, so every click
-      // counted twice: a 3-box Riot Shield announced its destruction at 2 boxes spent
-      // while still alive and still granting its Block die, and a 2-box Scrap Shield
-      // announced it on the first click. Nothing outside the engine derives this now.
-      function markShieldWear(delta) {
-        if (!dg.shield || !dg.shieldKey) return;
-        var res = null;
-        store.update(function (c) { res = eng.applyShieldWear(c, dg.shieldKey, delta); });
-        if (!res || !res.changed) return;
-        if (delta > 0 && res.destroyed) toast(res.emitter ? res.name + " overloaded and went dark." : res.name + " is destroyed; the wreck is salvage.");
-      }
-      /* Armor DR is mutable, and this is the moment it moves: Demolition Engine
-         attacking worn armor, a Blackware Hand Razors crit, a caustic environment.
-         Damage only; the two repair lanes (shop and bench) are priced work on the
-         Impact Table, and the one-point UNDO here is for a misclick, not a lane.
-         A clean repair's quality edge is spent first, absorbing the point for free. */
-      function markArmorDR(delta) {
-        var st = dg.armorState;
-        if (!st || !st.key || !st.base) return;
-        var res = null;
-        store.update(function (c) { res = eng.applyArmorDamage(c, st.key, delta); });
-        if (!res) return;
-        if (res.absorbed) { toast(st.name + ": the freshly seated plate absorbs the hit. No DR lost."); return; }
-        if (delta > 0 && res.breached) toast(st.name + " is breached at 0 DR; rebuilding it is a full Project on the Impact Table.");
-      }
-      // Per-defense roll specs for the Defensive Impulse tray. Dice come from live
-      // gear, so a Ward reads the attuned Focus and a Parry reads the equipped melee
-      // weapon rather than a fixed die.
-      function parseDie(str) { var m = /(\d*)d(\d+)/.exec(String(str || "")); return m ? { n: parseInt(m[1] || "1", 10), sides: parseInt(m[2], 10), label: (m[1] || "1") + "d" + m[2] } : null; }
-      // (firstMeleeDie lived here and was the first half of Parry's precedence chain:
-      //  "the first equipped melee weapon", which handed a Dagger the parry over a
-      //  Greatsword on list order alone. parrySources() replaced it and nothing else
-      //  called it, so it is gone rather than left for someone to wire back in.)
-      // Resurge and Siphon cost FP: the book says so once, in the Active Defense rules (no longer in the two entries)
-      var FP_NOTE = "Costs 1 FP on top of the Impulse Action; at 0 FP it counts as an Overdraw of 1 FP.";
-      function defSpec(name) {
-        var base = { name: name, baseDefense: d.defense, dice: [], flat: [],
-          // the Damage Order's step 3 for the tray's damage-type pick: DR only where the type takes it, then Resistance
-          mitigate: function (amount, type, opts) { return eng.netDamage(d, amount, type, opts); },
-          attuned: !!d.attuned };
-        if (name === "Block") {
-          var sd = liveShield ? parseDie(dg.shieldBlockDie) : null;
-          if (sd) { sd.label = liveShield.name; base.dice.push(sd); }
-          if (blockBonus) base.flat.push({ label: "Block Bonus", value: blockBonus });
-          if (platedHalf) base.flat.push({ label: "Plated half-DR", value: platedHalf });
-          // Reactive Plating's "+1d6 to the damage prevented" is a die, so it rolls with the shield's
-          if (reactive) base.dice.push({ n: 1, sides: 6, label: "Reactive Plating" });
-          // "Prevent that much of the incoming damage": Block is a step 2 reduction like Parry or Ward, and
-          // Armor DR comes off after it (Damage Order, step 3), so DR is not in this total any more
-          base.note = "Roll your Shield's Block die (if you carry one) and add your Block Bonus and any other Block benefits you have (the Plated trait's half DR, Block-boosting mods such as Reactive Plating's +1d6). Prevent that much of the incoming damage; your Armor DR (" + (d.armorDR || 0) + ") still comes off after, against Standard Physical Damage. Physical attack damage only." + wearNote;
-          return base;
-        }
-        if (name === "Brace") {
-          // "Roll 1d10 + Body Modifier and subtract the result from the incoming damage." (PHB,
-          // Active Defenses). The book prints no Requirement, so every Freelancer can use it;
-          // the Body Modifier is the live one.
-          base.dice.push({ n: 1, sides: 10, label: "d10" });
-          base.flat.push({ label: "Body Modifier", value: d.attributes.BOD.mod });
-          base.note = "Roll 1d10 + Body Modifier and subtract the result from the incoming damage. Falls, collisions, explosions, or forced impact only.";
-          return base;
-        }
-        if (name === "Dodge") {
-          // take the same Acrobatics total the row summary advertises, so the
-          // tray and the row cannot drift apart
-          base.mode = "defense";
-          base.bonus = acro ? acro.total : d.attributes.AGI.mod;
-          base.note = "Raise your Defense against this hit. On a miss you may shift 1 space. Melee or non-ballistic physical attacks only.";
-          return base;
-        }
-        if (name === "Parry") {
-          /* One list, best first, and the player picks. `applySource` is what the
-             tray's chips call, so switching implement re-reads this same resolver
-             rather than deriving a second answer somewhere else. */
-          base.sources = pSources;
-          base.applySource = function (key) {
-            var s = pSources.find(function (x) { return x.key === key; }) || pBest;
-            base.sourceKey = s.key;
-            base.dice = []; base.flat = [];
-            if (s.sides) base.dice.push({ n: s.n, sides: s.sides, label: s.label });
-            else base.flat.push({ label: s.label, value: s.flat || 0 });
-            base.note = (s.sides
-              ? "Roll " + s.n + "d" + s.sides + " (" + s.label + ") and subtract it from the incoming damage."
-              : "Bare hands with no die behind them: subtract " + (s.flat || 0) + " from the incoming damage.")
-              + " Melee or thrown attacks only." + (pSources.length > 1 ? " You choose what you parry with." : "");
-            return base;
-          };
-          return base.applySource(pBest && pBest.key);
-        }
-        if (name === "Resurge") {
-          base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
-          base.onZero = "Reduced to 0: the Flow attack rebounds for " + (rebound != null ? rebound : "your Flow Modifier (minimum 1)") + " Resonant damage.";
-          base.note = "Against a Flow attack. Roll your Resilience Die and subtract it; if the damage drops to 0, it rebounds. " + FP_NOTE;
-          return base;
-        }
-        if (name === "Siphon") {
-          base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
-          base.onRoll = function (t) { return "Restore " + t + " Vigor."; };
-          base.note = "Against elemental or Flow damage. Roll your Resilience Die, subtract it, and restore Vigor equal to the damage it negates. " + FP_NOTE;
-          return base;
-        }
-        if (name === "Ward") {
-          base.dice.push({ n: 1, sides: d.resilienceDie || 6, label: "d" + (d.resilienceDie || 6) });
-          var wd = parseDie(dg.wardDie);
-          if (wd) { wd.label = (dg.focus && dg.focus.name) || "Ward"; base.dice.push(wd); }
-          // the die it names is the one pushed above, the Resilience Die, not a fixed d6
-          base.note = "Roll your Resilience Die (d" + (d.resilienceDie || 6) + ")" + (wd ? " plus your Focus die" : "") + " and subtract the total from the incoming damage. Ward costs no FP.";
-          return base;
-        }
-        base.note = "";
-        return base;
-      }
-      var wearNote = dg.shield && dg.shieldWearThreshold
-        ? " Wear " + dg.shieldWearThreshold + ": a Blocked hit of " + dg.shieldWearThreshold + "+ raw damage, or any Blocked critical, marks a box (" + dg.shieldBoxesLeft + "/" + dg.shieldBoxesMax + " left)."
-        : "";
-      /* Dodge's Trigger Limit: "The GM may rule a Freelancer can't Dodge while wearing Heavy Armor or
-         while Grappled or Restrained." Flagged on the row when it applies, never enforced. */
-      var inHeavy = !!(dg.armor && dg.armor.group === "Heavy Armor");
-      var heldFast = (ch.conditions || []).filter(function (n) { return n === "Grappled" || n === "Restrained"; });
-      var dodgeGm = (inHeavy || heldFast.length)
-        ? " · the GM may rule you can't Dodge " + (inHeavy ? "in Heavy Armor" : "") + (inHeavy && heldFast.length ? " or " : "") + (heldFast.length ? "while " + heldFast.join(" or ") : "")
-        : "";
-      var DEF_LIVE = {
-        Block:   { avail: canBlock, req: "a shield, a Block Bonus, or Plated armor",
-                   summary: (blockAdds.length
-                     ? "Prevent " + blockAdds.join(" + ") + " of the incoming damage" + ((shieldRolls || reactive) ? "" : ", no roll")
-                     : "Prevent damage with your shield or plating") + "; physical attacks only" + wearNote,
-                   extra: (dg.shield || (dg.armor && dg.armorBaseDR)) ? el("div", null, [
+      var _DM = defenseModelFor(ch, d, dg, realWeaponRows);
+      var markShieldWear = _DM.markShieldWear;
+      var markArmorDR = _DM.markArmorDR;
+      var defSpec = _DM.defSpec;
+      var DEF_LIVE = _DM.DEF_LIVE;
+      DEF_LIVE.Block.extra = (dg.shield || (dg.armor && dg.armorBaseDR)) ? el("div", null, [
                      dg.shield ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", alignItems: "center" } }, [
                        // the Wear Threshold and what 0 boxes means are Shield Durability, under Active Defenses
                        el("span.mono", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".1em" } }, [cxLink("ref-def/shield-durability", "DURABILITY")]),
@@ -7053,26 +7170,7 @@ EN.combatView = (function () {
                        dg.armorDRLost > 0 ? el("button.btn.sm", { title: "Open the Impact Table and repair this suit", style: { color: "var(--success)", borderColor: "var(--success)" },
                          onclick: function () { if (EN.inventoryView.openBench) EN.inventoryView.openBench("armor"); EN.app.gotoTab("gear"); } }, "→ REPAIR") : null
                      ]) : null
-                   ]) : null },
-        // no requirement: every Freelancer can Brace, so the row is always listed
-        Brace:   { avail: true, req: "",
-                   summary: "Roll 1d10 " + eng.fmtMod(d.attributes.BOD.mod) + " (Body), subtract from incoming damage; falls, collisions, explosions, forced impact" },
-        Dodge:   { avail: true, req: "",
-                   summary: (acro ? "+" + acro.total + " Defense" : "+Agility + Acrobatics to Defense") + " vs this hit; on a miss, shift 1 space" + dodgeGm },
-        // "or be fighting unarmed": bare hands always satisfy the requirement, so
-        // Parry is never unavailable. The row names the BEST source and says how many
-        // others there are; the tray is where you switch. Both read parrySources().
-        Parry:   { avail: true, req: "a Simple or Martial weapon, a physical Shield, or bare hands",
-                   summary: parryText(pBest) + (pSources.length > 1 ? " · " + pSources.length + " to choose from" : "") },
-        Resurge: { avail: attuned, req: "Flow attunement",
-                   summary: "Roll " + resDie + " vs Flow attacks; reduce to 0 → rebound " + (rebound != null ? rebound : "your Flow Modifier (minimum 1)") + " Resonant" },
-        Siphon:  { avail: attuned, req: "Flow attunement",
-                   summary: "Roll " + resDie + " vs elemental/Flow damage; restore the damage it negates as Vigor" },
-        Ward:    { avail: !!focusDie || attuned, req: "a Warding Focus or class feature",
-                   // "Ward costs no FP." (16 October handoff); Resurge and Siphon still do
-                   summary: "Roll " + resDie + (focusDie ? " + " + focusDie + " (" + focusName + ")" : "") + ", subtract from incoming damage; no FP" }
-      };
-
+                   ]) : null;
       /* "How Active Defenses work" collapsible spans full width above the columns. Its three
          blocks are Active Defenses' entries in the Codex (Defense, Active Defense Rules,
          Conditions and Defense), so once those resolve it is one line of links rather than a
@@ -7386,6 +7484,19 @@ EN.combatView = (function () {
              woundSaves: woundSavesFor, dismissWoundSave: dismissWoundSave,
              restInfo: rcRest, feralBonus: feralMetabolismBonus,
              shortBegan: function (rec) { return (_shortBegin && _shortBegin.rec === rec) ? _shortBegin.rd : null; },
-             icons: { shortRest: ICON_SHORT_REST, longRest: ICON_LONG_REST, downtime: ICON_DOWNTIME }
+             icons: { shortRest: ICON_SHORT_REST, longRest: ICON_LONG_REST, downtime: ICON_DOWNTIME },
+             /* P3 (15 Nov 2026), what the Sheet of that skin is drawn from: the models lifted from render (the stat strip, the
+                defensive loadout, Active Defenses, the feature list, the hardware a class resource runs through, the unarmed
+                strike and the two attacks that are no weapon), the small writes the tab's controls call, and the weapon
+                helpers its Weapons list reads. */
+             statModel: statModelFor, defenseLoadout: defenseLoadoutFor, defenseModel: defenseModelFor, feats: featsFor, hardwareDep: hardwareDepFor,
+             unarmedAttack: unarmedAttackFor, specialAttacks: specialAttacksFor,
+             featUsesSpent: featUsesSpent, setFeatUses: setFeatUses, resourceNow: resourceNow, resourceStep: resourceStep, flowNow: flowNow, flowStep: flowStep,
+             maxOverdriveOn: maxOverdriveOn, maxOverdriveGain: maxOverdriveGain, maxOdNewRound: maxOdNewRound, maxOdEndEncounter: maxOdEndEncounter,
+             setWeaponGrip: setWeaponGrip, toggleAttackOffer: toggleAttackOffer, setDeathSaves: setDeathSaves, stabilize: stabilize,
+             setInitAttr: setInitAttr, setFeatureAnnot: setFeatureAnnot, setInHand: setInHand, settleWoundSave: settleWoundSave,
+             normalizeWeapon: normalizeWeapon, shellItem: shellItem, shellRow: shellRow, isJammed: isJammed, jamKeyOf: jamKeyOf,
+             costFor: costFor, minFireCost: minFireCost, implicitCost: implicitCost, modeCost: MODE_COST, ammoTypeOptions: ammoTypeOptions, ownedQty: ownedQty,
+             traitInfo: traitInfo, physicalDice: physicalDice, costAnchor: COST_ANCHOR, spiteKey: SPITE_KEY
            } };
 })();

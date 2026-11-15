@@ -4904,6 +4904,7 @@ EN.inventoryView = (function () {
               file already had, by name, and no copies. They write the active record through store.update. `buy`
               and `sell` still read this tab's storefront (_mode) until Gear passes one in. */
            core: {
+             isWeapon: isWeapon,   // P3: the Sheet's slot strip lists the weapons a Freelancer owns
              toggleEquip: toggleEquip, toggleSlotEquip: toggleSlotEquip, setCarry: invSetCarry,
              buy: buy, buyCyber: buyCyber, uninstallToStash: uninstallToStash,
              tryInstall: tryInstall, removePart: removePart, tryInstallArmorMod: tryInstallArmorMod, removeArmorMod: removeArmorMod,
