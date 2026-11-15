@@ -572,6 +572,11 @@ html.skin-deck .dk-crt{ display:flex; align-items:center; gap:18px; flex-wrap:wr
    sticks under the bar and not behind it. The bar is two layers under its words: a square that reaches up over the gap above
    it and blurs what scrolls through that gap and past the round corners (as the step rail blurs what passes under it), and
    on that the card itself, with its fill and its line. */
+/* A read-only record (css/theme.css, #view.en-ro: nothing in the view takes the pointer). What only changes what is showing
+   is marked data-ro-keep where it is drawn (js/deck_shell.js, segBar). This skin's own scroll wells take the wheel, as
+   Classic's do: a thread of letters, the list of people, a contact's card, the piece that is picked. */
+html.skin-deck #view.en-ro .dk .dk-msgs, html.skin-deck #view.en-ro .dk .dk-pl, html.skin-deck #view.en-ro .dk .dk-pc,
+html.skin-deck #view.en-ro .dk .dk-gdet{ pointer-events:auto; }
 html.skin-deck .dk-crt{ position:sticky; top:var(--dk-crt-top, calc(var(--dk-hud) + 8px)); z-index:61; }
 html.skin-deck .dk-crt::before{ content:""; position:absolute; inset:-8px 0 0 0; z-index:-2; pointer-events:none; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
 html.skin-deck .dk-crt::after{ content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; border-radius:inherit; background:var(--dk-s1);

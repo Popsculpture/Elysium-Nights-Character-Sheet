@@ -30,6 +30,8 @@ EN.deck.post = (function () {
   function btn(label, tone, name, fn, title, off) {
     return el("button.dk-btn" + (tone ? "." + tone : ""), { type: "button", title: title || null, disabled: !!off, dataset: { dkDo: name }, onclick: fn }, label);
   }
+  // a button that only changes what is showing: it still takes a click on a read-only record (js/deck_shell.js, segBar)
+  function nav(label, tone, name, fn, title, off) { var n = btn(label, tone, name, fn, title, off); n.setAttribute("data-ro-keep", "1"); return n; }
   function initials(n) { return String(n || "?").replace(/["'#]/g, "").split(/\s+/).filter(Boolean).map(function (w) { return w.charAt(0); }).join("").slice(0, 2).toUpperCase() || "?"; }
   function avatar(t, big) {
     return el("span.dk-av" + (big ? ".dk-big-av" : "") + (t.sys || t.gm ? ".dk-sys" : ""), t.sys || t.gm ? { html: (EN.faceView.icons || {}).post || "" } : { text: initials(t.name) });
@@ -65,10 +67,11 @@ EN.deck.post = (function () {
     var n = t.name.toLowerCase();
     return F().read(ch).contacts.filter(function (c) { return c && [c.name, c.handle, c.print].some(function (v) { return String(v || "").trim().toLowerCase() === n; }); })[0] || null;
   }
-  function open(t) {
+  function open(X, t) {
     S.th = t.key; S.pane = "thread"; S.edit = null; S.arm = null;
-    // opening a thread is reading it: that is what clears the dock's badge
-    if (t.unread) F().write(function (f) { t.msgs.forEach(function (x) { if (f.post[x.i] && f.post[x.i].id === x.m.id) f.post[x.i].read = true; }); });
+    // opening a thread is reading it: that is what clears the dock's badge. Not on a read-only record: the store refuses the
+    // write without a word, so nothing would redraw, and somebody looking at a sheet has not read its owner's mail
+    if (t.unread && !X.ro) F().write(function (f) { t.msgs.forEach(function (x) { if (f.post[x.i] && f.post[x.i].id === x.m.id) f.post[x.i].read = true; }); });
     else redraw();
   }
   function logNew(from) {
@@ -86,8 +89,8 @@ EN.deck.post = (function () {
       var last = t.msgs[0] ? t.msgs[0].m : null, sent = !last && t.sent.length ? t.sent[0] : null;
       var line = last ? (last.subj || last.body || "(no subject)") : sent ? "You: " + ((sent.mail || {}).subj || (sent.mail || {}).body || "(no subject)") : t.gm ? "Write to the people who run " + (t.sub || "your campaign") : "";
       var parcel = t.msgs.some(function (x) { return F().hasPackage(x.m) && !x.m.taken; });
-      out.push(el("button.dk-th" + (S.th === t.key ? ".on" : "") + (t.unread ? ".dk-un" : ""), { type: "button", "aria-pressed": S.th === t.key ? "true" : "false", dataset: { dkThread: t.key, dkUnread: String(t.unread) },
-        onclick: function () { open(t); } }, [avatar(t),
+      out.push(el("button.dk-th" + (S.th === t.key ? ".on" : "") + (t.unread ? ".dk-un" : ""), { type: "button", "data-ro-keep": "1", "aria-pressed": S.th === t.key ? "true" : "false", dataset: { dkThread: t.key, dkUnread: String(t.unread) },
+        onclick: function () { open(X, t); } }, [avatar(t),
         el("span.dk-th-t", null, [el("b", null, [t.name, last && last.when ? el("small", { text: last.when }) : null]), el("span", { text: line })]),
         parcel ? el("span.dk-ic.dk-pkg-i", { html: F().pkgIcon, title: "A package is waiting" }) : null,
         t.unread ? el("i.dk-ud", { title: t.unread + (t.unread === 1 ? " unread" : " unread"), text: String(t.unread) }) : null]));
@@ -143,7 +146,7 @@ EN.deck.post = (function () {
   }
   function thread(X, t) {
     var c = contactOf(X.ch, t);
-    var head = el("div.dk-pt-h", null, [el("button.dk-link.dk-back.dk-pback", { type: "button", dataset: { dkDo: "back" }, onclick: function () { S.pane = "list"; redraw(); } }, "‹"),
+    var head = el("div.dk-pt-h", null, [el("button.dk-link.dk-back.dk-pback", { type: "button", "data-ro-keep": "1", dataset: { dkDo: "back" }, onclick: function () { S.pane = "list"; redraw(); } }, "‹"),
       avatar(t), el("b", { text: t.name }), t.sys ? chip("Notice") : t.gm ? chip(t.sub || "Campaign", "acc") : c ? chip((F().kinds.filter(function (k) { return k.k === c.kind; })[0] || {}).label || "Contact", "acc") : null,
       el("span.dk-grow"),
       F().readOnly() || t.sys || t.gm ? null : btn("Log a letter", "sm.ghost", "log-here", function () { logNew(t.name); }, "Log a letter from " + t.name + " by hand")]);
@@ -171,13 +174,13 @@ EN.deck.post = (function () {
     return [avatar(t, true), el("h3", { text: c.name || t.name }),
       el("div.dk-chips", null, [chip((F().kinds.filter(function (k) { return k.k === c.kind; })[0] || {}).label || "Contact", "acc"), disp ? chip(disp.label) : null, c.state === "burned" ? chip("Burned", "bad") : state ? chip(state.label) : null]),
       el("div.dk-kv", null, [].concat(kv("Handle", c.handle), kv("Work", c.work), kv("Why they pick up", c.why), kv("Offers", c.offers), kv("Faction", c.faction), kv("Tell", c.tell), kv("Notes", c.notes))),
-      btn("Open in Contacts", "ghost", "open-contacts", function () { EN.faceView.setSub("contacts"); redraw(); })];
+      nav("Open in Contacts", "ghost", "open-contacts", function () { EN.faceView.setSub("contacts"); redraw(); })];
   }
 
   function render(stage, c) {
     var ch = c.ch, ctx = null;
     try { ctx = F().gmContext(ch); } catch (e) { ctx = null; }
-    var X = { ch: ch, ctx: ctx }, all = threads(ch, ctx);
+    var X = { ch: ch, ctx: ctx, ro: !!c.readOnly }, all = threads(ch, ctx);
     var t = all.filter(function (x) { return x.key === S.th; })[0] || null;
     if (!t) { S.th = null; if (S.pane === "thread") S.pane = "list"; }
     var root = el("div.dk.dk-post", { dataset: { dkPost: "1", dkPane: S.pane } });

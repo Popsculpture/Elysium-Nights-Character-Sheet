@@ -32,6 +32,8 @@ EN.deck.gear = (function () {
   function btn(label, tone, name, fn, title, off) {
     return el("button.dk-btn" + (tone ? "." + tone : ""), { type: "button", title: title || null, disabled: !!off, dataset: { dkDo: name }, onclick: fn }, label);
   }
+  // a button that only changes what is showing: it still takes a click on a read-only record (js/deck_shell.js, segBar)
+  function nav(label, tone, name, fn, title, off) { var n = btn(label, tone, name, fn, title, off); n.setAttribute("data-ro-keep", "1"); return n; }
   function sec(title, kids, name) { return el("div.dk-gsec", { dataset: { dkGsec: name } }, [el("h4.dk-sec", { text: title })].concat(kids)); }
   function classic(sub) { try { if (sub) I().openSub(sub); } catch (e) {} EN.deck.shell.gearView("classic"); }
   var LEGAL = { Legal: "ok", Licensed: "gold", Restricted: "warn", Contraband: "bad" };
@@ -108,7 +110,7 @@ EN.deck.gear = (function () {
     return out;
   }
   function row(x, on, pick) {
-    return el("button.dk-gr" + (on ? ".on" : ""), { type: "button", "aria-pressed": on ? "true" : "false", dataset: { dkRow: x.key }, onclick: pick },
+    return el("button.dk-gr" + (on ? ".on" : ""), { type: "button", "data-ro-keep": "1", "aria-pressed": on ? "true" : "false", dataset: { dkRow: x.key }, onclick: pick },
       [el("span.dk-two", null, [el("b", { text: x.name + (x.qty > 1 ? " ×" + x.qty : "") }), el("small", { text: x.sub || "" })]), x.price != null ? el("em", { text: x.price }) : null]);
   }
   function mineList(X, items) {
@@ -116,9 +118,9 @@ EN.deck.gear = (function () {
     var kinds = ["All"].concat(["Weapons", "Ammo", "Armor", "Gear", "Parts", "Vehicles", "Chrome"].filter(function (k) { return items.some(function (x) { return x.kind === k; }); }));
     if (kinds.indexOf(S.f) === -1) S.f = "All";
     var shown = items.filter(function (x) { return (S.f === "All" || x.kind === S.f) && (!q || x.name.toLowerCase().indexOf(q) !== -1); });
-    out.push(el("input.dk-in", { type: "text", value: S.q, placeholder: "Search your gear", "aria-label": "Search your gear", dataset: { dkGq: "mine" }, oninput: function () { S.q = this.value; redraw(); } }));
+    out.push(el("input.dk-in", { "data-ro-keep": "1", type: "text", value: S.q, placeholder: "Search your gear", "aria-label": "Search your gear", dataset: { dkGq: "mine" }, oninput: function () { S.q = this.value; redraw(); } }));
     out.push(el("div.dk-gf", null, kinds.map(function (k) {
-      return el("button.dk-fc" + (S.f === k ? ".on" : ""), { type: "button", "aria-pressed": S.f === k ? "true" : "false", dataset: { dkFilter: k }, onclick: function () { S.f = k; redraw(); } }, k);
+      return el("button.dk-fc" + (S.f === k ? ".on" : ""), { type: "button", "data-ro-keep": "1", "aria-pressed": S.f === k ? "true" : "false", dataset: { dkFilter: k }, onclick: function () { S.f = k; redraw(); } }, k);
     })));
     WHERE.forEach(function (w) {
       var list = shown.filter(function (x) { return x.where === w[0]; });
@@ -170,7 +172,7 @@ EN.deck.gear = (function () {
     return out;
   }
   function mineDetail(X, x) {
-    var ch = X.ch, E = eng(), out = [el("button.dk-link.dk-back.dk-gback", { type: "button", dataset: { dkDo: "back" }, onclick: function () { S.pane = "list"; redraw(); } }, "‹ Your gear")];
+    var ch = X.ch, E = eng(), out = [el("button.dk-link.dk-back.dk-gback", { type: "button", "data-ro-keep": "1", dataset: { dkDo: "back" }, onclick: function () { S.pane = "list"; redraw(); } }, "‹ Your gear")];
     if (x.cw) {
       var cw = x.cw, prose = "";
       try { prose = (E.cyberDesc && E.cyberDesc(cw)) || ""; } catch (e) { prose = ""; }
@@ -181,7 +183,7 @@ EN.deck.gear = (function () {
       if (typeof prose === "string" && prose) out.push(el("p.dk-gline", null, [EN.ui.ruleText(el("span"), prose, { conditions: true })]));
       if (typeof effect === "string" && effect) out.push(el("p.dk-gline", null, [el("b", { text: "Effect: " }), EN.ui.ruleText(el("span"), effect, { conditions: true })]));
       out.push(sec(x.stashed ? "Not installed" : "Installed", [el("p.dk-note", { text: x.stashed ? "Bought and waiting. Installing it is clinic work, on the Chrome page of the Classic inventory." : "Installing, removing and the Chrome Tax are on the Chrome page of the Classic inventory." }),
-        el("div.dk-row", null, [btn("Open the Chrome page", "", "open-chrome", function () { classic("chrome"); })])], "chrome"));
+        el("div.dk-row", null, [nav("Open the Chrome page", "", "open-chrome", function () { classic("chrome"); })])], "chrome"));
       return out;
     }
     var it = x.it, e = x.e, key = x.key;
@@ -201,16 +203,16 @@ EN.deck.gear = (function () {
       var lo = (ch.weaponParts || {})[key] || {}, pk = ["targeting", "output", "core", "handling"].map(function (s) { return lo[s]; }).filter(Boolean).concat(lo.utility || []);
       var parts = pk.map(function (k) { var p = EN.weaponParts.byKey[k]; return p ? chip(p.name, "gold", p.effect) : null; }).filter(Boolean);
       out.push(sec("Mods", [el("div.dk-chips", null, parts.length ? parts : [el("small.dk-dim", { text: "No Parts fitted." })]),
-        el("div.dk-row", null, [btn("Fit Parts at the Arms Table", "ghost", "bench-arms", function () { I().openBenchOn("ballistics", key); classic(); })])], "mods"));
+        el("div.dk-row", null, [nav("Fit Parts at the Arms Table", "ghost", "bench-arms", function () { I().openBenchOn("ballistics", key); classic(); })])], "mods"));
     } else if (it.kind === "armor" && it.slots && EN.armorMods) {
       var mods = (E.armorModsOn ? E.armorModsOn(ch, key) : []).map(function (k) { var m = EN.armorMods.byKey[k]; return m ? chip(m.name, "gold", m.grants + ". " + m.effect) : null; }).filter(Boolean);
       out.push(sec("Mods", [el("div.dk-chips", null, mods.length ? mods : [el("small.dk-dim", { text: "No mods fitted, " + it.slots + (it.slots === 1 ? " slot." : " slots.") })]),
-        el("div.dk-row", null, [btn("Fit mods at the Impact Table", "ghost", "bench-armor", function () { I().openBenchOn("armor", key); classic(); })])], "mods"));
+        el("div.dk-row", null, [nav("Fit mods at the Impact Table", "ghost", "bench-armor", function () { I().openBenchOn("armor", key); classic(); })])], "mods"));
     }
     var ast = typeof it.dr === "number" && E.armorState ? E.armorState(ch, key) : null;
     if (ast && ast.base) out.push(sec("Condition", [el("div.dk-row", null, [el("b.dk-cond", { text: (ast.current + ast.premiumDR) + " / " + (ast.base + ast.premiumDR) + " DR" }),
       el("small.dk-dim", { text: ast.breached ? "Breached: rebuilding it is a Project" : ast.lost ? ast.lost + " lost until repaired" : "Whole" }), el("span.dk-grow"),
-      ast.lost ? btn("Repair at the Impact Table", "ghost", "bench-repair", function () { I().openBenchOn("armor", key); classic(); }) : null])], "condition"));
+      ast.lost ? nav("Repair at the Impact Table", "ghost", "bench-repair", function () { I().openBenchOn("armor", key); classic(); }) : null])], "condition"));
     if (it.upkeep) {
       var up = I().upkeepOf(it, e), bo = I().buyoutCost(it), lk = [];
       var state = e.leaseOwned ? "Owned outright: the lease is bought out." : e.leaseDue ? "Payment due: " + I().fmtG(up) + ". It grants none of its benefits until you pay."
@@ -247,12 +249,12 @@ EN.deck.gear = (function () {
     if (!fronts.some(function (f) { return f.key === S.front; })) S.front = fronts[0].key;
     if (!S.mtype || (S.mtype !== "all" && !cats.some(function (c) { return c.key === S.mtype; }))) S.mtype = cats.length ? cats[0].key : "all";
     out.push(el("div.dk-seg.dk-fronts", { role: "group", "aria-label": "Storefront" }, fronts.map(function (f) {
-      return el("button.dk-segb" + (S.front === f.key ? ".on" : ""), { type: "button", title: f.desc, "aria-pressed": S.front === f.key ? "true" : "false", dataset: { dkFront: f.key }, onclick: function () { S.front = f.key; redraw(); } }, f.name);
+      return el("button.dk-segb" + (S.front === f.key ? ".on" : ""), { type: "button", "data-ro-keep": "1", title: f.desc, "aria-pressed": S.front === f.key ? "true" : "false", dataset: { dkFront: f.key }, onclick: function () { S.front = f.key; redraw(); } }, f.name);
     })));
-    out.push(el("input.dk-in", { type: "text", value: S.mq, placeholder: "Search the market: name, effect, category", "aria-label": "Search the market", dataset: { dkGq: "market" }, oninput: function () { S.mq = this.value; redraw(); } }));
+    out.push(el("input.dk-in", { "data-ro-keep": "1", type: "text", value: S.mq, placeholder: "Search the market: name, effect, category", "aria-label": "Search the market", dataset: { dkGq: "market" }, oninput: function () { S.mq = this.value; redraw(); } }));
     out.push(el("div.dk-gf", null, [["all", "All"]].concat(cats.map(function (c) { return [c.key, c.short.charAt(0) + c.short.slice(1).toLowerCase()]; })).map(function (t) {
       var on = !q && S.mtype === t[0];
-      return el("button.dk-fc" + (on ? ".on" : ""), { type: "button", "aria-pressed": on ? "true" : "false", dataset: { dkType: t[0] }, onclick: function () { S.mtype = t[0]; S.mq = ""; redraw(); } }, t[1]);
+      return el("button.dk-fc" + (on ? ".on" : ""), { type: "button", "data-ro-keep": "1", "aria-pressed": on ? "true" : "false", dataset: { dkType: t[0] }, onclick: function () { S.mtype = t[0]; S.mq = ""; redraw(); } }, t[1]);
     })));
     // a search looks along every shelf; without one, the shelf picked
     var shown = all.filter(function (r) {
@@ -281,7 +283,7 @@ EN.deck.gear = (function () {
     return eng().isWearable && eng().isWearable(it) ? "Wear it" : null;
   }
   function marketDetail(X, r) {
-    var ch = X.ch, it = r.it, out = [el("button.dk-link.dk-back.dk-gback", { type: "button", dataset: { dkDo: "back" }, onclick: function () { S.pane = "list"; redraw(); } }, "‹ The shelves")];
+    var ch = X.ch, it = r.it, out = [el("button.dk-link.dk-back.dk-gback", { type: "button", "data-ro-keep": "1", dataset: { dkDo: "back" }, onclick: function () { S.pane = "list"; redraw(); } }, "‹ The shelves")];
     var free = S.front === "fivefinger", sp = I().streetPrice(it, S.front), fee = (S.prem && it.upkeep && it.premium) ? it.premium.upkeep : 0, have = Number(ch.glimmer) || 0, short = sp + fee - have;
     var owned = (ch.equipment || []).filter(function (e) { return e.name === it.name; }).reduce(function (n, e) { return n + (e.qty || 0); }, 0);
     var load = !it.cyber && eng().itemLoad ? eng().itemLoad(it.name, { worn: false }) : 0;
@@ -309,7 +311,7 @@ EN.deck.gear = (function () {
         btn("In the stash", "", "buy-stash", go("stash"), verb + " and leave it in the stash", off)]));
       out.push(sec(it.cyber || I().notCarried(it) || it.benchPart || it.armorMod ? verb : verb + " and put it", kids, "buy"));
       if (S.sel && owned && (ch.equipment || []).some(function (e) { return I().entryKey(e) === S.sel && e.name === it.name; }))
-        out.push(el("div.dk-row", null, [btn("Show it in Mine", "ghost", "show-mine", function () { S.pane = "detail"; EN.deck.shell.gearView("mine"); })]));
+        out.push(el("div.dk-row", null, [nav("Show it in Mine", "ghost", "show-mine", function () { S.pane = "detail"; EN.deck.shell.gearView("mine"); })]));
     }
     out.push(sec("About it", proseLines(it), "about"));
     return out;
@@ -325,7 +327,7 @@ EN.deck.gear = (function () {
       enc.dropped > 0 ? chip("Packed It " + enc.revealed + " / " + enc.budget, enc.revealed > enc.budget ? "warn" : "", "Packed It still counts what you dropped") : null]));
     kids.push(el("span.dk-grow"));
     kids.push(el("div.dk-purse", { dataset: { dkPurse: String(Number(ch.glimmer) || 0) } }, [el("b.dk-gold", { text: I().fmtG(Number(ch.glimmer) || 0) }), ch.nexus ? el("b", { text: I().fmtNx(ch.nexus) }) : null]));
-    kids.push(btn("Wallet, Bills and Split", "ghost.sm", "open-wallet", function () { classic("stash"); }, "The wallet ledger, household bills and the payout splitter are in the Classic inventory"));
+    kids.push(nav("Wallet, Bills and Split", "ghost.sm", "open-wallet", function () { classic("stash"); }, "The wallet ledger, household bills and the payout splitter are in the Classic inventory"));
     return el("div.dk-gbar", null, kids);
   }
   function dropped(X) {

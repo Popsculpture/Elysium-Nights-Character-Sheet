@@ -34,12 +34,14 @@ EN.deck.sheet = (function () {
   function cxHas(a) { try { return !!(a && EN.codexView && EN.codexView.has && EN.codexView.has(a)); } catch (e) { return false; } }
   function rule(anchor, label) {
     if (!cxHas(anchor)) return null;
-    return el("button.dk-link", { type: "button", dataset: { dkRule: anchor }, onclick: function (e) { e.stopPropagation(); EN.codexView.peek(anchor); } }, label || "Rule");
+    return el("button.dk-link", { type: "button", "data-ro-keep": "1", dataset: { dkRule: anchor }, onclick: function (e) { e.stopPropagation(); EN.codexView.peek(anchor); } }, label || "Rule");
   }
   function chip(text, tone, title) { return el("span.dk-chip" + (tone ? "." + tone : ""), { title: title || null, text: text }); }
   function btn(label, tone, name, fn, title, off) {
     return el("button.dk-btn" + (tone ? "." + tone : ""), { type: "button", title: title || null, disabled: !!off, dataset: { dkDo: name }, onclick: fn }, label);
   }
+  // a button that only changes what is showing: it still takes a click on a read-only record (js/deck_shell.js, segBar)
+  function nav(label, tone, name, fn, title, off) { var n = btn(label, tone, name, fn, title, off); n.setAttribute("data-ro-keep", "1"); return n; }
   function h(text, right) { return el("h4.dk-sec", null, [el("span", { text: text }), el("span.dk-grow"), right || null]); }
   // n filled of max; a press sets it, and a press on the last filled one takes it back
   function pips(n, max, tone, name, onSet) {
@@ -152,7 +154,7 @@ EN.deck.sheet = (function () {
   function slotStrip(X) {
     var ch = X.ch, d = X.d, eng = EN.engine, I = inv(), M = slotModel(X), enc = d.encumbrance || {}, out = [];
     function tile(id, label, name, sub, empty) {
-      return el("button.dk-slot" + (empty ? ".dk-empty-slot" : "") + (S.slot === id ? ".on" : ""), { type: "button", "aria-expanded": S.slot === id ? "true" : "false", dataset: { dkSlot: id },
+      return el("button.dk-slot" + (empty ? ".dk-empty-slot" : "") + (S.slot === id ? ".on" : ""), { type: "button", "data-ro-keep": "1", "aria-expanded": S.slot === id ? "true" : "false", dataset: { dkSlot: id },
         onclick: function () { S.slot = S.slot === id ? null : id; redraw(); } }, [el("i", { text: label }), el("b", { text: name }), el("span", { text: sub })]);
     }
     var held = M.weapons.filter(function (w) { return w.on; });
@@ -161,7 +163,7 @@ EN.deck.sheet = (function () {
       var on = g.items.filter(function (x) { return x.on; })[0];
       tiles.push(tile(g.slot.id, SLOT_NAME[g.slot.id] || g.slot.id, on ? on.name : "None", on ? g.slot.verbs.act : "press to choose", !on));
     });
-    tiles.push(el("button.dk-slot", { type: "button", dataset: { dkSlot: "load" }, title: "Your Loadout, in Gear", onclick: function () { EN.deck.shell.go("gear"); } },
+    tiles.push(el("button.dk-slot", { type: "button", "data-ro-keep": "1", dataset: { dkSlot: "load" }, title: "Your Loadout, in Gear", onclick: function () { EN.deck.shell.go("gear"); } },
       [el("i", { text: "Load" }), el("b", { text: (enc.current != null ? enc.current : 0) + " / " + (enc.budget != null ? enc.budget : "?") }),
        el("span" + (enc.state === "overloaded" ? ".dk-badt" : enc.state === "encumbered" ? ".dk-warnt" : ""), { text: enc.state ? enc.state.charAt(0).toUpperCase() + enc.state.slice(1) : "open Gear" })]));
     out.push(el("div.dk-slots", { dataset: { dkSlots: "1" } }, tiles));
@@ -198,7 +200,7 @@ EN.deck.sheet = (function () {
           el("span.dk-grow"), stepper(null, "flow", function () { K.flowStep(ch, d, -1); }, function () { K.flowStep(ch, d, 1); }, cur <= 0, cur >= d.flow.max)]),
         el("div.dk-row", null, [el("span.dk-lab", null, [rule(K.condAnchor("Strain"), "Strain") || "Strain"]), pips(strain, 5, strain >= 5 ? "bad" : "warn", "Strain Stage", function (n) { K.setCondLevel("Strain", n); }),
           strain >= 5 ? chip("Breakflow", "bad") : null, el("span.dk-grow"),
-          btn("Patterns and Free-Shaping", "ghost.sm", "open-flow", function () { EN.app.gotoTab("flow"); })])
+          nav("Patterns and Free-Shaping", "ghost.sm", "open-flow", function () { EN.app.gotoTab("flow"); })])
       ]));
     }
     if (d.resource) {
@@ -328,9 +330,9 @@ EN.deck.sheet = (function () {
     var use = costs ? btn("Use", rc >= cost && !dead && !spite ? "pri.sm" : "sm", "use", function (e) { e.stopPropagation(); K.resourceStep(ch, d, -cost); }, rc >= cost ? "Spend " + f.chip : "Not enough " + d.resource.name, rc < cost || dead || spite) : null;
     var spent = f.uses ? K.featUsesSpent(ch, f) : 0;
     var kids = [el("div.dk-abl-top", null, [
-      el("button.dk-abl-n", { type: "button", "aria-expanded": open ? "true" : "false", onclick: function () { S.ab[f.name] = !open; redraw(); } }, [el("b", { text: f.name }), el("span.dk-caret", { text: open ? "▾" : "▸" })]),
+      el("button.dk-abl-n", { type: "button", "data-ro-keep": "1", "aria-expanded": open ? "true" : "false", onclick: function () { S.ab[f.name] = !open; redraw(); } }, [el("b", { text: f.name }), el("span.dk-caret", { text: open ? "▾" : "▸" })]),
       el("span.dk-grow"),
-      f.cost ? (cxHas(K.costAnchor[f.cost]) ? el("button.dk-chip.dk-act-" + f.cost.toLowerCase(), { type: "button", title: "The " + f.cost + " rule", onclick: function () { EN.codexView.peek(K.costAnchor[f.cost]); } }, f.cost) : chip(f.cost, "dk-act-" + f.cost.toLowerCase())) : null,
+      f.cost ? (cxHas(K.costAnchor[f.cost]) ? el("button.dk-chip.dk-act-" + f.cost.toLowerCase(), { type: "button", "data-ro-keep": "1", title: "The " + f.cost + " rule", onclick: function () { EN.codexView.peek(K.costAnchor[f.cost]); } }, f.cost) : chip(f.cost, "dk-act-" + f.cost.toLowerCase())) : null,
       f.chip ? chip(f.chip, "acc", "Spends the class resource") : null,
       use])];
     if (f.uses && f.uses.max > 0) kids.push(el("div.dk-row.dk-uses", null, [pips(spent, f.uses.max, "bad", "Use of " + f.name, function (n) { K.setFeatUses(f, n); }),
@@ -350,7 +352,7 @@ EN.deck.sheet = (function () {
         el("div", null, [el("b", { text: dep.title }), el("p", { text: dep.say + " " + mine.length + " " + d.resource.name + (mine.length === 1 ? " ability is" : " abilities are") + " unavailable until " + (dep.stowed ? "you take your " + dep.what + " out." : "a " + dep.what + " is equipped.") })]),
         el("div.dk-row", null, [dep.stowed
           ? btn("Take out (" + dep.stowed.action + ")", "warn", "dep-take-out", function () { K.setInHand(dep.deckKey, true); EN.ui.toast("Your " + dep.what + " is out (" + dep.stowed.action + ")."); })
-          : btn("Equip a " + dep.what + " in Gear", "", "dep-equip", function () { if (EN.inventoryView.openStash) EN.inventoryView.openStash(dep.cat); EN.app.gotoTab("gear"); })])]));
+          : nav("Equip a " + dep.what + " in Gear", "", "dep-equip", function () { if (EN.inventoryView.openStash) EN.inventoryView.openStash(dep.cat); EN.app.gotoTab("gear"); })])]));
     } else if (mine.length) {
       out.push(h(d.resource.name + " abilities", dead ? chip(dep.what + " bricked", "bad") : null));
       mine.forEach(function (f) { out.push(abilityCard(X, f, rName, dead)); });
@@ -366,7 +368,7 @@ EN.deck.sheet = (function () {
   function tiles(X) {
     var d = X.d, fx = X.fx, SM = X.SM, dg = SM.dg, BD = SM.BD, K = core(), out = [];
     function tile(key, label, value, sub, tone) {
-      return el("button.dk-tile" + (S.bd === key ? ".on" : "") + (tone ? "." + tone : ""), { type: "button", "aria-expanded": S.bd === key ? "true" : "false", title: sub, dataset: { dkStat: key },
+      return el("button.dk-tile" + (S.bd === key ? ".on" : "") + (tone ? "." + tone : ""), { type: "button", "data-ro-keep": "1", "aria-expanded": S.bd === key ? "true" : "false", title: sub, dataset: { dkStat: key },
         onclick: function () { S.bd = S.bd === key ? null : key; redraw(); } }, [el("i", { text: label }), el("b", { text: String(value) })]);
     }
     out.push(el("div.dk-tiles", null, [
@@ -403,7 +405,7 @@ EN.deck.sheet = (function () {
       var open = !!S.df[def.name], fp = /FP/.test(def.cost || "");
       var kids = [el("div.dk-abl-top", null, [
         btn(def.name === "Dodge" ? "Use" : "Roll", "pri.sm", "def-" + def.name, function () { K.openDefTray(DM.defSpec(def.name)); }, "Resolve " + def.name + " against an incoming hit"),
-        el("button.dk-abl-n", { type: "button", "aria-expanded": open ? "true" : "false", onclick: function () { S.df[def.name] = !open; redraw(); } }, [el("b", { text: def.name }), el("span.dk-caret", { text: open ? "▾" : "▸" })]),
+        el("button.dk-abl-n", { type: "button", "data-ro-keep": "1", "aria-expanded": open ? "true" : "false", onclick: function () { S.df[def.name] = !open; redraw(); } }, [el("b", { text: def.name }), el("span.dk-caret", { text: open ? "▾" : "▸" })]),
         el("span.dk-grow"), chip(fp ? "Impulse · 1 FP" : "Impulse", fp ? "acc" : "", def.cost)]),
         el("p.dk-note", { text: L.summary })];
       if (def.name === "Block" && dg.shield) kids.push(el("div.dk-row", { dataset: { dkWear: "shield" } }, [el("span.dk-lab", { text: "Durability" }),
@@ -414,7 +416,7 @@ EN.deck.sheet = (function () {
         el("span.dk-boxes", { title: dg.armor.name + ": current DR out of the suit's printed base", text: dg.armorDR + " / " + dg.armorBaseDR + " DR" }), el("span.dk-grow"),
         btn("Lose 1 DR", "sm.bad", "dr-loss", function () { DM.markArmorDR(1); }, "Lose 1 DR until repaired", dg.armorBreached),
         dg.armorDRLost > 0 ? btn("Undo", "sm.ghost", "dr-undo", function () { DM.markArmorDR(-1); }, "Undo one point of DR loss: a misclick fix, not a repair") : null,
-        dg.armorDRLost > 0 ? btn("Repair in Gear", "sm.ghost", "dr-repair", function () { if (EN.inventoryView.openBench) EN.inventoryView.openBench("armor"); EN.deck.shell.gearView("classic"); }) : null]));
+        dg.armorDRLost > 0 ? nav("Repair in Gear", "sm.ghost", "dr-repair", function () { if (EN.inventoryView.openBench) EN.inventoryView.openBench("armor"); EN.deck.shell.gearView("classic"); }) : null]));
       if (open) kids.push(el("div.dk-ftx", null, [el("p", { text: def.text }), rule("ref-def/" + EN.codexView.slug(def.name), def.name + " in the Codex")]));
       out.push(el("div.dk-card.dk-abl", { dataset: { dkDefense: def.name } }, kids));
     });
@@ -434,13 +436,13 @@ EN.deck.sheet = (function () {
     return out;
   }
   function pinned(X) {
-    var ch = X.ch, ann = ch.featureAnnotations || {}, out = [h("Pinned features", btn("Dossier", "sm.ghost", "open-dossier", function () { if (EN.deck.record) EN.deck.record.open("dossier"); }))];
+    var ch = X.ch, ann = ch.featureAnnotations || {}, out = [h("Pinned features", nav("Dossier", "sm.ghost", "open-dossier", function () { if (EN.deck.record) EN.deck.record.open("dossier"); }))];
     var pins = X.feats.passiveFeats.filter(function (f) { var a = ann[f.name] || {}; return a.pinned || a.important; });
     if (!pins.length) { out.push(el("p.dk-empty", { text: "Star a feature in your Dossier to keep it here." })); return out; }
     pins.forEach(function (f) {
       var open = !!S.ab["pin:" + f.name];
       out.push(el("div.dk-card.dk-abl", { dataset: { dkPin: f.name } }, [
-        el("div.dk-abl-top", null, [el("button.dk-abl-n", { type: "button", "aria-expanded": open ? "true" : "false", onclick: function () { S.ab["pin:" + f.name] = !open; redraw(); } },
+        el("div.dk-abl-top", null, [el("button.dk-abl-n", { type: "button", "data-ro-keep": "1", "aria-expanded": open ? "true" : "false", onclick: function () { S.ab["pin:" + f.name] = !open; redraw(); } },
           [el("b", { text: f.name }), el("span.dk-caret", { text: open ? "▾" : "▸" })]), el("span.dk-grow"), el("small.dk-dim", { text: f.src || "" })]),
         open ? el("div.dk-ftx", null, [EN.ui.renderText(f.text || "", {})]) : null]));
     });
@@ -455,7 +457,7 @@ EN.deck.sheet = (function () {
     var X = { ch: ch, d: d, fx: fx, st: c.st, real: real, SM: SM, DM: K.defenseModel(ch, d, SM.dg, real), feats: K.feats(ch, d) };
     var root = el("div.dk.dk-sheet", { dataset: { dkSheet: "1", dkCol: S.col } });
     root.appendChild(el("div.dk-seg.dk-colseg", { role: "group", "aria-label": "Column" }, [["checks", "Checks"], ["actions", "Actions"], ["defense", "Defense"]].map(function (x) {
-      return el("button.dk-segb" + (S.col === x[0] ? ".on" : ""), { type: "button", "aria-pressed": S.col === x[0] ? "true" : "false", dataset: { dkColBtn: x[0] }, onclick: function () { S.col = x[0]; redraw(); } }, x[1]);
+      return el("button.dk-segb" + (S.col === x[0] ? ".on" : ""), { type: "button", "data-ro-keep": "1", "aria-pressed": S.col === x[0] ? "true" : "false", dataset: { dkColBtn: x[0] }, onclick: function () { S.col = x[0]; redraw(); } }, x[1]);
     })));
     var al = alerts(X);
     if (al.length) root.appendChild(el("div.dk-alerts", null, al));

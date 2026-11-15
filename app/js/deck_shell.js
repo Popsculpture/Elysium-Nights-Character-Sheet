@@ -101,10 +101,14 @@ EN.deck.shell = (function () {
 
   /* ---- the stage: one wrapper in #view, a bar of its own where an app has more than one face, and the view.
      js/app.js puts the read-only banner in front of #view's first child, so the stage must be that one child. */
+  /* A READ-ONLY RECORD (a sheet viewed from the Campaign tab, or a locked one): js/app.js freezes #view, and css/theme.css
+     lets a click through only to what is marked data-ro-keep. Under this skin the ways around an app are inside #view, so
+     whatever ONLY CHANGES WHAT IS SHOWING carries the mark: this bar, a list's rows, filters and search boxes, unfolding a
+     card, a rule's link, a way to another screen. Nothing that writes to the record does (the store refuses those anyway). */
   function segBar(items) {
     return el("div.dk.dk-bar", null, [el("div.dk-seg", { role: "group" }, items.map(function (i) {
       var data = { dkSeg: i.key }; if (i.tour) data.tour = i.tour;
-      return el("button.dk-segb" + (i.on ? ".on" : ""), { type: "button", dataset: data, "aria-pressed": i.on ? "true" : "false", onclick: i.go },
+      return el("button.dk-segb" + (i.on ? ".on" : ""), { type: "button", "data-ro-keep": "1", dataset: data, "aria-pressed": i.on ? "true" : "false", onclick: i.go },
         [i.icon ? el("span.dk-ic", { html: i.icon }) : null, document.createTextNode(i.label)]);
     }))]);
   }

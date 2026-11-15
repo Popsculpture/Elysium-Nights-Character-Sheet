@@ -21,7 +21,7 @@ EN.deck.standing = (function () {
   function cxHas(a) { try { return !!(a && EN.codexView && EN.codexView.has && EN.codexView.has(a)); } catch (e) { return false; } }
   function rule(anchor, label) {
     if (!cxHas(anchor)) return null;
-    return el("button.dk-link", { type: "button", dataset: { dkRule: anchor }, onclick: function () { EN.codexView.peek(anchor); } }, label || "Rule");
+    return el("button.dk-link", { type: "button", "data-ro-keep": "1", dataset: { dkRule: anchor }, onclick: function () { EN.codexView.peek(anchor); } }, label || "Rule");
   }
   function tone(color) { var c = String(color || ""); return /success/.test(c) ? "ok" : /danger/.test(c) ? "bad" : /warn/.test(c) ? "warn" : /accent/.test(c) ? "acc" : "dim"; }
   function set(key, i, k, v, silent) { F().write(function (f) { if (f[key][i]) f[key][i][k] = v; }, silent); }
@@ -86,7 +86,7 @@ EN.deck.standing = (function () {
     var lifelike = false;
     try { lifelike = F().personaSources(ch).length > 0; } catch (e) { lifelike = false; }
     root.appendChild(el("p.dk-empty.dk-st-foot", null, [lifelike ? "Your saved Personas and the quick reference for a social roll are in the " : "The quick reference for a social roll is in the ",
-      el("button.dk-link", { type: "button", dataset: { dkDo: "classic-ledger" }, onclick: function () { EN.deck.shell.standingView("classic"); } }, "Classic ledger"), ". ",
+      el("button.dk-link", { type: "button", "data-ro-keep": "1", dataset: { dkDo: "classic-ledger" }, onclick: function () { EN.deck.shell.standingView("classic"); } }, "Classic ledger"), ". ",
       rule("so-pressure", "Social Pressure in the Codex")]));
     stage.appendChild(root);
   }
