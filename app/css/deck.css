@@ -577,6 +577,10 @@ html.skin-deck .dk-crt{ display:flex; align-items:center; gap:18px; flex-wrap:wr
    Classic's do: a thread of letters, the list of people, a contact's card, the piece that is picked. */
 html.skin-deck #view.en-ro .dk .dk-msgs, html.skin-deck #view.en-ro .dk .dk-pl, html.skin-deck #view.en-ro .dk .dk-pc,
 html.skin-deck #view.en-ro .dk .dk-gdet{ pointer-events:auto; }
+/* What would change the record does nothing there, so it does not look as if it would (15 Nov 2026, the author's call): a
+   button that is only a verb is dimmed, and of a set that shows a state (where a piece is, a posture, in hand) the one that
+   is on stays lit. What is there to be read stays as it is: a skill, a save, an attack's figures, pips, chips. */
+html.skin-deck #view.en-ro .dk :is(.dk-btn, .dk-sq, .dk-opt, .dk-link, .dk-tgl, .dk-segb, .dk-scale button):not([data-ro-keep], .on, .dk-on){ opacity:.4; }
 html.skin-deck .dk-crt{ position:sticky; top:var(--dk-crt-top, calc(var(--dk-hud) + 8px)); z-index:61; }
 html.skin-deck .dk-crt::before{ content:""; position:absolute; inset:-8px 0 0 0; z-index:-2; pointer-events:none; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
 html.skin-deck .dk-crt::after{ content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; border-radius:inherit; background:var(--dk-s1);
