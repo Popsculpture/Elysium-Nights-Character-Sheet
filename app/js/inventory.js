@@ -4899,5 +4899,15 @@ EN.inventoryView = (function () {
            openBench: openBench, openStash: openStash, openBills: openBills, closePops: closePops,
            pickUpDropped: pickUpDropped, installFromStash: installFromStash, cyberAnatomyPlan: cyberAnatomyPlan, sell: sell,
            // #POST packages: Take it (js/face.js) and the Admin's Attach items search (js/gm_campaign.js)
-           takePackage: takePackage, sendable: sendable };
+           takePackage: takePackage, sendable: sendable,
+           /* THE RULES SIDE OF THIS TAB, for a second set of screens (#GRIDeck P0, 14 Nov 2026): the functions this
+              file already had, by name, and no copies. They write the active record through store.update. `buy`
+              and `sell` still read this tab's storefront (_mode) until Gear passes one in. */
+           core: {
+             toggleEquip: toggleEquip, toggleSlotEquip: toggleSlotEquip, setCarry: invSetCarry,
+             buy: buy, buyCyber: buyCyber, uninstallToStash: uninstallToStash,
+             tryInstall: tryInstall, removePart: removePart, tryInstallArmorMod: tryInstallArmorMod, removeArmorMod: removeArmorMod,
+             armorShopRepair: armorShopRepair,
+             payLease: payLease, buyoutLease: buyoutLease, payHousehold: payHousehold, payHypercare: payHypercare
+           } };
 })();

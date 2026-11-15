@@ -3910,6 +3910,233 @@ EN.combatView = (function () {
   }
 
   /* ---------- main render ---------- */
+  /* ---- CHECK AND ATTACK CONTEXTS, at file level (#GRIDeck P0, 14 Nov 2026) ----------------
+     What a skill check, a save, a weapon's attack and its damage open the trays with. These were
+     closures inside render(), reading its `ch`, `d` and `fx`; they take those as arguments now, so
+     a second set of screens (the #GRIDeck skin) asks the same functions and can never work the
+     numbers out a second way. render() keeps a same-name wrapper for each, so every call site in
+     this file reads as it did, and nothing the Freelancer tab draws has changed. */
+  var GROUP_CAT = { Simple: "Simple Weapons", Martial: "Martial Weapons", Sidearm: "Sidearms", Longarm: "Longarms",
+                    Heavy: "Heavy Weapons", Launcher: "Explosive Launchers", Thrown: "Thrown Weapons", Bowfire: "Bowfire Weapons" };
+  function moxieFlagsFor(ch, d) {
+    var gambitNames = (eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch) : []).map(function (a) { return a.name; });
+    var featNames = (d.features || []).map(function (f) { return f.name; });
+    var moxie = (d.resource && d.resource.name === "Moxie") ? { name: "Moxie", max: d.resource.max } : null;
+    return {
+      moxie: moxie,
+      luckyBreak: !!moxie && gambitNames.indexOf("Lucky Break") !== -1,
+      pureLuck: !!moxie && gambitNames.indexOf("Pure Luck") !== -1,
+      pressLuck: !!moxie && featNames.indexOf("Press Your Luck") !== -1,
+      countingCards: featNames.indexOf("Counting Cards") !== -1
+    };
+  }
+  function skillSnagWhyFor(fx, s) {
+    return s.untrained ? "Untrained; roll with Snag (or +2 Snag Dice in pools)" :
+      fx.snagChk.ALL ? "Condition · Snag on all checks" :
+      fx.snagChk[s.attr] ? "Condition · Snag on " + s.attrName + " checks" :
+      (s.key === "perception" && fx.perceptionSnag) ? "Condition · Snag on Perception checks" : null;
+  }
+  function skillCtxFor(ch, d, fx, s) {
+    var mods = [{ label: s.attrName + " Modifier", value: s.attrMod }];
+    if (s.profBonus) mods.push({ label: R.profTiers[s.tier].name + " (" + s.name + ")", value: s.profBonus });
+    var why = skillSnagWhyFor(fx, s);
+    var asp = [];
+    var sf = (eng.focusesFor(ch, "skill", s.key) || [])[0] || null;
+    if (sf) asp.push({ key: "focus", label: "Focus +" + (d.caliber || 1) + (sf.aspect ? " · " + sf.aspect : ""),
+      modLabel: "Skill Focus (Caliber)", value: d.caliber || 1, color: "var(--gold)",
+      title: "Skill Focus: " + s.name + (sf.aspect ? " (" + sf.aspect + ")" : "") + ". Adds your Caliber only when the action falls inside that aspect, and rides outside the +15 static cap." });
+    var sp = eng.specFor(ch, "skill", s.key);
+    if (sp) asp.push({ key: "spec", label: "Spec crit range +1" + (sp.aspect ? " · " + sp.aspect : ""), critExpand: 1, color: "var(--flow)",
+      title: "Specialization: " + s.name + (sp.aspect ? " (" + sp.aspect + ")" : "") + ". Expands the critical threat range by 1 (by 1 further if it is already expanded) only when the action falls inside that aspect." });
+    return Object.assign({
+      weaponName: s.name + " Check", subtype: s.attrName + " · " + R.profTiers[s.tier].name,
+      melee: false, thrownItem: false, ranged: false, usesAmmo: false,
+      traits: [], baseMods: mods, critMin: 20, aspectMods: asp,
+      // a natural 20 on a check is only a critical success with the right tools,
+      // gear, or situational advantage; otherwise it is a normal success
+      critLabel: "◆ CRITICAL THREAT", critNote: "A skill check crits only with appropriate tools, gear, or a situational advantage. Otherwise treat it as a normal success.",
+      fumbleLabel: "✖ NAT 1 · FAILS DRAMATICALLY",
+      autoSnag: why ? [why] : [], autoEdge: [], baseSnag: why ? 1 : 0, baseEdge: 0,
+      shaken: (ch.conditions || []).indexOf("Shaken") !== -1, dmg: null
+    }, moxieFlagsFor(ch, d));
+  }
+  function saveCtxFor(ch, d, fx, a, extra) {
+    var sv = d.saves[a.key];
+    var mods = [{ label: a.name + " Modifier", value: d.attributes[a.key].mod }];
+    if (sv.focus) mods.push({ label: "Caliber (Save Focus)", value: d.caliber || 0 });
+    if (fx.saveDelta) mods.push({ label: "Conditions", value: fx.saveDelta });
+    var why = fx.snagSave[a.key] ? "Condition: Snag on " + a.name + " saves" : null;
+    return Object.assign({
+      weaponName: a.name + " Save", subtype: "SAVING THROW",
+      melee: false, thrownItem: false, ranged: false, usesAmmo: false,
+      traits: [], baseMods: mods, critMin: 20,
+      autoSnag: why ? [why] : [], autoEdge: [], baseSnag: why ? 1 : 0, baseEdge: 0,
+      shaken: (ch.conditions || []).indexOf("Shaken") !== -1, dmg: null
+    }, moxieFlagsFor(ch, d), extra || {});
+  }
+  function equippedRowsFor(ch) {
+    var equippedRows = [];
+    (ch.equippedWeapons || []).forEach(function (key) {
+      var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key && x.qty > 0; });
+      if (!e) return;
+      var it = findWeapon(e.name);
+      if (!it) return;
+      equippedRows.push({ key: eng.entryKey(e), name: e.name, it: it });
+    });
+    (function () {
+      var total = {};
+      equippedRows.forEach(function (r) { total[r.name] = (total[r.name] || 0) + 1; });
+      var seen = {};
+      equippedRows.forEach(function (r) {
+        if (total[r.name] > 1) { seen[r.name] = (seen[r.name] || 0) + 1; r.label = r.name + " " + seen[r.name]; }
+        else r.label = r.name;
+      });
+    })();
+    return equippedRows;
+  }
+  // to-hit: governing attribute + weapon-category proficiency bonus
+  function weaponHitFor(ch, d, it, key) {
+    var melee = it.group === "Simple" || it.group === "Martial";
+    var thrownItem = (it.traits || []).some(function (t) { return /^Thrown/.test(t); });
+    var finesse = (it.traits || []).some(function (t) { return /^Finesse/.test(t); });
+    var bod = d.attributes.BOD.mod, agi = d.attributes.AGI.mod;
+    var useAgi = melee ? (finesse && agi > bod) : (thrownItem ? agi >= bod : true);
+    var mod = useAgi ? agi : bod, attrName = useAgi ? "Agility" : "Body";
+    // Damage adds the SAME attribute modifier the attack roll used. Indirect
+    // delivery adds none: "a grenade or launcher shell lands at a point, forces a
+    // save, and deals only its listed damage dice." The Explosive trait marks
+    // exactly that set (the thrown grenades and the three launchers).
+    var indirect = (it.traits || []).some(function (t) { return /^Explosive/.test(t); });
+    var cat = GROUP_CAT[it.group], tier = eng.effectiveGearTier(ch, "weapons", cat), prof = R.profTiers[tier].d20;
+    // A Weapon Focus naming this weapon type adds Caliber to attack rolls;
+    // Focus Caliber rides outside the +15 static modifier cap. A matching
+    // Specialization expands the crit threat range by 1 (weaponCrit stacks it
+    // with Precision Frame; it never sets the range).
+    var focus = eng.weaponFocus(ch, cat, it.name);
+    var focusCal = focus ? (d.caliber || 1) : 0;
+    var spec = eng.weaponSpec(ch, cat, it.name);
+    /* Features that OFFER a better attribute on this weapon, and the one the player
+       has switched on, if any. baseMod and baseAttrName keep the untoggled answer so
+       the toggle can show both sides and so the offer is always compared against the
+       honest default rather than against itself. */
+    var baseMod = mod, baseAttrName = attrName;
+    var offers = eng.attackAttrOffers ? eng.attackAttrOffers(d, it, baseMod) : [];
+    var offerOn = eng.activeAttackAttr ? eng.activeAttackAttr(ch, d, it, key, baseMod) : null;
+    if (offerOn) { mod = offerOn.mod; attrName = offerOn.attrName; }
+    /* A melee weapon with the Thrown trait (Dagger, Hammer, Hatchet, Knife, Spear) is balanced for
+       the throw: "roll d20 + Body or Agility Modifier, whichever is higher, + Weapon Proficiency
+       Bonus against the Target's Defense, out to the weapon's listed thrown range" (PHB 6731, audit
+       core-01). The swing keeps its own attribute (Body, or Agility on a Finesse weapon), so the
+       THROW roll is a second attack on the row, and its damage adds the same modifier the throw
+       used. An offered attribute the player has switched on (First Do No Harm) counts if it is higher. */
+    var throwInfo = null;
+    if (melee && thrownItem) {
+      var tMod = Math.max(bod, agi), tAttr = agi > bod ? "Agility" : "Body";
+      if (offerOn && offerOn.mod > tMod) { tMod = offerOn.mod; tAttr = offerOn.attrName; }
+      var tRange = (it.traits || []).map(function (t) { return String(t).match(/^Thrown\s*\((\d+)\s*\/\s*(\d+)\)/); }).filter(Boolean)[0];
+      throwInfo = { mod: tMod, attrName: tAttr, total: tMod + prof + focusCal, range: tRange ? tRange[1] + "/" + tRange[2] : "" };
+    }
+    return { mod: mod, attrName: attrName, cat: cat, tier: tier, prof: prof,
+             focus: focus, focusCal: focusCal, spec: spec, indirect: indirect,
+             dmgMod: indirect ? 0 : mod, offers: offers, offerOn: offerOn,
+             baseMod: baseMod, baseAttrName: baseAttrName, throwInfo: throwInfo,
+             total: mod + prof + focusCal, melee: melee, thrownItem: thrownItem };
+  }
+  // the same weapon row read as a throw: the better of Body and Agility on the roll and on damage
+  function throwHitFor(h) {
+    var t = h.throwInfo;
+    return Object.assign({}, h, { mod: t.mod, attrName: t.attrName, total: t.total, dmgMod: h.indirect ? 0 : t.mod,
+      melee: false, thrownItem: true, isThrow: true });
+  }
+  // a plain snapshot the roll tray opens against (no live-scope closures)
+  // Moxie Gambits and the Wildcard bet ride outside the clean 2d20 rule;
+  // each is offered on any d20 attack only if the character actually has it
+  // and has Moxie. Shared by weapon and class-attack contexts.
+  function attackCtxFor(ch, d, fx, it, h, wk) {
+    var baseMods = [{ label: h.attrName + " Modifier", value: h.mod }];
+    if (h.prof) baseMods.push({ label: "Weapon Proficiency", value: h.prof });
+    if (h.focusCal) baseMods.push({ label: h.cat + " Focus (Caliber)", value: h.focusCal });
+    var autoSnag = [];
+    if (fx.snagAtk) autoSnag.push("Active condition");
+    if (h.tier === "untrained") autoSnag.push("Untrained (" + h.cat + ")");
+    // the threat range: 20, expanded by Precision Frame and by a Specialization naming this weapon
+    var cr = weaponCrit(ch, it, wk, h);
+    return Object.assign({
+      weaponName: it.name,
+      weaponKey: wk || null,   // the PIECE: its magazine, its mods, its grip
+      subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
+      melee: h.melee, thrownItem: h.thrownItem, ranged: !h.melee && !h.thrownItem,
+      usesAmmo: !h.melee && !h.thrownItem && it.ammo != null,   // a fired weapon spends a shot per roll
+      attack: true,   // an attack roll: a Natural 20 can feed Maximum Overdrive
+      // a firearm, for the optional Weapon Jam: fired with ammunition, and not a bow
+      firearm: !h.melee && !h.thrownItem && it.ammo != null && !/Bowfire/i.test(h.cat || ""),
+      traits: it.traits || [], baseMods: baseMods, critMin: cr.min,
+      critNote: cr.min < 20
+        ? ATTACK_CRIT_NOTE + " Your critical threat range is " + cr.min + "-20 here (" + cr.sources.map(function (s) { return s.label; }).join(" and ") + ")."
+        : ATTACK_CRIT_NOTE,
+      autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
+      shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
+      // carried so the attack tray can hand off to damage; a weapon that deals 0 has none to hand off
+      dmg: dealsNoDamage(it, h) ? null : damageCtxFor(ch, d, it, h, wk)
+    }, moxieFlagsFor(ch, d));
+  }
+  // a non-weapon attack (Cipher, Flow, natural / unarmed strike) the roll
+  // tray can open against. mods is the named breakdown; opts carries an
+  // auto-Snag reason, an optional damage snapshot, and a crit floor.
+  function simpleAttackCtxFor(ch, d, name, subtype, mods, opts) {
+    opts = opts || {};
+    var autoSnag = opts.snag ? [opts.snag] : [];
+    return Object.assign({
+      weaponName: name, subtype: subtype, attack: true,
+      melee: false, thrownItem: false, ranged: false, usesAmmo: false,
+      traits: [], baseMods: mods, critMin: opts.critMin || 20, critNote: ATTACK_CRIT_NOTE,
+      autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
+      shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
+      dmg: opts.dmg || null
+    }, moxieFlagsFor(ch, d));
+  }
+  // a damage snapshot the damage tray opens against. Every weapon adds its
+  // attack attribute modifier to damage (weapon dice + Body or Agility), so a
+  // ranged weapon adds Agility exactly as its attack roll does. Cheap Shot rides
+  // as an optional bonus group for a Scoundrel wielding a Sidearm, Simple, or
+  // Light-melee weapon.
+  function damageCtxFor(ch, d, it, h, wk) {
+    var p = parseDamage(it.damage), traits = it.traits || [];
+    var grip = eng.weaponGrip(ch, it, wk);
+    // a plain "NdX" printed die is the one Oomph steps; anything else ("Unarmed + 1d4") rides as printed
+    var plainDie = /^\d+d\d+$/.test(p.dice) && grip.printedBase === p.dice;
+    var hasLight = traits.some(function (t) { return /^Light$/i.test(t); });
+    var cheapEligible = ch.class === "scoundrel" && (
+      it.group === "Sidearm" || it.group === "Simple" || (h.melee && it.group === "Martial" && hasLight));
+    return {
+      weaponName: it.name,
+      weaponKey: wk || null,
+      subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
+      /* OOMPH: `dice` and `versatile` are the STEPPED dice weaponGrip resolved, so the tray
+         rolls what the DMG box shows (a Greatsword with a Weighted Head rolls 2d8, not the
+         catalog 2d6). */
+      dice: plainDie ? grip.baseDice : p.dice, types: p.types,
+      flat: h.dmgMod, flatLabel: h.indirect ? "Indirect: no attribute Modifier" : (h.attrName + " Modifier"),
+      /* `dice` stays the BASE and `versatile` stays the alternate, because the
+         tray's own arithmetic picks between them off its twoHand flag. What
+         changes is where that flag STARTS and whether it can be moved: the tray
+         opens on the grip the row is showing, and renders the toggle only when
+         the grip is actually a choice. It used to default to one-handed on every
+         open, so a two-handed Longsword rolled 1d8 unless you flipped it again,
+         and a weapon forced two-handed by an Extended Shaft still offered a
+         one-handed option it cannot have. */
+      // a throw is made one-handed, so it never offers the Versatile two-handed die
+      versatile: h.isThrow ? null : (grip.versatile || versatileDie(traits)),
+      grip: h.isThrow ? null : grip,
+      cheapEligible: cheapEligible, cheapDice: d.caliber || 1,
+      crit: false
+    };
+  }
+  // the three trays, wherever they are wanted: the Freelancer tab mounts them into its own view
+  function mountTrays(mount) {
+    [rollTrayModal(), dmgTrayModal(), defTrayModal()].forEach(function (t) { if (t) mount.appendChild(t); });
+  }
+
   function render(mount) {
     var ch = store.active();
     clear(mount);
@@ -4480,12 +4707,7 @@ EN.combatView = (function () {
     var TIERC = { untrained: "var(--text4)", proficient: "var(--accent)", expertise: "var(--flow)", mastery: "var(--gold)" };
     // one reason at most, highest precedence first. Named so the chip on the row
     // and the Snag the roll tray opens with can never drift apart.
-    function skillSnagWhy(s) {
-      return s.untrained ? "Untrained; roll with Snag (or +2 Snag Dice in pools)" :
-        fx.snagChk.ALL ? "Condition · Snag on all checks" :
-        fx.snagChk[s.attr] ? "Condition · Snag on " + s.attrName + " checks" :
-        (s.key === "perception" && fx.perceptionSnag) ? "Condition · Snag on Perception checks" : null;
-    }
+    function skillSnagWhy(s) { return skillSnagWhyFor(fx, s); }
     /* Every skill row opens the roll tray, the same one-tap path the saves use.
        s.total is exactly attribute modifier + proficiency bonus (engine.derive),
        so itemising those two reproduces the number printed on the row: nothing is
@@ -4495,30 +4717,7 @@ EN.combatView = (function () {
        A Skill Focus (+Caliber) and a Specialization (crit range +1) both apply only
        inside a narrow aspect, so they ride as ASPECT pills the player turns on
        when the action fits, rather than being folded in on every check. */
-    function rollSkill(s) {
-      var mods = [{ label: s.attrName + " Modifier", value: s.attrMod }];
-      if (s.profBonus) mods.push({ label: R.profTiers[s.tier].name + " (" + s.name + ")", value: s.profBonus });
-      var why = skillSnagWhy(s);
-      var asp = [];
-      var sf = (eng.focusesFor(ch, "skill", s.key) || [])[0] || null;
-      if (sf) asp.push({ key: "focus", label: "Focus +" + (d.caliber || 1) + (sf.aspect ? " · " + sf.aspect : ""),
-        modLabel: "Skill Focus (Caliber)", value: d.caliber || 1, color: "var(--gold)",
-        title: "Skill Focus: " + s.name + (sf.aspect ? " (" + sf.aspect + ")" : "") + ". Adds your Caliber only when the action falls inside that aspect, and rides outside the +15 static cap." });
-      var sp = eng.specFor(ch, "skill", s.key);
-      if (sp) asp.push({ key: "spec", label: "Spec crit range +1" + (sp.aspect ? " · " + sp.aspect : ""), critExpand: 1, color: "var(--flow)",
-        title: "Specialization: " + s.name + (sp.aspect ? " (" + sp.aspect + ")" : "") + ". Expands the critical threat range by 1 (by 1 further if it is already expanded) only when the action falls inside that aspect." });
-      openRollTray(Object.assign({
-        weaponName: s.name + " Check", subtype: s.attrName + " · " + R.profTiers[s.tier].name,
-        melee: false, thrownItem: false, ranged: false, usesAmmo: false,
-        traits: [], baseMods: mods, critMin: 20, aspectMods: asp,
-        // a natural 20 on a check is only a critical success with the right tools,
-        // gear, or situational advantage; otherwise it is a normal success
-        critLabel: "◆ CRITICAL THREAT", critNote: "A skill check crits only with appropriate tools, gear, or a situational advantage. Otherwise treat it as a normal success.",
-        fumbleLabel: "✖ NAT 1 · FAILS DRAMATICALLY",
-        autoSnag: why ? [why] : [], autoEdge: [], baseSnag: why ? 1 : 0, baseEdge: 0,
-        shaken: (ch.conditions || []).indexOf("Shaken") !== -1, dmg: null
-      }, moxieFlags()));
-    }
+    function rollSkill(s) { openRollTray(skillCtxFor(ch, d, fx, s)); }
     var skillRows = d.skills.map(function (s) {
       var why = skillSnagWhy(s);
       return el("div.row", {
@@ -5150,8 +5349,7 @@ EN.combatView = (function () {
     var passiveFeats = feats.filter(function (f) { return f.cost === "Passive"; });
 
     /* shared across the Weapons tab, Defend section, and Loadout count */
-    var GROUP_CAT = { Simple: "Simple Weapons", Martial: "Martial Weapons", Sidearm: "Sidearms", Longarm: "Longarms",
-                      Heavy: "Heavy Weapons", Launcher: "Explosive Launchers", Thrown: "Thrown Weapons", Bowfire: "Bowfire Weapons" };
+    // GROUP_CAT is at file level (CHECK AND ATTACK CONTEXTS, above render)
     // ch.equippedWeapons holds entry ids (each a specific owned instance); the
     // Attacks list, ammo, and hit math are all per weapon TYPE, so resolve to
     // deduped catalog names here once and let everything downstream work with
@@ -5170,23 +5368,7 @@ EN.combatView = (function () {
        arrows (whose index feeds moveWeaponName and must match the stored array). The Parry
        source list moved to these rows (16 October handoff): with Oomph and grip per entry,
        two copies of one weapon can parry with different dice. */
-    var equippedRows = [];
-    (ch.equippedWeapons || []).forEach(function (key) {
-      var e = (ch.equipment || []).find(function (x) { return (x.id || x.name) === key && x.qty > 0; });
-      if (!e) return;
-      var it = findWeapon(e.name);
-      if (!it) return;
-      equippedRows.push({ key: eng.entryKey(e), name: e.name, it: it });
-    });
-    (function () {
-      var total = {};
-      equippedRows.forEach(function (r) { total[r.name] = (total[r.name] || 0) + 1; });
-      var seen = {};
-      equippedRows.forEach(function (r) {
-        if (total[r.name] > 1) { seen[r.name] = (seen[r.name] || 0) + 1; r.label = r.name + " " + seen[r.name]; }
-        else r.label = r.name;
-      });
-    })();
+    var equippedRows = equippedRowsFor(ch);
     var realWeaponRows = equippedRows.filter(function (r) { return !eng.isUnarmedAugmentName(r.it.name); });
     /* THE NAMES THAT ACTUALLY PRODUCE A WEAPON ROW, which is not the same question as
        "what is equipped". Anything asking "am I armed" has to ask this one.
@@ -5623,18 +5805,7 @@ EN.combatView = (function () {
     /* ---- WEAPONS tab: equipped-weapon attacks (behavior unchanged) ---- */
     // Scoundrel Gambits ride on attack rolls, ability checks AND saving throws, so
     // this lives at render scope where both the Attacks panel and Defense panel see it.
-    function moxieFlags() {
-      var gambitNames = (eng.chosenResourceAbilities ? eng.chosenResourceAbilities(ch) : []).map(function (a) { return a.name; });
-      var featNames = (d.features || []).map(function (f) { return f.name; });
-      var moxie = (d.resource && d.resource.name === "Moxie") ? { name: "Moxie", max: d.resource.max } : null;
-      return {
-        moxie: moxie,
-        luckyBreak: !!moxie && gambitNames.indexOf("Lucky Break") !== -1,
-        pureLuck: !!moxie && gambitNames.indexOf("Pure Luck") !== -1,
-        pressLuck: !!moxie && featNames.indexOf("Press Your Luck") !== -1,
-        countingCards: featNames.indexOf("Counting Cards") !== -1
-      };
-    }
+    function moxieFlags() { return moxieFlagsFor(ch, d); }
     /* Saving throws open the roll tray pre-loaded with the attribute modifier, the class Save
        Focus Caliber, and any condition delta, so a save is one tap rather than mental
        arithmetic. The SAVES column and the Wound damage Body Save prompt both roll through
@@ -5648,161 +5819,16 @@ EN.combatView = (function () {
         "In ", cxLink(cxCond("Breakflow"), "Breakflow"), ": this rest restores no FP. You can't recover FP until Breakflow ends, and a rest alone can't end it."
           + (withStrain ? " While you're in Breakflow, only Breakflow Restoration or Rough Restoration lowers your Strain." : "")]);
     }
-    function rollSave(a, extra) {
-      var sv = d.saves[a.key];
-      var mods = [{ label: a.name + " Modifier", value: d.attributes[a.key].mod }];
-      if (sv.focus) mods.push({ label: "Caliber (Save Focus)", value: d.caliber || 0 });
-      if (fx.saveDelta) mods.push({ label: "Conditions", value: fx.saveDelta });
-      var why = fx.snagSave[a.key] ? "Condition: Snag on " + a.name + " saves" : null;
-      openRollTray(Object.assign({
-        weaponName: a.name + " Save", subtype: "SAVING THROW",
-        melee: false, thrownItem: false, ranged: false, usesAmmo: false,
-        traits: [], baseMods: mods, critMin: 20,
-        autoSnag: why ? [why] : [], autoEdge: [], baseSnag: why ? 1 : 0, baseEdge: 0,
-        shaken: (ch.conditions || []).indexOf("Shaken") !== -1, dmg: null
-      }, moxieFlags(), extra || {}));
-    }
+    function rollSave(a, extra) { openRollTray(saveCtxFor(ch, d, fx, a, extra)); }
     function weaponsKids() {
       var kids = [];
       var atkSnag = fx.snagAtk ? "Active condition · Snag on all attack rolls" : null;
-      // to-hit: governing attribute + weapon-category proficiency bonus
-      function weaponHit(it, key) {
-        var melee = it.group === "Simple" || it.group === "Martial";
-        var thrownItem = (it.traits || []).some(function (t) { return /^Thrown/.test(t); });
-        var finesse = (it.traits || []).some(function (t) { return /^Finesse/.test(t); });
-        var bod = d.attributes.BOD.mod, agi = d.attributes.AGI.mod;
-        var useAgi = melee ? (finesse && agi > bod) : (thrownItem ? agi >= bod : true);
-        var mod = useAgi ? agi : bod, attrName = useAgi ? "Agility" : "Body";
-        // Damage adds the SAME attribute modifier the attack roll used. Indirect
-        // delivery adds none: "a grenade or launcher shell lands at a point, forces a
-        // save, and deals only its listed damage dice." The Explosive trait marks
-        // exactly that set (the thrown grenades and the three launchers).
-        var indirect = (it.traits || []).some(function (t) { return /^Explosive/.test(t); });
-        var cat = GROUP_CAT[it.group], tier = eng.effectiveGearTier(ch, "weapons", cat), prof = R.profTiers[tier].d20;
-        // A Weapon Focus naming this weapon type adds Caliber to attack rolls;
-        // Focus Caliber rides outside the +15 static modifier cap. A matching
-        // Specialization expands the crit threat range by 1 (weaponCrit stacks it
-        // with Precision Frame; it never sets the range).
-        var focus = eng.weaponFocus(ch, cat, it.name);
-        var focusCal = focus ? (d.caliber || 1) : 0;
-        var spec = eng.weaponSpec(ch, cat, it.name);
-        /* Features that OFFER a better attribute on this weapon, and the one the player
-           has switched on, if any. baseMod and baseAttrName keep the untoggled answer so
-           the toggle can show both sides and so the offer is always compared against the
-           honest default rather than against itself. */
-        var baseMod = mod, baseAttrName = attrName;
-        var offers = eng.attackAttrOffers ? eng.attackAttrOffers(d, it, baseMod) : [];
-        var offerOn = eng.activeAttackAttr ? eng.activeAttackAttr(ch, d, it, key, baseMod) : null;
-        if (offerOn) { mod = offerOn.mod; attrName = offerOn.attrName; }
-        /* A melee weapon with the Thrown trait (Dagger, Hammer, Hatchet, Knife, Spear) is balanced for
-           the throw: "roll d20 + Body or Agility Modifier, whichever is higher, + Weapon Proficiency
-           Bonus against the Target's Defense, out to the weapon's listed thrown range" (PHB 6731, audit
-           core-01). The swing keeps its own attribute (Body, or Agility on a Finesse weapon), so the
-           THROW roll is a second attack on the row, and its damage adds the same modifier the throw
-           used. An offered attribute the player has switched on (First Do No Harm) counts if it is higher. */
-        var throwInfo = null;
-        if (melee && thrownItem) {
-          var tMod = Math.max(bod, agi), tAttr = agi > bod ? "Agility" : "Body";
-          if (offerOn && offerOn.mod > tMod) { tMod = offerOn.mod; tAttr = offerOn.attrName; }
-          var tRange = (it.traits || []).map(function (t) { return String(t).match(/^Thrown\s*\((\d+)\s*\/\s*(\d+)\)/); }).filter(Boolean)[0];
-          throwInfo = { mod: tMod, attrName: tAttr, total: tMod + prof + focusCal, range: tRange ? tRange[1] + "/" + tRange[2] : "" };
-        }
-        return { mod: mod, attrName: attrName, cat: cat, tier: tier, prof: prof,
-                 focus: focus, focusCal: focusCal, spec: spec, indirect: indirect,
-                 dmgMod: indirect ? 0 : mod, offers: offers, offerOn: offerOn,
-                 baseMod: baseMod, baseAttrName: baseAttrName, throwInfo: throwInfo,
-                 total: mod + prof + focusCal, melee: melee, thrownItem: thrownItem };
-      }
-      // the same weapon row read as a throw: the better of Body and Agility on the roll and on damage
-      function throwHit(h) {
-        var t = h.throwInfo;
-        return Object.assign({}, h, { mod: t.mod, attrName: t.attrName, total: t.total, dmgMod: h.indirect ? 0 : t.mod,
-          melee: false, thrownItem: true, isThrow: true });
-      }
-      // a plain snapshot the roll tray opens against (no live-scope closures)
-      // Moxie Gambits and the Wildcard bet ride outside the clean 2d20 rule;
-      // each is offered on any d20 attack only if the character actually has it
-      // and has Moxie. Shared by weapon and class-attack contexts.
-      function attackCtx(it, h, wk) {
-        var baseMods = [{ label: h.attrName + " Modifier", value: h.mod }];
-        if (h.prof) baseMods.push({ label: "Weapon Proficiency", value: h.prof });
-        if (h.focusCal) baseMods.push({ label: h.cat + " Focus (Caliber)", value: h.focusCal });
-        var autoSnag = [];
-        if (fx.snagAtk) autoSnag.push("Active condition");
-        if (h.tier === "untrained") autoSnag.push("Untrained (" + h.cat + ")");
-        // the threat range: 20, expanded by Precision Frame and by a Specialization naming this weapon
-        var cr = weaponCrit(ch, it, wk, h);
-        return Object.assign({
-          weaponName: it.name,
-          weaponKey: wk || null,   // the PIECE: its magazine, its mods, its grip
-          subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
-          melee: h.melee, thrownItem: h.thrownItem, ranged: !h.melee && !h.thrownItem,
-          usesAmmo: !h.melee && !h.thrownItem && it.ammo != null,   // a fired weapon spends a shot per roll
-          attack: true,   // an attack roll: a Natural 20 can feed Maximum Overdrive
-          // a firearm, for the optional Weapon Jam: fired with ammunition, and not a bow
-          firearm: !h.melee && !h.thrownItem && it.ammo != null && !/Bowfire/i.test(h.cat || ""),
-          traits: it.traits || [], baseMods: baseMods, critMin: cr.min,
-          critNote: cr.min < 20
-            ? ATTACK_CRIT_NOTE + " Your critical threat range is " + cr.min + "-20 here (" + cr.sources.map(function (s) { return s.label; }).join(" and ") + ")."
-            : ATTACK_CRIT_NOTE,
-          autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
-          shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
-          // carried so the attack tray can hand off to damage; a weapon that deals 0 has none to hand off
-          dmg: dealsNoDamage(it, h) ? null : damageCtx(it, h, wk)
-        }, moxieFlags());
-      }
-      // a non-weapon attack (Cipher, Flow, natural / unarmed strike) the roll
-      // tray can open against. mods is the named breakdown; opts carries an
-      // auto-Snag reason, an optional damage snapshot, and a crit floor.
-      function simpleAttackCtx(name, subtype, mods, opts) {
-        opts = opts || {};
-        var autoSnag = opts.snag ? [opts.snag] : [];
-        return Object.assign({
-          weaponName: name, subtype: subtype, attack: true,
-          melee: false, thrownItem: false, ranged: false, usesAmmo: false,
-          traits: [], baseMods: mods, critMin: opts.critMin || 20, critNote: ATTACK_CRIT_NOTE,
-          autoSnag: autoSnag, autoEdge: [], baseSnag: autoSnag.length, baseEdge: 0,
-          shaken: (ch.conditions || []).indexOf("Shaken") !== -1,
-          dmg: opts.dmg || null
-        }, moxieFlags());
-      }
-      // a damage snapshot the damage tray opens against. Every weapon adds its
-      // attack attribute modifier to damage (weapon dice + Body or Agility), so a
-      // ranged weapon adds Agility exactly as its attack roll does. Cheap Shot rides
-      // as an optional bonus group for a Scoundrel wielding a Sidearm, Simple, or
-      // Light-melee weapon.
-      function damageCtx(it, h, wk) {
-        var p = parseDamage(it.damage), traits = it.traits || [];
-        var grip = eng.weaponGrip(ch, it, wk);
-        // a plain "NdX" printed die is the one Oomph steps; anything else ("Unarmed + 1d4") rides as printed
-        var plainDie = /^\d+d\d+$/.test(p.dice) && grip.printedBase === p.dice;
-        var hasLight = traits.some(function (t) { return /^Light$/i.test(t); });
-        var cheapEligible = ch.class === "scoundrel" && (
-          it.group === "Sidearm" || it.group === "Simple" || (h.melee && it.group === "Martial" && hasLight));
-        return {
-          weaponName: it.name,
-          weaponKey: wk || null,
-          subtype: (h.melee ? "Melee" : h.thrownItem ? "Thrown" : "Ranged") + " Weapon · " + h.cat,
-          /* OOMPH: `dice` and `versatile` are the STEPPED dice weaponGrip resolved, so the tray
-             rolls what the DMG box shows (a Greatsword with a Weighted Head rolls 2d8, not the
-             catalog 2d6). */
-          dice: plainDie ? grip.baseDice : p.dice, types: p.types,
-          flat: h.dmgMod, flatLabel: h.indirect ? "Indirect: no attribute Modifier" : (h.attrName + " Modifier"),
-          /* `dice` stays the BASE and `versatile` stays the alternate, because the
-             tray's own arithmetic picks between them off its twoHand flag. What
-             changes is where that flag STARTS and whether it can be moved: the tray
-             opens on the grip the row is showing, and renders the toggle only when
-             the grip is actually a choice. It used to default to one-handed on every
-             open, so a two-handed Longsword rolled 1d8 unless you flipped it again,
-             and a weapon forced two-handed by an Extended Shaft still offered a
-             one-handed option it cannot have. */
-          // a throw is made one-handed, so it never offers the Versatile two-handed die
-          versatile: h.isThrow ? null : (grip.versatile || versatileDie(traits)),
-          grip: h.isThrow ? null : grip,
-          cheapEligible: cheapEligible, cheapDice: d.caliber || 1,
-          crit: false
-        };
-      }
+      // the weapon math is at file level (CHECK AND ATTACK CONTEXTS, above render); these hand it this render's ch, d and fx
+      function weaponHit(it, key) { return weaponHitFor(ch, d, it, key); }
+      function throwHit(h) { return throwHitFor(h); }
+      function attackCtx(it, h, wk) { return attackCtxFor(ch, d, fx, it, h, wk); }
+      function simpleAttackCtx(name, subtype, mods, opts) { return simpleAttackCtxFor(ch, d, name, subtype, mods, opts); }
+      function damageCtx(it, h, wk) { return damageCtxFor(ch, d, it, h, wk); }
       // ch.equippedWeapons holds ids, not names; move the first id that
       // resolves to wname past its neighboring array slot (the same
       // one-slot-per-equipped-weapon assumption the display order relies on).
@@ -7296,12 +7322,7 @@ EN.combatView = (function () {
     blocks.push(container);
 
     mount.appendChild(el("div", null, blocks));
-    var tray = rollTrayModal();
-    if (tray) mount.appendChild(tray);
-    var dtray = dmgTrayModal();
-    if (dtray) mount.appendChild(dtray);
-    var deftray = defTrayModal();
-    if (deftray) mount.appendChild(deftray);
+    mountTrays(mount);
     // the view is in the page now: fit any open popover before anything looks at it (see popFit)
     fitPops();
   }
@@ -7332,5 +7353,25 @@ EN.combatView = (function () {
              _panelTab = "weapons";
              EN.app.gotoTab("combat");
              EN.ui.scrollUnderChrome(document.querySelector('#view [data-panel="actions"]'));
+           },
+           /* THE RULES SIDE OF THIS TAB, for a second set of screens (#GRIDeck P0, 14 Nov 2026). Every name is a
+              function this file already had; nothing here is a copy. Readers take (ch, d) or (ch, d, fx); the
+              writers act on the active record through store.update, as they always have, so a viewed sheet or a
+              locked record refuses them in the one place it always did. The trays keep their state here: a
+              caller opens one with a context from skillCtx, saveCtx, attackCtx or damageCtx, and mounts them
+              into whatever it drew with mountTrays. */
+           core: {
+             state: state, condEffects: condEffects, speedPath: speedPath, inBreakflow: inBreakflow,
+             skillSnagWhy: skillSnagWhyFor, skillCtx: skillCtxFor, saveCtx: saveCtxFor, moxieFlags: moxieFlagsFor,
+             equippedRows: equippedRowsFor, findWeapon: findWeapon, weaponHit: weaponHitFor, throwHit: throwHitFor,
+             attackCtx: attackCtxFor, simpleAttackCtx: simpleAttackCtxFor, damageCtx: damageCtxFor,
+             weaponCrit: weaponCrit, readAmmo: readAmmo, parseDamage: parseDamage, dealsNoDamage: dealsNoDamage,
+             applyDamage: applyDamage, applyHeal: applyHeal, healWounds: healWounds,
+             openShortRest: openShortRest, shortRest: shortRest, spendResilience: spendResilience,
+             longRest: longRest, downtimeRest: downtimeRest, advanceDowntime: advanceDowntime,
+             setCondLevel: setCondLevel, applyStatusChange: applyStatusChange, clearStatusChange: clearStatusChange,
+             setCarry: setCarry, toggleConceal: toggleConceal, toggleWorn: toggleWorn, toggleSlotInert: toggleSlotInert,
+             reloadWeapon: reloadWeapon, setJammed: setJammed, writeAmmo: writeAmmo, fireWeapon: fireWeapon,
+             openRollTray: openRollTray, openDmgTray: openDmgTray, openDefTray: openDefTray, mountTrays: mountTrays
            } };
 })();

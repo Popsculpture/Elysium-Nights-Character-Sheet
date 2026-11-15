@@ -1385,5 +1385,13 @@ EN.faceView = (function () {
   }
 
   return { render: render, personaTick: personaTick, unread: unread, postToast: postToast, openPost: openPost,
-           bgContactsDialog: bgContactsDialog, bgContactsSummary: bgContactsSummary, bgContactsTarget: BG_CONTACTS };
+           bgContactsDialog: bgContactsDialog, bgContactsSummary: bgContactsSummary, bgContactsTarget: BG_CONTACTS,
+           /* Which of this tab's pages is up ("ledger", "contacts" or "post"), read and set from outside
+              (#GRIDeck P0, 14 Nov 2026): a second shell shows Standing or #POST by it, so there is one answer to
+              "where is the player" and openPost, the #POST toast and the tour keep working as they are. State
+              only; the caller renders. */
+           sub: function () { return _sub; },
+           setSub: function (k) { if (k === "ledger" || k === "contacts" || k === "post") _sub = k; },
+           // the rules side of this tab, by name and with no copies: they write the active record
+           core: { sendGm: sendGm, takeIt: takeIt, newContact: newContact, ctSet: ctSet } };
 })();
