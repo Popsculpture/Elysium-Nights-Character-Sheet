@@ -1963,6 +1963,20 @@ EN.combatView = (function () {
     return names;
   }
   function condLevel(ch, name) { return name === "Strain" ? (eng.strainOf(ch) || 1) : ((ch.conditionLevels || {})[name] || 1); }
+  /* Three writes the VITALITY popover and the Status Changes picker used to make inline, at file level
+     (#GRIDeck P2, 15 Nov 2026) so that skin's status bar makes the very same ones. Vigor does not stack:
+     the higher value stands. Strain is the one Strain value: applying it sets Stage 1 unless a Stage is held. */
+  function gainVigor(n) { n = Number(n) || 0; if (!(n > 0)) return; store.update(function (c) { c.vitality.temp = Math.max(c.vitality.temp || 0, n); }); }
+  function clearVigor() { store.update(function (c) { c.vitality.temp = 0; }); }
+  function addCondition(name) {
+    if (!name) return;
+    if (name === "Strain") { store.update(function (c) { if (eng.mergeStrain(c) < 1) eng.setStrainStage(c, 1); }); return; }
+    store.update(function (c) {
+      c.conditions = c.conditions || [];
+      if (c.conditions.indexOf(name) === -1) c.conditions.push(name);
+      if (LEVELED[name]) { c.conditionLevels = c.conditionLevels || {}; c.conditionLevels[name] = c.conditionLevels[name] || 1; }
+    });
+  }
   function setCondLevel(name, lvl) {
     if (name === "Strain") { store.update(function (c) { eng.setStrainStage(c, lvl); }); return; }
     store.update(function (c) {
@@ -4993,7 +5007,7 @@ EN.combatView = (function () {
       el("div", { style: { display: "flex", flexDirection: "column", justifyContent: "center" } }, [
         el("div.row.between.wrap", { style: { alignItems: "baseline" } }, [
           el("div.mono", { style: { fontSize: "19px", fontWeight: 700 } }, [
-            s.vigor ? el("span", { title: "Vigor " + s.vigor + ", absorbed before Vitality. Click to clear.", style: { color: "var(--shield)", cursor: "pointer" }, onclick: function () { store.update(function (c) { c.vitality.temp = 0; }); }, text: "(" + s.vigor + ") " }) : null,
+            s.vigor ? el("span", { title: "Vigor " + s.vigor + ", absorbed before Vitality. Click to clear.", style: { color: "var(--shield)", cursor: "pointer" }, onclick: function () { clearVigor(); }, text: "(" + s.vigor + ") " }) : null,
             el("span", { style: { color: "var(--text1)" }, text: s.vit + "/" + s.vitMax })
           ]),
           popAnchor("vit", "var(--success)", "Vigor, healing & damage",
@@ -5006,7 +5020,7 @@ EN.combatView = (function () {
               railBtn("VIGOR", "var(--accent)", (EN.recovery && EN.recovery.vigor && EN.recovery.vigor.noStack)
                 ? "Gain Vigor equal to the amount below.\n" + EN.recovery.vigor.noStack + "\n" + EN.recovery.vigor.expiration
                 : "Gain Vigor equal to the amount below (non-stacking, keeps the higher value; expires end of encounter)", function () {
-                store.update(function (c) { c.vitality.temp = Math.max(c.vitality.temp || 0, _amts.vit); });
+                gainVigor(_amts.vit);
               }),
               railBtn("HEAL", "var(--success)", "Restore Vitality", function () { applyHeal(ch, d, _amts.vit); }),
               amtInput("vit"),
@@ -5188,18 +5202,8 @@ EN.combatView = (function () {
     var applyBtn = el("button.btn.sm.primary", { onclick: function () {
       var v = condSel.value;
       var applied = 0;
-      if (v === "Strain") {
-        // Strain is the one Strain value: applying it sets Stage 1 unless a Stage is already held
-        store.update(function (c) { if (eng.mergeStrain(c) < 1) eng.setStrainStage(c, 1); });
-        condSel.value = "";
-        paintCondChip();
-        applied++;
-      } else if (v) {
-        store.update(function (c) {
-          c.conditions = c.conditions || [];
-          if (c.conditions.indexOf(v) === -1) c.conditions.push(v);
-          if (LEVELED[v]) { c.conditionLevels = c.conditionLevels || {}; c.conditionLevels[v] = c.conditionLevels[v] || 1; }
-        });
+      if (v) {
+        addCondition(v);   // Strain included: it is the one Strain value (see addCondition)
         condSel.value = "";
         paintCondChip();
         applied++;
@@ -7372,6 +7376,16 @@ EN.combatView = (function () {
              setCondLevel: setCondLevel, applyStatusChange: applyStatusChange, clearStatusChange: clearStatusChange,
              setCarry: setCarry, toggleConceal: toggleConceal, toggleWorn: toggleWorn, toggleSlotInert: toggleSlotInert,
              reloadWeapon: reloadWeapon, setJammed: setJammed, writeAmmo: writeAmmo, fireWeapon: fireWeapon,
-             openRollTray: openRollTray, openDmgTray: openDmgTray, openDefTray: openDefTray, mountTrays: mountTrays
+             openRollTray: openRollTray, openDmgTray: openDmgTray, openDefTray: openDefTray, mountTrays: mountTrays,
+             /* P2 (15 Nov 2026), what the status bar of that skin works with: Vigor and a new condition (the
+                writes above setCondLevel), the conditions on a record as the Status Changes card lists them,
+                the Wound damage Body Save prompts waiting on it, and what the rest popovers read. */
+             gainVigor: gainVigor, clearVigor: clearVigor, addCondition: addCondition,
+             activeConditions: activeConditionNames, condLevel: condLevel, condSummary: condSummary, condAnchor: cxCond,
+             leveled: LEVELED, condMeta: COND_META,
+             woundSaves: woundSavesFor, dismissWoundSave: dismissWoundSave,
+             restInfo: rcRest, feralBonus: feralMetabolismBonus,
+             shortBegan: function (rec) { return (_shortBegin && _shortBegin.rec === rec) ? _shortBegin.rd : null; },
+             icons: { shortRest: ICON_SHORT_REST, longRest: ICON_LONG_REST, downtime: ICON_DOWNTIME }
            } };
 })();

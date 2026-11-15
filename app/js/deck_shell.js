@@ -173,6 +173,8 @@ EN.deck.shell = (function () {
     if (!show) {
       drop("dk-dock");
       if (EN.deck.hud) EN.deck.hud.remove();
+      if (EN.deck.record) EN.deck.record.sync(null);
+      if (EN.deck.find) EN.deck.find.sync(false);
       if (os) os.style.removeProperty("--dk-accent");
       return;
     }
@@ -182,7 +184,9 @@ EN.deck.shell = (function () {
     if (cls && CI && CI.has(cls)) os.style.setProperty("--dk-accent", CI.colors[cls].main); else os.style.removeProperty("--dk-accent");
     paintDock(os, key, c);
     if (EN.deck.hud) EN.deck.hud.paint(top, c);
+    // the Record drawer, when it is out, shows the record as it is now (js/deck_record.js)
+    if (EN.deck.record) EN.deck.record.sync(c);
   }
 
-  return { on: on, appOf: appOf, subKey: subKey, view: view, chrome: chrome, go: go, apps: function () { return APPS.map(function (a) { return a.key; }); } };
+  return { on: on, appOf: appOf, subKey: subKey, view: view, chrome: chrome, go: go, reading: context, apps: function () { return APPS.map(function (a) { return a.key; }); } };
 })();
