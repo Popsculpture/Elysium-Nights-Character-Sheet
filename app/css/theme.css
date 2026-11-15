@@ -130,21 +130,15 @@ a{ color:var(--accent); text-decoration:none; }
 .os-tab.active{ color:var(--accent); border-bottom-color:var(--accent); text-shadow:var(--glow-cyan); }
 .os-tab.locked{ color:var(--text4); cursor:not-allowed; }
 .os-tab .tk{ font-family:var(--mono); font-size:10px; color:var(--text4); }
-/* A group label on the Admin rail (CONTROL, LIVE, PREP...): a small mono caption standing before the
-   group's first tab. No divider line (the author, 14 Nov 2026): the gap alone separates the groups.
-   Decoration only; '98 and #GRIDroid draw their rails their own way and leave it out. */
-.os-group{ font-family:var(--mono); font-size:10px; letter-spacing:.16em; color:var(--text4); align-self:flex-start;
-  padding:3px 4px 0 10px; margin-left:6px; white-space:nowrap; user-select:none; }
-.os-tabs-scroll > .os-group:first-child{ margin-left:0; padding-left:2px; }
-html.skin-98 .os-group, html.skin-droid .os-group{ display:none; }
-/* A grouped rail (the Admin desktop's: nine tabs and five labels) tightens its tabs' sides the way the old
-   eleven-tab rule did, by what it holds rather than a count of tabs: 12px below 1430px, 8px below 1345px (ten tabs and five
-   labels since #POST), so all of it fits beside the gear down to a 1264 window. Classic only. */
+/* The Admin rail's tabs carry a group (data-group: CONTROL, LIVE, PREP...) but the rail draws no label or divider for it
+   (the author, 14 Nov 2026: the order alone is the grouping). A rail whose tabs are grouped (the Admin desktop's, ten tabs
+   since #POST) tightens its tabs' sides the way the old eleven-tab rule did, by what it holds rather than a count of tabs:
+   12px below 1430px, 8px below 1345px, so all of it fits beside the gear down to a 1264 window. Classic only. */
 @media (max-width:1430px){
-  html:not(.skin-98):not(.skin-droid) .os-tabs-scroll:has(.os-group) > .os-tab{ padding-left:12px; padding-right:12px; }
+  html:not(.skin-98):not(.skin-droid) .os-tabs-scroll:has(.os-tab[data-group]) > .os-tab{ padding-left:12px; padding-right:12px; }
 }
 @media (max-width:1345px){
-  html:not(.skin-98):not(.skin-droid) .os-tabs-scroll:has(.os-group) > .os-tab{ padding-left:8px; padding-right:8px; }
+  html:not(.skin-98):not(.skin-droid) .os-tabs-scroll:has(.os-tab[data-group]) > .os-tab{ padding-left:8px; padding-right:8px; }
 }
 /* A rail of eleven tabs or more (the Admin desktop's, twelve since the Campaign tab) tightens its
    sides in two steps, so all of them fit beside the gear down to a 1264 window: 12px below 1430px,

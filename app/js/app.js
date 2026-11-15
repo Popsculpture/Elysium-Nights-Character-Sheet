@@ -357,13 +357,9 @@ EN.app = (function () {
        on Classic and '98, where every row is on screen wearing its own dot. */
     var railAttn = false;
     if (!(portal === "freelancer" && !registered())) {
-      var lastGroup = null;
       visibleTabs().forEach(function (t) {
-        // a tab may name a group; its label stands before the group's first tab. It is not an .os-tab,
-        // so the rail's order, the swipe and every count of tabs are unchanged, and it is decoration
-        // (aria-hidden) because the tabs name themselves
-        if (t.group && t.group !== lastGroup) scroll.appendChild(el("div.os-group", { "aria-hidden": "true", text: t.group }));
-        lastGroup = t.group || null;
+        // a tab may name a group (CONTROL, LIVE, PREP...). The rail draws no label or divider for it (the author, 14 Nov 2026:
+        // the order alone is the grouping); the group stays on the tab as data-group for anything that wants it.
         // a tab may report something waiting on it; the dot is decorative and the tap
         // falls through to the tab itself, which is where the reader wants to go anyway
         var badge = t.badge ? t.badge() : 0;
@@ -372,7 +368,7 @@ EN.app = (function () {
         // data-tab names the tab so a skin can reach one row without counting children; the sub
         // stays conditional, since dataset would otherwise write the string "undefined".
         scroll.appendChild(el("div.os-tab" + (t.key === LAST[portal] ? ".active" : ""), {
-          dataset: t.sub ? { tab: t.key, sub: t.sub } : { tab: t.key },
+          dataset: (function () { var d = { tab: t.key }; if (t.sub) d.sub = t.sub; if (t.group) d.group = t.group; return d; })(),
           onclick: function () {
             // #GRIDroid draws the rail as a phone's app list, folded to the open app: tapping
             // that app unfolds or folds the list instead of re-opening it (so #PRINT's
