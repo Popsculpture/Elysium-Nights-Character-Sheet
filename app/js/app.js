@@ -264,8 +264,12 @@ EN.app = (function () {
     var hit = t && t.subs ? t.subs.filter(function (x) { return x.key === s; })[0] : null;
     return hit ? hit.label : "";
   }
+  /* #GRIDeck (js/deck_shell.js) draws the Freelancer desktop through its own shell while that skin is the
+     one in force. It keeps no tab state of its own: the app it shows is worked out from LAST.freelancer,
+     so gotoTab, activeTab and every caller of either mean what they always meant. */
+  function deckOn() { return portal === "freelancer" && !!(EN.deck && EN.deck.shell && EN.deck.shell.on()); }
   // the key the view is drawn under: a sub-tab switch counts as a view change (scroll to the top)
-  function viewKey() { return LAST[portal] + "/" + subTab(LAST[portal]); }
+  function viewKey() { return LAST[portal] + "/" + subTab(LAST[portal]) + (deckOn() ? "/" + EN.deck.shell.subKey(LAST[portal]) : ""); }
   Object.keys(ALIAS).forEach(function (k) {
     if (tabByKey(k)) { console.error("Tab alias \"" + k + "\" is also a tab key; the alias is dropped."); delete ALIAS[k]; }
   });
@@ -575,7 +579,7 @@ EN.app = (function () {
     // the browser clamp scroll to the top, capture and restore the position.
     // Inner scrollable wells (.feature-scroll, .actions-scroll) are rebuilt too, so save theirs as well.
     var sy = window.scrollY, sx = window.scrollX;
-    var WELLS = "#view .feature-scroll, #view .actions-scroll";
+    var WELLS = "#view .feature-scroll, #view .actions-scroll, #view [data-keep-scroll]";   // the last is #GRIDeck's own inner scrollers
     var wells = Array.prototype.map.call(document.querySelectorAll(WELLS), function (w) { return w.scrollTop; });
     var view = document.getElementById("view");
     var keep = focusMark(view);
@@ -597,11 +601,13 @@ EN.app = (function () {
     // a GM data file picked on Sysop's DATA page is held only while that page is open
     if (tab.key !== "sysop" && EN.gmSysop && EN.gmSysop.reset) EN.gmSysop.reset();
     if (tab.view) {
+      // #GRIDeck draws the tab inside its own stage; every other skin hands the view the mount as it always did
+      var draw = deckOn() ? function (m) { EN.deck.shell.view(m, tab); } : tab.view;
       // another player's sheet is not a record this device vouched for: a bad one costs the view, not the app
       if (store.activeIsViewing && store.activeIsViewing() && portal === "freelancer") {
-        try { tab.view(view); }
+        try { draw(view); }
         catch (e) { console.error("This sheet could not be drawn", e); EN.ui.clear(view); view.appendChild(el("div.muted-box", { style: { padding: "40px" }, text: "This sheet could not be drawn." })); }
-      } else tab.view(view);
+      } else draw(view);
     }
     else {
       view.appendChild(el("div", null, [
@@ -614,6 +620,9 @@ EN.app = (function () {
     if (portal === "freelancer" && tab.key !== "print" && EN.builder && EN.builder.managerOpen && EN.builder.managerOpen())
       view.appendChild(EN.builder.managerPanel());
     lockedSheet(view, portal === "freelancer" ? tab.key : null);
+    /* #GRIDeck's dock and status bar, or their removal when that skin is not the one in force (the Admin
+       desktop, another skin). Its own try: a record the status bar cannot read costs the bar, not the app. */
+    if (EN.deck && EN.deck.shell) { try { EN.deck.shell.chrome(portal, tab.key); } catch (e) { console.error("The #GRIDeck shell could not be drawn", e); } }
     if (_lastTab === viewKey()) {                          // same view → stay put
       window.scrollTo(sx, sy);
       Array.prototype.forEach.call(document.querySelectorAll(WELLS), function (w, i) {
@@ -866,6 +875,8 @@ EN.app = (function () {
     // while the GM modules were present and they are gone now.
     var sp = storedPortal();
     if (sp) portal = (sp === "admin" && hasAdmin()) ? "admin" : "freelancer";
+    // #GRIDeck opens a filed record on its Sheet, the screen it is played from; an unfiled one still opens on #PRINT
+    try { if (EN.theme && EN.theme.getSkin && EN.theme.getSkin() === "deck" && registered()) LAST.freelancer = "combat"; } catch (e) {}
     // Any non-silent store change re-renders the active view. (Text fields use
     // silent updates, so typing never triggers a disruptive re-render.)
     // render FIRST, then flash: render rebuilds the rail, and the tray's sync
@@ -946,6 +957,9 @@ EN.app = (function () {
     paintActiveName: paintActiveName, fitRecordPick: fitRecordPick,   // #PRINT repaints the banner as the name is typed
     activeTab: function () { return LAST[portal]; },
     tabOrder: tabOrder,
+    // for a shell that draws its own navigation (js/deck_shell.js): a tab's own icon, and whether the open record is filed
+    tabIcon: function (k) { var t = tabByKey(k); return (t && t.icon) || ""; },
+    registered: registered,
     /* Resolves the key's own portal rather than assuming the caller's, so
        every existing caller (all of which name a Freelancer tab today) stays
        correct with zero edits, and the function can never strand the app on

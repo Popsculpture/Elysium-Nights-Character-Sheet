@@ -563,6 +563,8 @@ EN.gate = (function () {
     var old = document.getElementById("gate-coach");
     if (old && old.parentNode) old.parentNode.removeChild(old);
     var gear = document.querySelector(".os-gear");
+    // #GRIDeck hides the rail and its gear; its dock has a Settings button of its own to point at
+    if (!gear || !gear.offsetParent) gear = document.querySelector('#dk-dock [data-dk="settings"]') || gear;
     if (!gear) return;               // nothing to point at; say nothing rather than float in space
     var desk = currentDesktop();
     var accent = desk === "admin" ? adminAccent() : freelancerAccent();

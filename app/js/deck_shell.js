@@ -1,0 +1,188 @@
+/* ===========================================================================
+   ELYSIUM NIGHTS · #GRIDeck: the shell (P1, 14 Nov 2026).
+   The fourth OS skin is more than a restyle: the Freelancer desktop gets a dock of four apps (Sheet, Gear,
+   #POST, Standing) and a status bar that is on every screen (js/deck_hud.js). This file is the shell around
+   them; css/deck.css is its look. It runs only while html.skin-deck is on, which settings.js (effectiveSkin)
+   sets on the Freelancer desktop alone.
+
+   NO TAB STATE OF ITS OWN. The app shown is worked out from the tab the rest of the program already tracks
+   (EN.app.activeTab(): combat, flow, grid, gear, face, codex, print), so EN.app.gotoTab and every caller of it
+   land where they should with no edits: combat, flow and grid are the Sheet; gear is Gear; face is Standing or
+   #POST by the Social tab's own page (EN.faceView.sub()); codex is the Codex; print is the record.
+
+   STRANGLER BUILD. In this phase every app HOSTS THE EXISTING VIEW (tab.view) inside a stage, so the skin is
+   usable from the first day. Later phases swap one app at a time for a screen of its own, and this file is the
+   only place that decides which is drawn.
+
+   DOM RULES. Everything this skin draws itself sits under a `.dk` root and uses `dk-` classes only: never
+   .panel, .btn, .chip or .stat, and never an inline border-radius. The Classic rules in theme.css
+   (html:not(.skin-98):not(.skin-droid) ...) match this skin too, on purpose: a hosted view and a reused overlay
+   look exactly like tested Classic, and nothing here can pick those rules up by accident. A hosted view is
+   mounted OUTSIDE any .dk root for the same reason.
+   No em or en dashes anywhere in this file (house style).
+   =========================================================================== */
+window.EN = window.EN || {};
+EN.deck = EN.deck || {};
+EN.deck.shell = (function () {
+  var el = EN.ui.el, clear = EN.ui.clear;
+
+  // the four apps, in dock order: the tab each opens, and the Social page for the two that share one tab
+  var APPS = [
+    { key: "sheet",    label: "Sheet",    tab: "combat" },
+    { key: "gear",     label: "Gear",     tab: "gear" },
+    { key: "post",     label: "#POST",    tab: "face", sub: "post" },
+    { key: "standing", label: "Standing", tab: "face", sub: "ledger" }
+  ];
+
+  function on() { return document.documentElement.classList.contains("skin-deck"); }
+  function faceSub() { try { return EN.faceView.sub(); } catch (e) { return "ledger"; } }
+  // which app a tab key shows as
+  function appOf(key) {
+    if (key === "combat" || key === "flow" || key === "grid") return "sheet";
+    if (key === "gear") return "gear";
+    if (key === "face") return faceSub() === "ledger" ? "standing" : "post";
+    if (key === "codex") return "codex";
+    return "record";
+  }
+  // what else decides the view under a tab key: js/app.js adds it to the key a scroll position is kept under
+  function subKey(key) { return key === "face" ? faceSub() : ""; }
+
+  // the author's own icons, from where they already live: nothing is redrawn here
+  function icon(name) {
+    var A = EN.app, F = (EN.faceView && EN.faceView.icons) || {};
+    if (name === "sheet") return A.tabIcon("combat");
+    if (name === "gear") return A.tabIcon("gear");
+    if (name === "post") return F.post || "";
+    if (name === "standing") return F.ledger || "";
+    if (name === "codex") return A.tabIcon("codex");
+    if (name === "flow") return A.tabIcon("flow");
+    if (name === "grid") return A.tabIcon("grid");
+    if (name === "settings") return (EN.settings && EN.settings.gearIcon) || "";
+    return "";
+  }
+
+  /* ONE READING OF THE OPEN RECORD PER RENDER. derive() is not kept between calls, so the stage's bar, the dock
+     and the status bar all read this one. view() makes it and chrome() takes it, since js/app.js runs them in
+     that order within one render; a render that drew no stage makes its own. */
+  var _ctx = null;
+  function context() {
+    var ch = EN.store.active();
+    if (!ch) return null;
+    var c = { ch: ch, d: null, st: null, fx: null,
+              readOnly: !!((EN.store.activeIsViewing && EN.store.activeIsViewing()) || (ch.meta && EN.store.isLocked && EN.store.isLocked(ch.meta.id) && !(EN.store.activeIsExample && EN.store.activeIsExample()))) };
+    try {
+      c.d = EN.engine.derive(ch);
+      var core = EN.combatView && EN.combatView.core;
+      if (ch.class && core) { c.st = core.state(ch, c.d); c.fx = core.condEffects(ch, c.d); }
+    } catch (e) { console.error("#GRIDeck could not read this record", e); }
+    return c;
+  }
+
+  function go(app) {
+    var a = APPS.filter(function (x) { return x.key === app; })[0];
+    if (!a) return;
+    // a popover left open on the tab being left goes with it, the way a rail tap closes it
+    try { if (EN.combatView && EN.combatView.closePops) EN.combatView.closePops(); } catch (e) {}
+    try { if (EN.inventoryView && EN.inventoryView.closePops) EN.inventoryView.closePops(); } catch (e) {}
+    if (a.sub && EN.faceView && EN.faceView.setSub) EN.faceView.setSub(a.sub);
+    EN.app.gotoTab(a.tab);
+  }
+
+  /* ---- the stage: one wrapper in #view, a bar of its own where an app has more than one face, and the view.
+     js/app.js puts the read-only banner in front of #view's first child, so the stage must be that one child. */
+  function segBar(items) {
+    return el("div.dk.dk-bar", null, [el("div.dk-seg", { role: "group" }, items.map(function (i) {
+      return el("button.dk-segb" + (i.on ? ".on" : ""), { type: "button", dataset: { dkSeg: i.key }, "aria-pressed": i.on ? "true" : "false", onclick: i.go },
+        [i.icon ? el("span.dk-ic", { html: i.icon }) : null, document.createTextNode(i.label)]);
+    }))]);
+  }
+  function stageBar(key, app, c) {
+    if (app === "sheet") {
+      var d = c && c.d;
+      // Flow is the Shaper's; #GRID is for whoever jacks in (a Codebreaker, or anyone with a deck). The view that is
+      // open is always listed, so a jump from a card (a Relay's FIRE ON #GRID) never leaves the player with no way back.
+      var flow = !!(d && d.flow) || key === "flow";
+      var grid = !!(d && d.grid && (d.grid.isCodebreaker || d.grid.deck)) || key === "grid";
+      if (!flow && !grid) return null;
+      var items = [{ key: "combat", label: "Sheet", icon: icon("sheet") }];
+      if (flow) items.push({ key: "flow", label: "Flow", icon: icon("flow") });
+      if (grid) items.push({ key: "grid", label: "#GRID", icon: icon("grid") });
+      items.forEach(function (i) { i.on = i.key === key; i.go = function () { EN.app.gotoTab(i.key); }; });
+      return segBar(items);
+    }
+    if (app === "post") {
+      var s = faceSub();
+      return segBar([["post", "Messages", icon("post")], ["contacts", "Contacts", (EN.faceView.icons || {}).contacts]].map(function (x) {
+        return { key: x[0], label: x[1], icon: x[2], on: s === x[0], go: function () { EN.faceView.setSub(x[0]); EN.app.render(); } };
+      }));
+    }
+    return null;
+  }
+  function view(mount, tab) {
+    var c = _ctx = context(), app = appOf(tab.key);
+    var stage = el("div.dk-stage", { dataset: { dkApp: app } });
+    var bar = stageBar(tab.key, app, c);
+    if (bar) stage.appendChild(bar);
+    var host = el("div.dk-host");
+    stage.appendChild(host);
+    mount.appendChild(stage);
+    tab.view(host);
+  }
+
+  /* ---- the dock: its own node inside #os (so print.css hides it with the rest), made when the skin needs it
+     and removed when it does not, which leaves every other skin's page exactly as it was. */
+  function dockBtn(name, label, cur, onclick, badge) {
+    return el("button.dk-app" + (cur ? ".on" : ""), { type: "button", title: label, dataset: { dk: name }, "aria-current": cur ? "page" : null, onclick: onclick }, [
+      el("span.dk-ic", { html: icon(name) }), el("span.dk-lb", { text: label }),
+      badge ? el("span.dk-badge", { title: badge + (badge === 1 ? " unread message" : " unread messages") + " in #POST", text: String(badge) }) : null
+    ]);
+  }
+  function paintDock(os, key, c) {
+    var dock = document.getElementById("dk-dock");
+    if (!dock) {
+      dock = el("nav#dk-dock.dk", { "aria-label": "Apps" });
+      os.insertBefore(dock, document.getElementById("view"));
+    }
+    var held = dock.contains(document.activeElement) ? document.activeElement.getAttribute("data-dk") : null;
+    var cur = appOf(key), unread = 0;
+    try { unread = EN.faceView.unread(c.ch) || 0; } catch (e) { unread = 0; }
+    clear(dock);
+    dock.appendChild(el("div.dk-mark", { "aria-hidden": "true", text: "#" }));
+    APPS.forEach(function (a) {
+      dock.appendChild(dockBtn(a.key, a.label, cur === a.key, function () { go(a.key); }, a.key === "post" && cur !== "post" ? unread : 0));
+    });
+    dock.appendChild(el("span.dk-grow"));
+    dock.appendChild(dockBtn("codex", "Codex", cur === "codex", function () { EN.app.gotoTab("codex"); }));
+    dock.appendChild(dockBtn("settings", "Settings", false, function () {
+      if (!EN.settings) return;
+      if (document.getElementById("set-ov")) EN.settings.close(); else EN.settings.open();
+    }));
+    // a key press on a dock button redraws the dock under it: the same button keeps the focus
+    if (held) { var again = dock.querySelector('[data-dk="' + held + '"]'); if (again) { try { again.focus({ preventScroll: true }); } catch (e) {} } }
+  }
+  function drop(id) { var n = document.getElementById(id); if (n && n.parentNode) n.parentNode.removeChild(n); }
+
+  /* ---- chrome(): called by js/app.js on EVERY render, whatever the skin. It draws the dock and the status bar
+     when this skin is in force on the Freelancer desktop with a filed record open, and takes both away
+     otherwise (another skin, the Admin desktop, no record, or a record still being built: that one sees
+     #PRINT alone, as it does on every skin). */
+  function chrome(portal, key) {
+    var os = document.getElementById("os"), top = document.querySelector(".os-topbar");
+    var c = _ctx; _ctx = null;
+    var show = !!os && !!top && on() && portal === "freelancer" && !!EN.store.active() && EN.app.registered();
+    if (!show) {
+      drop("dk-dock");
+      if (EN.deck.hud) EN.deck.hud.remove();
+      if (os) os.style.removeProperty("--dk-accent");
+      return;
+    }
+    if (!c || c.ch !== EN.store.active()) c = context();
+    // the deck wears the class's own colour (data/class_identity.js, the author's pairs); no class, the palette's accent
+    var cls = c.ch.class, CI = EN.classIdentity;
+    if (cls && CI && CI.has(cls)) os.style.setProperty("--dk-accent", CI.colors[cls].main); else os.style.removeProperty("--dk-accent");
+    paintDock(os, key, c);
+    if (EN.deck.hud) EN.deck.hud.paint(top, c);
+  }
+
+  return { on: on, appOf: appOf, subKey: subKey, view: view, chrome: chrome, go: go, apps: function () { return APPS.map(function (a) { return a.key; }); } };
+})();

@@ -329,8 +329,11 @@ EN.theme = (function () {
     if (ch && Array.isArray(ch.customThemes)) mergeCustom(ch.customThemes);
     var k = get();
     if (k !== _applied) apply(k);
+    // a skin that belongs to one desktop comes off on the other, and back on the way home
+    var sk = effectiveSkin();
+    if (sk !== _skinOn) applySkin(sk);
   }
-  function init() { apply(get()); applySkin(getSkin()); applyWall(); }
+  function init() { apply(get()); applySkin(effectiveSkin()); applyWall(); }
 
   /* ---- SKIN: the shape of the interface -----------------------------------
      A second axis beside color: type, corners, chrome, effects. Any palette
@@ -349,7 +352,13 @@ EN.theme = (function () {
   var SKINS = [
     { key: "classic", name: "Classic",     sub: "the look as shipped",             cls: null },
     { key: "droid",   name: "#GRIDroid",   sub: "a cyberpunk phone OS: one column at any width, the rail an app list",   cls: "skin-droid" },
-    { key: "98",      name: "#GRIDOS '98", sub: "bevels, title bars, a taskbar with START", cls: "skin-98" }
+    { key: "98",      name: "#GRIDOS '98", sub: "bevels, title bars, a taskbar with START", cls: "skin-98" },
+    /* #GRIDeck (14 Nov 2026) is more than a restyle: it has its own shell (js/deck_shell.js, css/deck.css),
+       a dock of apps and a status bar on every screen. It is the Freelancer desktop's alone (`only`), so the
+       Admin desktop keeps the Classic look while it is picked; see effectiveSkin. `note` is said under the
+       picker while the skin is on. It has no SKIN_SEED on purpose: picking it writes no palette to the record. */
+    { key: "deck",    name: "#GRIDeck",    sub: "a dock of apps and a status bar that never leaves", cls: "skin-deck", only: "freelancer",
+      note: "#GRIDeck is still being built. The dock and the status bar are in; the screens inside are the ones you know until each is replaced. It is the Freelancer desktop's: the Admin desktop keeps the Classic look." }
   ];
   function findSkin(k) { for (var i = 0; i < SKINS.length; i++) { if (SKINS[i].key === k) return SKINS[i]; } return SKINS[0]; }
   /* A PHONE OPENS IN #GRIDroid (the author, 31 Oct 2026). Only the default: a skin the player
@@ -367,12 +376,22 @@ EN.theme = (function () {
   }
   function defaultSkin() { return isPhone() ? "droid" : "classic"; }
   function getSkin() { try { return findSkin(localStorage.getItem(SKIN_KEY) || defaultSkin()).key; } catch (e) { return defaultSkin(); } }
+  /* THE SKIN IN FORCE, which is the picked one except where a skin belongs to one desktop: #GRIDeck is the
+     Freelancer's, so on the Admin desktop the skin in force is Classic. getSkin() still answers what was
+     picked (the picker shows it either way); the root class follows this one. syncToActive asks on every
+     render, which is the one place that already knows the desktop before anything is drawn. */
+  var _skinOn = null;
+  function effectiveSkin() {
+    var s = findSkin(getSkin());
+    return (s.only && s.only !== (inAdmin() ? "admin" : "freelancer")) ? SKINS[0].key : s.key;
+  }
   function applySkin(k) {
     var root = document.documentElement;
     SKINS.forEach(function (s) { if (s.cls) root.classList.remove(s.cls); });
     root.classList.remove("rail-open");   // #GRIDroid's unfolded app list; no other skin owns it
     var s = findSkin(k);
     if (s.cls) root.classList.add(s.cls);
+    _skinOn = s.key;
     // the wallpaper resolves per skin (a preset is '98-only), so a skin change re-reads it
     applyWall();
   }
@@ -430,7 +449,7 @@ EN.theme = (function () {
     // what the outgoing skin was wearing, captured even if it was never explicitly chosen there
     if (key !== prev) rememberSkinTheme(prev, get());
     try { localStorage.setItem(SKIN_KEY, key); } catch (e) {}
-    applySkin(key);
+    applySkin(effectiveSkin());
     var want = recallSkinTheme(key) || (find(SKIN_SEED[key] || "") ? SKIN_SEED[key] : null);
     // set() rather than apply(), so the palette lands wherever palettes live and is recorded
     // against the new skin on the way through
@@ -571,7 +590,7 @@ EN.theme = (function () {
     allThemes: allThemes, isCustom: isCustom, getCustom: getCustom, saveCustom: saveCustom,
     deleteCustom: deleteCustom, mergeCustom: mergeCustom, bundleFor: bundleFor, syncToActive: syncToActive,
     inAdmin: inAdmin,
-    SKINS: SKINS, getSkin: getSkin, setSkin: setSkin, isPhone: isPhone,
+    SKINS: SKINS, getSkin: getSkin, setSkin: setSkin, effectiveSkin: effectiveSkin, isPhone: isPhone,
     wallPresets: wallPresets, wallCustoms: wallCustoms, wallTileSize: wallTileSize, getWall: getWall, setWall: setWall,
     wallDim: wallDim, setWallDim: setWallDim, wallOpt: wallOpt, setWallOpt: setWallOpt,
     addWall: addWall, removeWall: removeWall, wallUrl: wallUrl
@@ -1261,7 +1280,7 @@ EN.settings = (function () {
     return [
       el("div.set-sectitle", { text: "// CHANGE APPEARANCE", dataset: { sum: (EN.theme.SKINS.filter(function (s) { return s.key === cur; })[0] || {}).name || "" } }),
       el("label.set-label", { text: "OS Skin" }),
-      el("p.set-hint", { text: "The shape of the interface: type, corners, chrome. Any color theme wears any skin, and each skin remembers the last one you gave it, so the three can look like three different machines. Switching skins repaints the loaded Freelancer and saves that palette to them. Saved on this device." }),
+      el("p.set-hint", { text: "The shape of the interface: type, corners, chrome. Any color theme wears any skin, and each skin remembers the last one you gave it, so each can look like a different machine. Switching skins repaints the loaded Freelancer and saves that palette to them. Saved on this device." }),
       el("div.row.wrap", { style: { gap: "8px" } }, EN.theme.SKINS.map(function (s) {
         return el("button.btn.sm" + (s.key === cur ? ".primary" : ""), {
           title: s.sub,
@@ -1275,7 +1294,12 @@ EN.settings = (function () {
       })),
       pending
         ? el("p.set-hint", { style: { color: "var(--warn)", marginTop: "8px" }, text: "This skin is wired but not yet styled: it looks like Classic until its design lands." })
-        : null
+        : null,
+      // what a skin wants said while it is the one picked (#GRIDeck: still being built, Freelancer only)
+      (function () {
+        var s = EN.theme.SKINS.filter(function (x) { return x.key === cur; })[0];
+        return s && s.note ? el("p.set-hint", { dataset: { skinNote: s.key }, style: { color: "var(--warn)", marginTop: "8px" }, text: s.note }) : null;
+      })()
     ];
   }
 
@@ -1451,7 +1475,8 @@ EN.settings = (function () {
     if (had) ov.parentNode.removeChild(ov);
     document.removeEventListener("keydown", onKey);
     // keyboard and switch users land back on the gear (START on '98), not on <body>
-    if (had) { var g = document.querySelector("#os-tabs .os-gear"); if (g && g.offsetParent) { if (!g.hasAttribute("tabindex")) g.setAttribute("tabindex", "-1"); try { g.focus({ preventScroll: true }); } catch (e) {} } }
+    // (#GRIDeck hides the rail, gear and all: there the focus goes back to the dock's own Settings button)
+    if (had) { var g = document.querySelector("#os-tabs .os-gear"); if (!(g && g.offsetParent)) g = document.querySelector('#dk-dock [data-dk="settings"]'); if (g && g.offsetParent) { if (!g.hasAttribute("tabindex")) g.setAttribute("tabindex", "-1"); try { g.focus({ preventScroll: true }); } catch (e) {} } }
   }
 
   // the gear at the right end of the tab rail (toggles the tray)
@@ -1466,7 +1491,8 @@ EN.settings = (function () {
   }
 
   // refresh: js/cloud.js redraws the open tray when the cloud link changes (rebuild is inert when it is shut)
-  return { open: open, close: close, gearTab: gearTab, refresh: rebuild };
+  // gearIcon: the author's gear, for a shell that draws its own Settings button (js/deck_shell.js)
+  return { open: open, close: close, gearTab: gearTab, refresh: rebuild, gearIcon: ICON_SETTINGS };
 })();
 
 EN.theme.init();

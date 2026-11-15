@@ -11,8 +11,10 @@
 <link rel="apple-touch-icon" href="img/icon-192.png?v=20261114.1">
 <link rel="icon" type="image/svg+xml" href="img/GRID%20Icon.svg?v=20261114.1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/theme.css?v=20261114.1">
+<!-- #GRIDeck, the fourth OS skin: every rule in it is under html.skin-deck, so it is inert on the other three -->
+<link rel="stylesheet" href="css/deck.css?v=20261114.1">
 <link rel="stylesheet" href="css/print.css?v=20261114.1">
 </head>
 <body>
@@ -205,6 +207,9 @@
 <script src="js/pdfexport.js?v=20261114.1"></script>
 
 <!-- ===== settings tray (gear at the right of the tab rail; appearance + themes) ===== -->
+<!-- #GRIDeck's shell (the dock and the stage) and its status bar; they draw only while that skin is in force -->
+<script src="js/deck_shell.js?v=20261114.1"></script>
+<script src="js/deck_hud.js?v=20261114.1"></script>
 <script src="js/settings.js?v=20261114.1"></script>
 <!-- ===== guided character-creation tour (switch it off in Settings; delete this line and data/tour_creation.js's to remove) ===== -->
 <script src="js/tour.js?v=20261114.1"></script>
