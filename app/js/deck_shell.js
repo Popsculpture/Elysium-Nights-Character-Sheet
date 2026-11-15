@@ -12,9 +12,11 @@
 
    STRANGLER BUILD. Every app began by HOSTING THE EXISTING VIEW (tab.view) inside a stage, so the skin was
    usable from the first day; each phase swaps one for a screen of its own, and this file is the only place
-   that decides which is drawn. The Sheet is its own since P3 (js/deck_sheet.js) and Gear since P4
-   (js/deck_gear.js). The tab each replaced, as Classic draws it, stays one press away on the stage's bar
-   ("Classic sheet", "Classic inventory"), for the few things the new screen does not hold yet.
+   that decides which is drawn. The Sheet is its own since P3 (js/deck_sheet.js), Gear since P4
+   (js/deck_gear.js), and #POST and Standing since P5 (js/deck_post.js, js/deck_standing.js). The tab each
+   replaced, as Classic draws it, stays one press away on the stage's bar ("Classic sheet", "Classic
+   inventory", "Classic ledger"), for the few things the new screen does not hold yet. Contacts is still the
+   Social tab's own page, drawn bare (no heading, no three-way switch) under #POST's bar.
 
    DOM RULES. Everything this skin draws itself sits under a `.dk` root and uses `dk-` classes only: never
    .panel, .btn, .chip or .stat, and never an inline border-radius. The Classic rules in theme.css
@@ -49,7 +51,10 @@ EN.deck.shell = (function () {
   // what else decides the view under a tab key: js/app.js adds it to the key a scroll position is kept under
   var _classic = false;   // the Sheet app is showing the Freelancer tab as Classic draws it (transient, like a sub-tab)
   var _gear = "mine";     // Gear's page: mine | market | classic (the Inventory tab as Classic draws it)
-  function subKey(key) { return key === "face" ? faceSub() : (key === "combat" && _classic) ? "classic" : key === "gear" ? _gear : ""; }
+  var _ledger = "standing";   // Standing's page: standing | classic (the Social tab's ledger as Classic draws it)
+  function subKey(key) { return key === "face" ? faceSub() + (faceSub() === "ledger" && _ledger === "classic" ? "-classic" : "") : (key === "combat" && _classic) ? "classic" : key === "gear" ? _gear : ""; }
+  function nativeFace(c) { return !!(c && c.ch && EN.faceView && EN.faceView.core && EN.faceView.core.read); }
+  function standingView(k) { _ledger = k === "classic" ? "classic" : "standing"; if (EN.faceView && EN.faceView.setSub) EN.faceView.setSub("ledger"); EN.app.gotoTab("face"); EN.app.render(); }
   function nativeGear(c) { return !!(c && c.ch && c.d && EN.deck.gear); }
   function gearView(k) { _gear = (k === "market" || k === "classic") ? k : "mine"; EN.app.gotoTab("gear"); EN.app.render(); }
 
@@ -124,6 +129,12 @@ EN.deck.shell = (function () {
         return { key: x[0], label: x[1], icon: x[0] === "mine" ? icon("gear") : null, on: _gear === x[0], go: function () { gearView(x[0]); } };
       }));
     }
+    if (app === "standing") {
+      if (!nativeFace(c) || !EN.deck.standing) return null;
+      return segBar([["standing", "Standing"], ["classic", "Classic ledger"]].map(function (x) {
+        return { key: x[0], label: x[1], icon: x[0] === "standing" ? icon("standing") : null, on: _ledger === x[0], go: function () { standingView(x[0]); } };
+      }));
+    }
     if (app === "post") {
       var s = faceSub();
       return segBar([["post", "Messages", icon("post")], ["contacts", "Contacts", (EN.faceView.icons || {}).contacts]].map(function (x) {
@@ -147,6 +158,22 @@ EN.deck.shell = (function () {
         clear(stage);
         if (bar) stage.appendChild(bar);
       }
+    }
+    // #POST is a messenger and Standing a page of cards; Contacts and the Classic ledger are the Social tab's own pages, bare
+    if (tab.key === "face" && nativeFace(c)) {
+      var page = faceSub();
+      try {
+        if (page === "post" && EN.deck.post) { EN.deck.post.render(stage, c); stage.setAttribute("data-dk-native", "post"); return; }
+        if (page === "ledger" && _ledger !== "classic" && EN.deck.standing) { EN.deck.standing.render(stage, c); stage.setAttribute("data-dk-native", "standing"); return; }
+      } catch (e3) {
+        console.error("#GRIDeck could not draw this page; showing the Social tab's", e3);
+        clear(stage);
+        if (bar) stage.appendChild(bar);
+      }
+      var bareHost = el("div.dk-host");
+      stage.appendChild(bareHost);
+      EN.faceView.render(bareHost, { sub: page, bare: true });
+      return;
     }
     if (app === "gear" && _gear !== "classic" && nativeGear(c)) {
       try { EN.deck.gear.render(stage, c, _gear); stage.setAttribute("data-dk-native", "gear"); return; }
@@ -220,5 +247,5 @@ EN.deck.shell = (function () {
     if (EN.deck.record) EN.deck.record.sync(c);
   }
 
-  return { on: on, appOf: appOf, subKey: subKey, view: view, chrome: chrome, go: go, reading: context, gearView: gearView, apps: function () { return APPS.map(function (a) { return a.key; }); } };
+  return { on: on, appOf: appOf, subKey: subKey, view: view, chrome: chrome, go: go, reading: context, gearView: gearView, standingView: standingView, apps: function () { return APPS.map(function (a) { return a.key; }); } };
 })();
