@@ -1,10 +1,10 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS · #GRIDeck (P1 14 Nov 2026, P2 and P3 15 Nov 2026): the fourth OS skin's own look.
+   ELYSIUM NIGHTS · #GRIDeck (P1 14 Nov 2026, P2 to P4 15 Nov 2026): the fourth OS skin's own look.
    Loaded after theme.css. Every rule here is under html.skin-deck, which settings.js puts on the Freelancer
    desktop alone, so none of it can reach Classic, #GRIDroid, '98 or the Admin desktop.
 
    WHAT THIS FILE MAY STYLE.
-   1. What this skin draws itself (js/deck_shell.js, deck_hud.js, deck_record.js, deck_find.js, deck_sheet.js): nodes under a `.dk` root, with
+   1. What this skin draws itself (js/deck_shell.js, deck_hud.js, deck_record.js, deck_find.js, deck_sheet.js, deck_gear.js): nodes under a `.dk` root, with
       `dk-` classes. Colours come from the --dk-* tokens below, never from the palette's own variables, so the
       shell looks the same on every palette. Its accent, --dk-accent, is the open Freelancer's class colour
       (js/deck_shell.js sets it on #os), or the palette's accent when there is no class.
@@ -416,6 +416,58 @@ html.skin-deck .dk .dk-fx .dk-note:first-child{ margin-top:0; }
 /* the Freelancer tab's trays are drawn in a host of their own under the Sheet */
 html.skin-deck .dk-trays:empty{ display:none; }
 
+/* ---- Gear (js/deck_gear.js): a list of what there is, grouped by where it is, and the piece that is picked. Its own dark
+   ground, like the Sheet. ---- */
+html.skin-deck .dk-gear{ padding:16px; border-radius:20px; background:rgba(8,7,13,.78); box-shadow:inset 0 0 0 1px var(--dk-line); }
+html.skin-deck .dk .dk-gbar{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+html.skin-deck .dk .dk-load{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+html.skin-deck .dk .dk-load i{ font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; }
+html.skin-deck .dk .dk-load b{ font:700 22px/1 var(--dk-disp); }
+html.skin-deck .dk .dk-purse{ display:flex; align-items:baseline; gap:12px; }
+html.skin-deck .dk .dk-purse b{ font:700 22px/1 var(--dk-disp); }
+html.skin-deck .dk .dk-gold{ color:var(--dk-gold); }
+html.skin-deck .dk .dk-g2c{ display:grid; grid-template-columns:minmax(280px, 380px) minmax(0, 1fr); gap:18px; align-items:start; }
+html.skin-deck .dk .dk-glist > .dk-in{ margin-bottom:9px; }
+html.skin-deck .dk .dk-gf{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+html.skin-deck .dk .dk-fc{ height:26px; padding:0 11px; border-radius:999px; background:rgba(255,255,255,.06); color:var(--dk-t2); font-size:12px; font-weight:600; white-space:nowrap; }
+html.skin-deck .dk .dk-fc:hover{ color:var(--dk-text); }
+html.skin-deck .dk .dk-fc.on{ background:color-mix(in srgb, var(--dk-accent) 20%, transparent); color:var(--dk-accent); }
+html.skin-deck .dk .dk-fronts{ display:flex; margin-bottom:9px; }
+html.skin-deck .dk .dk-fronts .dk-segb{ flex:1 1 0; justify-content:center; padding:0 6px; font-size:12px; }
+html.skin-deck .dk .dk-gg{ display:flex; align-items:center; gap:8px; margin:14px 4px 5px; font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); }
+html.skin-deck .dk .dk-gg span{ padding:0 6px; border-radius:999px; background:rgba(255,255,255,.07); letter-spacing:0; }
+html.skin-deck .dk .dk-gr{ display:flex; align-items:center; gap:10px; width:100%; padding:8px 11px; border-radius:11px; }
+html.skin-deck .dk .dk-gr:hover{ background:rgba(255,255,255,.05); }
+html.skin-deck .dk .dk-gr.on{ background:color-mix(in srgb, var(--dk-accent) 14%, transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--dk-accent) 45%, transparent); }
+html.skin-deck .dk .dk-gr .dk-two{ flex:1 1 0; }
+html.skin-deck .dk .dk-gr b{ font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+html.skin-deck .dk .dk-gr small{ color:var(--dk-t3); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+html.skin-deck .dk .dk-gr em{ flex:none; font:600 14px var(--dk-disp); font-style:normal; color:var(--dk-gold); white-space:nowrap; }
+html.skin-deck .dk .dk-gdet{ padding:20px 22px; margin:0; background:var(--dk-s1); position:sticky; top:calc(var(--dk-hud) + 14px); max-height:calc(100vh - var(--dk-hud) - 28px); overflow:auto;
+  overscroll-behavior:contain; }
+html.skin-deck .dk .dk-gdet h2{ margin:0 0 10px; font:700 28px/1.1 var(--dk-disp); letter-spacing:.01em; color:var(--dk-text); }
+html.skin-deck .dk .dk-gdet > .dk-chips{ margin-bottom:4px; }
+html.skin-deck .dk .dk-gsec{ margin-top:18px; padding-top:14px; border-top:1px solid var(--dk-line); }
+html.skin-deck .dk .dk-gsec > .dk-sec{ margin:0 0 8px; font:500 10.5px var(--dk-mono); letter-spacing:.14em; color:var(--dk-t3); }
+/* a field inside #view sits under Classic's own field rules, which carry the view's id: these have to win */
+html.skin-deck #view .dk input.dk-in, html.skin-deck #view .dk select.dk-in{ border:1px solid var(--dk-line2) !important; border-radius:10px !important; background-color:var(--dk-s1) !important;
+  color:var(--dk-text) !important; box-shadow:none !important; font-family:var(--dk-body) !important; }
+html.skin-deck #view .dk input.dk-in:focus{ border-color:var(--dk-accent) !important; box-shadow:0 0 0 3px color-mix(in srgb, var(--dk-accent) 22%, transparent) !important; }
+html.skin-deck #view .dk select.dk-sel{ border-radius:8px !important; background-color:var(--dk-s2) !important; }
+html.skin-deck .dk .dk-gsec > .dk-row:first-of-type, html.skin-deck .dk .dk-gsec > .dk-note:first-of-type{ margin-top:0; }
+html.skin-deck .dk .dk-gline{ margin:0 0 8px; font-size:13px; line-height:1.55; color:var(--dk-t2); }
+html.skin-deck .dk .dk-gline b{ color:var(--dk-text); font-weight:600; }
+html.skin-deck .dk .dk-tgl{ height:34px; padding:0 14px; border-radius:10px; border:1px solid var(--dk-line2); font-weight:600; font-size:13px; white-space:nowrap; text-align:center; }
+html.skin-deck .dk .dk-tgl:hover{ background:rgba(255,255,255,.07); }
+html.skin-deck .dk .dk-tgl.on{ background:color-mix(in srgb, var(--dk-accent) 18%, transparent); border-color:var(--dk-accent); color:var(--dk-accent); }
+html.skin-deck .dk .dk-price{ margin:12px 0 2px; font:700 30px/1.1 var(--dk-disp); color:var(--dk-gold); }
+html.skin-deck .dk .dk-price + .dk-note{ margin-top:0; }
+html.skin-deck .dk .dk-cond{ font:700 20px var(--dk-disp); }
+html.skin-deck .dk .dk-dropped{ padding:10px 12px; margin-bottom:10px; background:var(--dk-s1); border-style:dashed; }
+html.skin-deck .dk .dk-dropped h5{ margin-bottom:4px; }
+html.skin-deck .dk .dk-dropped .dk-line{ padding:4px 0; }
+html.skin-deck .dk .dk-gback{ display:none; }
+
 /* ---- the stage: a bar of its own where an app has more than one face, then the view it hosts ---- */
 html.skin-deck .dk-bar{ margin:0 0 16px; }
 html.skin-deck .dk .dk-seg{ display:inline-flex; padding:3px; border-radius:12px; background:rgba(255,255,255,.07); }
@@ -461,6 +513,12 @@ html.skin-deck .dk-host .face-bar{ display:none; }
 /* A phone, for now: the dock goes to the bottom edge and the bar wraps. #GRIDroid is the phone skin; this
    skin's own phone layout is a later phase, and this much keeps it usable until then. */
 @media (max-width:900px){
+  /* Gear: the list or the piece, one at a time */
+  html.skin-deck .dk .dk-g2c{ grid-template-columns:minmax(0,1fr); }
+  html.skin-deck .dk-gear{ padding:12px; }
+  html.skin-deck .dk-gear[data-dk-pane="list"] .dk-gdet, html.skin-deck .dk-gear[data-dk-pane="detail"] .dk-glist{ display:none; }
+  html.skin-deck .dk .dk-gdet{ position:static; max-height:none; padding:16px; }
+  html.skin-deck .dk .dk-gback{ display:block; margin:0 0 10px; }
   /* one column at a time, picked on the switch across the top */
   html.skin-deck .dk-sheet{ grid-template-columns:minmax(0,1fr); grid-template-areas:"seg" "al" "col"; padding:12px; }
   html.skin-deck .dk .dk-seg.dk-colseg{ display:flex; }

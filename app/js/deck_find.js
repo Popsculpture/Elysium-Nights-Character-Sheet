@@ -3,6 +3,7 @@
    One box for "where is that": the rules (the Codex's own search), the gear on the record, the people the
    Freelancer can reach, and the handful of things a player goes looking for a button to do. Opened from the
    status bar or with Ctrl K (Cmd K on a Mac), over whatever screen is open, and gone again on Escape.
+   Since P4 a piece of gear opens in Gear with that piece picked.
 
    It is an overlay of its own, outside #view and outside the render loop, like the Codex peek: typing in it
    is never interrupted by a redraw. A rule opens in the peek drawer over the page; gear and people open the
@@ -63,7 +64,9 @@ EN.deck.find = (function () {
         if (seen[e.name]) { seen[e.name].n += (e.qty || 1); return; }
         seen[e.name] = { n: e.qty || 1 };
         if (Object.keys(seen).length > MAX_EACH) return;
-        out.push({ group: "Your gear", title: e.name, count: seen[e.name], hint: "Gear", go: function () { EN.deck.shell.go("gear"); } });
+        out.push({ group: "Your gear", title: e.name, count: seen[e.name], hint: "Gear", go: function () {
+          if (EN.deck.gear && EN.deck.gear.show) EN.deck.gear.show(EN.engine.entryKey(e)); else EN.deck.shell.go("gear");
+        } });
       });
       ((ch.face && ch.face.contacts) || []).filter(function (p) { return p && (has(p.name) || has(p.handle)); }).slice(0, MAX_EACH).forEach(function (p) {
         out.push({ group: "People", title: p.name || p.handle || "Unnamed contact", hint: p.work || "Contact", go: function () {

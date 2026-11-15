@@ -90,6 +90,7 @@ EN.inventoryView = (function () {
     { key: "fivefinger", name: "Five-Finger Supply", desc: "Free. Looted, recovered, donated. Fencing disabled, Drop or Donate only." }
   ];
   function storefront() { return STOREFRONTS.find(function (s) { return s.key === _mode; }) || STOREFRONTS[0]; }
+  function currentFront() { return _mode; }
   // the two device settings this view reads (data/launch.js): GM controls, and the Encumbrance rule
   function gmOn(key) { return !!(EN.launch && EN.launch.gmControl && EN.launch.gmControl(key)); }
   function encOn() { return !(EN.launch && EN.launch.rule) || EN.launch.rule("encumbrance"); }
@@ -110,10 +111,12 @@ EN.inventoryView = (function () {
     return px == null ? null : { amt: px, nexus: true };
   }
   function fmtBuyout(b) { return b.nexus ? fmtNx(b.amt) : fmtG(b.amt); }
-  function streetPrice(it) {
-    if (_mode === "register") return Math.ceil(it.price * (LEGAL_MULT[it.legality] || 1) * (AVAIL_MULT[it.availability] || 1));
-    if (_mode === "surplus") return Math.max(1, Math.floor(it.price * FENCE_RATE));
-    if (_mode === "fivefinger") return 0;
+  // `front` names a storefront (#GRIDeck's Gear passes one, P4); without it, the one this tab is on
+  function streetPrice(it, front) {
+    var m = front || _mode;
+    if (m === "register") return Math.ceil(it.price * (LEGAL_MULT[it.legality] || 1) * (AVAIL_MULT[it.availability] || 1));
+    if (m === "surplus") return Math.max(1, Math.floor(it.price * FENCE_RATE));
+    if (m === "fivefinger") return 0;
     return it.price;   // The Undercut, straight book list price
   }
   function fencePrice(it) { return Math.max(1, Math.floor(it.price * FENCE_RATE)); }
@@ -580,22 +583,48 @@ EN.inventoryView = (function () {
       return true;
     });
   }
-  function buy(it, premium) {
-    if (it.vendor === false && _mode !== "fivefinger") { toast(it.name + " isn't vendor stock; it's found, not bought. (" + (it.nexus || "rarely sold") + ")"); return; }
-    var sp = streetPrice(it);
+  /* WHERE A NEW PIECE LANDS (P4), inside the purchase's own write. "equip": a weapon joins the weapons in hand, single-slot
+     gear (armor, shield, Focus, deck, Rig) becomes the live one, anything wearable is worn, and the rest is Carried.
+     "carried": Carried. Anything else leaves it in the stash, as a purchase always did. */
+  function placeEntry(c, e, it, place) {
+    var key = entryKey(e);
+    if (place !== "equip" && place !== "carried") return;
+    c.carry = c.carry || {};
+    if (place === "equip" && isWeapon(it)) {
+      c.equippedWeapons = c.equippedWeapons || [];
+      if (c.equippedWeapons.indexOf(key) === -1) c.equippedWeapons.push(key);
+    } else if (place === "equip" && EN.engine.equipSlotFor(c, it, e)) {
+      EN.engine.setEquipSlot(c, EN.engine.equipSlotFor(c, it, e).id, key);
+    } else if (place === "equip" && EN.engine.isWearable && EN.engine.isWearable(it)) {
+      c.carry[key] = "worn";
+    } else if (!notCarried(it)) {
+      c.carry[key] = "carried";
+    }
+    if (EN.engine.unlogDropped) EN.engine.unlogDropped(c, key);
+  }
+  /* `opts` is #GRIDeck's Gear (P4): { front } buys at that storefront in place of this tab's own, and { place } puts the new
+     piece where the player said in the same write ("equip", "carried", or the stash when absent). Answers the new entry's
+     key, or null when the sale did not go through. */
+  function buy(it, premium, opts) {
+    var _mode = (opts && opts.front) || currentFront();
+    if (it.vendor === false && _mode !== "fivefinger") { toast(it.name + " isn't vendor stock; it's found, not bought. (" + (it.nexus || "rarely sold") + ")"); return null; }
+    var sp = streetPrice(it, _mode);
     var planFee = (premium && it.upkeep && it.premium) ? it.premium.upkeep : 0;
     var ch = store.active();
     if ((ch.glimmer || 0) < sp + planFee) {
       toast(_mode === "register" ? "Payment not approved. Please verify your account standing." :
             _mode === "surplus" ? "Dues not current. The Guild remembers." :
             "Account declined. The vendor's smile doesn't move.");
-      return;
+      return null;
     }
+    var landed = null;
     store.update(function (c) {
       c.glimmer = (c.glimmer || 0) - (sp + planFee);
       var extra = arrivalExtra(it);
       if (extra && planFee && !it.relayTier) extra.premium = true;
-      addToStash(c, it.name, extra);
+      var e = addToStash(c, it.name, extra);
+      landed = entryKey(e);
+      if (opts && opts.place) placeEntry(c, e, it, opts.place);
     }, { ledger: "Bought " + it.name + (it.relayTier ? " loaded with " + relayLoadPick(it) : "") + (it.upkeep ? " (lease buy-in" + (planFee ? " and first Premium installment" : "") + ")" : "") });
     toast(_mode === "register" ? it.name + " purchased for " + fmtG(sp) + ". Compliance fees included. All sales final." :
           _mode === "surplus" ? it.name + " claimed from the Guild lot for " + fmtG(sp) + ". Mostly works." :
@@ -603,6 +632,7 @@ EN.inventoryView = (function () {
           (it.upkeep && planFee) ? it.name + " leased on the Premium plan: " + fmtG(it.price || 0) + " buy-in and " + fmtG(planFee) + " charged now, " + fmtG(planFee) + " due in 7 days (Long Rests)." :
           it.upkeep ? it.name + " lease signed: " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + " due in 7 days (Long Rests)." :
           it.name + " acquired for " + fmtG(sp) + ". No receipt. It never happened.");
+    return landed;
   }
 
   /* ---- lease lifecycle: countdown, installment, buyout -------------------
@@ -740,8 +770,9 @@ EN.inventoryView = (function () {
     toast(it.name + " bought out for " + fmtBuyout(b) + ". It's yours outright; no more Upkeep, no off switch.");
   }
   // buying chrome drops it in the Chrome Stash (uninstalled); you install it at a clinic from the Chrome tab
-  function buyCyber(it) {
-    var sp = streetPrice(it);
+  function buyCyber(it, front) {
+    var _mode = front || currentFront();   // P4: a storefront may be named, as for buy
+    var sp = streetPrice(it, _mode);
     var ch = store.active();
     if (_mode !== "fivefinger" && (ch.glimmer || 0) < sp) {
       toast(_mode === "register" ? "Payment not approved. Verify your account standing." :
@@ -876,8 +907,8 @@ EN.inventoryView = (function () {
   function dropStash(idx) {
     store.update(function (c) { if ((c.cyberStash || [])[idx]) c.cyberStash.splice(idx, 1); });
   }
-  function sell(key) {
-    if (_mode === "fivefinger") { toast("No provenance, no payout. The fence won't touch it."); return; }
+  function sell(key, front) {
+    if ((front || _mode) === "fivefinger") { toast("No provenance, no payout. The fence won't touch it."); return; }
     var e0 = findEntry(store.active(), key);
     var name = e0 ? e0.name : key;
     var it = findItem(name);
@@ -1758,7 +1789,10 @@ EN.inventoryView = (function () {
     ], { corners: true });
   }
 
-  function marketView(ch) {
+  /* THE MARKET'S SHELVES (P4, 15 Nov 2026): every listing by major type and section, with the Toolkit hold applied, so a
+     second screen stocks the same shelves. [{ key, title, short, codex, intro, subs: [{ label, intro, items, byTier }] }].
+     Lifted whole from marketView. */
+  function marketCatsFor(ch) {
     var g = EN.gearCatalog || {};
     var melee = (g.melee && g.melee.items) || [];
     var ranged = (g.ranged && g.ranged.items) || [];
@@ -1766,55 +1800,6 @@ EN.inventoryView = (function () {
     var sigMun = (g.signature && g.signature.munitions) || [];
     var ammo = (g.ammo && g.ammo.items) || [];
     var armorItems = (g.armor && g.armor.items) || [];
-    var blocks = [];
-    var BANNERS = {
-      undercut: {
-        title: "THE UNDERCUT", color: "var(--ember)", glow: "rgba(255,90,40,.05)",
-        sub: "GRAY-MARKET UPLINK · LIST PRICE, NO PAPERWORK · NO RECEIPTS · NO NAMES",
-        body: ["Every legitimate storefront charges for compliance, verification, and the privilege of being watched while you pay. The Undercut skips all of it and sells at list price. Cash up front. Don't ask for a receipt; asking for a receipt is how they find you."]
-      },
-      register: {
-        title: "THE REGISTER", color: "var(--accent)", glow: "rgba(0,229,255,.05)",
-        sub: "CERTIFIED SUPPLY · MANDATORY VERIFICATION · COMPLIANCE SURCHARGES · ALL SALES FINAL",
-        body: ["All transactions include regulated district adjustments: compliance handling, #PRINT verification, licensing escrow, and scarcity-indexed pricing. Licensed and Restricted goods incur additional processing surcharges at point of sale.",
-               "Thank you for shopping responsibly. Fees are non-negotiable. All sales final."]
-      },
-      surplus: {
-        title: "GUILD SURPLUS", color: "var(--gold)", glow: "rgba(255,200,80,.05)",
-        sub: "FREELANCERS GUILD · OVERSTOCK BINS · SALVAGE LOTS · MEMBERS' RATES",
-        body: ["Job lots, recovered cargo, overstock nobody claimed, and salvage with the serial numbers conveniently worn off. Everything works, mostly. Everything runs about a third of book, roughly.",
-               "Guild members only. Dues current? Dig in."]
-      },
-      fivefinger: {
-        title: "FIVE-FINGER SUPPLY", color: "var(--success)", glow: "rgba(60,255,140,.05)",
-        sub: "LOOTED · RECOVERED · DONATED · PULLED FROM A BODY",
-        body: ["Nothing here is for sale because nothing here was ever bought. This is what the job left behind: looted off the floor, recovered from the wreck, donated by a grateful stranger, or pried out of hands that stopped needing it.",
-               "Take what the story gave you. The fence won't touch any of it, no provenance, no payout. Drop it or donate it when you're done.",
-               "No receipts. No refunds. No snitching."]
-      }
-    };
-    /* .mkt-* classes are HOOKS for skins (theme.css), nothing here reads them.
-       The market's chrome is inline-styled, so without a name on each piece a
-       skin could not restyle the storefront without editing this file. */
-    blocks.push(el("div.row.wrap.mkt-fronts", { style: { gap: "8px", alignItems: "center", marginBottom: "14px" } },
-      [el("span.mono.mkt-label", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".14em" }, text: "MARKET UPLINK" })].concat(
-      storefronts().map(function (m) {
-        var on = _mode === m.key;
-        return el("button.btn.sm" + (on ? ".primary" : ""), {
-          title: m.desc,
-          onclick: function () { _mode = m.key; EN.app.render(); }
-        }, m.name.toUpperCase());
-      }))
-    ));
-    var B = BANNERS[_mode] || BANNERS.undercut;
-    blocks.push(el("div.mkt-banner", { dataset: { front: _mode }, style: { marginBottom: "14px", padding: "12px 14px", border: "1px solid var(--border2)", borderRadius: "4px",
-                                     background: "linear-gradient(180deg, " + B.glow + ", transparent)" } }, [
-      el("div.mkt-title", { style: { fontFamily: "var(--disp)", fontSize: "16px", letterSpacing: ".22em", color: B.color }, text: B.title }),
-      el("div.mono.mkt-sub", { style: { fontSize: "10.5px", color: "var(--text3)", letterSpacing: ".1em", marginTop: "2px" }, text: B.sub })
-    ].concat(B.body.map(function (p, i) {
-      return el("p.help", { style: { margin: (i === 0 ? "8px" : "4px") + " 0 0" }, text: p });
-    }))));
-
     /* ---- major-type categories → one collapsible panel each ---- */
     var ri = (g.ranged && g.ranged.groupIntros) || {};
     var si = (g.signature && g.signature.groupIntros) || {};
@@ -1944,6 +1929,66 @@ EN.inventoryView = (function () {
       c.subs.forEach(function (s) { s.items = (s.items || []).filter(function (it) { return !toolkitListing(it); }); });
     });
     cats = cats.filter(function (c) { return c.subs.some(function (s) { return s.items.length; }); });
+    return cats;
+  }
+  function marketView(ch) {
+    var g = EN.gearCatalog || {};
+    var melee = (g.melee && g.melee.items) || [];
+    var ranged = (g.ranged && g.ranged.items) || [];
+    var sig = (g.signature && g.signature.items) || [];
+    var sigMun = (g.signature && g.signature.munitions) || [];
+    var ammo = (g.ammo && g.ammo.items) || [];
+    var armorItems = (g.armor && g.armor.items) || [];
+    var blocks = [];
+    var BANNERS = {
+      undercut: {
+        title: "THE UNDERCUT", color: "var(--ember)", glow: "rgba(255,90,40,.05)",
+        sub: "GRAY-MARKET UPLINK · LIST PRICE, NO PAPERWORK · NO RECEIPTS · NO NAMES",
+        body: ["Every legitimate storefront charges for compliance, verification, and the privilege of being watched while you pay. The Undercut skips all of it and sells at list price. Cash up front. Don't ask for a receipt; asking for a receipt is how they find you."]
+      },
+      register: {
+        title: "THE REGISTER", color: "var(--accent)", glow: "rgba(0,229,255,.05)",
+        sub: "CERTIFIED SUPPLY · MANDATORY VERIFICATION · COMPLIANCE SURCHARGES · ALL SALES FINAL",
+        body: ["All transactions include regulated district adjustments: compliance handling, #PRINT verification, licensing escrow, and scarcity-indexed pricing. Licensed and Restricted goods incur additional processing surcharges at point of sale.",
+               "Thank you for shopping responsibly. Fees are non-negotiable. All sales final."]
+      },
+      surplus: {
+        title: "GUILD SURPLUS", color: "var(--gold)", glow: "rgba(255,200,80,.05)",
+        sub: "FREELANCERS GUILD · OVERSTOCK BINS · SALVAGE LOTS · MEMBERS' RATES",
+        body: ["Job lots, recovered cargo, overstock nobody claimed, and salvage with the serial numbers conveniently worn off. Everything works, mostly. Everything runs about a third of book, roughly.",
+               "Guild members only. Dues current? Dig in."]
+      },
+      fivefinger: {
+        title: "FIVE-FINGER SUPPLY", color: "var(--success)", glow: "rgba(60,255,140,.05)",
+        sub: "LOOTED · RECOVERED · DONATED · PULLED FROM A BODY",
+        body: ["Nothing here is for sale because nothing here was ever bought. This is what the job left behind: looted off the floor, recovered from the wreck, donated by a grateful stranger, or pried out of hands that stopped needing it.",
+               "Take what the story gave you. The fence won't touch any of it, no provenance, no payout. Drop it or donate it when you're done.",
+               "No receipts. No refunds. No snitching."]
+      }
+    };
+    /* .mkt-* classes are HOOKS for skins (theme.css), nothing here reads them.
+       The market's chrome is inline-styled, so without a name on each piece a
+       skin could not restyle the storefront without editing this file. */
+    blocks.push(el("div.row.wrap.mkt-fronts", { style: { gap: "8px", alignItems: "center", marginBottom: "14px" } },
+      [el("span.mono.mkt-label", { style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".14em" }, text: "MARKET UPLINK" })].concat(
+      storefronts().map(function (m) {
+        var on = _mode === m.key;
+        return el("button.btn.sm" + (on ? ".primary" : ""), {
+          title: m.desc,
+          onclick: function () { _mode = m.key; EN.app.render(); }
+        }, m.name.toUpperCase());
+      }))
+    ));
+    var B = BANNERS[_mode] || BANNERS.undercut;
+    blocks.push(el("div.mkt-banner", { dataset: { front: _mode }, style: { marginBottom: "14px", padding: "12px 14px", border: "1px solid var(--border2)", borderRadius: "4px",
+                                     background: "linear-gradient(180deg, " + B.glow + ", transparent)" } }, [
+      el("div.mkt-title", { style: { fontFamily: "var(--disp)", fontSize: "16px", letterSpacing: ".22em", color: B.color }, text: B.title }),
+      el("div.mono.mkt-sub", { style: { fontSize: "10.5px", color: "var(--text3)", letterSpacing: ".1em", marginTop: "2px" }, text: B.sub })
+    ].concat(B.body.map(function (p, i) {
+      return el("p.help", { style: { margin: (i === 0 ? "8px" : "4px") + " 0 0" }, text: p });
+    }))));
+
+    var cats = marketCatsFor(ch);
     if (_mktType !== "all" && !cats.some(function (c) { return c.key === _mktType; })) _mktType = "all";
     // Availability is held: no AVAIL filter, so no stale one may keep filtering unseen
     if (!showAvail()) _mktAvail = "all";
@@ -4905,6 +4950,15 @@ EN.inventoryView = (function () {
               and `sell` still read this tab's storefront (_mode) until Gear passes one in. */
            core: {
              isWeapon: isWeapon,   // P3: the Sheet's slot strip lists the weapons a Freelancer owns
+             /* P4, #GRIDeck's Gear: the shelves and what a storefront asks, the piece an entry is and where it sorts, the
+                carry and lease controls' own writers, and a way to open this tab on one of its pages or benches. */
+             storefronts: storefronts, streetPrice: streetPrice, fencePrice: fencePrice, marketCats: marketCatsFor, fmtG: fmtG, fmtNx: fmtNx,
+             findItem: findItem, entryKey: entryKey, isStackable: isStackable, stashCategory: stashCategory, stashCats: STASH_CATS, notCarried: notCarried,
+             isDefensive: isDefensive, sell: sell, drop: drop, donate: donate, toggleConceal: invToggleConceal,
+             pickUpDropped: pickUpDropped, droppedRowPickable: droppedRowPickable,
+             upkeepOf: upkeepOf, leaseDaysOf: leaseDaysOf, buyoutCost: buyoutCost, fmtBuyout: fmtBuyout, setPremium: setPremium,
+             openSub: function (k) { if (["stash", "chrome", "market", "workbench"].indexOf(k) !== -1) _sub = k; },
+             openBenchOn: function (bench, key) { openBench(bench); if (bench === "ballistics" && key) _benchWeapon = key; if (bench === "armor" && key) _benchArmor = key; },
              toggleEquip: toggleEquip, toggleSlotEquip: toggleSlotEquip, setCarry: invSetCarry,
              buy: buy, buyCyber: buyCyber, uninstallToStash: uninstallToStash,
              tryInstall: tryInstall, removePart: removePart, tryInstallArmorMod: tryInstallArmorMod, removeArmorMod: removeArmorMod,

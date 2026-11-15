@@ -12,9 +12,9 @@
 
    STRANGLER BUILD. Every app began by HOSTING THE EXISTING VIEW (tab.view) inside a stage, so the skin was
    usable from the first day; each phase swaps one for a screen of its own, and this file is the only place
-   that decides which is drawn. The Sheet is its own since P3 (js/deck_sheet.js). The Freelancer tab as
-   Classic draws it stays one press away on the stage's bar ("Classic sheet"), for the few things the Sheet
-   does not hold yet.
+   that decides which is drawn. The Sheet is its own since P3 (js/deck_sheet.js) and Gear since P4
+   (js/deck_gear.js). The tab each replaced, as Classic draws it, stays one press away on the stage's bar
+   ("Classic sheet", "Classic inventory"), for the few things the new screen does not hold yet.
 
    DOM RULES. Everything this skin draws itself sits under a `.dk` root and uses `dk-` classes only: never
    .panel, .btn, .chip or .stat, and never an inline border-radius. The Classic rules in theme.css
@@ -48,7 +48,10 @@ EN.deck.shell = (function () {
   }
   // what else decides the view under a tab key: js/app.js adds it to the key a scroll position is kept under
   var _classic = false;   // the Sheet app is showing the Freelancer tab as Classic draws it (transient, like a sub-tab)
-  function subKey(key) { return key === "face" ? faceSub() : (key === "combat" && _classic) ? "classic" : ""; }
+  var _gear = "mine";     // Gear's page: mine | market | classic (the Inventory tab as Classic draws it)
+  function subKey(key) { return key === "face" ? faceSub() : (key === "combat" && _classic) ? "classic" : key === "gear" ? _gear : ""; }
+  function nativeGear(c) { return !!(c && c.ch && c.d && EN.deck.gear); }
+  function gearView(k) { _gear = (k === "market" || k === "classic") ? k : "mine"; EN.app.gotoTab("gear"); EN.app.render(); }
 
   // the author's own icons, from where they already live: nothing is redrawn here
   function icon(name) {
@@ -115,6 +118,12 @@ EN.deck.shell = (function () {
       if (own) items.push({ key: "classic", label: "Classic sheet", on: key === "combat" && _classic, go: function () { _classic = true; EN.app.gotoTab("combat"); EN.app.render(); } });
       return segBar(items);
     }
+    if (app === "gear") {
+      if (!nativeGear(c)) return null;
+      return segBar([["mine", "Mine"], ["market", "Market"], ["classic", "Classic inventory"]].map(function (x) {
+        return { key: x[0], label: x[1], icon: x[0] === "mine" ? icon("gear") : null, on: _gear === x[0], go: function () { gearView(x[0]); } };
+      }));
+    }
     if (app === "post") {
       var s = faceSub();
       return segBar([["post", "Messages", icon("post")], ["contacts", "Contacts", (EN.faceView.icons || {}).contacts]].map(function (x) {
@@ -135,6 +144,14 @@ EN.deck.shell = (function () {
       try { EN.deck.sheet.render(stage, c); stage.setAttribute("data-dk-native", "sheet"); return; }
       catch (e) {
         console.error("#GRIDeck could not draw the Sheet; showing the Freelancer tab", e);
+        clear(stage);
+        if (bar) stage.appendChild(bar);
+      }
+    }
+    if (app === "gear" && _gear !== "classic" && nativeGear(c)) {
+      try { EN.deck.gear.render(stage, c, _gear); stage.setAttribute("data-dk-native", "gear"); return; }
+      catch (e2) {
+        console.error("#GRIDeck could not draw Gear; showing the Inventory tab", e2);
         clear(stage);
         if (bar) stage.appendChild(bar);
       }
@@ -203,5 +220,5 @@ EN.deck.shell = (function () {
     if (EN.deck.record) EN.deck.record.sync(c);
   }
 
-  return { on: on, appOf: appOf, subKey: subKey, view: view, chrome: chrome, go: go, reading: context, apps: function () { return APPS.map(function (a) { return a.key; }); } };
+  return { on: on, appOf: appOf, subKey: subKey, view: view, chrome: chrome, go: go, reading: context, gearView: gearView, apps: function () { return APPS.map(function (a) { return a.key; }); } };
 })();

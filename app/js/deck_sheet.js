@@ -414,7 +414,7 @@ EN.deck.sheet = (function () {
         el("span.dk-boxes", { title: dg.armor.name + ": current DR out of the suit's printed base", text: dg.armorDR + " / " + dg.armorBaseDR + " DR" }), el("span.dk-grow"),
         btn("Lose 1 DR", "sm.bad", "dr-loss", function () { DM.markArmorDR(1); }, "Lose 1 DR until repaired", dg.armorBreached),
         dg.armorDRLost > 0 ? btn("Undo", "sm.ghost", "dr-undo", function () { DM.markArmorDR(-1); }, "Undo one point of DR loss: a misclick fix, not a repair") : null,
-        dg.armorDRLost > 0 ? btn("Repair in Gear", "sm.ghost", "dr-repair", function () { if (EN.inventoryView.openBench) EN.inventoryView.openBench("armor"); EN.app.gotoTab("gear"); }) : null]));
+        dg.armorDRLost > 0 ? btn("Repair in Gear", "sm.ghost", "dr-repair", function () { if (EN.inventoryView.openBench) EN.inventoryView.openBench("armor"); EN.deck.shell.gearView("classic"); }) : null]));
       if (open) kids.push(el("div.dk-ftx", null, [el("p", { text: def.text }), rule("ref-def/" + EN.codexView.slug(def.name), def.name + " in the Codex")]));
       out.push(el("div.dk-card.dk-abl", { dataset: { dkDefense: def.name } }, kids));
     });
