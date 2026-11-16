@@ -1515,6 +1515,18 @@ EN.combatView = (function () {
     return el("div.mag" + (dry ? ".dry" : ""),
       { title: cur + " of " + max + " loaded" }, cells);
   }
+  /* A pool of points as one segment per point (the author's call, 16 Nov 2026): the class resource (Bandwidth, Overdrive and the
+     rest) and a Shaper's Flow Reservoir. The lit segments are what is left, in the pool's own colour, and the dark ones are
+     what has been spent, so the bar reads as the number beside it. Above 24 points the segments are too thin to read and it
+     is the solid bar again (as the magazine's cells are). Vitality, Wounds and System Integrity are not points, and stay solid. */
+  function segBar(cur, max, color) {
+    if (!(max > 0) || max > 24) return bar(cur, max, color);
+    var n = Math.max(0, Math.min(max, Math.floor(Number(cur) || 0))), cells = [];
+    for (var i = 0; i < max; i++) cells.push(el("i" + (i < n ? ".live" : ".spent")));
+    var box = el("div.mag.pool", { title: n + " of " + max, dataset: { pool: n + "/" + max } }, cells);
+    box.style.setProperty("--seg", color);
+    return box;
+  }
   function bar(cur, max, color) {
     var pct = max > 0 ? Math.round(cur / max * 100) : 0;
     return el("div.meter", { style: { height: "10px", background: "var(--bg1)", border: "1px solid var(--border)", borderRadius: "5px", overflow: "hidden", margin: "6px 0" } }, [
@@ -5907,7 +5919,7 @@ EN.combatView = (function () {
           el("div.mono", { style: { fontSize: "22px", color: resourceColor("Flow") }, html: fCur + " <span style='font-size:13px;color:var(--text3)'>/ " + d.flow.max + " FP · Attack " + eng.fmtMod(d.flow.attackBonus) + "</span>" }),
           plusMinus(function () { flowStep(ch, d, -1); }, function () { flowStep(ch, d, 1); })
         ]));
-        kids.push(bar(fCur, d.flow.max, resourceColor("Flow")));
+        kids.push(segBar(fCur, d.flow.max, resourceColor("Flow")));
         kids.push(el("div.row.wrap", { style: { gap: "10px", marginTop: "8px", alignItems: "center" } }, [
           // Strain and Breakflow peek their condition entries, Overdraw and Free-Shaping The Flow's panels
           el("span.help", { style: { margin: 0 } }, [cxLink(cxCond("Strain"), "Strain"), document.createTextNode(":")]),
@@ -6008,7 +6020,7 @@ EN.combatView = (function () {
           // the sheet's own + stops at the maximum; it never takes away overflow already held
           plusMinus(function () { resourceStep(ch, d, -1); }, function () { resourceStep(ch, d, 1); })
         ]));
-        resKids.push(bar(Math.min(rCur, rMax), d.resource.max, resourceColor(d.resource.name)));
+        resKids.push(segBar(Math.min(rCur, rMax), d.resource.max, resourceColor(d.resource.name)));
         if (_odOn) {
           var _woundUsed = !!(ch.resources && ch.resources.maxOdWound);
           var _odGain = maxOverdriveGain;
@@ -7512,6 +7524,7 @@ EN.combatView = (function () {
                 writes above setCondLevel), the conditions on a record as the Status Changes card lists them,
                 the Wound damage Body Save prompts waiting on it, and what the rest popovers read. */
              gainVigor: gainVigor, clearVigor: clearVigor, addCondition: addCondition,
+             segBar: segBar,   // a pool of points as one segment per point (the class resource, the Flow Reservoir)
              activeConditions: activeConditionNames, condLevel: condLevel, condSummary: condSummary, condAnchor: cxCond,
              leveled: LEVELED, condMeta: COND_META,
              woundSaves: woundSavesFor, dismissWoundSave: dismissWoundSave,

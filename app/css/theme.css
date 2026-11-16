@@ -522,6 +522,9 @@ select{ appearance:none; background-image:linear-gradient(45deg,transparent 50%,
 .mag i.live{ background:var(--accent); border-color:var(--accent); box-shadow:0 0 6px var(--accent); }
 .mag i.spent{ background:var(--bg1); border-color:var(--border); box-shadow:none; }
 .mag.dry i{ border-color:var(--danger); }
+/* a pool of points (js/combat.js, segBar): a wider gap, and the lit ones in the pool's own colour */
+.mag.pool{ gap:3px; }
+.mag.pool i.live{ background:var(--seg, var(--accent)); border-color:var(--seg, var(--accent)); box-shadow:0 0 6px var(--seg, var(--accent)); }
 .feature.flow{ border-left-color:var(--flow); }
 .feature.species{ border-left-color:var(--ember); }
 .feature.lineage{ border-left-color:var(--gold); }
