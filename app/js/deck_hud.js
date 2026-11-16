@@ -449,6 +449,8 @@ EN.deck.hud = (function () {
     N.sub.textContent = cls ? cls + (sub ? " · " + sub : "") : "No class yet";
     var level = (d && d.level) || ch.level || 1;
     N.level.textContent = String(level);
+    // on Classic's rail the level box says the Caliber too: the tab's header line, which named it, is gone with the rail up
+    N.ring.title = lean ? "Level " + level + " \u00b7 Caliber " + (["I", "II", "III", "IV", "V"][((d && d.caliber) || 1) - 1] || String((d && d.caliber) || 1)) : "";
     var pct = 0;
     try {
       var onXp = EN.campaigns && EN.campaigns.usesXp ? EN.campaigns.usesXp(ch) : !!ch.useXp;

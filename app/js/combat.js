@@ -4979,7 +4979,10 @@ EN.combatView = (function () {
        damage Body Save prompt, which sat under the panel's Wounds bar, goes up with the banners; the rail shows a chip for it
        from any tab. #GRIDroid and '98 have no rail, so there both stay exactly as they were. */
     var railed = !!(EN.deck && EN.deck.shell && EN.deck.shell.railOn && EN.deck.shell.railOn());
-    blocks.push(el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
+    /* Nor the header line over the tab ("FREELANCER // live status · handle · class / subclass · L1 · CAL I"): the rail names
+       the Freelancer, the class, the subclass and the level, and holds the Caliber in the level box's tooltip. The EDIT FREELY
+       flag that line carried is in the top bar on every skin (js/app.js, paintActiveName). */
+    if (!railed) blocks.push(el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
       /* Built from nodes, not from a string handed to innerHTML: the handle (or, with none, the first
          word of the name) is whatever a Freelancer's file holds, and a file imported by hand can hold
          an <img onerror> there. As text it prints as typed. The nodes are the ones the string made. */
@@ -4995,7 +4998,7 @@ EN.combatView = (function () {
         if (ch.editFreely === true) kids.push(" ", el("span.chip.edit-freely", { title: "Edit freely is on: this character's Talents and Lineage Evolutions can change at any time, outside the one retrain per level", text: "EDIT FREELY" }));
         return kids;
       })()),
-      railed ? null : el("div.row.wrap", { style: { gap: "8px" } }, [
+      el("div.row.wrap", { style: { gap: "8px" } }, [
         el("div.pop-anchor", { style: { position: "relative" } }, [
           // opening the popover BEGINS the Short Rest: the dice left now decide the free die
           el("button.btn.sm" + (_pops.short ? ".primary" : ""), { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; if (!was) openShortRest(ch, s.rd); EN.app.render(); } }, iconLabel(ICON_SHORT_REST, "SHORT REST")),
@@ -5155,6 +5158,7 @@ EN.combatView = (function () {
       if (colorFn) colorFn(n);
       return n;
     }
+    var tacAt = blocks.length;   // see TACTICAL PROFILE, after the breakdown
     blocks.push(el("div.stat-row", { dataset: { tour: "sheet-vitals" }, style: { marginBottom: _open.statbd ? "8px" : "16px" } }, [
       statEl("DEF", "DEF", d.defense, defAttrName + (dg.shield ? " " + (dg.shieldDef >= 0 ? "+" : "") + dg.shieldDef + " shield" : "")),
       statEl("DR", "DR", d.totalDR || 0, dg.armor ? dg.armor.name : (d.naturalDR ? "natural · lineage" : (d.cyberDR ? "chrome · subdermal" : "no armor")), function (n) { if (!(d.totalDR > 0)) n.querySelector(".v").style.color = "var(--text3)"; }),
@@ -5200,6 +5204,18 @@ EN.combatView = (function () {
         sbd.foot ? el("p.help", { style: { margin: "6px 0 0", color: "var(--text3)" }, text: sbd.foot }) : null,
         cxRulesLine(sbd.rules)
       ]));
+    }
+    /* TACTICAL PROFILE (15 Nov 2026, the author's call). On Classic the five figures (Def, DR, Spd, Init, Size) are the
+       sub-panels of one panel, with the breakdown a press opens inside it under them. It heads the tab, above the panels
+       that can be rearranged, where the strip always stood. #GRIDroid and '98 keep the bare strip. */
+    var skinCl = document.documentElement.classList;
+    if (!skinCl.contains("skin-98") && !skinCl.contains("skin-droid")) {
+      var tacKids = blocks.splice(tacAt);
+      tacKids.forEach(function (n, i) { n.style.marginBottom = i === tacKids.length - 1 ? "0" : "10px"; });
+      blocks.push(el("div.tac-profile", { dataset: { tac: "profile" }, style: { marginBottom: "16px" } }, [
+        // the opt-in Edit freely switch (builder.js), flagged on the live sheet for the GM: it sat on the header line this panel now heads the tab in place of
+        EN.ui.panel("Tactical Profile", "TAP A FIGURE FOR ITS BREAKDOWN", tacKids, { corners: true,
+          headerRight: ch.editFreely === true ? el("span.chip.edit-freely", { title: "Edit freely is on: this character's Talents and Lineage Evolutions can change at any time, outside the one retrain per level", text: "EDIT FREELY" }) : null })]));
     }
 
     /* defensive loadout, worn armor / wielded shield / attuned focus and the

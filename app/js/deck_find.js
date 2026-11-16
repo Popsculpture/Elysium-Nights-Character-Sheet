@@ -10,6 +10,11 @@
    app that holds them; a "do" row calls what its button would.
    Nothing is searched that another file does not already hold: EN.codexView.search, the record's equipment
    and contacts. DOM rules as in js/deck_shell.js. No em or en dashes (house style).
+
+   CLASSIC HAS IT TOO (15 Nov 2026, the author's call): with Classic's status rail up, a search box stands in the top bar
+   where the record's name was (js/deck_shell.js, paintFindBox) and Ctrl K works. There a find goes to Classic's own places:
+   a piece of gear opens the Inventory's Stash on its shelf, a "do" row opens #PRINT or a tab, and nothing points at a
+   screen only #GRIDeck has.
    =========================================================================== */
 window.EN = window.EN || {};
 EN.deck = EN.deck || {};
@@ -18,7 +23,8 @@ EN.deck.find = (function () {
   var F = null;        // the open overlay: { root, input, list, from, sel }
   var MAX_RULES = 8, MAX_EACH = 6;
 
-  function live() { return !!document.getElementById("dk-dock"); }   // the shell is up: this skin, a filed record, the Freelancer desktop
+  function live() { return !!document.getElementById("dk-dock") || classic(); }   // the shell is up (this skin, a filed record, the Freelancer desktop), or Classic's rail is
+  function classic() { return !document.getElementById("dk-dock") && !!document.getElementById("os-rail"); }
   function reading() { try { return EN.deck.shell.reading(); } catch (e) { return null; } }
 
   // what a player goes looking for a button to do. `when` hides a row that would do nothing right now.
@@ -26,7 +32,24 @@ EN.deck.find = (function () {
     var canAct = !!(c && !c.readOnly && c.st);
     var rec = EN.deck.record, hud = EN.deck.hud, shell = EN.deck.shell;
     // a rest opens from the status bar, which creation puts away (js/deck_shell.js): asked for there, it opens on the Sheet
-    function rest(view) { if (EN.app.activeTab() === "print") EN.app.gotoTab("combat"); hud.openRest(view); }
+    function rest(view) { if (EN.app.activeTab() === "print" && !classic()) EN.app.gotoTab("combat"); hud.openRest(view); }
+    if (classic()) {
+      // Classic's own places: #PRINT for the record, and the tabs as its rail names them
+      var B = EN.builder || {}, tabs = Array.prototype.map.call(document.querySelectorAll("#os-tabs .os-tab[data-tab]"), function (n) { return { key: n.getAttribute("data-tab"), label: (n.textContent || "").trim() }; });
+      return [
+        { label: "Take a short rest", hint: "Rest", when: canAct, go: function () { rest("short"); } },
+        { label: "Take a long rest", hint: "Rest", when: canAct, go: function () { rest("long"); } },
+        { label: "Downtime", hint: "Rest", when: canAct, go: function () { rest("down"); } },
+        { label: "Level up", hint: "#PRINT", when: !!B.openAdvance, go: function () { try { B.openAdvance(); } catch (e) {} EN.app.gotoTab("print"); } },
+        { label: "Switch character", hint: "#PRINT", when: !!B.openManager, go: function () { EN.app.gotoTab("print"); B.openManager(); } },
+        { label: "Create a new character", hint: "#PRINT", when: !!B.newRecord, go: function () { B.newRecord(); } },
+        { label: "Open your record", hint: "#PRINT", when: true, go: function () { EN.app.gotoTab("print"); } },
+        { label: "Open the Codex", hint: "Rules", when: true, go: function () { EN.app.gotoTab("codex"); } },
+        { label: "Open Settings", hint: "", when: !!EN.settings, go: function () { EN.settings.open(); } }
+      ].concat(tabs.filter(function (t) { return t.key !== "codex" && t.key !== "print"; }).map(function (t) {
+        return { label: "Go to " + t.label, hint: "Tab", when: true, go: function () { EN.app.gotoTab(t.key); } };
+      })).filter(function (a) { return a.when; });
+    }
     return [
       { label: "Take a short rest", hint: "Rest", when: canAct, go: function () { rest("short"); } },
       { label: "Take a long rest", hint: "Rest", when: canAct, go: function () { rest("long"); } },
@@ -66,7 +89,13 @@ EN.deck.find = (function () {
         if (seen[e.name]) { seen[e.name].n += (e.qty || 1); return; }
         seen[e.name] = { n: e.qty || 1 };
         if (Object.keys(seen).length > MAX_EACH) return;
-        out.push({ group: "Your gear", title: e.name, count: seen[e.name], hint: "Gear", go: function () {
+        out.push({ group: "Your gear", title: e.name, count: seen[e.name], hint: classic() ? "Inventory" : "Gear", go: function () {
+          if (classic()) {
+            // the Inventory's Stash, with the shelf this piece is on unfolded
+            try { var I = EN.inventoryView, it = I.core.findItem(e.name); if (I.openStash) I.openStash(it ? I.core.stashCategory(it) : null); } catch (x) {}
+            EN.app.gotoTab("gear");
+            return;
+          }
           if (EN.deck.gear && EN.deck.gear.show) EN.deck.gear.show(EN.engine.entryKey(e)); else EN.deck.shell.go("gear");
         } });
       });

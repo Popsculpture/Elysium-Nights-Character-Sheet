@@ -741,6 +741,32 @@ html.st-rail #dk-hud .dk-idn[disabled]{ cursor:default; background:none; }   /* 
 /* the Flow visualizer's window (theme.css, .fv-win) opens under the pinned chrome, which is taller by the rail */
 html.st-rail .fv-win:not(.fv-sheet){ --fv-maxh:calc(100vh - 110px - var(--st-rail-h)); }
 
+/* ---- THE SEARCH BOX IN CLASSIC'S TOP BAR (15 Nov 2026, the author's call; js/deck_shell.js paintFindBox) ----
+   The record's name is on the rail, so the name in the top bar's right corner is put away (the EDIT FREELY flag beside it
+   stays) and a search box takes its place: a Classic field to look at, a button to press, Ctrl K to the same end. The
+   search it opens (js/deck_find.js) is a Classic panel there. */
+html.st-rail #active-name .an-name{ display:none; }
+html.st-rail #os-find{ flex:none; display:inline-flex; align-items:center; gap:8px; height:28px; padding:0 8px 0 10px; border:1px solid var(--accent-dim); border-radius:0; background:var(--bg2);
+  color:var(--text3); font:400 11px var(--mono); letter-spacing:.1em; text-transform:uppercase; cursor:pointer; }
+html.st-rail #os-find:hover, html.st-rail #os-find:focus-visible{ border-color:var(--accent); color:var(--text); outline:none; }
+html.st-rail #os-find .os-find-ic{ display:inline-flex; line-height:0; color:var(--accent); }
+html.st-rail #os-find .os-find-ic svg{ width:13px; height:13px; display:block; }
+html.st-rail #os-find .os-find-l{ min-width:96px; text-align:left; }
+html.st-rail #os-find kbd{ font:400 10px var(--mono); letter-spacing:.04em; border:1px solid var(--border2); padding:1px 5px; color:var(--text3); }
+@media (max-width:560px){
+  html.st-rail #os-find{ padding:0 8px; }
+  html.st-rail #os-find .os-find-l, html.st-rail #os-find kbd{ display:none; }
+}
+html.st-rail #dk-find{ position:fixed; inset:0; z-index:2600; }
+html.st-rail .dk .dk-pal{ border-radius:0; background:var(--bg1); border:1px solid var(--accent-dim); box-shadow:0 24px 60px rgba(0,0,0,.6); }
+html.st-rail .dk .dk-palq{ height:48px; padding:0 16px; border:0; border-bottom:1px solid var(--accent-dim); font:400 16px var(--body); }
+html.st-rail .dk .dk-palq:focus{ box-shadow:none; border-color:var(--accent-dim); }
+html.st-rail .dk .dk-palg{ font:400 11px var(--mono); letter-spacing:.18em; color:var(--accent); }
+html.st-rail .dk .dk-palg::before{ content:"// "; color:var(--flow); letter-spacing:0; }
+html.st-rail #dk-find .dk-opt{ font:500 14.5px var(--body); letter-spacing:.02em; text-transform:none; color:var(--text); }
+html.st-rail #dk-find .dk-opt small{ font:400 10.5px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--text3); }
+html.st-rail #dk-find .dk-empty{ font:400 13px var(--body); color:var(--text3); }
+
 /* ---- THE RAIL WEARS CLASSIC (15 Nov 2026, the author's call: "match the elements' style to the classic skin") ----
    Same bar, Classic's surface (theme.css, "Classic takes #GRIDroid's surface"): the palette's own colours and fonts through
    the --dk tokens, a hairline in the accent, flat grounds, square everything, and the cut corner on the boxes and buttons.

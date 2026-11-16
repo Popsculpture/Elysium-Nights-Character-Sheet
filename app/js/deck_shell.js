@@ -298,6 +298,16 @@ EN.deck.shell = (function () {
     if (c.ch.class) rail.setAttribute("data-cls", c.ch.class); else rail.removeAttribute("data-cls");
     EN.deck.hud.paint(rail, c, { lean: true });
   }
+  /* THE SEARCH BOX IN CLASSIC'S TOP BAR (15 Nov 2026, the author's call). With the rail up the record's name is on the rail,
+     so the name in the top bar's right corner is put away (css/deck.css) and its place holds a search box as #GRIDeck has
+     one: a press, or Ctrl K, opens the same search (js/deck_find.js), which on Classic sends a find to Classic's own tabs. */
+  var _mode = "";   // which of the two the last render drew: this skin's shell, Classic's rail, or neither
+  function paintFindBox(top) {
+    if (!top || document.getElementById("os-find")) return;
+    top.appendChild(el("button#os-find", { type: "button", title: "Search rules, your gear and people (Ctrl K)", "aria-label": "Search", "aria-haspopup": "dialog",
+      onclick: function () { if (EN.deck.find) EN.deck.find.open(); } },
+      [el("span.os-find-ic", { html: EN.app.tabIcon("codex") }), el("span.os-find-l", { text: "Search" }), el("kbd", { text: "Ctrl K" })]));
+  }
   // the bar wears the class's own colour (data/class_identity.js, the author's pairs); no class, the palette's accent
   function wear(os, c) {
     var cls = c.ch.class, CI = EN.classIdentity;
@@ -316,13 +326,17 @@ EN.deck.shell = (function () {
     var rail = !show && railWanted(os, portal);
     document.documentElement.classList.toggle("st-rail", rail);
     if (!rail) drop("os-rail");
+    if (rail) paintFindBox(top); else drop("os-find");
+    // the search belongs to the skin it was opened under: it is put away when that changes (this skin to Classic, or back)
+    var mode = show ? "deck" : rail ? "rail" : "";
+    if (mode !== _mode) { _mode = mode; if (EN.deck.find) EN.deck.find.sync(false); }
     if (!show) {
       drop("dk-dock");
       if (os) os.style.removeProperty("--dk-accent");   // the deck's class colour; Classic's rail takes its colours from the palette
       if (rail) { if (!c || c.ch !== EN.store.active()) c = context(); paintRail(os, c); }
       else if (EN.deck.hud) EN.deck.hud.remove();
       if (EN.deck.record) EN.deck.record.sync(null);
-      if (EN.deck.find) EN.deck.find.sync(false);
+      if (EN.deck.find) EN.deck.find.sync(rail);   // Classic's rail keeps the search; anywhere else without the deck it is put away
       pinCreate();   // a record not filed yet has no dock and no status bar, but it has the creation bar
       return;
     }
