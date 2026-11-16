@@ -279,6 +279,29 @@ EN.deck.shell = (function () {
   }
   function drop(id) { var n = document.getElementById(id); if (n && n.parentNode) n.parentNode.removeChild(n); }
 
+  /* ---- THE STATUS RAIL ON CLASSIC (15 Nov 2026, the author's call). Classic's Freelancer desktop carries this skin's status
+     bar on a rail of its own, #os-rail, between the top bar and the tab rail, on every tab, for a filed record (an example and
+     a viewed sheet count, as they do for the tabs). The bar is drawn lean (js/deck_hud.js); html.st-rail turns its look on and
+     moves the pinned chrome down (css/deck.css, the end). Not on #GRIDroid or '98, which lay their chrome out their own way,
+     and not on the Admin desktop. */
+  function railWanted(os, portal) {
+    var h = document.documentElement.classList;
+    return !!os && !on() && !h.contains("skin-98") && !h.contains("skin-droid") && portal === "freelancer" && !!EN.store.active() && EN.app.registered() && !!EN.deck.hud;
+  }
+  function paintRail(os, c) {
+    var rail = document.getElementById("os-rail");
+    if (!rail) {
+      rail = el("div#os-rail", { role: "group", "aria-label": "Status" });
+      os.insertBefore(rail, document.getElementById("os-tabs"));
+    }
+    EN.deck.hud.paint(rail, c, { lean: true });
+  }
+  // the bar wears the class's own colour (data/class_identity.js, the author's pairs); no class, the palette's accent
+  function wear(os, c) {
+    var cls = c.ch.class, CI = EN.classIdentity;
+    if (cls && CI && CI.has(cls)) os.style.setProperty("--dk-accent", CI.colors[cls].main); else os.style.removeProperty("--dk-accent");
+  }
+
   /* ---- chrome(): called by js/app.js on EVERY render, whatever the skin. It draws the dock and the status bar
      when this skin is in force on the Freelancer desktop with a filed record open, and takes both away
      otherwise (another skin, the Admin desktop, no record, or a record still being built: that one sees
@@ -288,19 +311,23 @@ EN.deck.shell = (function () {
     var c = _ctx; _ctx = null;
     var show = !!os && !!top && on() && portal === "freelancer" && !!EN.store.active() && EN.app.registered();
     if (os) os.classList.toggle("dk-creating", show && key === "print");
+    var rail = !show && railWanted(os, portal);
+    document.documentElement.classList.toggle("st-rail", rail);
+    if (!rail) drop("os-rail");
     if (!show) {
       drop("dk-dock");
-      if (EN.deck.hud) EN.deck.hud.remove();
+      if (rail) { if (!c || c.ch !== EN.store.active()) c = context(); wear(os, c); paintRail(os, c); }
+      else {
+        if (EN.deck.hud) EN.deck.hud.remove();
+        if (os) os.style.removeProperty("--dk-accent");
+      }
       if (EN.deck.record) EN.deck.record.sync(null);
       if (EN.deck.find) EN.deck.find.sync(false);
-      if (os) os.style.removeProperty("--dk-accent");
       pinCreate();   // a record not filed yet has no dock and no status bar, but it has the creation bar
       return;
     }
     if (!c || c.ch !== EN.store.active()) c = context();
-    // the deck wears the class's own colour (data/class_identity.js, the author's pairs); no class, the palette's accent
-    var cls = c.ch.class, CI = EN.classIdentity;
-    if (cls && CI && CI.has(cls)) os.style.setProperty("--dk-accent", CI.colors[cls].main); else os.style.removeProperty("--dk-accent");
+    wear(os, c);
     paintDock(os, key, c);
     // in creation the status bar is put away with the dock (css/deck.css hides the dock, which stays so the rail stays hidden)
     if (EN.deck.hud) { if (key === "print") EN.deck.hud.remove(); else EN.deck.hud.paint(top, c); }

@@ -14,6 +14,12 @@
    control calls (EN.combatView.core): applyDamage, applyHeal, gainVigor, healWounds, addCondition,
    setCondLevel, shortRest, spendResilience, longRest, advanceDowntime, downtimeRest. A viewed sheet and a
    locked record are refused by the store, as they always were; the bar also draws itself disabled for them.
+
+   CLASSIC CARRIES THE SAME BAR ON A RAIL OF ITS OWN (15 Nov 2026, the author's call): paint(mount, c, { lean: true }), from
+   js/deck_shell.js, into #os-rail. Lean is what he listed and no more: the level, the name over the class and subclass,
+   Vitality, Wounds, the class resource, the wallet and the rest button. No conditions, no search, no level-up chip, and the
+   name is a readout (the Record drawer is #GRIDeck's). A Body Save that is waiting still shows, since a Wound taken from this
+   bar on another tab would otherwise ask for a roll nobody sees.
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
 window.EN = window.EN || {};
@@ -26,6 +32,7 @@ EN.deck.hud = (function () {
   var P = null;                  // the open popover: { key, kind, arg, root, refresh }
   var AMT = { vit: 1, wd: 1, rd: 1, days: 7 };   // the amounts typed last, kept while the page is open
   var PROV = true;               // the Long Rest's one question (shelter, food and water), on by default as on the Sheet
+  var LEAN = false;              // drawn on Classic's status rail: see the note above
 
   function core() { return EN.combatView.core; }
   function can() { return !!(C && !C.readOnly && C.st && C.d); }
@@ -344,12 +351,18 @@ EN.deck.hud = (function () {
       } }, !w.result ? "Body Save DC " + w.dc + (ws.length > 1 ? " (+" + (ws.length - 1) + ")" : "") : w.result === "fail" ? "Body Save failed" : "Body Save passed");
   }
 
-  function paint(top, c) {
+  function paint(top, c, opts) {
     C = c;
     if (!N) N = build();
+    var lean = !!(opts && opts.lean);
+    if (lean !== LEAN) closePop();   // the bar is moving to the other skin's place
+    LEAN = lean;
     if (N.root.parentNode !== top) top.appendChild(N.root);
     var ch = c.ch, d = c.d, st = c.st;
     N.root.classList.toggle("dk-ro", !!c.readOnly);
+    N.root.classList.toggle("dk-lean", lean);
+    N.idn.disabled = lean; N.idn.title = lean ? "" : "Your record";
+    N.find.hidden = lean;
 
     // who, and how far along
     N.name.textContent = ch.name || "Unnamed Freelancer";
@@ -366,7 +379,7 @@ EN.deck.hud = (function () {
     N.arc.setAttribute("stroke-dashoffset", (RING * (1 - pct)).toFixed(1));
     var owed = 0;
     try { owed = EN.deck.record && !c.readOnly ? EN.deck.record.owed(c).length : 0; } catch (e) { owed = 0; }
-    N.lvl.hidden = !owed;
+    N.lvl.hidden = !owed || lean;
 
     // the pools: only a record with a class has them
     var pools = !!(st && d), live = pools && !c.readOnly;
@@ -399,15 +412,19 @@ EN.deck.hud = (function () {
     if (pools) {
       var ws = core().woundSaves(ch);
       if (ws.length && !c.readOnly) N.conds.appendChild(saveChip(ws));
-      if (st.dying) N.conds.appendChild(stateChip("Dying"));
-      else if (st.stable) N.conds.appendChild(stateChip("Stable"));
-      else if (st.critical && names.indexOf("Critical Condition") === -1) N.conds.appendChild(stateChip("Critical Condition"));
-      if (st.bloodied && names.indexOf("Bloodied") === -1) N.conds.appendChild(stateChip("Bloodied"));
+      if (!lean) {
+        if (st.dying) N.conds.appendChild(stateChip("Dying"));
+        else if (st.stable) N.conds.appendChild(stateChip("Stable"));
+        else if (st.critical && names.indexOf("Critical Condition") === -1) N.conds.appendChild(stateChip("Critical Condition"));
+        if (st.bloodied && names.indexOf("Bloodied") === -1) N.conds.appendChild(stateChip("Bloodied"));
+      }
     }
+    if (lean) names = [];   // the rail keeps to what is waiting on a roll
     names.forEach(function (name) {
       N.conds.appendChild(pools ? condChip(name) : el("span.dk-chip.warn", { text: name }));
     });
-    N.add.hidden = N.restWrap.hidden = !live;
+    N.restWrap.hidden = !live;
+    N.add.hidden = !live || lean;
 
     N.glim.textContent = String(Number(ch.glimmer) || 0);
 
