@@ -877,8 +877,10 @@ html.st-rail .dk .dk-btn.pri, html.st-rail .dk .dk-btn.pri:hover{ background:var
 html.st-rail .dk .dk-btn.bad{ color:var(--danger); border-color:var(--danger); }
 html.st-rail .dk .dk-btn.ok{ color:var(--success); border-color:var(--success); }
 html.st-rail .dk .dk-btn.gold{ color:var(--gold); border-color:var(--gold); }
-html.st-rail .dk .dk-btn.ghost{ border-color:transparent; background:transparent; color:var(--text2); clip-path:none; }
-html.st-rail .dk .dk-btn.ghost:hover{ border-color:var(--border2); background:transparent; color:var(--text); }
+/* a quiet button here is still a plate (16 Nov 2026, the author's call: Print hardcopy and Fillable PDF in the Record drawer read as bare words):
+   the same cut plate, in the softer line and text of Classic's own secondary controls */
+html.st-rail .dk .dk-btn.ghost{ border-color:var(--border2); background:var(--bg); color:var(--text2); }
+html.st-rail .dk .dk-btn.ghost:hover{ border-color:var(--accent); background:var(--bg2); color:var(--text); }
 html.st-rail .dk .dk-btn[disabled]{ opacity:1; color:var(--text3); border-color:var(--border); background:var(--bg1); }
 html.st-rail .dk .dk-sq{ width:32px; height:32px; border-radius:0; border:1px solid var(--accent-dim); background:var(--bg); color:var(--accent); font:600 16px/1 var(--disp); }
 html.st-rail .dk .dk-sq:hover{ background:var(--bg2); border-color:var(--accent); color:var(--text); }
