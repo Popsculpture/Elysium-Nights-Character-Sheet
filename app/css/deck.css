@@ -116,6 +116,7 @@ html:is(.skin-deck, .st-rail) #dk-hud .dk-add:hover, html:is(.skin-deck, .st-rai
 html:is(.skin-deck, .st-rail) #dk-hud .dk-lvl{ height:26px; padding:0 11px; margin-left:-10px; border-radius:999px; background:var(--dk-accent); color:#0a0911; font:700 11.5px var(--dk-body);
   white-space:nowrap; }
 html:is(.skin-deck, .st-rail) #dk-hud .dk-hb{ width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:var(--dk-t2); background:rgba(255,255,255,.05); font-size:18px; }
+html.skin-deck #dk-hud .dk-hb-l{ display:none; }   /* the button's name is for Classic's rail */
 html:is(.skin-deck, .st-rail) #dk-hud .dk-hb:hover, html:is(.skin-deck, .st-rail) #dk-hud .dk-hb[aria-expanded="true"]{ color:var(--dk-text); background:rgba(255,255,255,.1); }
 html:is(.skin-deck, .st-rail) #dk-hud .dk-find{ display:flex; align-items:center; gap:9px; height:38px; padding:0 12px; border-radius:12px; background:rgba(255,255,255,.05); color:var(--dk-t3);
   font-size:13px; white-space:nowrap; }
@@ -734,11 +735,99 @@ html.skin-deck .dk-host .face-bar{ display:none; }
    On a phone it scrolls away and they stay where they were. Not on #GRIDroid, '98 or the Admin desktop. */
 html.st-rail{ --st-rail-h:60px; --sticky-top:calc(92px + var(--st-rail-h)); }
 html.st-rail #os-rail{ position:sticky; top:50px; z-index:99; display:flex; align-items:center; height:var(--st-rail-h); padding:0 16px;
-  background:rgba(8,7,13,.97); border-bottom:1px solid var(--border); }
+  border-bottom:1px solid var(--border); }
 html.st-rail #os-tabs{ top:calc(50px + var(--st-rail-h)); z-index:98; }   /* under the rail, whose popovers hang over it */
 html.st-rail #dk-hud .dk-idn[disabled]{ cursor:default; background:none; }   /* on this rail the name is a readout, not a way to a drawer */
 /* the Flow visualizer's window (theme.css, .fv-win) opens under the pinned chrome, which is taller by the rail */
 html.st-rail .fv-win:not(.fv-sheet){ --fv-maxh:calc(100vh - 110px - var(--st-rail-h)); }
+
+/* ---- THE RAIL WEARS CLASSIC (15 Nov 2026, the author's call: "match the elements' style to the classic skin") ----
+   Same bar, Classic's surface (theme.css, "Classic takes #GRIDroid's surface"): the palette's own colours and fonts through
+   the --dk tokens, a hairline in the accent, flat grounds, square everything, and the cut corner on the boxes and buttons.
+   The level is a cut box as a stat is, the bars and pips are square, the pools read in mono, labels in the display face, the
+   resource takes the class's colour (--cls, from data-cls on the rail), and the rest button is a Classic button that says
+   its name. Its popovers are a Classic panel with Classic buttons and fields. None of it reaches #GRIDeck. */
+html.st-rail{
+  --dk-ink:var(--bg); --dk-s1:var(--bg1); --dk-s2:var(--bg1); --dk-s3:var(--bg3);
+  --dk-line:var(--border); --dk-line2:var(--border2);
+  --dk-text:var(--text); --dk-t2:var(--text2); --dk-t3:var(--text3);
+  --dk-ok:var(--success); --dk-bad:var(--danger); --dk-warn:var(--warn); --dk-gold:var(--gold);
+  --dk-accent:var(--accent);
+  --dk-disp:var(--disp); --dk-body:var(--body); --dk-mono:var(--mono);
+  --st-cut:polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));   /* a small button's cut, as .btn.sm */
+}
+html.st-rail #os-rail{ background:var(--bg); }
+html.st-rail .dk button:focus-visible{ outline:1px solid var(--accent); outline-offset:1px; }
+html.st-rail #dk-hud{ gap:20px; }
+/* who: the level in a cut box, the name in the display face, the class under it in mono */
+html.st-rail #dk-hud .dk-idn{ gap:11px; padding:0; border-radius:0; }
+html.st-rail #dk-hud .dk-ring{ width:44px; height:44px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  border:1px solid var(--accent-dim); background:var(--bg); clip-path:polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); }
+html.st-rail #dk-hud .dk-ring svg{ display:none; }
+html.st-rail #dk-hud .dk-ring::before{ content:"LVL"; font:600 8px/1 var(--disp); letter-spacing:.16em; color:var(--text3); }
+html.st-rail #dk-hud .dk-ring b{ position:static; display:block; font:400 20px/1 var(--mono); color:var(--accent); }
+html.st-rail #dk-hud .dk-idt b{ font:700 17px/1.15 var(--disp); letter-spacing:.08em; text-transform:uppercase; color:var(--text); }
+html.st-rail #dk-hud .dk-idt span{ font:400 10.5px/1.3 var(--mono); letter-spacing:.05em; color:var(--text3); }
+/* the pools: a label as a stat's, the figure in mono, a square bar in a hairline */
+html.st-rail #dk-hud .dk-ml i, html.st-rail #dk-hud .dk-res i, html.st-rail #dk-hud .dk-wal i{ font:600 10px var(--disp); letter-spacing:.16em; color:var(--text3); }
+html.st-rail #dk-hud .dk-meter{ border-radius:0; }
+html.st-rail #dk-hud .dk-meter:not([disabled]):hover, html.st-rail #dk-hud .dk-meter[aria-expanded="true"]{ background:var(--bg2); }
+html.st-rail #dk-hud .dk-ml b{ font:700 17px/1 var(--mono); color:var(--text); }
+html.st-rail #dk-hud .dk-ml em{ font-size:13px; color:var(--text3); }
+html.st-rail #dk-hud .dk-vg{ color:var(--shield); }
+html.st-rail #dk-hud .dk-track{ height:8px; border-radius:0; background:var(--bg1); border:1px solid var(--border); }
+html.st-rail #dk-hud .dk-fill{ border-radius:0; }   /* green and amber come through the tokens; Wounds have a red of their own on Classic */
+html.st-rail #dk-hud .dk-wd .dk-fill{ background:var(--wound); }
+/* the class resource, in the class's colour as on the Freelancer tab */
+html.st-rail #dk-hud .dk-res i{ color:var(--cls, var(--text3)); }
+html.st-rail #dk-hud .dk-pip{ height:12px; border-radius:0; background:var(--bg1); border:1px solid var(--border); }
+html.st-rail #dk-hud .dk-many .dk-pip{ border-radius:0; }
+html.st-rail #dk-hud .dk-pip.on{ background:var(--cls, var(--accent)); border-color:var(--cls, var(--accent)); box-shadow:none; }
+html.st-rail #dk-hud .dk-pips b{ font:700 15px/1 var(--mono); color:var(--cls, var(--accent)); }
+html.st-rail #dk-hud .dk-wal b{ font:700 19px/1.1 var(--mono); color:var(--gold); }
+/* the rest button: a Classic button, icon and name */
+html.st-rail #dk-hud .dk-hb{ width:auto; height:32px; padding:0 12px; display:inline-flex; align-items:center; gap:8px; border-radius:0; border:1px solid var(--accent-dim);
+  background:var(--bg); color:var(--accent); font:600 11px var(--disp); letter-spacing:.1em; text-transform:uppercase; clip-path:var(--st-cut); }
+html.st-rail #dk-hud .dk-hb:hover, html.st-rail #dk-hud .dk-hb[aria-expanded="true"]{ background:var(--bg2); border-color:var(--accent); color:var(--text); }
+html.st-rail #dk-hud .dk-hb .dk-ic{ font-size:13px; }
+/* what hangs from it: a Classic panel */
+html.st-rail .dk .dk-pop{ padding:12px 14px 14px; border-radius:0; background:var(--bg1); border:1px solid var(--accent-dim); box-shadow:0 18px 40px rgba(0,0,0,.6); }
+html.st-rail .dk h5{ font:400 12px var(--mono); letter-spacing:.18em; color:var(--accent); }
+html.st-rail .dk h5::before{ content:"// "; color:var(--flow); letter-spacing:0; }
+html.st-rail .dk h6{ border-top-color:var(--border); font:600 11px var(--disp); letter-spacing:.16em; color:var(--gold); }
+html.st-rail .dk .dk-note{ font:400 13.5px/1.4 var(--body); color:var(--text2); }
+html.st-rail .dk .dk-link{ font:400 11px var(--mono); letter-spacing:.04em; color:var(--accent); }
+html.st-rail .dk .dk-back{ font:400 11px var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--text3); }
+html.st-rail .dk .dk-back:hover{ color:var(--text); filter:none; }
+html.st-rail .dk .dk-btn{ height:32px; padding:0 14px; border-radius:0; border:1px solid var(--accent-dim); background:var(--bg); color:var(--accent);
+  font:600 11px var(--disp); letter-spacing:.1em; text-transform:uppercase; clip-path:var(--st-cut); }
+html.st-rail .dk .dk-btn:hover{ background:var(--bg2); border-color:var(--accent); color:var(--text); }
+html.st-rail .dk .dk-btn.pri, html.st-rail .dk .dk-btn.pri:hover{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+html.st-rail .dk .dk-btn.bad{ color:var(--danger); border-color:var(--danger); }
+html.st-rail .dk .dk-btn.ok{ color:var(--success); border-color:var(--success); }
+html.st-rail .dk .dk-btn.gold{ color:var(--gold); border-color:var(--gold); }
+html.st-rail .dk .dk-btn.ghost{ border-color:transparent; background:transparent; color:var(--text2); clip-path:none; }
+html.st-rail .dk .dk-btn.ghost:hover{ border-color:var(--border2); background:transparent; color:var(--text); }
+html.st-rail .dk .dk-btn[disabled]{ opacity:1; color:var(--text3); border-color:var(--border); background:var(--bg1); }
+html.st-rail .dk .dk-sq{ width:32px; height:32px; border-radius:0; border:1px solid var(--accent-dim); background:var(--bg); color:var(--accent); font:600 16px/1 var(--disp); }
+html.st-rail .dk .dk-sq:hover{ background:var(--bg2); border-color:var(--accent); color:var(--text); }
+/* a field's ground, hairline and square corners are Classic's own rule for every field (theme.css), which outranks this skin's; its focus ring is put back here */
+html.st-rail .dk .dk-in{ height:34px; color:var(--text); font:400 15px var(--body); }
+html.st-rail .dk .dk-in:focus{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+html.st-rail .dk .dk-num{ font:700 18px var(--mono); }
+html.st-rail .dk .dk-opt{ border-radius:0; font:600 13px var(--disp); letter-spacing:.1em; text-transform:uppercase; color:var(--text2); }
+html.st-rail .dk .dk-opt:hover, html.st-rail .dk .dk-opt.dk-sel{ background:var(--bg2); color:var(--text); }
+html.st-rail .dk .dk-opt small{ font:400 10.5px var(--mono); letter-spacing:.04em; text-transform:none; color:var(--text3); }
+html.st-rail .dk .dk-opt-ic .dk-ic{ font-size:15px; color:var(--accent); }
+html.st-rail .dk .dk-lv i{ font:600 10px var(--disp); letter-spacing:.16em; color:var(--text3); }
+html.st-rail .dk .dk-dice{ font:400 12px var(--mono); color:var(--accent); }
+html.st-rail .dk .dk-check{ font:400 13.5px/1.4 var(--body); color:var(--text2); }
+html.st-rail .dk .dk-check input{ accent-color:var(--accent); }
+/* a roll that is waiting: a small Classic button in the Wound colour, as its prompt on the Freelancer tab is */
+html.st-rail .dk .dk-chip{ height:22px; border-radius:0; border:1px solid var(--border2); background:var(--bg1); color:var(--text2); font:400 11px var(--mono); letter-spacing:.06em; }
+html.st-rail .dk button.dk-chip.act{ height:26px; padding:0 10px; border-color:var(--wound); background:var(--bg); color:var(--wound); font:600 11px var(--disp); letter-spacing:.1em;
+  text-transform:uppercase; clip-path:var(--st-cut); }
+html.st-rail .dk button.dk-chip.act:hover{ filter:none; background:var(--bg2); color:var(--danger); border-color:var(--danger); }
 @media (max-width:760px){
   html.st-rail{ --sticky-top:92px; }
   html.st-rail #os-rail{ position:static; height:auto; padding:9px 12px; }
@@ -746,4 +835,6 @@ html.st-rail .fv-win:not(.fv-sheet){ --fv-maxh:calc(100vh - 110px - var(--st-rai
   html.st-rail .fv-win:not(.fv-sheet){ --fv-maxh:calc(100vh - 110px); }
   /* #GRIDeck puts the wallet away on a phone; this rail has no search button, so the wallet takes that place beside the rest button */
   html.st-rail #dk-hud .dk-wal{ display:block; order:-1; }
+  html.st-rail #dk-hud .dk-idn{ flex:1 1 calc(100% - 170px); }   /* room on the name's line for the wallet and a rest button that says its name */
+  html.st-rail #dk-hud .dk-idt span{ overflow:hidden; text-overflow:ellipsis; }   /* the class line is cut, as the name is, not run under the wallet */
 }

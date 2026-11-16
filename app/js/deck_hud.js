@@ -19,7 +19,8 @@
    js/deck_shell.js, into #os-rail. Lean is what he listed and no more: the level, the name over the class and subclass,
    Vitality, Wounds, the class resource, the wallet and the rest button. No conditions, no search, no level-up chip, and the
    name is a readout (the Record drawer is #GRIDeck's). A Body Save that is waiting still shows, since a Wound taken from this
-   bar on another tab would otherwise ask for a roll nobody sees.
+   bar on another tab would otherwise ask for a roll nobody sees. There it wears Classic's look, not this skin's (css/deck.css,
+   THE RAIL WEARS CLASSIC): the palette's own colours and fonts, cut corners, square bars.
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
 window.EN = window.EN || {};
@@ -313,7 +314,7 @@ EN.deck.hud = (function () {
     n.condWrap = el("div.dk-condw.dk-has-pop", null, [n.add, n.conds]);
     n.wallet = el("div.dk-wal", null, [el("i", { text: "Glimmer" }), n.glim = el("b")]);
     n.rest = el("button.dk-hb", { type: "button", title: "Rest", "aria-label": "Rest", "aria-haspopup": "dialog", "aria-expanded": "false", dataset: { dkPopBtn: "rest", dkHud: "rest" },
-      onclick: function () { if (can()) openPop("rest", null, n.restWrap, "Rest", function (root) { return restPop(root, "menu"); }); } }, [icon((core().icons || {}).longRest)]);
+      onclick: function () { if (can()) openPop("rest", null, n.restWrap, "Rest", function (root) { return restPop(root, "menu"); }); } }, [icon((core().icons || {}).longRest), el("span.dk-hb-l", { text: "Rest" })]);   // the word shows on Classic's rail, where a button reads its name
     n.restWrap = el("div.dk-has-pop.dk-pop-r", null, [n.rest]);
     n.find = el("button.dk-find", { type: "button", title: "Search rules, your gear and people (Ctrl K)", dataset: { dkHud: "search" }, onclick: function () { if (EN.deck.find) EN.deck.find.open(); } },
       [icon(EN.app.tabIcon("codex")), el("span", { text: "Search" }), el("kbd", { text: "Ctrl K" })]);

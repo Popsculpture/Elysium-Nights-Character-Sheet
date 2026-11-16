@@ -294,6 +294,8 @@ EN.deck.shell = (function () {
       rail = el("div#os-rail", { role: "group", "aria-label": "Status" });
       os.insertBefore(rail, document.getElementById("os-tabs"));
     }
+    // Classic's own class colours (theme.css, [data-cls]): --cls on the rail, for the resource's name and pips
+    if (c.ch.class) rail.setAttribute("data-cls", c.ch.class); else rail.removeAttribute("data-cls");
     EN.deck.hud.paint(rail, c, { lean: true });
   }
   // the bar wears the class's own colour (data/class_identity.js, the author's pairs); no class, the palette's accent
@@ -316,11 +318,9 @@ EN.deck.shell = (function () {
     if (!rail) drop("os-rail");
     if (!show) {
       drop("dk-dock");
-      if (rail) { if (!c || c.ch !== EN.store.active()) c = context(); wear(os, c); paintRail(os, c); }
-      else {
-        if (EN.deck.hud) EN.deck.hud.remove();
-        if (os) os.style.removeProperty("--dk-accent");
-      }
+      if (os) os.style.removeProperty("--dk-accent");   // the deck's class colour; Classic's rail takes its colours from the palette
+      if (rail) { if (!c || c.ch !== EN.store.active()) c = context(); paintRail(os, c); }
+      else if (EN.deck.hud) EN.deck.hud.remove();
       if (EN.deck.record) EN.deck.record.sync(null);
       if (EN.deck.find) EN.deck.find.sync(false);
       pinCreate();   // a record not filed yet has no dock and no status bar, but it has the creation bar
