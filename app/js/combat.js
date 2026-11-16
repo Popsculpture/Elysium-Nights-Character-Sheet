@@ -1637,6 +1637,32 @@ EN.combatView = (function () {
     });
     return ul;
   }
+  /* The book's Short or Long Rest (Vitality & Recovery > Recovery) as a rest popover prints it: its name (a link to the rule),
+     its duration and its list, read from EN.recovery; for a Short Rest, the line after it is what TAKE SHORT REST itself does
+     here. Without the data, the short summary each popover had (the Long Rest's with the book's minimum of 1 Wound restored).
+     One builder, for the Freelancer tab's own popovers and for Classic's status rail (js/deck_hud.js, RAIL PARITY). */
+  function restBookFor(kind, d) {
+    var R = rcRest(kind), P = { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" };
+    if (kind === "short") {
+      if (!R) return el("p", { dataset: { restBook: "short" }, style: P,
+        html: "A <b>Short Rest</b> is about 1 hour of downtime. Taking one refreshes "
+              + (d.resource ? d.resource.name : "your class resource pool")
+              + (d.flow ? " and regains Flow Points (Flow Modifier, min 1)" : "")
+              + ". You may also spend Resilience Dice to heal Vitality." });
+      return el("div", { dataset: { restBook: "short" }, style: { display: "flex", flexDirection: "column", gap: "6px" } }, [
+        el("p", { style: P }, [el("b", null, [cxLink("rc-rests/short-rest", R.name)]), " · " + R.duration]),
+        rcList(R.lines, { conditions: true, self: ["rc-rests/short-rest"] }),
+        d.resource ? el("p", { style: { margin: 0, fontSize: "11.5px", lineHeight: "1.45", color: "var(--text3)" },
+          text: "TAKE SHORT REST refreshes " + d.resource.name + "." }) : null
+      ]);
+    }
+    if (!R) return el("p", { dataset: { restBook: "long" }, style: P,
+      text: "Take a Long Rest? Restores Vitality, Resilience Dice, Wounds equal to your Body Modifier (minimum 1), Flow, reduces Strain by 1, and resets the sleep clock. Fatigue 1 to 3 comes down by 1 if you were provisioned." });
+    return el("div", { dataset: { restBook: "long" }, style: { display: "flex", flexDirection: "column", gap: "6px" } }, [
+      el("p", { style: P }, ["Take a ", el("b", null, [cxLink("rc-rests/long-rest", R.name)]), "? " + R.duration.charAt(0).toUpperCase() + R.duration.slice(1) + "."]),
+      rcList(R.lines, { conditions: true, self: ["rc-rests/long-rest"] })
+    ]);
+  }
   // the Wound Effects save, as the book words it: the bullet naming the Body Save and its Failure line
   function rcWoundSave() {
     var fx = (EN.recovery && EN.recovery.wounds && EN.recovery.wounds.effects) || [], out = [];
@@ -4946,6 +4972,13 @@ EN.combatView = (function () {
       ], { corners: true })]));
     }
 
+    /* THE STATUS RAIL HAS THEM (15 Nov 2026, the author's call). Where Classic's status rail is up (js/deck_shell.js, railOn),
+       Vitality, Wounds and the three rests are on it, on every tab, so this tab does not draw them a second time: no rest
+       buttons in the header and no Vitality panel. What the panel did rides on the rail (js/deck_hud.js, RAIL PARITY): Vigor,
+       the damage order, the Critical colour, Death Saves and Stabilize, the rule links and the book's tooltips. The Wound
+       damage Body Save prompt, which sat under the panel's Wounds bar, goes up with the banners; the rail shows a chip for it
+       from any tab. #GRIDroid and '98 have no rail, so there both stay exactly as they were. */
+    var railed = !!(EN.deck && EN.deck.shell && EN.deck.shell.railOn && EN.deck.shell.railOn());
     blocks.push(el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
       /* Built from nodes, not from a string handed to innerHTML: the handle (or, with none, the first
          word of the name) is whatever a Freelancer's file holds, and a file imported by hand can hold
@@ -4962,7 +4995,7 @@ EN.combatView = (function () {
         if (ch.editFreely === true) kids.push(" ", el("span.chip.edit-freely", { title: "Edit freely is on: this character's Talents and Lineage Evolutions can change at any time, outside the one retrain per level", text: "EDIT FREELY" }));
         return kids;
       })()),
-      el("div.row.wrap", { style: { gap: "8px" } }, [
+      railed ? null : el("div.row.wrap", { style: { gap: "8px" } }, [
         el("div.pop-anchor", { style: { position: "relative" } }, [
           // opening the popover BEGINS the Short Rest: the dice left now decide the free die
           el("button.btn.sm" + (_pops.short ? ".primary" : ""), { onclick: function () { var was = _pops.short; closePops(); _pops.short = !was; if (!was) openShortRest(ch, s.rd); EN.app.render(); } }, iconLabel(ICON_SHORT_REST, "SHORT REST")),
@@ -4974,23 +5007,7 @@ EN.combatView = (function () {
                                         display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
                                         background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
                                         boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
-              /* The book's Short Rest (Vitality & Recovery > Recovery): its duration and its list,
-                 read from EN.recovery. The line after it is what TAKE SHORT REST itself does here. */
-              (function () {
-                var R = rcRest("short");
-                if (!R) return el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                  html: "A <b>Short Rest</b> is about 1 hour of downtime. Taking one refreshes "
-                        + (d.resource ? d.resource.name : "your class resource pool")
-                        + (d.flow ? " and regains Flow Points (Flow Modifier, min 1)" : "")
-                        + ". You may also spend Resilience Dice to heal Vitality." });
-                return el("div", { style: { display: "flex", flexDirection: "column", gap: "6px" } }, [
-                  el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" } },
-                    [el("b", null, [cxLink("rc-rests/short-rest", R.name)]), " · " + R.duration]),
-                  rcList(R.lines, { conditions: true, self: ["rc-rests/short-rest"] }),
-                  d.resource ? el("p", { style: { margin: 0, fontSize: "11.5px", lineHeight: "1.45", color: "var(--text3)" },
-                    text: "TAKE SHORT REST refreshes " + d.resource.name + "." }) : null
-                ]);
-              })(),
+              restBookFor("short", d),   // the book's Short Rest, then what TAKE SHORT REST itself does here
               restBreakflowLine(),
               (_shortBegin && _shortBegin.rec === ch && _shortBegin.rd <= 0 && !(d.chromeTax && d.chromeTax.deadBattery))
                 ? el("p", { dataset: { shortFree: "1" }, style: { margin: 0, fontSize: "11.5px", lineHeight: "1.45", color: "var(--accent)" },
@@ -5017,18 +5034,7 @@ EN.combatView = (function () {
                                             display: "flex", flexDirection: "column", gap: "10px", padding: "12px",
                                             background: "var(--bg2)", border: "1px solid var(--border2)", borderRadius: "4px",
                                             boxShadow: "0 8px 24px rgba(0,0,0,.55)", textAlign: "left" } }, [
-            /* The book's Long Rest, its duration and its list, read from EN.recovery. Without the
-               data, the short summary it replaced, with the book's minimum of 1 Wound restored. */
-            (function () {
-              var R = rcRest("long");
-              if (!R) return el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" },
-                text: "Take a Long Rest? Restores Vitality, Resilience Dice, Wounds equal to your Body Modifier (minimum 1), Flow, reduces Strain by 1, and resets the sleep clock. Fatigue 1 to 3 comes down by 1 if you were provisioned." });
-              return el("div", { style: { display: "flex", flexDirection: "column", gap: "6px" } }, [
-                el("p", { style: { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" } },
-                  ["Take a ", el("b", null, [cxLink("rc-rests/long-rest", R.name)]), "? " + R.duration.charAt(0).toUpperCase() + R.duration.slice(1) + "."]),
-                rcList(R.lines, { conditions: true, self: ["rc-rests/long-rest"] })
-              ]);
-            })(),
+            restBookFor("long", d),   // the book's Long Rest, its duration and its list
             restBreakflowLine(true),
             /* The Fatigue reduction is the one benefit the book gates, so it is the one thing
                this asks about. Defaulted ON: shelter and rations are the ordinary case, and a
@@ -5461,6 +5467,8 @@ EN.combatView = (function () {
         el("div", null, bannerKids("✚", "BODY SAVE · WOUND DAMAGE", "rc-vitality/wound-effects", wsParts)),
         el("div.row.wrap", { style: { gap: "8px", marginTop: "7px" } }, wsBtns)
       ]);
+      // with the rail up there is no Vitality panel to hold it: it is a banner, and the hit that raised it came from the rail
+      if (railed) { wsBox.style.marginTop = "0"; wsBox.style.marginBottom = "12px"; blocks.push(wsBox); wsBox = null; }
     }
     if (fx.cannotAct) {
       blocks.push(el("div.muted-box", { style: { borderColor: "var(--danger)", color: "var(--danger)", marginBottom: "12px", textAlign: "left" },
@@ -5514,7 +5522,7 @@ EN.combatView = (function () {
         oninput: function () { _amts[key] = Math.max(1, Number(this.value) || 1); },
         style: { width: "100%", textAlign: "center" } });
     }
-    sectionEls.vitality = EN.ui.panel("Vitality", "DAMAGE ORDER: VIGOR → VITALITY → WOUNDS", [
+    sectionEls.vitality = railed ? null : EN.ui.panel("Vitality", "DAMAGE ORDER: VIGOR → VITALITY → WOUNDS", [
       el("div", { style: { display: "flex", flexDirection: "column", justifyContent: "center" } }, [
         el("div.row.between.wrap", { style: { alignItems: "baseline" } }, [
           el("div.mono", { style: { fontSize: "19px", fontWeight: 700 } }, [
@@ -7325,6 +7333,15 @@ EN.combatView = (function () {
        Dense auto-flow lets later sections backfill row holes, and rows
        stretch to equal height so nothing leaves ragged gaps. */
     var layout = loadLayout();
+    /* The Vitality panel is the rail's (see `railed`, above): the columns it held go to the panel placed before it, when the
+       two fit one row, so the Attribute Matrix it sat beside by default runs the row's width and nothing is pulled up into a
+       gap. This render only, and not while the layout is being edited (widths saved there are the real ones): the saved layout
+       keeps Vitality's place and width for a skin that draws it. */
+    if (railed && !_editMode) {
+      var vAt = -1;
+      layout.forEach(function (slot, i) { if (slot.key === "vitality") vAt = i; });
+      if (vAt > 0 && sectionEls[layout[vAt - 1].key] && layout[vAt - 1].w + layout[vAt].w <= 6) layout[vAt - 1] = { key: layout[vAt - 1].key, w: layout[vAt - 1].w + layout[vAt].w };
+    }
     var container = el("div.modgrid6" + (_editMode ? "" : ".compact-heads"));
     var wrapEls = [];
 
@@ -7484,6 +7501,10 @@ EN.combatView = (function () {
              woundSaves: woundSavesFor, dismissWoundSave: dismissWoundSave,
              restInfo: rcRest, feralBonus: feralMetabolismBonus,
              shortBegan: function (rec) { return (_shortBegin && _shortBegin.rec === rec) ? _shortBegin.rd : null; },
+             /* RAIL PARITY (15 Nov 2026): what the Vitality panel and the rest popovers said and linked, for Classic's status
+                rail, which stands in for them (js/deck_hud.js): the book's Wound save and Stabilize wording, a "Rules:" line,
+                and the book's own Short and Long Rest lists. */
+             woundSaveRule: rcWoundSave, stabilizeTitle: rcStabilizeTitle, rulesLine: cxRulesLine, restBook: restBookFor, pips: pips,
              icons: { shortRest: ICON_SHORT_REST, longRest: ICON_LONG_REST, downtime: ICON_DOWNTIME },
              /* P3 (15 Nov 2026), what the Sheet of that skin is drawn from: the models lifted from render (the stat strip, the
                 defensive loadout, Active Defenses, the feature list, the hardware a class resource runs through, the unarmed

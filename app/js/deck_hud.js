@@ -21,6 +21,18 @@
    name is a readout (the Record drawer is #GRIDeck's). A Body Save that is waiting still shows, since a Wound taken from this
    bar on another tab would otherwise ask for a roll nobody sees. There it wears Classic's look, not this skin's (css/deck.css,
    THE RAIL WEARS CLASSIC): the palette's own colours and fonts, cut corners, square bars.
+
+   RAIL PARITY (15 Nov 2026, the author's call). With the rail up, Classic's Freelancer tab no longer draws its Vitality panel
+   or its three rest buttons (js/combat.js, `railed`), so on the rail the bar does what those did, and only there (`LEAN`):
+     Vitality  Vigor reads "(n)" before the figure and lies over the bar as the violet lattice; pressing the figure clears
+               it. The popover's buttons carry the book's tooltips, and its "Rules:" line links Vigor, Vitality, the damage
+               order and the chapter.
+     Wounds    the figure and the bar turn to the danger colour in Critical Condition; the bar's tooltip is the panel's.
+               The popover links Wound Effects and Thresholds, and while Dying or Stable it holds the Death Saves, Stabilize
+               and the three-failures line. A chip on the rail says Dying or Stable and opens it, from any tab.
+     Rests     the Short and Long Rest views print the book's own lists (EN.recovery), Resilience Dice link to their rule,
+               and Downtime keeps its note on learning a language.
+   The Wound damage Body Save prompt is a banner on the Freelancer tab there; the chip for it was already on the rail.
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
 window.EN = window.EN || {};
@@ -43,6 +55,8 @@ EN.deck.hud = (function () {
   // a small "rule" button that opens the Codex entry over the page, or nothing where the entry does not resolve
   function ruleBtn(anchor, label) {
     if (!cxHas(anchor)) return null;
+    // RAIL PARITY: on Classic's rail a rule's link is Classic's own (a.codex-link), as it was in the Vitality panel and the rest popovers
+    if (LEAN) return EN.ui.ruleLink(anchor, label || "Rule");
     return el("button.dk-link", { type: "button", dataset: { dkRule: anchor }, onclick: function () { peek(anchor); } }, label || "Rule");
   }
 
@@ -68,6 +82,10 @@ EN.deck.hud = (function () {
     wrap.appendChild(root);
     // keep it on the screen: one hung near the right edge slides left by what would hang off
     try { var r = root.getBoundingClientRect(), over = r.right - (window.innerWidth - 10); if (over > 0 && r.left - over >= 0) root.style.left = (-over) + "px"; } catch (e) {}
+    /* RAIL PARITY: on Classic's rail the popover stays open after a press, and a hit can add a chip to the rail (a Body Save
+       that is waiting, Dying). On a phone that chip is a line of its own, the rail grows, and a popover hung from the rail's
+       foot would slide down under the thumb. So it keeps the place it opened in. */
+    if (LEAN) { try { root.style.top = root.offsetTop + "px"; } catch (e) {} }
     var b = popBtn(key);
     if (b) b.setAttribute("aria-expanded", "true");
     if (P.refresh) P.refresh();
@@ -104,6 +122,9 @@ EN.deck.hud = (function () {
       el("button.dk-sq", { type: "button", "aria-label": "More", onclick: function () { bump(1); } }, "+")
     ]);
   }
+  // RAIL PARITY: the book's Wound save sentence, and a "Rules:" line, both the Freelancer tab's own
+  function bookSave() { try { return core().woundSaveRule() || ""; } catch (e) { return ""; } }
+  function rules(pairs) { try { var p = core().rulesLine(pairs, { margin: "8px 0 0", fontSize: "11px", lineHeight: "1.4", color: "var(--text3)" }); if (p) p.setAttribute("data-dk-rules", "1"); return p; } catch (e) { return null; } }
   function act(label, tone, name, fn) {
     return el("button.dk-btn" + (tone ? "." + tone : ""), { type: "button", dataset: { dkDo: name }, onclick: fn }, label);
   }
@@ -112,26 +133,62 @@ EN.deck.hud = (function () {
     var clr = act("Clear Vigor", "ghost", "vigor-clear", function () { core().clearVigor(); });
     root.appendChild(el("h5", { text: "Vitality" }));
     root.appendChild(amount("vit", 1, 0, "Amount of damage, healing or Vigor"));
-    root.appendChild(el("div.dk-row", null, [
-      act("Damage", "bad", "damage", function () { var c = C; closePop(true); core().applyDamage(c.ch, c.d, AMT.vit); }),
-      act("Heal", "ok", "heal", function () { var c = C; closePop(true); core().applyHeal(c.ch, c.d, AMT.vit); }),
-      act("Vigor", "gold", "vigor", function () { closePop(true); core().gainVigor(AMT.vit); })
-    ]));
+    // RAIL PARITY: on Classic's rail the popover stays open after a press, as the panel's did, so a second hit is a second tap on the same button
+    var dmg = act("Damage", "bad", "damage", function () { var c = C; if (!LEAN) closePop(true); core().applyDamage(c.ch, c.d, AMT.vit); }),
+        heal = act("Heal", "ok", "heal", function () { var c = C; if (!LEAN) closePop(true); core().applyHeal(c.ch, c.d, AMT.vit); }),
+        vig = act("Vigor", "gold", "vigor", function () { if (!LEAN) closePop(true); core().gainVigor(AMT.vit); });
+    root.appendChild(el("div.dk-row", null, [dmg, heal, vig]));
     root.appendChild(clr);
     root.appendChild(el("p.dk-note", null, ["Damage comes off Vigor first, then Vitality, and what is left over becomes Wound damage. Vigor does not stack: the higher value stands. ",
-      ruleBtn("ref-damage/damage-order", "Damage order")]));
+      LEAN ? null : ruleBtn("ref-damage/damage-order", "Damage order")]));
+    if (LEAN) {
+      // the panel's own tooltips (the book's Vigor rules and its Wound save) and its "Rules:" line, with the chapter its header's "?" opened
+      var ws = bookSave(), V = (EN.recovery && EN.recovery.vigor) || null;
+      dmg.title = "Apply damage: Vigor absorbs first, then Vitality; overflow becomes Wound damage" + (ws ? ".\n" + ws : "");
+      heal.title = "Restore Vitality";
+      vig.title = V && V.noStack ? "Gain Vigor equal to the amount above.\n" + V.noStack + "\n" + V.expiration : "Gain Vigor equal to the amount above (non-stacking, keeps the higher value; expires end of encounter)";
+      var rl = rules([["rc-vigor", "Vigor"], ["rc-vitality/vitality", "Vitality"], ["ref-damage/damage-order", "Damage Order"], ["rc-vitality", "Vitality & Wounds"]]);
+      if (rl) root.appendChild(rl);
+    }
     return function () { clr.hidden = !(C.st.vigor > 0); clr.textContent = "Clear Vigor (" + C.st.vigor + ")"; };
   }
   function wdPop(root) {
     root.appendChild(el("h5", { text: "Wounds" }));
     root.appendChild(amount("wd", 1, 0, "Number of Wounds"));
-    root.appendChild(el("div.dk-row", null, [
-      act("Wound", "bad", "wound", function () { var c = C; closePop(true); core().healWounds(c.ch, c.d, -AMT.wd); }),
-      act("Heal", "ok", "wound-heal", function () { var c = C; closePop(true); core().healWounds(c.ch, c.d, AMT.wd); })
-    ]));
+    var wnd = act("Wound", "bad", "wound", function () { var c = C; if (!LEAN) closePop(true); core().healWounds(c.ch, c.d, -AMT.wd); }),
+        whl = act("Heal", "ok", "wound-heal", function () { var c = C; if (!LEAN) closePop(true); core().healWounds(c.ch, c.d, AMT.wd); });
+    root.appendChild(el("div.dk-row", null, [wnd, whl]));
     root.appendChild(el("p.dk-note", null, ["A Wound taken lowers your current and maximum Vitality by the same amount, and calls for a Body Save. ",
-      ruleBtn("rc-vitality/wound-effects", "Wound effects")]));
-    return null;
+      LEAN ? null : ruleBtn("rc-vitality/wound-effects", "Wound effects")]));
+    if (!LEAN) return null;
+    var ws = bookSave();
+    wnd.title = "Take Wounds (also lowers current & max Vitality)" + (ws ? "\n" + ws : "");
+    whl.title = "Heal Wounds (restores max Vitality)";
+    var rl = rules([["rc-vitality/wound-effects", "Wound Effects"], ["rc-dying/thresholds", "Thresholds"]]);
+    if (rl) root.appendChild(rl);
+    /* DEATH SAVES, as the panel held them under the Wounds bar while Dying or Stable: three passed, three failed (a press sets
+       a pip, a press on the last one set takes it back), Stabilize while Dying, and the three-failures line. The pips are
+       the Freelancer tab's own (EN.combatView.core.pips), so they look and work as they did. */
+    var ds = el("div.dk-ds", { dataset: { dkDeath: "1" } });
+    root.appendChild(ds);
+    return function () {
+      var st = C.st, sv = C.ch.deathSaves || {};
+      clear(ds);
+      ds.hidden = !(st.dying || st.stable);
+      if (ds.hidden) return;
+      ds.setAttribute("data-dk-death", st.dying ? "dying" : "stable");
+      ds.appendChild(el("h6", null, [st.dying ? "Dying" : "Stable", " ", ruleBtn("rc-dying/death-saves", "Death Saves")]));
+      ds.appendChild(el("div.dk-row", null, [
+        el("span.dk-lab", { text: "Passed" }), el("span", { dataset: { dkDs: "s" } }, [core().pips(sv.s || 0, 3, "var(--success)", function (n) { core().setDeathSaves("s", n); })]),
+        el("span.dk-lab", { text: "Failed" }), el("span", { dataset: { dkDs: "f" } }, [core().pips(sv.f || 0, 3, "var(--danger)", function (n) { core().setDeathSaves("f", n); })])
+      ]));
+      if (st.dying) {
+        var stb = act("Stabilize", "", "stabilize", function () { core().stabilize(); });
+        stb.title = core().stabilizeTitle();   // the book's Stabilize treatment, both checks; the button records a success
+        ds.appendChild(el("div.dk-row", null, [stb, ruleBtn("rc-medical/stabilize", "Stabilize")]));
+      }
+      if ((sv.f || 0) >= 3) ds.appendChild(el("p.dk-note.dk-badt", { dataset: { dkDs: "dead" } }, ["\u271D ", ruleBtn("rc-dying/three-failures", "THREE FAILURES") || "THREE FAILURES", "; the body stops keeping score."]));
+    };
   }
 
   /* ---- conditions: + adds one from the Conditions Library, a chip opens the one it names ------------- */
@@ -200,6 +257,10 @@ EN.deck.hud = (function () {
     function back() { return el("button.dk-link.dk-back", { type: "button", dataset: { dkDo: "rest-back" }, onclick: function () { show("menu"); } }, "‹ Rests"); }
     function bfNote(withStrain) {
       if (!(C.d.flow && core().inBreakflow(C.ch))) return null;
+      // RAIL PARITY: on Classic's rail the line is the rest popovers' own, word for word, with its link to the condition
+      if (LEAN) return el("p.dk-note.dk-warnt", { dataset: { dkRestBreakflow: "1", restBreakflow: "1" } }, ["In ", ruleBtn(core().condAnchor("Breakflow"), "Breakflow") || "Breakflow",
+        ": this rest restores no FP. You can't recover FP until Breakflow ends, and a rest alone can't end it."
+          + (withStrain ? " While you're in Breakflow, only Breakflow Restoration or Rough Restoration lowers your Strain." : "")]);
       return el("p.dk-note.dk-warnt", { dataset: { dkRestBreakflow: "1" }, text: "In Breakflow: this rest restores no Flow Points. You can't recover them until Breakflow ends, and a rest alone can't end it."
         + (withStrain ? " While you're in Breakflow, only Breakflow Restoration or Rough Restoration lowers your Strain." : "") });
     }
@@ -218,22 +279,27 @@ EN.deck.hud = (function () {
       // opening this view BEGINS the Short Rest: the dice left now decide the free die (the Sheet's own rule)
       core().openShortRest(C.ch, C.st.rd);
       var R = core().restInfo("short"), d0 = C.d;
-      var free = el("p.dk-note.dk-acct", { dataset: { dkShortFree: "1" }, text: "You began this rest with 0 Resilience Dice: taking it regains 1, and you may spend it before you close this." });
+      var free = el("p.dk-note.dk-acct", { dataset: { dkShortFree: "1", shortFree: "1" }, text: "You began this rest with 0 Resilience Dice: taking it regains 1, and you may spend it before you close this." });
       var dice = el("b.dk-dice");
       var roll = act("Roll and heal", "", "rd-roll", function () { var c = C; core().spendResilience(c.ch, c.d, Math.min(AMT.rd, c.st.rd), { shortRest: true }); });
       body.appendChild(back());
       body.appendChild(el("h5", { text: "Short rest" }));
-      body.appendChild(el("p.dk-note", null, [(R && R.duration ? R.duration.charAt(0).toUpperCase() + R.duration.slice(1) + ". " : "About an hour. ")
+      // RAIL PARITY: the book's own Short Rest (its duration and its list), as the SHORT REST popover printed it, then what taking it does here
+      var bookS = LEAN ? core().restBook("short", d0) : null;
+      if (bookS) body.appendChild(bookS);
+      else body.appendChild(el("p.dk-note", null, [(R && R.duration ? R.duration.charAt(0).toUpperCase() + R.duration.slice(1) + ". " : "About an hour. ")
         + "Taking it refreshes " + (d0.resource ? d0.resource.name : "your class resource") + (d0.flow ? " and regains Flow Points equal to your Flow Modifier (minimum 1)" : "")
         + ". You may also spend Resilience Dice to heal Vitality. ", ruleBtn("rc-rests/short-rest", "Short Rest")]));
       var bf = bfNote(false); if (bf) body.appendChild(bf);
       body.appendChild(free);
-      body.appendChild(el("div.dk-lv", null, [el("i", { text: "Resilience Dice" }), dice]));
+      body.appendChild(el("div.dk-lv", null, [el("i", null, [(LEAN && ruleBtn("rc-resilience/spending-resilience-dice", "Resilience Dice")) || "Resilience Dice"]), dice]));
       body.appendChild(el("div.dk-row", null, [amount("rd", 1, 0, "Resilience Dice to spend"), roll]));
       body.appendChild(act("Take short rest", "pri", "rest-short", function () { var c = C; core().shortRest(c.ch, c.d); }));
       return function () {
         var st = C.st, d = C.d, began = core().shortBegan(C.ch), feral = core().feralBonus(d);
         free.hidden = !(began != null && began <= 0 && !(d.chromeTax && d.chromeTax.deadBattery));
+        // the Freelancer tab's own mark for this line is on it only while it shows, as that line was only drawn then
+        if (free.hidden) free.removeAttribute("data-short-free"); else free.setAttribute("data-short-free", "1");
         dice.textContent = st.rd + " / " + st.rdMax + " · d" + d.resilienceDie + " " + EN.engine.fmtMod(d.attributes.BOD.mod) + " Body" + (feral ? " +" + feral + " Feral" : "") + " each";
         roll.disabled = st.rd <= 0;
         roll.textContent = st.rd > 0 ? "Roll and heal" : "No dice left";
@@ -244,7 +310,8 @@ EN.deck.hud = (function () {
       var box = el("input", { type: "checkbox", checked: PROV !== false, dataset: { dkDo: "rest-prov" }, onchange: function () { PROV = this.checked; } });
       body.appendChild(back());
       body.appendChild(el("h5", { text: "Long rest" }));
-      body.appendChild(el("p.dk-note", null, ["Restores Vitality, Resilience Dice, Wounds equal to your Body Modifier (minimum 1) and Flow Points, lowers Strain by 1 and resets the sleep clock. One day passes on the calendar. ",
+      var bookL = LEAN ? core().restBook("long", C.d) : null;   // RAIL PARITY: the book's own Long Rest list, as the LONG REST popover printed it
+      body.appendChild(bookL || el("p.dk-note", null, ["Restores Vitality, Resilience Dice, Wounds equal to your Body Modifier (minimum 1) and Flow Points, lowers Strain by 1 and resets the sleep clock. One day passes on the calendar. ",
         ruleBtn("rc-rests/long-rest", "Long Rest")]));
       var bf = bfNote(true); if (bf) body.appendChild(bf);
       body.appendChild(el("label.dk-check", null, [box, el("span", { text: clanker ? "Equivalent maintenance and charge (Fatigue 1 to 3 comes down by 1)" : "Safe shelter, food, and water (Fatigue 1 to 3 comes down by 1)" })]));
@@ -258,6 +325,8 @@ EN.deck.hud = (function () {
       body.appendChild(el("p.dk-note", { text: "Advance the calendar without resting. Marks lease installments and ages saved Personas. Restores nothing." }));
       body.appendChild(el("div.dk-row", null, [amount("days", 1, 365, "Days of downtime"), act("Advance", "", "down-go", function () { go(AMT.days); })]));
       body.appendChild(el("div.dk-row", null, [1, 7, 30].map(function (n) { return act(n === 1 ? "1 day" : n + " days", "ghost", "down-" + n, function () { go(n); }); })));
+      // RAIL PARITY: the DOWNTIME popover's note (the app keeps no Downtime activity log, so it is a note only)
+      if (LEAN) body.appendChild(el("p.dk-note.dk-dim.dt-lang", { text: "Learn a language: four weeks with someone who speaks it and is willing to teach. Record it under Languages on the #PRINT Advance step (+ LEARNED IN DOWNTIME)." }));
       body.appendChild(el("h6", null, ["Downtime rest (1 week) ", ruleBtn("rc-rests/downtime", "Rule")]));
       body.appendChild(EN.ui.ruleText(el("p.dk-note"),
         "One uninterrupted week. Gives everything a Long Rest gives (Vitality, FP, Resilience Dice, abilities, the sleep clock) and more: restores all Wounds, removes all Strain, clears Fatigue and temporary conditions. In Breakflow, FP and Strain stay: Breakflow ends only through Breakflow Restoration, and Downtime clears all Strain (unless you're in Breakflow). Critical Wound, Cursed, Hardwired, Mutating, Bricked and Breakflow stay. Does not advance the calendar.",
@@ -289,9 +358,15 @@ EN.deck.hud = (function () {
   function meter(cls, label, kind, title, make) {
     var m = {};
     m.btn = el("button.dk-meter." + cls, { type: "button", title: title, "aria-haspopup": "dialog", "aria-expanded": "false", dataset: { dkPopBtn: kind, dkHud: kind },
-      onclick: function () { if (can()) openPop(kind, null, m.root, label, make); } }, [
+      onclick: function (ev) {
+        if (!can()) return;
+        // RAIL PARITY: pressing the Vigor figure clears it, as it did on the Vitality panel
+        if (LEAN && C.st.vigor > 0 && ev && ev.target && ev.target.closest && ev.target.closest(".dk-vg")) { closePop(); core().clearVigor(); return; }
+        openPop(kind, null, m.root, label, make);
+      } }, [
       el("span.dk-ml", null, [el("i", { text: label }), el("b", null, [m.vigor = el("span.dk-vg"), m.val = el("span"), m.max = el("em")])]),
-      el("span.dk-track", null, [m.fill = el("span.dk-fill")])
+      // .vigor-shield is the Freelancer tab's own Vigor lattice (css/theme.css); it lies over the fill on Classic's rail only
+      el("span.dk-track", null, [m.fill = el("span.dk-fill"), m.shield = el("span.dk-shield.vigor-shield", { hidden: true })])
     ]);
     m.root = el("div.dk-has-pop", null, [m.btn]);
     return m;
@@ -322,7 +397,10 @@ EN.deck.hud = (function () {
     return n;
   }
   function setMeter(m, cur, max, vigor, low) {
-    m.vigor.textContent = vigor ? "+" + vigor + " " : "";
+    m.vigor.textContent = vigor ? (LEAN ? "(" + vigor + ") " : "+" + vigor + " ") : "";
+    m.vigor.title = vigor && LEAN ? "Vigor " + vigor + ", absorbed before Vitality. Click to clear." : "";
+    m.shield.hidden = !(LEAN && vigor > 0);
+    if (!m.shield.hidden) { m.shield.style.width = (max > 0 ? Math.min(100, 100 * vigor / max) : 100) + "%"; m.shield.title = "Vigor " + vigor + ", absorbed before Vitality"; }
     m.val.textContent = String(cur);
     m.max.textContent = " / " + max;
     m.fill.style.width = (max > 0 ? Math.max(0, Math.min(100, 100 * cur / max)) : 0) + "%";
@@ -389,6 +467,12 @@ EN.deck.hud = (function () {
     if (pools) {
       setMeter(N.vit, st.vit, st.vitMax, st.vigor, st.vitMax > 0 && st.vit <= st.vitMax / 2);
       setMeter(N.wd, st.wounds, st.woundsMax, 0, false);
+      // RAIL PARITY: Critical Condition turns the Wounds figure and bar to the danger colour, and the bar says what the panel's did
+      N.wd.btn.classList.toggle("dk-crit", !!st.critical);
+      var wsr = lean ? bookSave() : "";
+      N.vit.btn.title = lean ? "Vigor, healing & damage" : "Damage, healing and Vigor";
+      N.wd.btn.title = lean ? "Add or remove Wounds. Countdown from Body (" + st.woundsMax + "). Wound damage also lowers current & max Vitality. Critical Condition at " + d.critThreshold
+        + " or less. 0 = Unconscious & Dying." + (wsr ? "\n" + wsr : "") : "Take or heal Wounds";
     }
 
     // the class resource: the Reservoir for a Shaper, the class pool for everyone else
@@ -421,6 +505,10 @@ EN.deck.hud = (function () {
       }
     }
     if (lean) names = [];   // the rail keeps to what is waiting on a roll
+    // RAIL PARITY: Dying or Stable shows on the rail from any tab, and the chip opens the Wounds popover, where the Death Saves are
+    if (lean && pools && (st.dying || st.stable)) N.conds.appendChild(el("button.dk-chip.act", { type: "button", "aria-haspopup": "dialog", dataset: { dkHud: "death", dkPopBtn: "wd" },
+      title: st.dying ? "Dying: Death Saves and Stabilize" : "Stable: unconscious at 0 Wounds", onclick: function () { if (P && P.key === "wd") return; openPop("wd", null, N.wd.root, "Wounds", wdPop); } },
+      st.dying ? "Dying" : "Stable"));
     names.forEach(function (name) {
       N.conds.appendChild(pools ? condChip(name) : el("span.dk-chip.warn", { text: name }));
     });

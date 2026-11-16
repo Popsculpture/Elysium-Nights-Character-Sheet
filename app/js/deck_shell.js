@@ -337,5 +337,7 @@ EN.deck.shell = (function () {
     pinCreate();
   }
 
-  return { on: on, appOf: appOf, subKey: subKey, view: view, chrome: chrome, go: go, reading: context, gearView: gearView, standingView: standingView, apps: function () { return APPS.map(function (a) { return a.key; }); } };
+  return { on: on, appOf: appOf, subKey: subKey, view: view, chrome: chrome, go: go, reading: context, gearView: gearView, standingView: standingView,
+           // will this render carry Classic's status rail? js/combat.js asks, so the Freelancer tab does not draw what the rail holds
+           railOn: function () { return railWanted(document.getElementById("os"), EN.app.portal()); }, apps: function () { return APPS.map(function (a) { return a.key; }); } };
 })();

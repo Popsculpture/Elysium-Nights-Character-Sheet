@@ -318,7 +318,7 @@ EN.flowView = (function () {
       el("span", { style: { fontFamily: "var(--disp)", fontSize: "9.5px", letterSpacing: ".12em", color: "var(--danger)" } }, [EN.ui.ruleLink("fl-overdraw", "OVERDRAW")]),
       odIn, el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "FP past empty" }),
       el("span.help", { style: { margin: 0, flex: "1 1 120px", fontSize: "10.5px" }, text: "→ lose " + _od + "d" + f.overdrawDie + " Vitality, +" + _od + " Strain point" + (_od === 1 ? "" : "s") }),
-      el("button.btn.sm", { title: "Log an Overdraw: builds Strain and zeroes FP (apply the Vitality loss on the Freelancer tab)",
+      el("button.btn.sm", { title: "Log an Overdraw: builds Strain and zeroes FP (apply the Vitality loss yourself, under Vitality)",
         style: { color: "var(--danger)", borderColor: "var(--danger)" },
         onclick: function () { var n = _od, die = f.overdrawDie; fset(function (fl) { fl.current = 0; bumpStrain(fl, n); }); toast("Overdrew " + n + " FP · lose " + n + "d" + die + " Vitality · +" + n + " Strain"); } }, "LOG")
     ]));

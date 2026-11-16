@@ -778,6 +778,15 @@ html.st-rail #dk-hud .dk-vg{ color:var(--shield); }
 html.st-rail #dk-hud .dk-track{ height:8px; border-radius:0; background:var(--bg1); border:1px solid var(--border); }
 html.st-rail #dk-hud .dk-fill{ border-radius:0; }   /* green and amber come through the tokens; Wounds have a red of their own on Classic */
 html.st-rail #dk-hud .dk-wd .dk-fill{ background:var(--wound); }
+/* RAIL PARITY (js/deck_hud.js): Vigor's lattice over the Vitality fill, its figure a thing to press, and Critical Condition in the danger colour */
+html.st-rail #dk-hud .dk-track{ position:relative; }
+html.st-rail #dk-hud .dk-shield{ position:absolute; left:0; top:0; height:100%; overflow:hidden; }
+html.st-rail #dk-hud .dk-vg{ cursor:pointer; }
+html.st-rail #dk-hud .dk-wd.dk-crit .dk-ml b{ color:var(--danger); }
+html.st-rail #dk-hud .dk-wd.dk-crit .dk-fill{ background:var(--danger); }
+html.st-rail .dk .dk-ds{ margin-top:4px; }
+html.st-rail .dk .dk-ds .dk-row{ align-items:center; }
+html.st-rail .dk .dk-note.dk-badt{ color:var(--danger); font-family:var(--mono); }
 /* the class resource, in the class's colour as on the Freelancer tab */
 html.st-rail #dk-hud .dk-res i{ color:var(--cls, var(--text3)); }
 html.st-rail #dk-hud .dk-pip{ height:12px; border-radius:0; background:var(--bg1); border:1px solid var(--border); }

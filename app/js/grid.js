@@ -652,11 +652,11 @@ EN.gridView = (function () {
     var explSpan = el("span", { style: { fontSize: "10.5px", color: "var(--text3)", flex: "1 1 120px", minWidth: "120px" } });
     function expl(dmg, isDriven) {
       return isDriven ? "½ of " + dmg + " beats the DC " + gd.stabilityDcBase + " floor"
-        : (dmg > 0 ? "DC " + gd.stabilityDcBase + " floor holds (½ of " + dmg + " is " + Math.floor(dmg / 2) + ")" : "DC " + gd.stabilityDcBase + " floor, auto-fills from your last hit on the Freelancer tab");
+        : (dmg > 0 ? "DC " + gd.stabilityDcBase + " floor holds (½ of " + dmg + " is " + Math.floor(dmg / 2) + ")" : "DC " + gd.stabilityDcBase + " floor, auto-fills from the last hit you applied to your Vitality");
     }
     explSpan.textContent = expl(gd.stabilityLastDamage, driven);
     var input = el("input", { type: "number", min: "0", value: gd.stabilityLastDamage || "", placeholder: "0",
-      title: "Damage taken this turn while linked; auto-pulls the last damage you applied on the Freelancer tab",
+      title: "Damage taken this turn while linked; auto-pulls the last damage you applied to your Vitality",
       style: { width: "62px", textAlign: "center", fontFamily: "var(--mono)" },
       oninput: function () {
         var v = Math.max(0, parseInt(this.value, 10) || 0);
