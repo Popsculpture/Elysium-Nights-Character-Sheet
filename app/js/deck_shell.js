@@ -329,13 +329,13 @@ EN.deck.shell = (function () {
     if (rail) paintFindBox(top); else drop("os-find");
     // the search belongs to the skin it was opened under: it is put away when that changes (this skin to Classic, or back)
     var mode = show ? "deck" : rail ? "rail" : "";
-    if (mode !== _mode) { _mode = mode; if (EN.deck.find) EN.deck.find.sync(false); }
+    if (mode !== _mode) { _mode = mode; if (EN.deck.find) EN.deck.find.sync(false); if (EN.deck.record) EN.deck.record.close(false); }
     if (!show) {
       drop("dk-dock");
       if (os) os.style.removeProperty("--dk-accent");   // the deck's class colour; Classic's rail takes its colours from the palette
       if (rail) { if (!c || c.ch !== EN.store.active()) c = context(); paintRail(os, c); }
       else if (EN.deck.hud) EN.deck.hud.remove();
-      if (EN.deck.record) EN.deck.record.sync(null);
+      if (EN.deck.record) EN.deck.record.sync(rail ? c : null);   // Classic's rail keeps the Record drawer its name opens
       if (EN.deck.find) EN.deck.find.sync(rail);   // Classic's rail keeps the search; anywhere else without the deck it is put away
       pinCreate();   // a record not filed yet has no dock and no status bar, but it has the creation bar
       return;

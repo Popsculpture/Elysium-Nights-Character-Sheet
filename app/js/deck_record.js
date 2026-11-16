@@ -15,12 +15,21 @@
    Everything it does is a function another screen already had: EN.builder (goStep, openAdvance, newRecord,
    importPrompt, exportChar, openManager), EN.store (setActive, setExample), EN.printSheet, EN.pdfExport.
    DOM rules as in js/deck_shell.js: one .dk root, dk- classes only. No em or en dashes (house style).
+
+   CLASSIC HAS IT TOO (16 Nov 2026, the author's call): the name on Classic's status rail opens this drawer, in Classic's
+   look and with its own pages: the #PRINT BADGE (js/badge.js: the Freelancer's identity tag, drawn from the record, with
+   a headshot the player uploads), LEVEL UP, EDIT RECORD, CHARACTERS and NOTES. What the Dossier lists (features,
+   proficiencies, senses) is on Classic's own Freelancer tab, so the badge takes its place there; the notes it held are
+   their own page. Anything that asks for "dossier" opens the first page of whichever set is up.
    =========================================================================== */
 window.EN = window.EN || {};
 EN.deck = EN.deck || {};
 EN.deck.record = (function () {
   var el = EN.ui.el, clear = EN.ui.clear;
-  var TABS = [["dossier", "Dossier"], ["level", "Level up"], ["edit", "Edit record"], ["chars", "Characters"]];
+  var TABS_DECK = [["dossier", "Dossier"], ["level", "Level up"], ["edit", "Edit record"], ["chars", "Characters"]];
+  var TABS_CLASSIC = [["badge", "#PRINT"], ["level", "Level up"], ["edit", "Edit record"], ["chars", "Characters"], ["notes", "Notes"]];
+  function classic() { return document.documentElement.classList.contains("st-rail"); }
+  function tabs() { return classic() ? TABS_CLASSIC : TABS_DECK; }
   var D = null;          // the open drawer: { root, tab, head, tabs, body, from }
   var OPENED = {};       // the features whose text is unfolded, by name
 
@@ -63,7 +72,7 @@ EN.deck.record = (function () {
   function open(tab) {
     var c = reading();
     if (!c) return false;
-    var want = TABS.some(function (t) { return t[0] === tab; }) ? tab : "dossier";
+    var T = tabs(), want = T.some(function (t) { return t[0] === tab; }) ? tab : T[0][0];
     if (D) { D.tab = want; paint(c, true); return true; }
     var os = document.getElementById("os");
     if (!os) return false;
@@ -96,23 +105,31 @@ EN.deck.record = (function () {
   function chip(text, title, tone) { return el("span.dk-chip" + (tone ? "." + tone : ""), { title: title || null, text: text }); }
 
   function paint(c, force) {
-    var ch = c.ch, d = c.d || {};
+    var ch = c.ch, d = c.d || {}, T = tabs();
+    if (!T.some(function (t) { return t[0] === D.tab; })) D.tab = T[0][0];   // the set of pages changed under it (the skin did)
     // who
     clear(D.head);
     var bits = [];
     if (d.speciesInfo && d.speciesInfo.name) bits.push(d.speciesInfo.name + (d.lineageInfo && d.lineageInfo.name ? " (" + d.lineageInfo.name + ")" : ""));
     if (d.backgroundInfo && d.backgroundInfo.name) bits.push(d.backgroundInfo.name);
     if (d.classInfo && d.classInfo.name) bits.push(d.classInfo.name + (d.subclassInfo && d.subclassInfo.name ? ", " + d.subclassInfo.name : ""));
-    D.head.appendChild(el("span.dk-lvbig", { text: String(d.level || ch.level || 1) }));
-    D.head.appendChild(el("div", null, [
-      el("h2", { text: ch.name || "Unnamed Freelancer" }),
-      el("p", { text: bits.join(" · ") || "No class yet" }),
-      el("p", { text: "Level " + (d.level || ch.level || 1) + (d.caliber ? " · Caliber " + d.caliber : "") + (c.readOnly ? " · read only" : "") })
-    ]));
+    if (classic()) {
+      // Classic: the level in a cut box as on the rail, the name over the class and subclass
+      var cl = [d.classInfo && d.classInfo.name, d.subclassInfo && d.subclassInfo.name].filter(Boolean).join(" \u00b7 ");
+      D.head.appendChild(el("span.dk-lvbox", { title: "Level " + (d.level || ch.level || 1) + (d.caliber ? " \u00b7 Caliber " + d.caliber : "") }, [el("i", { text: "LVL" }), el("b", { text: String(d.level || ch.level || 1) })]));
+      D.head.appendChild(el("div", null, [el("h2", { text: ch.name || "Unnamed Freelancer" }), el("p", { text: (cl || "No class yet") + (c.readOnly ? " \u00b7 read only" : "") })]));
+    } else {
+      D.head.appendChild(el("span.dk-lvbig", { text: String(d.level || ch.level || 1) }));
+      D.head.appendChild(el("div", null, [
+        el("h2", { text: ch.name || "Unnamed Freelancer" }),
+        el("p", { text: bits.join(" · ") || "No class yet" }),
+        el("p", { text: "Level " + (d.level || ch.level || 1) + (d.caliber ? " · Caliber " + d.caliber : "") + (c.readOnly ? " · read only" : "") })
+      ]));
+    }
     // which page
     var waiting = c.readOnly ? 0 : owed(c).length, held = D.tabs.contains(document.activeElement) ? document.activeElement.getAttribute("data-dk-rec") : null;
     clear(D.tabs);
-    TABS.forEach(function (t) {
+    T.forEach(function (t) {
       D.tabs.appendChild(el("button.dk-segb" + (D.tab === t[0] ? ".on" : ""), { type: "button", role: "tab", "aria-selected": D.tab === t[0] ? "true" : "false", dataset: { dkRec: t[0] },
         onclick: function () { D.tab = t[0]; paint(reading() || c, true); } },
         [t[1], t[0] === "level" && waiting ? el("i.dk-dot", { title: waiting + (waiting === 1 ? " choice is waiting" : " choices are waiting") }) : null]));
@@ -129,7 +146,7 @@ EN.deck.record = (function () {
     }
     clear(D.body);
     D.body.setAttribute("data-dk-rec-tab", D.tab);
-    (D.tab === "level" ? level : D.tab === "edit" ? edit : D.tab === "chars" ? chars : dossier)(c).forEach(function (n) { if (n) D.body.appendChild(n); });
+    (D.tab === "level" ? level : D.tab === "edit" ? edit : D.tab === "chars" ? chars : D.tab === "badge" ? badge : D.tab === "notes" ? notes : dossier)(c).forEach(function (n) { if (n) D.body.appendChild(n); });
     if (held) {
       // found by comparing values, never by building a selector out of a feature's name
       var keep = Array.prototype.filter.call(D.body.querySelectorAll("button"), function (b) {
@@ -197,10 +214,40 @@ EN.deck.record = (function () {
 
     // notes: the same field as the Sheet's NOTES and the #PRINT Identity step
     out.push(h("Notes"));
-    out.push(el("textarea.dk-in.dk-notes", { value: (ch.identity && ch.identity.notes) || "", disabled: !!c.readOnly, dataset: { dkRec: "notes" },
-      placeholder: "Freeform notes for this Freelancer: debts, leads, injuries, rulings, anything",
-      oninput: function () { var v = this.value; EN.store.update(function (r) { r.identity = r.identity || {}; r.identity.notes = v; }, { silent: true }); } }));
+    out.push(notesField(c));
     return out;
+  }
+  function notesField(c) {
+    var ch = c.ch;
+    return el("textarea.dk-in.dk-notes", { value: (ch.identity && ch.identity.notes) || "", disabled: !!c.readOnly, dataset: { dkRec: "notes" },
+      placeholder: "Freeform notes for this Freelancer: debts, leads, injuries, rulings, anything",
+      oninput: function () { var v = this.value; EN.store.update(function (r) { r.identity = r.identity || {}; r.identity.notes = v; }, { silent: true }); } });
+  }
+  // Classic's NOTES page: the same field on a page of its own
+  function notes(c) { return [h("Notes", "the same field as the Sheet's Notes and the #PRINT Identity step"), notesField(c)]; }
+
+  /* THE #PRINT BADGE (Classic's first page): the Freelancer's identity tag, drawn from the record by js/badge.js, and the
+     headshot that goes on it. A picture is picked, centre-cropped and shrunk in the browser, and kept on the record
+     (identity.portrait), so it goes wherever the record goes. A viewed or locked sheet cannot change it. */
+  function badge(c) {
+    var ch = c.ch, d = c.d || {}, B = EN.badge, ro = !!c.readOnly;
+    if (!B) return [note("The badge could not be drawn.")];
+    var file = el("input", { type: "file", accept: "image/png,image/jpeg,image/webp", hidden: true, dataset: { dkRec: "portrait-file" },
+      onchange: function () { var f = this.files && this.files[0]; this.value = ""; if (f) upload(f); } });
+    function upload(f) {
+      B.fromFile(f).then(function (url) { if (B.setPhoto(url)) EN.ui.toast("Headshot saved to this record."); })
+        .catch(function (err) { EN.ui.toast(err && err.message ? err.message : "That picture could not be used."); });
+    }
+    var has = !!B.photo(ch);
+    var wrap = el("div.dk-badge", { dataset: { dkBadge: "1" } }, [B.svg(ch, d, { onPhoto: ro ? null : function () { file.click(); } })]);
+    var off = ro ? "This record is read only" : null;
+    return [wrap, el("div.dk-row", null, [file,
+      el("button.dk-btn.pri", { type: "button", disabled: ro, title: off || "Pick a picture: it is cropped to the badge's frame and kept on this record", dataset: { dkDo: "portrait" }, onclick: function () { file.click(); } }, has ? "Replace headshot" : "Upload headshot"),
+      has ? el("button.dk-btn.ghost", { type: "button", disabled: ro, title: off, dataset: { dkDo: "portrait-clear" }, onclick: function () { B.clearPhoto(); } }, "Remove") : null]),
+      // what a player needs to know to prepare the picture: the shape and size it ends up, and the kinds of file and their limit (js/badge.js)
+      el("p.dk-empty", { dataset: { dkRec: "headshot-spec" } }, [el("b", { text: "Best size: 240 x 300 px, a portrait (4:5). " }),
+        "Any 4:5 size, such as 480 x 600, is shrunk to that and stays sharp. JPEG, PNG or WebP, up to 12 MB."]),
+      note("A picture of another shape is cropped from its centre, so crop it first to choose what shows. It is kept with the record: on every device you sign in on, in an export, and on the sheet your GM sees.")];
   }
 
   function toPrint(step) {

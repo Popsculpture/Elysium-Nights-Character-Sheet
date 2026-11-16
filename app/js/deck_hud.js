@@ -440,7 +440,8 @@ EN.deck.hud = (function () {
     var ch = c.ch, d = c.d, st = c.st;
     N.root.classList.toggle("dk-ro", !!c.readOnly);
     N.root.classList.toggle("dk-lean", lean);
-    N.idn.disabled = lean; N.idn.title = lean ? "" : "Your record";
+    // on Classic's rail the name opens the Record drawer too (js/deck_record.js): the #PRINT badge and the rest of the record
+    N.idn.title = lean ? "Your #PRINT badge and record" : "Your record";
     N.find.hidden = lean;
 
     // who, and how far along
