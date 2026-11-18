@@ -36,32 +36,11 @@ EN.deck.post = (function () {
   function avatar(t, big) {
     return el("span.dk-av" + (big ? ".dk-big-av" : "") + (t.sys || t.gm ? ".dk-sys" : ""), t.sys || t.gm ? { html: (EN.faceView.icons || {}).post || "" } : { text: initials(t.name) });
   }
-  function keyOf(name) { return "t:" + String(name || "").trim().toLowerCase(); }
+  function keyOf(name) { return F().threadKey(name); }
 
-  /* the threads: one a sender, in the order their newest letter sits in the mail (newest first) */
-  function threads(ch, ctx) {
-    var post = F().read(ch).post, map = {}, order = [];
-    function get(key, name, more) {
-      if (!map[key]) { map[key] = { key: key, name: name, msgs: [], sent: [], unread: 0, sys: false, gm: false }; order.push(key); }
-      if (more) Object.keys(more).forEach(function (k) { map[key][k] = more[k]; });
-      return map[key];
-    }
-    post.forEach(function (m, i) {
-      if (!m) return;
-      var name = String(m.from || "").trim() || "Unknown node", t = get(keyOf(name), name);
-      t.msgs.push({ m: m, i: i });
-      if (!m.read) t.unread++;
-      if (F().fromSystem(m)) t.sys = true;
-    });
-    if (ctx) {
-      F().sentToGm(ctx).forEach(function (r) {
-        var who = String(r.persona || "").trim();
-        (who ? get(keyOf(who), who) : get("gm", "Your GM", { gm: true, sub: ctx.campaignName })).sent.push(r);
-      });
-      if (!map.gm) { map.gm = { key: "gm", name: "Your GM", sub: ctx.campaignName, msgs: [], sent: [], unread: 0, sys: false, gm: true }; order.unshift("gm"); }
-    }
-    return order.map(function (k) { return map[k]; });
-  }
+  /* the threads: one a sender, in the order their newest letter sits in the mail (newest first). Built in js/face.js, where
+     Classic's Messages page reads the same list. */
+  function threads(ch, ctx) { return F().threads(ch, ctx); }
   function contactOf(ch, t) {
     if (t.sys || t.gm) return null;
     var n = t.name.toLowerCase();
