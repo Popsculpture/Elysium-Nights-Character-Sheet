@@ -825,10 +825,18 @@ EN.faceView = (function () {
     // long enough for the slide; under reduced motion there is no slide to wait for, and this is still harmless
     setTimeout(function () { if (!_toast) dropToast(); }, 260);
   }
-  function openPost(lid) {
+  /* The way in from outside the tab (the new-mail toast). `from` says whose chat the Messages page opens on Classic: a name opens that
+     sender's thread, and reads it, as pressing its chat does; null opens the list of chats; left out, the page is as it was. */
+  function openPost(lid, from) {
     var ch = store.active(), cur = ch && ch.meta ? ch.meta.id : null;
     if (lid && lid !== cur && store.roster()[lid]) store.setActive(lid);
     _sub = "post";
+    if (from === null) { _mg.th = null; _mg.edit = null; }
+    else if (typeof from === "string") {
+      var key = threadKey(from.trim() || "Unknown node"), now = store.active();
+      var t = now ? threadsOf(now, null).filter(function (x) { return x.key === key; })[0] : null;
+      if (t) mgOpen(t, readOnlyRecord()); else { _mg.th = null; _mg.edit = null; }
+    }
     EN.app.gotoTab("post");
   }
   function recordName(lid) {
@@ -847,6 +855,16 @@ EN.faceView = (function () {
     if (lids.length === 1) return "For " + recordName(lids[0]);
     return lids.length === 2 ? "For " + recordName(lids[0]) + " and " + recordName(lids[1]) : "For " + lids.length + " characters";
   }
+  // whose letters the toast is about, for the one it opens: a name if they are all from one sender, else null (the list of chats)
+  function senderOf(items, lid) {
+    var names = {}, n = 0, last = "";
+    items.forEach(function (x) {
+      if (x.lid !== lid) return;
+      var name = String(x.from || "").trim() || "Unknown node", k = name.toLowerCase();
+      if (!names[k]) { names[k] = 1; n++; last = name; }
+    });
+    return n === 1 ? last : null;
+  }
   function postToast(items) {
     if (!items || !items.length) return;
     var all = (_toast ? _toast.items : []).concat(items);
@@ -863,7 +881,7 @@ EN.faceView = (function () {
     EN.ui.clear(box);
     var under = toastFor(all, cur);
     box.appendChild(el("button.post-toast-btn", { type: "button", title: "Open #POST",
-      onclick: function () { dropToast(); openPost(target); } }, [
+      onclick: function () { dropToast(); openPost(target, senderOf(all, target)); } }, [
       el("span.post-toast-ico", { html: ICON_POST }),
       el("span.post-toast-text", null, [
         el("b.post-toast-line", { text: toastCopy(all) }),
@@ -1609,7 +1627,7 @@ EN.faceView = (function () {
     mount.appendChild(el("div", null, blocks));
   }
 
-  return { render: render, renderPost: renderPost, postPage: postPage, personaTick: personaTick, unread: unread, postToast: postToast, openPost: openPost,
+  return { render: render, renderPost: renderPost, postPage: postPage, personaTick: personaTick, unread: unread, postToast: postToast, closeToast: dropToast, openPost: openPost,
            bgContactsDialog: bgContactsDialog, bgContactsSummary: bgContactsSummary, bgContactsTarget: BG_CONTACTS,
            /* Which of this tab's pages is up ("ledger", "contacts" or "post"), read and set from outside
               (#GRIDeck P0, 14 Nov 2026): a second shell shows Standing or #POST by it, so there is one answer to
