@@ -102,7 +102,7 @@ EN.deck.find = (function () {
       ((ch.face && ch.face.contacts) || []).filter(function (p) { return p && (has(p.name) || has(p.handle)); }).slice(0, MAX_EACH).forEach(function (p) {
         out.push({ group: "People", title: p.name || p.handle || "Unnamed contact", hint: p.work || "Contact", go: function () {
           try { EN.faceView.setSub("contacts"); } catch (e) {}
-          EN.app.gotoTab("face");
+          EN.app.gotoTab("post");
         } });
       });
     }

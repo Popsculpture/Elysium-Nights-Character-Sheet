@@ -6,9 +6,9 @@
    sets on the Freelancer desktop alone.
 
    NO TAB STATE OF ITS OWN. The app shown is worked out from the tab the rest of the program already tracks
-   (EN.app.activeTab(): combat, flow, grid, gear, face, codex, print), so EN.app.gotoTab and every caller of it
-   land where they should with no edits: combat, flow and grid are the Sheet; gear is Gear; face is Standing or
-   #POST by the Social tab's own page (EN.faceView.sub()); codex is the Codex; print is the record.
+   (EN.app.activeTab(): combat, flow, grid, gear, post, face, codex, print), so EN.app.gotoTab and every caller of it
+   land where they should with no edits: combat, flow and grid are the Sheet; gear is Gear; post is #POST (its page,
+   Messages or Contacts, is EN.faceView.postPage()); face is Standing; codex is the Codex; print is the record.
 
    STRANGLER BUILD. Every app began by HOSTING THE EXISTING VIEW (tab.view) inside a stage, so the skin was
    usable from the first day; each phase swaps one for a screen of its own, and this file is the only place
@@ -16,7 +16,7 @@
    (js/deck_gear.js), and #POST and Standing since P5 (js/deck_post.js, js/deck_standing.js). The tab each
    replaced, as Classic draws it, stays one press away on the stage's bar ("Classic sheet", "Classic
    inventory", "Classic ledger"), for the few things the new screen does not hold yet. Contacts is still the
-   Social tab's own page, drawn bare (no heading, no three-way switch) under #POST's bar.
+   #POST tab's own page, drawn bare (no heading, no switch) under #POST's bar.
 
    DOM RULES. Everything this skin draws itself sits under a `.dk` root and uses `dk-` classes only: never
    .panel, .btn, .chip or .stat, and never an inline border-radius. The Classic rules in theme.css
@@ -34,17 +34,19 @@ EN.deck.shell = (function () {
   var APPS = [
     { key: "sheet",    label: "Sheet",    tab: "combat" },
     { key: "gear",     label: "Gear",     tab: "gear" },
-    { key: "post",     label: "#POST",    tab: "face", sub: "post" },
+    { key: "post",     label: "#POST",    tab: "post", sub: "post" },
     { key: "standing", label: "Standing", tab: "face", sub: "ledger" }
   ];
 
   function on() { return document.documentElement.classList.contains("skin-deck"); }
-  function faceSub() { try { return EN.faceView.sub(); } catch (e) { return "ledger"; } }
+  // #POST's page ("post" or "contacts"); the Social tab has only the ledger
+  function postSub() { try { return EN.faceView.postPage(); } catch (e) { return "post"; } }
   // which app a tab key shows as
   function appOf(key) {
     if (key === "combat" || key === "flow" || key === "grid") return "sheet";
     if (key === "gear") return "gear";
-    if (key === "face") return faceSub() === "ledger" ? "standing" : "post";
+    if (key === "post") return "post";
+    if (key === "face") return "standing";
     if (key === "codex") return "codex";
     return "record";
   }
@@ -52,7 +54,7 @@ EN.deck.shell = (function () {
   var _classic = false;   // the Sheet app is showing the Freelancer tab as Classic draws it (transient, like a sub-tab)
   var _gear = "mine";     // Gear's page: mine | market | classic (the Inventory tab as Classic draws it)
   var _ledger = "standing";   // Standing's page: standing | classic (the Social tab's ledger as Classic draws it)
-  function subKey(key) { return key === "face" ? faceSub() + (faceSub() === "ledger" && _ledger === "classic" ? "-classic" : "") : (key === "combat" && _classic) ? "classic" : key === "gear" ? _gear : ""; }
+  function subKey(key) { return key === "post" ? postSub() : key === "face" ? "ledger" + (_ledger === "classic" ? "-classic" : "") : (key === "combat" && _classic) ? "classic" : key === "gear" ? _gear : ""; }
   function nativeFace(c) { return !!(c && c.ch && EN.faceView && EN.faceView.core && EN.faceView.core.read); }
   function standingView(k) { _ledger = k === "classic" ? "classic" : "standing"; if (EN.faceView && EN.faceView.setSub) EN.faceView.setSub("ledger"); EN.app.gotoTab("face"); EN.app.render(); }
   function nativeGear(c) { return !!(c && c.ch && c.d && EN.deck.gear); }
@@ -141,7 +143,7 @@ EN.deck.shell = (function () {
       }));
     }
     if (app === "post") {
-      var s = faceSub();
+      var s = postSub();
       return segBar([["post", "Messages", icon("post")], ["contacts", "Contacts", (EN.faceView.icons || {}).contacts]].map(function (x) {
         // the guided tour's last step points at Contacts (data-tour, js/tour.js)
         return { key: x[0], label: x[1], icon: x[2], on: s === x[0], tour: x[0] === "contacts" ? "social-contacts" : null, go: function () { EN.faceView.setSub(x[0]); EN.app.render(); } };
@@ -215,8 +217,8 @@ EN.deck.shell = (function () {
       }
     }
     // #POST is a messenger and Standing a page of cards; Contacts and the Classic ledger are the Social tab's own pages, bare
-    if (tab.key === "face" && nativeFace(c)) {
-      var page = faceSub();
+    if ((tab.key === "face" || tab.key === "post") && nativeFace(c)) {
+      var page = tab.key === "face" ? "ledger" : postSub();
       try {
         if (page === "post" && EN.deck.post) { EN.deck.post.render(stage, c); stage.setAttribute("data-dk-native", "post"); return; }
         if (page === "ledger" && _ledger !== "classic" && EN.deck.standing) { EN.deck.standing.render(stage, c); stage.setAttribute("data-dk-native", "standing"); return; }

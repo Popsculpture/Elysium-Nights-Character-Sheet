@@ -419,7 +419,7 @@ EN.tourData["character-creation"] = {
    "advanceOn": "condition",
    "completeWhen": "Counter reads 2 of 2 and dialog is closed",
    "title": "Fill in your contacts",
-   "body": "Add your contacts here and set each one's starting relationship to Neutral or Friendly. Once you've filed, you'll find them under Social, Contacts, ready for whatever the next job brings.",
+   "body": "Add your contacts here and set each one's starting relationship to Neutral or Friendly. Once you've filed, you'll find them under #POST, Contacts, ready for whatever the next job brings.",
    "example": null,
    "optional": false,
    "tab": "print",
@@ -868,9 +868,9 @@ EN.tourData["character-creation"] = {
    "advanceOn": "done",
    "optional": true,
    "title": "Your people",
-   "body": "Open Social, then select CONTACTS. The people you added during Background are already here. As the story grows, you can add a fence, a tell, or a faction. You're registered, equipped, and ready to take a job. Time to find out who picks up.",
+   "body": "Open #POST, then select CONTACTS. The people you added during Background are already here. As the story grows, you can add a fence, a tell, or a faction. You're registered, equipped, and ready to take a job. Time to find out who picks up.",
    "example": null,
-   "tab": "face",
+   "tab": "post",
    "wizard": null
   }
  ]
