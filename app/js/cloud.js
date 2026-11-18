@@ -535,7 +535,7 @@ EN.cloud = (function () {
       if (!filed(roster()[lid], r.id)) {
         if (!isClean(lid, b) && !aheadByMail(lid, b)) return;   // real edits have not gone up: this row waits for them
         var landed = courierWrite(lid, function () {
-          return EN.gmStore && EN.gmStore.deliverMail(lid, r.id, { from: mail.from, subj: mail.subj, body: mail.body, package: mail.package, when: mail.when || whenOf(r.created_at) }, r.ops);
+          return EN.gmStore && EN.gmStore.deliverMail(lid, r.id, { from: mail.from, subj: mail.subj, body: mail.body, package: mail.package, when: mail.when || whenOf(r.created_at), at: r.created_at }, r.ops);
         });
         if (!landed) return;   // this device would not store it
         setUnmarked(r.id, true);
@@ -669,15 +669,25 @@ EN.cloud = (function () {
         else sync({ pull: true });
       }
     }
-    // the Admin's list of sends, when it is open
-    if (row.sender_id === user.id && ev.eventType === "UPDATE" && EN.gmCampaign && EN.gmCampaign.sendsChanged) EN.gmCampaign.sendsChanged(row.campaign_id);
+    // the Admin's list of sends, when it is open, and the Admin's chat: a letter delivered, taken or read (Seen)
+    if (row.sender_id === user.id && ev.eventType === "UPDATE") {
+      if (EN.gmCampaign && EN.gmCampaign.sendsChanged) EN.gmCampaign.sendsChanged(row.campaign_id);
+      if (EN.gmPost && EN.gmPost.heard) { try { EN.gmPost.heard(ev); } catch (e) { inboxWarn(e); } }
+    }
   }
   /* The GM's mailbox (the GM mailbox migration) has a channel of its own, so a project that does not have the table in
      Realtime yet cannot disturb the inbox channel above: a failed join here is given up quietly until the next listen. */
-  var mailChannel = null;
+  var mailChannel = null, pmChannel = null;
   function onMailboxEvent(ev) {
     if (!user || !ev) return;
     if (EN.gmPost && EN.gmPost.heard) { try { EN.gmPost.heard(ev); } catch (e) { inboxWarn(e); } }
+    // the player's own letters to the GM: read by the GM (Seen), or sent from another tab (js/chat.js)
+    if (EN.chat && EN.chat.heard) { try { EN.chat.heard(ev); } catch (e) { inboxWarn(e); } }
+  }
+  // letters between players (the chat migration): the two ends hear them, nobody else (the read policy)
+  function onPlayerMailEvent(ev) {
+    if (!user || !ev) return;
+    if (EN.chat && EN.chat.heard) { try { EN.chat.heard(ev); } catch (e) { inboxWarn(e); } }
   }
   function stopListening() {
     if (channel && channelOf && typeof channelOf.removeChannel === "function") {
@@ -686,7 +696,10 @@ EN.cloud = (function () {
     if (mailChannel && channelOf && typeof channelOf.removeChannel === "function") {
       try { channelOf.removeChannel(mailChannel); } catch (e) {}
     }
-    channel = null; channelOf = null; mailChannel = null;
+    if (pmChannel && channelOf && typeof channelOf.removeChannel === "function") {
+      try { channelOf.removeChannel(pmChannel); } catch (e) {}
+    }
+    channel = null; channelOf = null; mailChannel = null; pmChannel = null;
   }
   function listen() {
     stopListening();
@@ -700,17 +713,21 @@ EN.cloud = (function () {
     } catch (e) { inboxWarn(e); }
     watchMail();
   }
-  /* The mailbox channel is for the people who run a campaign: only they read the GM's mailbox, and a player's own letters
-     are not news to the player. So it is joined once this account is known to run one (js/campaigns.js tells us when
-     its list changes), and let go when it stops. A failed join is given up until the list changes again, rather than
-     retried for ever on a project that does not have the table in Realtime. */
+  /* The mailbox channel was for the people who run a campaign. Since #POST became a chat (17 Nov 2026) every member of a
+     campaign joins it: the GM hears the letters players write, and a player hears their own letters being read (Seen).
+     The read policy decides who hears what. It is joined once this account is known to be in a campaign (js/campaigns.js
+     tells us when its list changes), and let go when it is in none. A failed join is given up until the list changes
+     again, rather than retried for ever on a project that does not have the table in Realtime; the players' letters have
+     a channel of their own for the same reason, so a project without that table cannot cost the GM's mailbox. */
   function watchMail() {
-    var runs = !!(EN.campaigns && EN.campaigns.running && EN.campaigns.running().length);
+    var inOne = !!(EN.campaigns && EN.campaigns.list && EN.campaigns.list().length);
     if (!client || !user || !channelOf || typeof client.channel !== "function") return;
-    if (!runs) {
+    if (!inOne) {
       if (mailChannel) { try { channelOf.removeChannel(mailChannel); } catch (e) {} mailChannel = null; }
+      if (pmChannel) { try { channelOf.removeChannel(pmChannel); } catch (e) {} pmChannel = null; }
       return;
     }
+    watchPlayerMail();
     if (mailChannel) return;
     var me = user.id;
     try {
@@ -722,6 +739,22 @@ EN.cloud = (function () {
           if ((state === "CHANNEL_ERROR" || state === "TIMED_OUT") && mailChannel === mc) {
             try { channelOf.removeChannel(mc); } catch (e) {}
             mailChannel = null;
+          }
+        });
+    } catch (e) { inboxWarn(e); }
+  }
+  function watchPlayerMail() {
+    if (pmChannel || !client || !user || !channelOf || typeof client.channel !== "function") return;
+    var me = user.id;
+    try {
+      var pc = client.channel("pmail:" + me);
+      pmChannel = pc;
+      pc.on("postgres_changes", { event: "*", schema: "public", table: "player_mail" }, onPlayerMailEvent)
+        .subscribe(function (state) {
+          if (state === "SUBSCRIBED" && user && user.id === me && EN.chat && EN.chat.heard) { try { EN.chat.heard(null); } catch (e) {} }
+          if ((state === "CHANNEL_ERROR" || state === "TIMED_OUT") && pmChannel === pc) {
+            try { channelOf.removeChannel(pc); } catch (e) {}
+            pmChannel = null;
           }
         });
     } catch (e) { inboxWarn(e); }

@@ -72,7 +72,7 @@ EN.app = (function () {
        envelope, read from js/face.js, which loads first, so it is never redrawn here. */
     { key: "post",    label: "#POST",     glyph: "✉", icon: (EN.faceView && EN.faceView.icons && EN.faceView.icons.post) || "", sub: "messages and contacts", portal: "freelancer", gated: registered, view: function (m) { EN.faceView.renderPost(m); },
       // unread #POST raises the rail's attention dot; renderTabs runs on every render, so it clears itself
-      badge: function () { try { return EN.faceView.unread(store.active()); } catch (e) { return 0; } } },
+      badge: function () { try { return EN.faceView.unread(store.active()) + (EN.faceView.chatUnread ? EN.faceView.chatUnread() : 0); } catch (e) { return 0; } } },
     { key: "face",    label: "Social",    glyph: "◑", icon: ICON_SOCIAL, sub: "reputation and standing", portal: "freelancer", gated: registered, view: function (m) { EN.faceView.render(m); } },
     { key: "grid",    label: "#GRID",     glyph: "⌬", icon: ICON_GRID, sub: "the network", portal: "freelancer", gated: registered, view: function (m) { EN.gridView.render(m); } },
     { key: "flow",    label: "Flow",      glyph: "❋", icon: ICON_FLOW, sub: "the current", portal: "freelancer", gated: registered, view: function (m) { EN.flowView.render(m); } },
@@ -112,8 +112,9 @@ EN.app = (function () {
        with items from the catalog attached; SENT lists what this account has sent, with RECALL while it waits. */
     { key: "gmpost",     label: "#POST",      glyph: "✉", sub: "mail to the crew", portal: "admin", gated: adminReady, group: "LIVE",
       subs: [
-        { key: "inbox", label: "INBOX", sub: "what your players wrote",
-          stub: "Letters your players write to you, in threads, with REPLY." },
+        // CHATS, the key still "inbox" so every way here keeps landing: a messenger with each character and voice (17 Nov 2026)
+        { key: "inbox", label: "CHATS", sub: "talk with your players",
+          stub: "Your players' letters and your answers, as chats, in real time." },
         { key: "write", label: "WRITE", sub: "a letter, signed as anyone" },
         { key: "sent",  label: "SENT",  sub: "what you have sent" }
       ],

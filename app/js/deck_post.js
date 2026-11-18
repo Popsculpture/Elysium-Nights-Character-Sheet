@@ -40,7 +40,8 @@ EN.deck.post = (function () {
 
   /* the threads: one a sender, in the order their newest letter sits in the mail (newest first). Built in js/face.js, where
      Classic's Messages page reads the same list. */
-  function threads(ch, ctx) { return F().threads(ch, ctx); }
+  // letters between players are Classic's for now: this messenger has no box to write one in yet
+  function threads(ch, ctx) { return F().threads(ch, ctx).filter(function (t) { return t.kind !== "player"; }); }
   function contactOf(ch, t) {
     if (t.sys || t.gm) return null;
     var n = t.name.toLowerCase();

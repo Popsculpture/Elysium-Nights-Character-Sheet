@@ -319,7 +319,7 @@ EN.campaigns = (function () {
     EN_BAD_MAIL: "A message needs a From, and a subject, a message or a package.",
     EN_BAD_TYPE: "A campaign levels on XP or on Milestones.",
     EN_BAD_RULES: "Those are not rules this table can set.",
-    EN_SLOW_DOWN: "Slow down. A player can send ten letters in five minutes.",
+    EN_SLOW_DOWN: "Slow down. A player can send sixty messages in five minutes.",
     EN_TOO_LATE: "Too late to recall that one.",
     EN_BAD_DESK: "This desktop could not be saved to your account.",
     EN_TOO_BIG: "This desktop is too big to save to your account.",
@@ -403,7 +403,7 @@ EN.campaigns = (function () {
   function noMailbox(e) { return !!e && (e.code === "42P01" || e.code === "PGRST205" || /gm_mailbox/i.test(String(e.message || ""))); }
   var MAIL_COLS = "id, character_id, sender_id, mail, reply_to, persona, status, created_at, read_at";
   function readMailbox(q) {
-    return q.order("created_at", { ascending: false }).limit(200).then(function (res) {
+    return q.order("created_at", { ascending: false }).limit(500).then(function (res) {
       if (res && res.error && noMailbox(res.error)) return null;
       return check(res);
     });
@@ -411,6 +411,28 @@ EN.campaigns = (function () {
   function gmMail(id) { return readMailbox(client().from("gm_mailbox").select(MAIL_COLS).eq("campaign_id", id)); }
   function mySentToGm(id) { return readMailbox(client().from("gm_mailbox").select(MAIL_COLS).eq("campaign_id", id).eq("sender_id", me())); }
   function inviteUrl(token) { return cloud().appUrl() + "?join=" + encodeURIComponent(token); }
+
+  /* ---- #POST AS A CHAT (17 Nov 2026, the chat migration) -----------------------------------------
+     Letters between players in one campaign (player_mail), private to the two ends: the read policy answers a player with
+     what they sent and what was sent to their characters, and the people who run the campaign with none of it. And when
+     each side read the other's: mark_inbox_read for the GM's letters (character_inbox.read_at), mark_player_mail_read for
+     a player's. inboxOf is the GM's letters to one character with their times, which js/chat.js uses to sort letters
+     filed before they carried one. A project without the migration has no player_mail: playerMail answers null. */
+  var PM_COLS = "id, campaign_id, from_character, to_character, sender_id, body, created_at, read_at";
+  function noPlayerMail(e) { return !!e && (e.code === "42P01" || e.code === "PGRST205" || /player_mail/i.test(String(e.message || ""))); }
+  function playerMail(id) {
+    return client().from("player_mail").select(PM_COLS).eq("campaign_id", id).order("created_at", { ascending: false }).limit(500).then(function (res) {
+      if (res && res.error && noPlayerMail(res.error)) return null;
+      return check(res);
+    });
+  }
+  function sendToPlayer(fromRow, toRow, body) { return rpc("send_to_player", { p_from: fromRow, p_to: toRow, p_body: body }); }
+  function markPlayerMailRead(ids) { return rpc("mark_player_mail_read", { p_ids: ids }); }
+  function markInboxRead(ids) { return rpc("mark_inbox_read", { p_ids: ids }); }
+  function inboxOf(rowId) {
+    return client().from("character_inbox").select("id, created_at, read_at").eq("character_id", rowId)
+      .order("created_at", { ascending: false }).limit(500).then(check);
+  }
 
   /* #POST from the Admin (batch 3). The sends list asks by sender_id and by campaign: the read policy
      also answers with mail sent to this account's own characters, which is not what this list is. */
@@ -430,8 +452,9 @@ EN.campaigns = (function () {
   function deskRead(id) { return rpc("desk_read", { p_campaign: id }); }
   function deskSave(id, doc, rev, sender) { return rpc("desk_save", { p_campaign: id, p_doc: doc, p_rev: rev || 0, p_sender: sender || null }); }
   function sends(id) {
-    return client().from("character_inbox").select("id, character_id, mail, status, created_at")
-      .eq("campaign_id", id).eq("sender_id", me()).order("created_at", { ascending: false }).limit(50).then(check);
+    // read_at is the chat migration's: when the player read it, which the Admin's chat shows as Seen
+    return client().from("character_inbox").select("id, character_id, mail, status, created_at, read_at")
+      .eq("campaign_id", id).eq("sender_id", me()).order("created_at", { ascending: false }).limit(500).then(check);
   }
 
   /* THE PICK. Which campaign this tab is on, and with it which Admin desktop (js/gmstore.js follow). Each
@@ -842,6 +865,7 @@ EN.campaigns = (function () {
     removeMember: removeMember, unblock: unblock, setRole: setRole, transfer: transfer, rename: rename, remove: remove,
     setHouseRules: setHouseRules, houseRules: HOUSE_RULES, settingsOf: settingsOf, settingsOfCampaign: settingsOfCampaign, ruleValues: ruleValues, houseRulesLetter: houseRulesLetter,
     sendToGm: sendToGm, markGmRead: markGmRead, gmMail: gmMail, mySentToGm: mySentToGm,
+    playerMail: playerMail, sendToPlayer: sendToPlayer, markPlayerMailRead: markPlayerMailRead, markInboxRead: markInboxRead, inboxOf: inboxOf,
     campaignOf: campaignOf, setAdvancement: setAdvancement, advancementOf: advancementOf, advancementOfCampaign: typeOf, usesXp: usesXp, lockedBy: lockedBy, advancementLetter: advancementLetter,
     inviteUrl: inviteUrl, viewSheet: viewSheet, refreshView: refreshView, backToCampaign: backToCampaign,
     sendToCharacter: sendToCharacter, sendToCrew: sendToCrew, recallSend: recallSend, sendWrite: sendWrite, takeBack: takeBack, sends: sends,

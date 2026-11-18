@@ -605,6 +605,8 @@ EN.store = (function () {
           else { delete m.package; delete m.taken; }
         }
         if (m.inboxId != null && typeof m.inboxId !== "string") delete m.inboxId;
+        // when it was written (an ISO time, #POST as a chat): anything else is dropped rather than sorted wrongly
+        if (m.at != null && !(typeof m.at === "string" && m.at.length <= 40 && !isNaN(Date.parse(m.at)))) delete m.at;
       });
     }
     // the inbox rows this record has filed as mail (js/gmstore.js deliverMail). Never pruned: a row it

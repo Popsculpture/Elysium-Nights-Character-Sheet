@@ -1249,6 +1249,8 @@ EN.gmStore = (function () {
         var pkg = EN.store.cleanPackage ? EN.store.cleanPackage(o.mail.package) : null;
         if (pkg) { m.package = pkg; m.taken = false; }
         if (typeof o.mail.inboxId === "string" && o.mail.inboxId) m.inboxId = o.mail.inboxId;
+        // when it was written, as the database stamped it (an ISO time): what a chat sorts by (17 Nov 2026)
+        if (typeof o.mail.at === "string" && o.mail.at.length <= 40 && !isNaN(Date.parse(o.mail.at))) m.at = o.mail.at;
         out.push({ op: "post", mail: m });
       } else if (o.op === "milestone") {
         var a = whole(o.amount);
@@ -1472,6 +1474,7 @@ EN.gmStore = (function () {
                     when: o.mail.when, body: o.mail.body, read: false };
         if (o.mail.package) { msg.package = copy(o.mail.package); msg.taken = false; }
         if (o.mail.inboxId) msg.inboxId = o.mail.inboxId;
+        if (o.mail.at) msg.at = o.mail.at;
         ch.face.post.unshift(msg);
       } else {
         ch.face.post = ch.face.post.filter(function (m) { return !(m && m.id === o.mail.id); });
@@ -2081,7 +2084,7 @@ EN.gmStore = (function () {
     var roster = rosterNow();
     if (typeof charId !== "string" || !own(roster, charId) || !isObj(roster[charId]) || !EN.store.updateById) return false;
     if (typeof rowId !== "string" || !rowId || !isObj(mail)) return false;
-    var clean = cleanOps([{ op: "post", mail: { from: mail.from, subj: mail.subj, when: mail.when, body: mail.body, package: mail.package, inboxId: rowId } }]);
+    var clean = cleanOps([{ op: "post", mail: { from: mail.from, subj: mail.subj, when: mail.when, body: mail.body, package: mail.package, inboxId: rowId, at: mail.at } }]);
     if (!clean.length) return false;
     clean[0].mail.id = "pm_in_" + rowId;
     var nums = cleanOps(Array.isArray(ops) ? farNums(ops.filter(isObj)) : []);
