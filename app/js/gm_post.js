@@ -14,7 +14,7 @@
 
    SEEN, both ways: opening a chat marks the player's letters read (mark_gm_mail_read), and the player's app marks the
    GM's letters read when they open theirs (the chat migration's read_at), which shows here under the last thing the GM
-   said. Letters with a subject or a package are still written on WRITE; a chat's line goes as a message alone.
+   said. Letters with a subject or a package are still written on MAIL (the sub-tab once called WRITE); a chat's line goes as a message alone.
 
    It keeps nothing that lasts: all of it is read from the database (RLS gives the people who run a campaign every letter
    in its mailbox, and each account its own sends), kept in memory for the campaign this tab is on, and read again when
@@ -39,7 +39,7 @@ EN.gmPost = (function () {
   var _sel = null;   // the chat open on the page, by key
   /* The page's own state, kept across redraws: the search, All or Unread, what is being typed in each chat, a send under
      way, a new chat being started (pending, picking), and whether the thread should go to its newest line. */
-  var _ui = { q: "", only: "all", drafts: {}, busy: {}, pending: null, picking: false, pickChar: "", pickAs: "The GM", stick: false };
+  var _ui = { q: "", only: "all", drafts: {}, busy: {}, pending: null, picking: false, pickChar: "", pickAs: "", stick: false };
   /* Letters this tab has marked read, by id. A read of the mailbox that began before a mark landed comes back with the
      letter still unread, and a read replaces the rows it holds, so the mark is applied to whatever rows are there, now
      and on every read after, rather than to the row that was on the page when it was pressed. */
@@ -242,7 +242,7 @@ EN.gmPost = (function () {
     return el("div.msgr-cmp", { dataset: { post: "gm-chat-compose" } }, [
       el("div.msgr-cmp-row", null, [box,
         el("button.btn.primary", { type: "button", disabled: busy, dataset: { post: "gm-chat-send" }, title: "It goes to " + nameOf(t.charId).name + ", signed " + t.voice, onclick: send }, busy ? "…" : "SEND")]),
-      el("div.msgr-cmp-x", null, [el("button.btn.sm.ghost", { type: "button", dataset: { post: "reply" }, title: "A letter with a subject or a package, on WRITE",
+      el("div.msgr-cmp-x", null, [el("button.btn.sm.ghost", { type: "button", dataset: { post: "reply" }, title: "A letter with a subject or a package, on MAIL",
         onclick: function () { if (EN.gmCampaign && EN.gmCampaign.draftTo) EN.gmCampaign.draftTo(t.charId, { from: t.voice, subj: "" }); } }, "LETTER WITH A PACKAGE ›")])]);
   }
 
@@ -269,11 +269,19 @@ EN.gmPost = (function () {
   // starting a chat: whom, and as whom
   function picker(list) {
     var ids = Object.keys(_c.names).sort(function (a, b) { return _c.names[a].name.localeCompare(_c.names[b].name); });
-    var voices = {};
-    list.forEach(function (t) { voices[t.voice] = 1; });
-    voices["The GM"] = 1;
-    var dl = el("datalist#gm-chat-voices", null, Object.keys(voices).map(function (v) { return el("option", { value: v }); }));
-    var as = el("input", { type: "text", maxlength: "80", value: _ui.pickAs, list: "gm-chat-voices", placeholder: "The GM", "aria-label": "Write as", dataset: { post: "pick-as" },
+    /* Who the GM can write as (18 Nov 2026, the author's list): The GM, ??? (nobody says who), the People cards, and the
+       campaign's own characters, so a line can come as if another player wrote it (their app puts it in the chat with that
+       player). Then the names already used in a chat. Typed names work too. Left blank, it is The GM. */
+    var voices = [], seen = {};
+    function add(v, label) { v = String(v || "").trim(); if (!v || seen[v.toLowerCase()]) return; seen[v.toLowerCase()] = 1; voices.push([v, label || ""]); }
+    add("The GM", "Yourself");
+    add("???", "Nobody says who");
+    (EN.gmStore && EN.gmStore.list ? EN.gmStore.list("contacts") : []).map(function (c) { return c && c.name; }).filter(Boolean).sort(function (a, b) { return a.localeCompare(b); })
+      .forEach(function (n) { add(n, "People"); });
+    ids.forEach(function (id) { add(_c.names[id].name, "A player's character" + (_c.names[id].player ? " (" + _c.names[id].player + ")" : "")); });
+    list.forEach(function (t) { add(t.voice, "Used in a chat"); });
+    var dl = el("datalist#gm-chat-voices", null, voices.map(function (v) { return el("option", { value: v[0], label: v[1] }); }));
+    var as = el("input", { type: "text", maxlength: "80", value: _ui.pickAs, list: "gm-chat-voices", placeholder: "The GM, ???, a contact, or a player", "aria-label": "Write as", dataset: { post: "pick-as" },
       oninput: function (e) { _ui.pickAs = e.target.value; } });
     var rows = ids.map(function (id) {
       var n = _c.names[id];
@@ -281,7 +289,7 @@ EN.gmPost = (function () {
         var voice = String(_ui.pickAs || "").trim() || "The GM";
         if (voice.length > 80) { toast("A name is 80 characters at most."); return; }
         var key = id + "|" + voiceKey(voice), have = list.filter(function (t) { return t.key === key; })[0];
-        _ui.picking = false; _ui.pickAs = "The GM";
+        _ui.picking = false; _ui.pickAs = "";
         if (have) { openChat(have); return; }
         _ui.pending = { key: key, charId: id, voice: voiceKey(voice) === "the gm" ? "The GM" : voice, items: [], unread: 0 };
         _sel = key; _ui.stick = true; EN.app.render();
@@ -290,7 +298,7 @@ EN.gmPost = (function () {
     if (!rows.length) rows.push(el("p.msgr-empty", { text: "No characters in this campaign yet." }));
     return el("div.msgr-list.msgr-pickl", { dataset: { post: "picker" } }, [
       el("div.msgr-sb", null, [el("label.fl", { style: { margin: "0 0 2px" }, text: "Write as" }), as, dl]),
-      el("p.msgr-foot", { style: { borderTop: "0" }, text: "Then pick who to write to." })].concat(rows));
+      el("p.msgr-foot", { style: { borderTop: "0" }, text: "Left blank, it is The GM. Then pick who to write to." })].concat(rows));
   }
 
   /* The CHATS page, drawn under the #POST tab's sub-tab chips (js/app.js). */

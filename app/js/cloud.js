@@ -541,7 +541,10 @@ EN.cloud = (function () {
         setUnmarked(r.id, true);
         if (!told[r.id]) {
           told[r.id] = 1;
-          came.push({ row: r.id, lid: lid, from: typeof mail.from === "string" ? mail.from : "", pkg: Array.isArray(mail.package) && mail.package.length > 0 });
+          // mail: a letter (a subject, a package, a notice the app signs) is #POST's Mail, a line is its Chat (js/face.js)
+          var sysFrom = /^(campaign|payroll|xp award|milestones)$/i.test(String(mail.from || "").trim());
+          came.push({ row: r.id, lid: lid, from: typeof mail.from === "string" ? mail.from : "", pkg: Array.isArray(mail.package) && mail.package.length > 0,
+            mail: !!String(mail.subj || "").trim() || (Array.isArray(mail.package) && mail.package.length > 0) || sysFrom });
         }
       }
       todo.push({ id: r.id, lid: lid, mark: r.ops ? "mark_applied" : "mark_delivered" });

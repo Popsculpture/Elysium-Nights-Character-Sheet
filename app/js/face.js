@@ -285,6 +285,9 @@ EN.faceView = (function () {
      below). The toast at the end of this block is what says one came. */
   // the author's envelope: the #POST sub-tab and the toast
   var ICON_POST = '<svg viewBox="0 0 122.88 88.86" fill="currentColor" aria-hidden="true"><path d="M7.05,0H115.83a7.07,7.07,0,0,1,7,7.05V81.81a7,7,0,0,1-1.22,4,2.78,2.78,0,0,1-.66,1,2.62,2.62,0,0,1-.66.46,7,7,0,0,1-4.51,1.65H7.05a7.07,7.07,0,0,1-7-7V7.05A7.07,7.07,0,0,1,7.05,0Zm-.3,78.84L43.53,40.62,6.75,9.54v69.3ZM49.07,45.39,9.77,83.45h103L75.22,45.39l-11,9.21h0a2.7,2.7,0,0,1-3.45,0L49.07,45.39Zm31.6-4.84,35.46,38.6V9.2L80.67,40.55ZM10.21,5.41,62.39,47.7,112.27,5.41Z"/></svg>';
+  // the author's speech bubble with a hashtag (Chat Icon.svg, 18 Nov 2026), copied verbatim: #POST's Chat page. Mail is ICON_POST,
+  // the author's envelope, which is Email Icon.svg path for path
+  var ICON_CHAT = '<svg viewBox="0 0 512 443.3" fill="currentColor" aria-hidden="true"><path fill-rule="nonzero" d="m292.07 117.34.04-.17c1-4.24 3.57-7.72 6.95-9.93 3.48-2.28 7.84-3.23 12.24-2.31l.43.1c4.24 1 7.71 3.57 9.93 6.94 2.28 3.48 3.23 7.84 2.31 12.25-2.19 9.47-4.01 19.3-6 28.85h11.44c4.49 0 8.58 1.83 11.55 4.8l.02.02c2.97 2.98 4.8 7.06 4.8 11.55 0 4.49-1.84 8.57-4.8 11.54l-.02.03c-2.98 2.96-7.07 4.79-11.55 4.79H311.2l-8.13 40.99h28.6c4.5 0 8.58 1.84 11.55 4.8 2.98 2.96 4.82 7.05 4.82 11.57 0 4.5-1.84 8.58-4.8 11.55a16.26 16.26 0 0 1-11.57 4.81h-35.31l-7.37 35.4a16.38 16.38 0 0 1-6.91 9.72 16.096 16.096 0 0 1-12.24 2.34l-.43-.1c-4.24-1-7.72-3.57-9.93-6.95a16.217 16.217 0 0 1-2.31-12.24c2.13-9.25 3.92-18.84 5.86-28.17h-42.37c-2.4 11.56-4.6 23.49-7.27 34.95-1 4.23-3.57 7.71-6.94 9.92-3.42 2.24-7.7 3.2-12.02 2.36l-.63-.14c-4.25-1-7.74-3.57-9.95-6.95l-.32-.53a16.203 16.203 0 0 1-2.04-11.47l5.86-28.17-15.26.01c-4.52.02-8.61-1.81-11.57-4.77-2.96-2.96-4.8-7.06-4.8-11.57 0-4.5 1.84-8.59 4.81-11.56 2.95-2.97 7.04-4.81 11.56-4.81h21.98l8.09-40.99h-32.39c-4.52 0-8.62-1.83-11.57-4.79l-.39-.42c-2.73-2.93-4.41-6.85-4.41-11.15 0-4.52 1.84-8.62 4.8-11.58 2.96-2.96 7.05-4.79 11.57-4.79h39.16l7.26-34.89c.05-.38.13-.75.24-1.1 1.04-4.15 3.58-7.55 6.9-9.72l.53-.31c3.24-1.96 7.17-2.79 11.14-2.11.41.04.81.13 1.19.25 4.15 1.04 7.57 3.58 9.74 6.9 2.27 3.47 3.22 7.81 2.32 12.19l-6 28.79h42.37c2.48-11.88 5.12-23.83 7.45-35.73zM262.36.14l.25.01c69.94 2.13 132.69 27 177.61 65.52 45.9 39.34 73.43 92.92 71.7 151.4v.13c-1.77 58.57-32.51 110.5-80.75 147.12-47.27 35.86-111.5 57.02-181.46 54.96-19.62-.58-38.54-2.9-56.53-6.78-16.43-3.54-32.23-8.38-47.22-14.36L31.13 443.3l38.47-91.49c-21.11-18.54-38.19-40.12-50.13-63.79C6.13 261.59-.84 232.55.08 202.22c1.77-58.57 32.5-110.5 80.75-147.12C128.1 19.24 192.32-1.92 262.29.14h.07zm-.76 32.23-.26-.01c-62.44-1.83-119.42 16.81-161.05 48.39C59.64 111.6 33.76 154.83 32.3 203.1c-.75 24.79 5 48.62 15.98 70.39 11.6 22.98 29 43.71 50.76 60.95l9.61 7.61-18.17 43.21 55.85-21.96 6.08 2.6c14.89 6.34 30.79 11.41 47.46 15.01a279.91 279.91 0 0 0 50.72 6.15c62.47 1.83 119.47-16.79 161.11-48.39 40.66-30.85 66.54-74.08 68-122.35v-.13c1.42-48.24-21.78-92.86-60.45-126.01-39.64-33.98-95.3-55.93-157.59-57.81h-.06zm8.15 194.42 8.13-40.99h-42.37l-8.14 40.99h42.38z"/></svg>';
   var POST_HELP = "Routed to your registered deck. #POST guarantees delivery. It has never guaranteed privacy.";
   function pid() { return "pm_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36); }
   /* Read by the rail (see the TABS entry in app.js), so it has to tolerate a
@@ -461,7 +464,8 @@ EN.faceView = (function () {
      (what this character wrote to the GM under that name), pm (letters with another player) and items: all of it in the
      order it was written. A letter filed before letters carried a time sorts by the database's time for it when js/chat.js
      has one, and otherwise ahead of everything timed, in the order the mail keeps. */
-  function threadsOf(ch, ctx) {
+  function threadsOf(ch, ctx, opts) {
+    var chat = !!(opts && opts.chat);   // the Chat page: letters are Mail's (18 Nov 2026); #GRIDeck's messenger still has them all
     var post = faceRead(ch).post, map = {}, order = [];
     // the GM's letters' times are read from the database only while a letter on the record has none (js/chat.js)
     var D = ctx && EN.chat ? EN.chat.ensure(Object.assign({ needTimes: post.some(function (m) { return m && m.inboxId && !m.at; }) }, ctx)) : null;
@@ -471,22 +475,29 @@ EN.faceView = (function () {
       return map[key];
     }
     function gmThread() { return get("gm", "The GM", { gm: true, kind: "gm", sub: ctx ? ctx.campaignName : "" }); }
+    /* A line the GM wrote as one of the campaign's other characters is in the chat with that player, as if they had written it
+       (the author's call): an answer there goes to that player, as any line in that chat does. */
+    var asPlayer = {};
+    if (chat && ctx && D) Object.keys(D.names).forEach(function (id) { if (id !== ctx.row) asPlayer[String(D.names[id].name || "").trim().toLowerCase()] = id; });
+    function playerThread(id) { var who = D.names[id]; return get("p:" + id, who ? who.name : "A Freelancer", { kind: "player", other: id, player: who ? who.player : "" }); }
     post.forEach(function (m, i) {
-      if (!m) return;
-      var name = String(m.from || "").trim() || "Unknown node", t = gmName(name) ? gmThread() : get(threadKey(name), name);
+      if (!m || (chat && isMail(m))) return;
+      var name = String(m.from || "").trim() || "Unknown node", spoof = asPlayer[name.toLowerCase()];
+      var t = spoof ? playerThread(spoof) : gmName(name) ? gmThread() : get(threadKey(name), name);
       t.msgs.push({ m: m, i: i });
       if (!m.read) t.unread++;
       if (fromSystem(m)) { t.sys = true; t.kind = "sys"; }
     });
     if (ctx) {
       (D ? D.gm : []).forEach(function (r) {
+        if (chat && sentMail(r)) return;   // a letter with a subject is Mail's
         var who = String(r.persona || "").trim();
         (who && !gmName(who) ? get(threadKey(who), who) : gmThread()).sent.push(r);
       });
       gmThread();
       (D && D.pm ? D.pm : []).forEach(function (r) {
-        var other = r.from_character === ctx.row ? r.to_character : r.from_character, who = D.names[other];
-        var t = get("p:" + other, who ? who.name : "A Freelancer", { kind: "player", other: other, player: who ? who.player : "" });
+        var other = r.from_character === ctx.row ? r.to_character : r.from_character;
+        var t = playerThread(other);
         t.pm.push(r);
         if (r.to_character === ctx.row && !r.read_at) t.unread++;
       });
@@ -563,20 +574,6 @@ EN.faceView = (function () {
   function mgLetter(t, x, ro) {
     var m = x.m, i = x.i, waiting = hasPackage(m) && !m.taken;
     function put(k, v, silent) { fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post[i][k] = v; }, silent); }
-    if (_mg.edit === m.id && !ro) {
-      function fld(k, label, ph) {
-        return el("div.field", { style: { margin: 0, minWidth: 0, flex: k === "subj" ? "2 1 180px" : "1 1 120px" } }, [el("label.fl", { style: { margin: "0 0 2px" }, text: label }),
-          el("input", { type: "text", value: m[k] || "", placeholder: ph, dataset: { post: "edit-" + k }, style: { width: "100%", fontSize: "12px" }, oninput: function () { put(k, this.value, true); } })]);
-      }
-      return el("div.msgr-m.msgr-edit", { dataset: { msg: m.id } }, [el("div.msgr-b", null, [
-        el("div.row.wrap", { style: { gap: "8px", marginBottom: "7px" } }, [fld("from", "From", "NULLJACK"), fld("subj", "Subject", "Work, if you want it"), fld("when", "When", "03:14, Tuesday")]),
-        el("textarea", { value: m.body || "", placeholder: "The message…", dataset: { post: "edit-body" }, style: { width: "100%", minHeight: "86px", fontSize: "12px" }, oninput: function () { put("body", this.value, true); } }),
-        el("div.row.wrap", { style: { gap: "6px", marginTop: "7px" } }, [el("button.btn.sm.primary", { type: "button", dataset: { post: "edit-done" }, onclick: function () {
-          // the sender may have been changed, which moves the letter to another thread: follow it
-          var now = faceRead(store.active()).post[i] || m, nm = String(now.from || "").trim() || "Unknown node";
-          _mg.edit = null; _mg.th = gmName(nm) ? "gm" : threadKey(nm); EN.app.render();
-        } }, "DONE")])])]);
-    }
     var kids = [];
     if (m.subj) kids.push(el("b.msgr-s", { text: m.subj }));
     if (m.body) kids.push(el("p.msgr-t", { text: m.body }));
@@ -585,8 +582,6 @@ EN.faceView = (function () {
     var acts = ro ? [] : [
       el("button.btn.sm.ghost", { type: "button", dataset: { post: "mark" }, title: m.read ? "Put it back in the unread pile." : "Clear it off the rail's badge.",
         onclick: function () { var to = !m.read; put("read", to); } }, m.read ? "MARK UNREAD" : "MARK READ"),
-      // any letter can be edited, as the inbox let any row be: what the mail says is the player's to correct on their own record
-      el("button.btn.sm.ghost", { type: "button", dataset: { post: "edit" }, onclick: function () { _mg.edit = m.id; EN.app.render(); } }, "EDIT"),
       // a package nobody has taken goes with the message, so that one asks first
       waiting
         ? EN.ui.armButton("postdel:" + (m.id || i), { label: "✕ DELETE", armedLabel: "SURE? THE PACKAGE GOES TOO",
@@ -662,13 +657,8 @@ EN.faceView = (function () {
       mgAvatar(t), el("span.msgr-hn", null, [el("b", { text: t.name }), sub ? el("small", { text: sub }) : null]),
       t.sys ? el("span.chip", { text: "NOTICE" }) : t.kind === "player" ? el("span.chip", { text: "PLAYER" }) : null,
       el("span", { style: { flex: "1 1 auto" } }),
-      ro || t.kind !== "npc" ? null : el("button.btn.sm.ghost", { type: "button", dataset: { post: "log-here" }, title: "Log a letter from " + t.name + " by hand", onclick: function () { mgLog(t.name); } }, "+ LOG A LETTER")]);
+      null]);
     return [head, feed, mgCompose(t, ctx, ro)];
-  }
-  function mgLog(from) {
-    var m = { id: pid(), from: from || "", subj: "", when: "", body: "", read: true, at: new Date().toISOString() };
-    _mg.th = gmName(m.from) ? "gm" : threadKey(m.from || "Unknown node"); _mg.edit = m.id; _mg.stick = true; _mg.picking = false;   // a letter you write opens into its own editor
-    fset(function (f) { f.post.unshift(m); });
   }
   // who a new chat can be with: the GM, and every other character in the campaign
   function mgPicker(ctx, all) {
@@ -688,14 +678,12 @@ EN.faceView = (function () {
         el("span.msgr-av.pc", { text: initialsOf(n.name) }), el("span.msgr-tt", null, [el("b", { text: n.name }), el("span", { text: n.mine ? "Your own character" : n.player ? "Played by " + n.player : "" })])]));
     });
     if (D && !Object.keys(D.names).length) rows.push(el("p.msgr-empty", { text: "Reading who is in the campaign…" }));
-    rows.push(el("button.msgr-th", { type: "button", dataset: { post: "new" }, title: "Log something that came in, or write one yourself.", onclick: function () { mgLog(""); } }, [
-      el("span.msgr-av", { text: "+" }), el("span.msgr-tt", null, [el("b", { text: "Log a letter by hand" }), el("span", { text: "Something that came in another way" })])]));
     return el("div.msgr-list.msgr-pickl", { dataset: { post: "picker" } }, rows);
   }
   function messengerPanel() {
-    var ch = store.active(), n = unread(ch) + chatUnread(), ro = readOnlyRecord();
+    var ch = store.active(), ro = readOnlyRecord();
     var ctx = gmContext(ch);
-    var all = threadsOf(ch, ctx), cur = all.filter(function (x) { return x.key === _mg.th; })[0] || null;
+    var all = threadsOf(ch, ctx, { chat: true }), n = all.reduce(function (a, t) { return a + t.unread; }, 0), cur = all.filter(function (x) { return x.key === _mg.th; })[0] || null;
     // a chat chosen to start, that has nothing in it yet
     if (!cur && _mg.pending && _mg.pending.key === _mg.th && ctx) cur = Object.assign({ kind: "npc", msgs: [], sent: [], pm: [], items: [], unread: 0, sys: false, gm: false }, _mg.pending);
     if (!cur) _mg.th = null;
@@ -737,8 +725,8 @@ EN.faceView = (function () {
       el("div.msgr-sh", null, [el("h3", { text: picking ? "New chat" : "Chats" }), el("span", { style: { flex: "1 1 auto" } }),
         ro ? null : picking
           ? el("button.btn.sm.ghost", { type: "button", dataset: { post: "pick-cancel" }, onclick: function () { _mg.picking = false; EN.app.render(); } }, "CANCEL")
-          : ctx ? el("button.btn.sm", { type: "button", dataset: { post: "new-chat" }, title: "Start a chat with the GM or another player, or log a letter by hand", onclick: function () { _mg.picking = true; EN.app.render(); } }, "+ NEW CHAT")
-          : el("button.btn.sm", { type: "button", dataset: { post: "new" }, title: "Log something that came in, or write one yourself.", onclick: function () { mgLog(""); } }, "+ NEW MESSAGE")]),
+          : ctx ? el("button.btn.sm", { type: "button", dataset: { post: "new-chat" }, title: "Start a chat with the GM or another player", onclick: function () { _mg.picking = true; EN.app.render(); } }, "+ NEW CHAT")
+          : null]),
       picking ? null : el("div.msgr-sb", null, [search]), picking ? null : el("div.msgr-chips", null, chips),
       picking ? mgPicker(ctx, all) : listBox, el("p.msgr-foot", { text: POST_HELP })]);
     var main = el("div.msgr-main", { dataset: { thread: cur ? cur.key : "" } }, cur ? mgThread(ch, cur, ctx, ro)
@@ -771,6 +759,155 @@ EN.faceView = (function () {
     go(); setTimeout(go, 0);
   }
 
+  /* ---- MAIL (18 Nov 2026, the author's call): #POST is Chat / Mail / Contacts ----
+     Chat is the back-and-forth. Mail is the letters: anything with a subject or a package (what the GM sends from the Admin's
+     MAIL page), the notices the app signs (Payroll, Campaign), and letters logged by hand. It reads like an inbox: the
+     letters down the left, newest first, with Inbox and Sent; the one picked on the right, whole, with its package and, for a
+     letter that came through the campaign, an answer with a subject under it. A player writes to the GM with a subject here.
+     A player writes only as themself: the database signs every letter with the character's own name, and only a letter
+     logged by hand can be edited (one the GM sent is the GM's words). */
+  var _ml = { sel: null, folder: "in", writing: false, draft: { subj: "", body: "" }, reply: {}, busy: false, edit: null };
+  function isMail(m) { return !!(m && (String(m.subj || "").trim() || hasPackage(m) || fromSystem(m) || !m.inboxId)); }
+  function sentMail(r) { return !!String(((r && r.mail) || {}).subj || "").trim(); }
+  function mailWhen(m) { var t = timeOf(m.at); return t !== null ? stamp(t) : (m.when || ""); }
+  function mailOpen(x, ro, ctx) {
+    _ml.sel = x.m.id; _ml.writing = false; _ml.edit = null;
+    if (!ro && ctx && EN.chat && x.m.inboxId) EN.chat.seen(ctx, [x.m.inboxId], []);
+    if (!ro && !x.m.read) fset(function (f) { if (f.post[x.i] && f.post[x.i].id === x.m.id) f.post[x.i].read = true; });
+    else EN.app.render();
+  }
+  function mailLog() {
+    var m = { id: pid(), from: "", subj: "", when: "", body: "", read: true, at: new Date().toISOString() };
+    _ml.sel = m.id; _ml.edit = m.id; _ml.writing = false; _ml.folder = "in";   // a letter you log opens into its own editor
+    fset(function (f) { f.post.unshift(m); });
+  }
+  function mailSend(ctx, replyTo, d, key) {
+    var subj = String(d.subj || "").trim(), body = String(d.body || "").trim();
+    if (!subj && !body) { EN.ui.toast("Add a subject or a message."); return; }
+    if (_ml.busy) return;
+    _ml.busy = true; EN.app.render();
+    EN.chat.toGm(ctx, body, replyTo, subj).then(function () {
+      _ml.busy = false;
+      if (key) delete _ml.reply[key]; else { _ml.draft = { subj: "", body: "" }; _ml.writing = false; _ml.folder = "sent"; }
+      EN.ui.toast(replyTo ? "Sent. Your answer is on its way." : "Sent to your GM.");
+      EN.app.render();
+    }, function (e) {
+      _ml.busy = false;
+      console.warn("#POST could not send", e);
+      EN.ui.toast(EN.campaigns.errText(e));
+      EN.app.render();
+    });
+  }
+  function mailLetter(x, ro, ctx) {
+    var m = x.m, i = x.i, waiting = hasPackage(m) && !m.taken;
+    function put(k, v, silent) { fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post[i][k] = v; }, silent); }
+    if (_ml.edit === m.id && !ro && !m.inboxId) {
+      function fld(k, label, ph) {
+        return el("div.field", { style: { margin: 0, minWidth: 0, flex: k === "subj" ? "2 1 180px" : "1 1 120px" } }, [el("label.fl", { style: { margin: "0 0 2px" }, text: label }),
+          el("input", { type: "text", value: m[k] || "", placeholder: ph, dataset: { post: "edit-" + k }, style: { width: "100%", fontSize: "12px" }, oninput: function () { put(k, this.value, true); } })]);
+      }
+      return el("div.msgr-m.msgr-edit.mail-l", { dataset: { msg: m.id } }, [el("div.msgr-b", null, [
+        el("div.row.wrap", { style: { gap: "8px", marginBottom: "7px" } }, [fld("from", "From", "NULLJACK"), fld("subj", "Subject", "Work, if you want it"), fld("when", "When", "03:14, Tuesday")]),
+        el("textarea", { value: m.body || "", placeholder: "The letter…", dataset: { post: "edit-body" }, style: { width: "100%", minHeight: "120px", fontSize: "12px" }, oninput: function () { put("body", this.value, true); } }),
+        el("div.row.wrap", { style: { gap: "6px", marginTop: "7px" } }, [el("button.btn.sm.primary", { type: "button", dataset: { post: "edit-done" }, onclick: function () { _ml.edit = null; EN.app.render(); } }, "DONE")])])]);
+    }
+    var acts = ro ? [] : [
+      el("button.btn.sm.ghost", { type: "button", dataset: { post: "mark" }, title: m.read ? "Put it back in the unread pile." : "Clear it off the rail's badge.",
+        onclick: function () { var to = !m.read; put("read", to); } }, m.read ? "MARK UNREAD" : "MARK READ"),
+      m.inboxId ? null : el("button.btn.sm.ghost", { type: "button", dataset: { post: "edit" }, title: "A letter you logged by hand is yours to correct", onclick: function () { _ml.edit = m.id; EN.app.render(); } }, "EDIT"),
+      waiting
+        ? EN.ui.armButton("maildel:" + (m.id || i), { label: "✕ DELETE", armedLabel: "SURE? THE PACKAGE GOES TOO",
+            title: "Delete this letter and the package in it. Neither is kept anywhere else.",
+            onConfirm: function () { _ml.sel = null; fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post.splice(i, 1); }); } })
+        : el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" }, title: "Delete this letter. It is not kept anywhere else.",
+            onclick: function () { _ml.sel = null; fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post.splice(i, 1); }); } }, "✕ DELETE")
+    ];
+    var kids = [el("b.msgr-s.mail-subj", { text: m.subj || "(no subject)" }),
+      el("p.mail-meta", { text: "From " + (String(m.from || "").trim() || "Unknown node") + (mailWhen(m) ? "  ·  " + mailWhen(m) : "") }),
+      m.body ? el("p.msgr-t", { text: m.body }) : el("p.msgr-t.dim", { text: "(no message)" })];
+    if (hasPackage(m)) kids.push(pkgBox(m));
+    var out = [el("div.msgr-m.mail-l" + (m.read ? "" : ".new"), { dataset: { msg: m.id } }, [el("div.msgr-b", null, kids), acts.length ? el("div.msgr-act", null, acts) : null])];
+    // an answer, with a subject, to a letter that came through the campaign; a notice the app signs has nobody to answer
+    if (!ro && ctx && m.inboxId && !fromSystem(m)) {
+      var d = _ml.reply[m.id] || (_ml.reply[m.id] = { subj: m.subj ? (/^re:/i.test(m.subj) ? m.subj : "Re: " + m.subj) : "", body: "" });
+      out.push(el("div.msgr-cmp.mail-reply", { dataset: { post: "mail-reply" } }, [
+        el("input", { type: "text", maxlength: "140", value: d.subj, placeholder: "Subject", "aria-label": "Subject", dataset: { post: "mail-reply-subj" }, oninput: function (e) { d.subj = e.target.value; } }),
+        el("div.msgr-cmp-row", null, [
+          el("textarea", { maxlength: "4000", value: d.body, placeholder: "Answer " + (String(m.from || "").trim() || "them"), "aria-label": "Answer", dataset: { post: "mail-reply-body" }, oninput: function (e) { d.body = e.target.value; } }),
+          el("button.btn.primary", { type: "button", disabled: _ml.busy, dataset: { post: "mail-reply-send" }, onclick: function () { mailSend(ctx, m.inboxId, d, m.id); } }, _ml.busy ? "…" : "SEND")])]));
+    }
+    return out;
+  }
+  function mailSent(r) {
+    var mail = r.mail || {}, at = timeOf(r.created_at), read = r.status === "read" || !!r.read_at;
+    return [el("div.msgr-m.mail-l.me", { dataset: { post: "gm-sent", status: r.status || "", msg: r.id } }, [el("div.msgr-b", null, [
+      el("b.msgr-s.mail-subj", { text: mail.subj || "(no subject)" }),
+      el("p.mail-meta", { text: "To " + (String(r.persona || "").trim() || "The GM") + (at !== null ? "  ·  " + stamp(at) : "") }),
+      mail.body ? el("p.msgr-t", { text: mail.body }) : null])]),
+      el("div.msgr-seen", { dataset: { post: "seen", seen: read ? "1" : "0" }, text: read ? "Seen" : "Not read yet" })];
+  }
+  function mailWrite(ctx) {
+    var d = _ml.draft;
+    return [el("div.msgr-h", null, [el("span.msgr-av.sys", { html: ICON_POST }), el("span.msgr-hn", null, [el("b", { text: "To The GM" }), el("small", { text: ctx.campaignName || "" })]),
+      el("span", { style: { flex: "1 1 auto" } }),
+      el("button.btn.sm.ghost", { type: "button", dataset: { post: "mail-cancel" }, onclick: function () { _ml.writing = false; EN.app.render(); } }, "CANCEL")]),
+      el("div.msgr-cmp.mail-write", { dataset: { post: "mail-compose" } }, [
+        el("input", { type: "text", maxlength: "140", value: d.subj, placeholder: "Subject", "aria-label": "Subject", dataset: { post: "mail-subj" }, oninput: function (e) { d.subj = e.target.value; } }),
+        el("textarea", { maxlength: "4000", value: d.body, placeholder: "Write to the people who run " + (ctx.campaignName || "your campaign"), "aria-label": "Letter", dataset: { post: "mail-body" }, oninput: function (e) { d.body = e.target.value; } }),
+        el("div.row", { style: { justifyContent: "flex-end" } }, [el("button.btn.primary", { type: "button", disabled: _ml.busy, dataset: { post: "mail-send" }, onclick: function () { mailSend(ctx, null, d, null); } }, _ml.busy ? "…" : "SEND")])])];
+  }
+  function mailPanel() {
+    var ch = store.active(), ro = readOnlyRecord(), ctx = gmContext(ch), post = faceRead(ch).post;
+    var D = ctx && EN.chat ? EN.chat.ensure(Object.assign({ needTimes: post.some(function (m) { return m && m.inboxId && !m.at; }) }, ctx)) : null;
+    var inbox = post.map(function (m, i) { return { m: m, i: i }; }).filter(function (x) { return x.m && isMail(x.m); });
+    var sent = D ? D.gm.filter(sentMail) : [];
+    if (!ctx) _ml.writing = false;
+    var folder = _ml.folder === "sent" && ctx ? "sent" : "in";
+    var n = inbox.filter(function (x) { return !x.m.read; }).length;
+    var cur = folder === "in" ? inbox.filter(function (x) { return x.m.id === _ml.sel; })[0] || null : sent.filter(function (r) { return r.id === _ml.sel; })[0] || null;
+    if (!cur) _ml.sel = null;
+    var listBox = el("div.msgr-list", { dataset: { keepScroll: "mail-list", post: "letters" } });
+    if (folder === "in") {
+      if (!inbox.length) listBox.appendChild(el("p.msgr-empty", { text: "No letters. What comes with a subject or a package lands here." }));
+      inbox.forEach(function (x) {
+        var m = x.m, on = cur && cur.m.id === m.id, parcel = hasPackage(m) && !m.taken, who = String(m.from || "").trim() || "Unknown node";
+        listBox.appendChild(el("button.msgr-th" + (on ? ".on" : "") + (m.read ? "" : ".un"), { type: "button", "data-ro-keep": "1", dataset: { post: "letter", msg: m.id },
+          onclick: function () { mailOpen(x, ro, ctx); } }, [
+          fromSystem(m) ? el("span.msgr-av.sys", { html: ICON_POST }) : el("span.msgr-av", { text: initialsOf(who) }),
+          el("span.msgr-tt", null, [el("b", { text: m.subj || "(no subject)" }), el("span", { text: who + (mailWhen(m) ? "  ·  " + mailWhen(m) : "") })]),
+          parcel ? el("span.msgr-pk", { html: ICON_PKG, title: "A package is waiting" }) : null,
+          m.read ? null : el("i.msgr-ud", { title: "Unread", text: "1" })]));
+      });
+    } else {
+      if (!sent.length) listBox.appendChild(el("p.msgr-empty", { text: "Nothing sent with a subject yet." }));
+      sent.forEach(function (r) {
+        var mail = r.mail || {}, on = cur && cur.id === r.id, at = timeOf(r.created_at);
+        listBox.appendChild(el("button.msgr-th" + (on ? ".on" : ""), { type: "button", "data-ro-keep": "1", dataset: { post: "sent-letter", msg: r.id },
+          onclick: function () { _ml.sel = r.id; _ml.writing = false; EN.app.render(); } }, [
+          el("span.msgr-av.sys", { html: ICON_POST }),
+          el("span.msgr-tt", null, [el("b", { text: mail.subj || "(no subject)" }), el("span", { text: "To " + (String(r.persona || "").trim() || "The GM") + (at !== null ? "  ·  " + stamp(at) : "") })])]));
+      });
+    }
+    var chips = [["in", "Inbox" + (n ? " · " + n : "")], ["sent", "Sent"]].filter(function (c) { return c[0] === "in" || ctx; }).map(function (c) {
+      return el("button.msgr-chip" + (folder === c[0] ? ".on" : ""), { type: "button", "data-ro-keep": "1", dataset: { post: "folder-" + c[0] },
+        onclick: function () { _ml.folder = c[0]; _ml.sel = null; _ml.writing = false; EN.app.render(); } }, c[1]);
+    });
+    var side = el("div.msgr-side", null, [
+      el("div.msgr-sh", null, [el("h3", { text: "Mail" }), el("span", { style: { flex: "1 1 auto" } }),
+        !ro && ctx ? el("button.btn.sm", { type: "button", dataset: { post: "mail-write" }, title: "A letter to your GM, with a subject", onclick: function () { _ml.writing = true; _ml.sel = null; EN.app.render(); } }, "+ WRITE") : null,
+        ro ? null : el("button.btn.sm.ghost", { type: "button", dataset: { post: "new" }, title: "Log something that came in another way, or a note to yourself", onclick: function () { mailLog(); } }, "+ LOG")]),
+      el("div.msgr-chips", null, chips), listBox, el("p.msgr-foot", { text: POST_HELP })]);
+    var mainKids = _ml.writing && ctx && !ro ? mailWrite(ctx)
+      : cur ? [el("div.msgr-feed.mail-feed", { dataset: { keepScroll: "mail-feed" } }, folder === "in" ? mailLetter(cur, ro, ctx) : mailSent(cur))]
+      : [el("p.msgr-empty.msgr-pick", { dataset: { post: "nopick" }, text: inbox.length || sent.length ? "Select a letter to read it." : "No letters yet." })];
+    var pane = cur || (_ml.writing && ctx) ? "thread" : "list";
+    var main = el("div.msgr-main", { dataset: { letter: cur ? (cur.m ? cur.m.id : cur.id) : "" } }, [
+      cur || (_ml.writing && ctx) ? el("button.btn.sm.ghost.msgr-back.mail-back", { type: "button", "data-ro-keep": "1", dataset: { post: "back" }, title: "Back to the letters",
+        onclick: function () { _ml.sel = null; _ml.writing = false; EN.app.render(); } }, "‹ LETTERS") : null].concat(mainKids));
+    return el("div.msgr.mail", { dataset: { post: "mail", pane: pane, unread: String(n) } }, [side, main]);
+  }
+  function mailUnread(ch) { return faceRead(ch).post.filter(function (m) { return m && isMail(m) && !m.read; }).length; }
+
   /* ---- the toast (campaigns batch 3) -----------------------------------------
      EN.ui.toast is text only and lasts under two seconds, and this one is a button that has to
      stay long enough to press. The envelope, what came, and a bubble with the unread count. No
@@ -795,15 +932,18 @@ EN.faceView = (function () {
   }
   /* The way in from outside the tab (the new-mail toast). `from` says whose chat the Messages page opens on Classic: a name opens that
      sender's thread, and reads it, as pressing its chat does; null opens the list of chats; left out, the page is as it was. */
-  function openPost(lid, from) {
+  function openPost(lid, from, toMail) {
     var ch = store.active(), cur = ch && ch.meta ? ch.meta.id : null;
     if (lid && lid !== cur && store.roster()[lid]) store.setActive(lid);
+    // a letter (a subject, a package, a notice) is Mail's: the press opens Mail on its inbox
+    if (toMail) { _sub = "mail"; _ml.folder = "in"; _ml.sel = null; _ml.writing = false; EN.app.gotoTab("post"); return; }
     _sub = "post";
     if (from === null) { _mg.th = null; _mg.edit = null; }
     else if (typeof from === "string") {
-      var key = threadKey(from.trim() || "Unknown node"), now = store.active();
-      var t = now ? threadsOf(now, null).filter(function (x) { return x.key === key; })[0] : null;
-      if (t) mgOpen(t, readOnlyRecord()); else { _mg.th = null; _mg.edit = null; }
+      var now = store.active(), nctx = now ? gmContext(now) : null, all = now ? threadsOf(now, nctx, { chat: true }) : [];
+      var nm = from.trim() || "Unknown node", key = gmName(nm) ? "gm" : threadKey(nm);
+      var t = all.filter(function (x) { return x.key === key || (x.kind === "player" && x.name.toLowerCase() === nm.toLowerCase()); })[0];
+      if (t) mgOpen(t, readOnlyRecord(), nctx); else { _mg.th = null; _mg.edit = null; }
     }
     EN.app.gotoTab("post");
   }
@@ -849,7 +989,7 @@ EN.faceView = (function () {
     EN.ui.clear(box);
     var under = toastFor(all, cur);
     box.appendChild(el("button.post-toast-btn", { type: "button", title: "Open #POST",
-      onclick: function () { dropToast(); openPost(target, senderOf(all, target)); } }, [
+      onclick: function () { dropToast(); openPost(target, senderOf(all, target), all.some(function (x) { return x.lid === target && x.mail; })); } }, [
       el("span.post-toast-ico", { html: ICON_POST }),
       el("span.post-toast-text", null, [
         el("b.post-toast-line", { text: toastCopy(all) }),
@@ -1522,6 +1662,7 @@ EN.faceView = (function () {
      A shell with its own navigation (#GRIDeck) passes opts = { sub, bare } to render() and gets that page, whichever tab it is. */
   var POST_HEAD = {
     post: ["SECURE COMM CHANNEL", "Every handle gets an address whether it wants one or not. What lands here is work, warnings, and the occasional person who knows too much about where you sleep."],
+    mail: ["LETTERS AND PACKAGES", "What comes with a subject line: work orders, receipts, the notices the system sends, and the odd crate. Write to your GM here when it needs one."],
     contacts: ["PEOPLE YOU CAN REACH", "The people who still pick up when you call, and the reasons they do. Half of what a Freelancer can do is who a Freelancer can reach."]
   };
   function heading(title, tail, help) {
@@ -1531,13 +1672,14 @@ EN.faceView = (function () {
       el("p.help", { style: { margin: 0, maxWidth: "820px" }, text: help })
     ]);
   }
-  // the page #POST is on: Messages unless Contacts was asked for (the ledger belongs to the Social tab)
-  function postPage() { return _sub === "contacts" ? "contacts" : "post"; }
+  // the page #POST is on: Chat unless Mail or Contacts was asked for (the ledger belongs to the Social tab)
+  function postPage() { return _sub === "contacts" || _sub === "mail" ? _sub : "post"; }
   function renderPost(mount) {
     var ch = store.active();
     EN.ui.clear(mount);
     if (!ch) { mount.appendChild(el("p.help", { text: "No Freelancer loaded." })); return; }
-    var page = postPage(), n = unread(ch), H = POST_HEAD[page];
+    var page = postPage(), H = POST_HEAD[page];
+    var nMail = mailUnread(ch), nChat = Math.max(0, unread(ch) - nMail) + chatUnread();
     function subTab(key, label) {
       return el("button.btn.sm" + (page === key ? ".primary" : ""),
         { dataset: { tour: "social-" + key }, onclick: function () { _sub = key; EN.app.render(); } },   // social-contacts is a tour anchor
@@ -1545,16 +1687,17 @@ EN.faceView = (function () {
     }
     var blocks = [
       heading("<span style='color:var(--accent)'>#POST</span>", H[0], H[1]),
-      /* Two pages of one tab. Deliberately NOT sticky like the Inventory's bar, which has to carry the wallets; two buttons do not
-         earn a pinned strip on a phone (#GRIDroid lays them out as equal cells, theme.css .face-bar). */
+      /* Three pages of one tab: Chat, Mail, Contacts (18 Nov 2026). Deliberately NOT sticky like the Inventory's bar, which has to
+         carry the wallets; three buttons do not earn a pinned strip on a phone (#GRIDroid lays them out as equal cells, theme.css .face-bar). */
       el("div.row.wrap.face-bar", { style: { gap: "6px", marginBottom: "12px" } }, [
-        subTab("post", [ICON_POST, "MESSAGES" + (n ? " · " + n : "")]),
+        subTab("post", [ICON_CHAT, "CHAT" + (nChat ? " \u00b7 " + nChat : "")]),
+        subTab("mail", [ICON_POST, "MAIL" + (nMail ? " \u00b7 " + nMail : "")]),
         subTab("contacts", [ICON_CONTACTS, "CONTACTS"])
       ])
     ];
     // Each page has a wrapper of its own. Neither is .post-sub: theme.css draws the '98 mail client off that class, around the
     // inbox this page used to be, and it would rebuild either page as one.
-    blocks.push(page === "post" ? el("div.msgr-sub", null, [messengerPanel()]) : el("div.contact-sub", null, [contactsPanel()]));
+    blocks.push(page === "post" ? el("div.msgr-sub", null, [messengerPanel()]) : page === "mail" ? el("div.msgr-sub", null, [mailPanel()]) : el("div.contact-sub", null, [contactsPanel()]));
     mount.appendChild(el("div", null, blocks));
     if (page === "post") mgAfter(mount);
   }
@@ -1599,9 +1742,9 @@ EN.faceView = (function () {
               "where is the player" and openPost, the #POST toast and the tour keep working as they are. State
               only; the caller renders. */
            // the author's envelope, clipboard and linked figures, for a shell that draws its own navigation
-           icons: { post: ICON_POST, ledger: ICON_LEDGER, contacts: ICON_CONTACTS },
+           icons: { post: ICON_POST, chat: ICON_CHAT, ledger: ICON_LEDGER, contacts: ICON_CONTACTS },
            sub: function () { return _sub; },
-           setSub: function (k) { if (k === "ledger" || k === "contacts" || k === "post") _sub = k; },
+           setSub: function (k) { if (k === "ledger" || k === "contacts" || k === "post" || k === "mail") _sub = k; },
            // the rules side of this tab, by name and with no copies: they write the active record
            core: { threads: threadsOf, threadKey: threadKey, sendGm: sendGm, takeIt: takeIt, newContact: newContact, ctSet: ctSet,
                    /* P5 (15 Nov 2026), what #GRIDeck's messenger and Standing read and write: the ledger as it is read and its

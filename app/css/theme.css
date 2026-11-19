@@ -3848,3 +3848,18 @@ html.gm-landing .gm-crew-pick{ display:none !important; }
 .land-row input{ flex:1 1 auto; min-width:0; }
 .land-jack{ max-width:320px; }
 .land-foot{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; margin-top:22px; }
+
+/* #POST's Mail (18 Nov 2026): the letter on the right reads whole, as a page, not a bubble */
+.msgr.mail .mail-feed{ padding:16px 20px; }
+.msgr.mail .mail-l{ max-width:none; width:100%; align-self:stretch; }
+.msgr.mail .mail-l .msgr-b{ padding:14px 16px; }
+.msgr.mail .mail-l.me{ align-self:stretch; }
+.msgr.mail .mail-subj{ font-size:16px; margin-bottom:4px; }
+.mail-meta{ margin:0 0 10px; font-family:var(--mono); font-size:10.5px; letter-spacing:.08em; color:var(--text3); }
+.msgr.mail .mail-l.me .mail-meta{ color:var(--accent-ink-2); }
+.msgr.mail .mail-l .msgr-act{ opacity:1; }
+.mail-reply{ border-top:0; padding:10px 0 0; }
+.mail-write{ flex:1 1 auto; border-top:0; }
+.mail-write textarea{ flex:1 1 auto; min-height:180px; font-size:13px; }
+.msgr.mail .mail-back{ display:none; align-self:flex-start; margin:8px 0 0 12px; }
+@media (max-width:760px){ .msgr.mail .mail-back{ display:inline-flex; } }

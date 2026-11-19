@@ -119,7 +119,8 @@ EN.chat = (function () {
 
   /* ---- writing ---- */
   function after(ctx) { return function (v) { if (_s && _s.key === ctx.row + "|" + ctx.campaignId) _s.at = 0; ensure(ctx, true); return v; }; }
-  function toGm(ctx, body, replyTo) { return C().sendToGm(ctx.row, { body: body }, replyTo || null).then(after(ctx)); }
+  // a chat line is a message alone; a letter from Mail has a subject too
+  function toGm(ctx, body, replyTo, subj) { return C().sendToGm(ctx.row, subj ? { subj: subj, body: body } : { body: body }, replyTo || null).then(after(ctx)); }
   function toPlayer(ctx, toRow, body) { return C().sendToPlayer(ctx.row, toRow, body).then(after(ctx)); }
 
   function data(ctx) { return ctx ? stateFor(ctx) : null; }

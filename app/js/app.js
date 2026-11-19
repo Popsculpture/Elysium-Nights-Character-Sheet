@@ -115,7 +115,8 @@ EN.app = (function () {
         // CHATS, the key still "inbox" so every way here keeps landing: a messenger with each character and voice (17 Nov 2026)
         { key: "inbox", label: "CHATS", sub: "talk with your players",
           stub: "Your players' letters and your answers, as chats, in real time." },
-        { key: "write", label: "WRITE", sub: "a letter, signed as anyone" },
+        // MAIL, the key still "write": letters with a subject or a package, as the Freelancer's Mail reads them (18 Nov 2026)
+        { key: "write", label: "MAIL", sub: "a letter, signed as anyone" },
         { key: "sent",  label: "SENT",  sub: "what you have sent" }
       ],
       // unread letters from players raise the rail's dot, as unread mail does on the Freelancer's #POST
