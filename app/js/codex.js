@@ -2010,7 +2010,7 @@ EN.codexView = (function () {
           + "\n\nNot every reward divides cleanly:\n" + bullets(E.splitNonStandard)
           // the tool that does the math is on a different tab on each desktop (one splitter, EN.engine.splitPayout)
           + (ctx.portal === "admin" ? "\n\nThe Downtime tab's Payday page splits a payout with the same math as a Freelancer's Payout Splitter."
-                                    : "\n\nThe Inventory tab has a Payout Splitter that does this math.")));
+                                    : "\n\nThe Gear tab has a Payout Splitter that does this math.")));
         // the rest of the chapter: fences, Flow-touched and haunted goods, identity theft, services, bribes
         kids.push(ruleBlock("Typical Fence Rates", E.fenceRatesNote + "\n\n"
           + E.fenceRates.map(function (f) { return f.goods + " | " + f.payout + " | " + f.notes; }).join("\n")

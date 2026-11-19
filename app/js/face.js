@@ -25,7 +25,8 @@ window.EN = window.EN || {};
 EN.faceView = (function () {
   var el = EN.ui.el, store = EN.store;
   var _open = {};   // collapse state for reference sections, open messages and open contact cards
-  var _sub = "ledger";   // 'ledger' | 'contacts' | 'post'; #POST draws 'contacts' or else the mail (postPage); transient, like the Inventory's
+  var _sub = "post";     // #POST's page: 'post' (Chat) | 'mail'; transient, like the Inventory's
+  var _soc = "ledger";   // the Social tab's page: 'ledger' | 'contacts' (Contacts moved here from #POST, 18 Nov 2026); transient
   var _costTier = "costly";   // the Costs After a Roll section's result: 'costly' | 'mixed'; transient
 
   // a faction's posture toward the crew
@@ -454,7 +455,42 @@ EN.faceView = (function () {
      a letter can be logged by hand and edited, and the notices the app signs cannot be answered. No subjects in the chat:
      a letter that has one shows it in bold. Every skin draws this page; #GRIDeck has a messenger of its own (js/deck_post.js),
      which shares threadsOf. */
-  var _mg = { th: null, q: "", only: "all", edit: null, stick: false, drafts: {}, busy: {}, pending: null, picking: false };
+  var _mg = { th: null, q: "", only: "all", edit: null, stick: false, drafts: {}, busy: {}, pending: null, picking: false, selecting: false, picked: {} };
+  /* DELETE IS FOR THE ONE DELETING (18 Nov 2026, the author's call): a delete takes a letter or a line out of this record's own
+     #POST and never out of anybody else's. A letter on the record is taken off it; meta.inboxApplied still lists its inbox row, so
+     it is never filed again (js/cloud.js). What lives only in the database (what this character wrote to the GM, and letters
+     between players) is listed by row id in face.hidden, on the record, so it stays gone on every device. */
+  var HIDE_MAX = 2000;
+  function hiddenOf(ch) { var h = {}; ((ch && ch.face && ch.face.hidden) || []).forEach(function (id) { h[id] = 1; }); return h; }
+  function forget(letterIds, rowIds) {
+    if (!letterIds.length && !rowIds.length) return;
+    var drop = {};
+    letterIds.forEach(function (id) { drop[id] = 1; });
+    fset(function (f) {
+      if (letterIds.length) f.post = f.post.filter(function (m) { return !(m && drop[m.id]); });
+      if (rowIds.length) {
+        var h = Array.isArray(f.hidden) ? f.hidden.slice() : [];
+        rowIds.forEach(function (id) { if (id && h.indexOf(id) === -1) h.push(id); });
+        f.hidden = h.length > HIDE_MAX ? h.slice(h.length - HIDE_MAX) : h;
+      }
+    });
+  }
+  // everything in some chats, for a delete: the letters on the record and the rows in the database
+  function forgetThreads(list) {
+    var letters = [], rows = [];
+    list.forEach(function (t) {
+      t.msgs.forEach(function (x) { letters.push(x.m.id); });
+      t.sent.forEach(function (r) { rows.push(r.id); });
+      t.pm.forEach(function (r) { rows.push(r.id); });
+    });
+    forget(letters, rows);
+  }
+  // a delete pressed twice (a package goes with its letter, and nothing deleted comes back)
+  function armDel(key, label, armedLabel, title, post, fn) {
+    var b = EN.ui.armButton(key, { label: label, armedLabel: armedLabel, title: title, onConfirm: fn });
+    b.setAttribute("data-post", post);
+    return b;
+  }
   function threadKey(name) { return "t:" + String(name || "").trim().toLowerCase(); }
   // letters signed as the GM themself are the GM's own chat, as the GM's side has them (js/gm_post.js)
   var GM_NAMES = { "the gm": 1, "your gm": 1, "gm": 1 };
@@ -466,7 +502,7 @@ EN.faceView = (function () {
      has one, and otherwise ahead of everything timed, in the order the mail keeps. */
   function threadsOf(ch, ctx, opts) {
     var chat = !!(opts && opts.chat);   // the Chat page: letters are Mail's (18 Nov 2026); #GRIDeck's messenger still has them all
-    var post = faceRead(ch).post, map = {}, order = [];
+    var post = faceRead(ch).post, map = {}, order = [], gone = hiddenOf(ch);
     // the GM's letters' times are read from the database only while a letter on the record has none (js/chat.js)
     var D = ctx && EN.chat ? EN.chat.ensure(Object.assign({ needTimes: post.some(function (m) { return m && m.inboxId && !m.at; }) }, ctx)) : null;
     function get(key, name, more) {
@@ -490,12 +526,14 @@ EN.faceView = (function () {
     });
     if (ctx) {
       (D ? D.gm : []).forEach(function (r) {
+        if (gone[r.id]) return;   // deleted from this record's #POST
         if (chat && sentMail(r)) return;   // a letter with a subject is Mail's
         var who = String(r.persona || "").trim();
         (who && !gmName(who) ? get(threadKey(who), who) : gmThread()).sent.push(r);
       });
       gmThread();
       (D && D.pm ? D.pm : []).forEach(function (r) {
+        if (gone[r.id]) return;
         var other = r.from_character === ctx.row ? r.to_character : r.from_character;
         var t = playerThread(other);
         t.pm.push(r);
@@ -584,19 +622,20 @@ EN.faceView = (function () {
         onclick: function () { var to = !m.read; put("read", to); } }, m.read ? "MARK UNREAD" : "MARK READ"),
       // a package nobody has taken goes with the message, so that one asks first
       waiting
-        ? EN.ui.armButton("postdel:" + (m.id || i), { label: "✕ DELETE", armedLabel: "SURE? THE PACKAGE GOES TOO",
-            title: "Delete this message and the package in it. Neither is kept anywhere else.",
-            onConfirm: function () { fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post.splice(i, 1); }); } })
-        : el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" }, title: "Delete this message. It is not kept anywhere else.",
-            onclick: function () { fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post.splice(i, 1); }); } }, "✕ DELETE")
+        ? armDel("postdel:" + (m.id || i), "✕ DELETE", "SURE? THE PACKAGE GOES TOO", "Delete this message and the package in it, from your #POST.", "delete", function () { forget([m.id], []); })
+        : el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" }, title: "Delete this message from your #POST. The sender's copy stays.",
+            onclick: function () { forget([m.id], []); } }, "✕ DELETE")
     ];
     return el("div.msgr-m" + (m.read ? "" : ".new"), { dataset: { msg: m.id || String(i) } }, [el("div.msgr-b", null, kids), acts.length ? el("div.msgr-act", null, acts) : null]);
   }
   // what was said in the database: a letter to the GM, or a letter between players, either way
-  function mgSaid(it) {
+  function mgSaid(it, ro) {
     var r = it.r, mail = it.type === "gm" ? (r.mail || {}) : { body: r.body };
     return el("div.msgr-m" + (it.dir === "out" ? ".me" : ""), { dataset: { post: it.type === "gm" ? "gm-sent" : "pm", status: r.status || "", msg: r.id } }, [
-      el("div.msgr-b", null, [mail.subj ? el("b.msgr-s", { text: mail.subj }) : null, mail.body ? el("p.msgr-t", { text: mail.body }) : null])]);
+      el("div.msgr-b", null, [mail.subj ? el("b.msgr-s", { text: mail.subj }) : null, mail.body ? el("p.msgr-t", { text: mail.body }) : null]),
+      ro ? null : el("div.msgr-act", null, [el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" },
+        title: it.dir === "out" ? "Delete it from your #POST. They keep their copy." : "Delete it from your #POST. The sender keeps their copy.",
+        onclick: function () { forget([], [r.id]); } }, "✕ DELETE")])]);
   }
   function seenOf(it) { return it.type === "gm" ? (it.r.status === "read" || !!it.r.read_at) : it.type === "pm" ? !!it.r.read_at : false; }
   // the answer box: one line of words and SEND, as a messenger has. Enter sends; Shift and Enter is a new line.
@@ -645,7 +684,7 @@ EN.faceView = (function () {
       if (show && label) feed.appendChild(el("div.msgr-when", { text: label }));
       if (label) lastLabel = label;
       if (it.at !== null) lastAt = it.at;
-      feed.appendChild(it.type === "letter" ? mgLetter(t, it.x, ro) : mgSaid(it));
+      feed.appendChild(it.type === "letter" ? mgLetter(t, it.x, ro) : mgSaid(it, ro));
       // under the last thing the player said: whether the other side has read it, as a messenger says
       if (it === lastOut) feed.appendChild(el("div.msgr-seen", { dataset: { post: "seen", seen: seenOf(it) ? "1" : "0" }, text: seenOf(it) ? "Seen" : "Sent" }));
     });
@@ -657,7 +696,8 @@ EN.faceView = (function () {
       mgAvatar(t), el("span.msgr-hn", null, [el("b", { text: t.name }), sub ? el("small", { text: sub }) : null]),
       t.sys ? el("span.chip", { text: "NOTICE" }) : t.kind === "player" ? el("span.chip", { text: "PLAYER" }) : null,
       el("span", { style: { flex: "1 1 auto" } }),
-      null]);
+      ro || !t.items.length ? null : armDel("chatdel:" + t.key, "✕ DELETE CHAT", "SURE? THE WHOLE CHAT", "Delete everything in this chat from your #POST. Nobody else's copy changes.",
+        "delete-chat", function () { _mg.th = null; forgetThreads([t]); })]);
     return [head, feed, mgCompose(t, ctx, ro)];
   }
   // who a new chat can be with: the GM, and every other character in the campaign
@@ -690,6 +730,8 @@ EN.faceView = (function () {
     // what arrives in the chat that is open is read as it comes, once the page is drawn
     if (cur && !ro && cur.unread) setTimeout(function () { if (_mg.th === cur.key) mgRead(cur, ro, ctx); }, 0);
     backfill(ch, ctx);
+    var selecting = _mg.selecting && !ro && !_mg.picking;
+    if (!selecting) _mg.selecting = false;
     // the chats, filtered by the box and by All / Unread without a redraw of the page, so the caret stays where it is
     var listBox = el("div.msgr-list", { dataset: { keepScroll: "msgr-list", post: "chats" } });
     function fill() {
@@ -705,8 +747,11 @@ EN.faceView = (function () {
       shown.forEach(function (t) {
         var last = t.items[t.items.length - 1], parcel = t.msgs.some(function (x) { return hasPackage(x.m) && !x.m.taken; });
         var when = last ? (last.at !== null ? stamp(last.at) : (last.type === "letter" ? last.x.m.when : "")) : "";
-        listBox.appendChild(el("button.msgr-th" + (cur && cur.key === t.key ? ".on" : "") + (t.unread ? ".un" : ""), { type: "button", "data-ro-keep": "1",
-          "aria-pressed": cur && cur.key === t.key ? "true" : "false", dataset: { thread: t.key, post: "chat" }, onclick: function () { mgOpen(t, ro, ctx); } }, [
+        var picked = selecting && !!_mg.picked[t.key];
+        listBox.appendChild(el("button.msgr-th" + (cur && cur.key === t.key && !selecting ? ".on" : "") + (t.unread ? ".un" : "") + (selecting ? ".pick" : "") + (picked ? ".picked" : ""), { type: "button", "data-ro-keep": "1",
+          "aria-pressed": (selecting ? picked : cur && cur.key === t.key) ? "true" : "false", dataset: { thread: t.key, post: "chat" },
+          onclick: function () { if (selecting) { if (_mg.picked[t.key]) delete _mg.picked[t.key]; else _mg.picked[t.key] = true; EN.app.render(); } else mgOpen(t, ro, ctx); } }, [
+          selecting ? el("span.pick-box", { "aria-hidden": "true", text: picked ? "✓" : "" }) : null,
           mgAvatar(t),
           el("span.msgr-tt", null, [el("b", { text: t.name }), el("span", { text: mgLine(t) + (when ? "  ·  " + when : "") })]),
           parcel ? el("span.msgr-pk", { html: ICON_PKG, title: "A package is waiting" }) : null,
@@ -721,13 +766,21 @@ EN.faceView = (function () {
         _mg.only = k; chips.forEach(function (c) { c.classList.toggle("on", c.getAttribute("data-post") === "only-" + k); }); fill(); } }, k === "all" ? "All" : "Unread" + (n ? " · " + n : ""));
     });
     var picking = _mg.picking && !ro;
+    // the chats that can be deleted: those with something in them (the GM's own chat is always listed, empty or not)
+    var full = all.filter(function (t) { return t.items.length; }).map(function (t) { return t.key; });
+    var bar = selecting ? EN.mailView.pickBar({ key: "chats", noun: "chat", ids: full, state: _mg,
+      // the page's state first: the delete writes the record, and that write is what draws the page again
+      del: function (keys) { if (keys.indexOf(_mg.th) !== -1) _mg.th = null; _mg.selecting = false; _mg.picked = {}; forgetThreads(all.filter(function (t) { return keys.indexOf(t.key) !== -1; })); },
+      done: function () { _mg.selecting = false; _mg.picked = {}; EN.app.render(); } }) : null;
     var side = el("div.msgr-side", null, [
       el("div.msgr-sh", null, [el("h3", { text: picking ? "New chat" : "Chats" }), el("span", { style: { flex: "1 1 auto" } }),
-        ro ? null : picking
+        ro || selecting ? null : picking
           ? el("button.btn.sm.ghost", { type: "button", dataset: { post: "pick-cancel" }, onclick: function () { _mg.picking = false; EN.app.render(); } }, "CANCEL")
           : ctx ? el("button.btn.sm", { type: "button", dataset: { post: "new-chat" }, title: "Start a chat with the GM or another player", onclick: function () { _mg.picking = true; EN.app.render(); } }, "+ NEW CHAT")
-          : null]),
+          : null,
+        ro || picking || selecting || !full.length ? null : EN.mailView.selectButton(function () { _mg.selecting = true; _mg.picked = {}; EN.app.render(); })]),
       picking ? null : el("div.msgr-sb", null, [search]), picking ? null : el("div.msgr-chips", null, chips),
+      bar ? el("div.pick-bar", { dataset: { post: "pick-bar" } }, bar) : null,
       picking ? mgPicker(ctx, all) : listBox, el("p.msgr-foot", { text: POST_HELP })]);
     var main = el("div.msgr-main", { dataset: { thread: cur ? cur.key : "" } }, cur ? mgThread(ch, cur, ctx, ro)
       : [el("p.msgr-empty.msgr-pick", { dataset: { post: "nopick" }, text: all.length ? "Select a chat to read it." : "No traffic. #POST is holding nothing for this handle." })]);
@@ -748,7 +801,8 @@ EN.faceView = (function () {
   function chatUnread() {
     var ch = store.active(), ctx = ch ? gmContext(ch) : null, D = ctx && EN.chat ? EN.chat.data(ctx) : null;
     if (!D || !D.pm) return 0;
-    return D.pm.filter(function (r) { return r.to_character === ctx.row && !r.read_at; }).length;
+    var gone = hiddenOf(ch);
+    return D.pm.filter(function (r) { return r.to_character === ctx.row && !r.read_at && !gone[r.id]; }).length;
   }
   // a thread opens on its newest letter, which is at the bottom. After the page is in, and after the app has put each scroller
   // back where it was (it does that when a render ends), so neither can undo this
@@ -766,7 +820,7 @@ EN.faceView = (function () {
      letter that came through the campaign, REPLY, an answer with a subject. Drawn as an email reads (js/mailview.js). A player writes to the GM with a subject here.
      A player writes only as themself: the database signs every letter with the character's own name, and only a letter
      logged by hand can be edited (one the GM sent is the GM's words). */
-  var _ml = { sel: null, folder: "in", writing: false, draft: { subj: "", body: "" }, reply: {}, replying: null, busy: false, edit: null };
+  var _ml = { sel: null, folder: "in", writing: false, draft: { subj: "", body: "" }, reply: {}, replying: null, busy: false, edit: null, selecting: false, picked: {} };
   function isMail(m) { return !!(m && (String(m.subj || "").trim() || hasPackage(m) || fromSystem(m) || !m.inboxId)); }
   function sentMail(r) { return !!String(((r && r.mail) || {}).subj || "").trim(); }
   function mailWhen(m) { var t = timeOf(m.at); return t !== null ? stamp(t) : (m.when || ""); }
@@ -776,11 +830,7 @@ EN.faceView = (function () {
     if (!ro && !x.m.read) fset(function (f) { if (f.post[x.i] && f.post[x.i].id === x.m.id) f.post[x.i].read = true; });
     else EN.app.render();
   }
-  function mailLog() {
-    var m = { id: pid(), from: "", subj: "", when: "", body: "", read: true, at: new Date().toISOString() };
-    _ml.sel = m.id; _ml.edit = m.id; _ml.writing = false; _ml.folder = "in";   // a letter you log opens into its own editor
-    fset(function (f) { f.post.unshift(m); });
-  }
+  // + LOG (a letter logged by hand) is gone (18 Nov 2026, the author's call); a letter logged before then keeps its EDIT
   function mailSend(ctx, replyTo, d, key) {
     var subj = String(d.subj || "").trim(), body = String(d.body || "").trim();
     if (!subj && !body) { EN.ui.toast("Add a subject or a message."); return; }
@@ -819,11 +869,9 @@ EN.faceView = (function () {
         onclick: function () { var to = !m.read; put("read", to); } }, m.read ? "MARK UNREAD" : "MARK READ"),
       m.inboxId ? null : el("button.btn.sm.ghost", { type: "button", dataset: { post: "edit" }, title: "A letter you logged by hand is yours to correct", onclick: function () { _ml.edit = m.id; EN.app.render(); } }, "EDIT"),
       waiting
-        ? EN.ui.armButton("maildel:" + (m.id || i), { label: "✕ DELETE", armedLabel: "SURE? THE PACKAGE GOES TOO",
-            title: "Delete this letter and the package in it. Neither is kept anywhere else.",
-            onConfirm: function () { _ml.sel = null; fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post.splice(i, 1); }); } })
-        : el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" }, title: "Delete this letter. It is not kept anywhere else.",
-            onclick: function () { _ml.sel = null; fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post.splice(i, 1); }); } }, "✕ DELETE")];
+        ? armDel("maildel:" + (m.id || i), "✕ DELETE", "SURE? THE PACKAGE GOES TOO", "Delete this letter and the package in it, from your Mail.", "delete", function () { _ml.sel = null; forget([m.id], []); })
+        : el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" }, title: "Delete this letter from your Mail. The sender's copy stays.",
+            onclick: function () { _ml.sel = null; forget([m.id], []); } }, "✕ DELETE")];
     var after = [];
     // the answer goes to whoever signed the letter, through the GM, with Re: and its subject
     if (canReply && _ml.replying === m.id) {
@@ -837,16 +885,18 @@ EN.faceView = (function () {
       avatar: fromSystem(m) ? { html: ICON_POST } : null, tools: tools, attach: hasPackage(m) ? pkgBox(m) : null, after: after,
       back: function () { _ml.sel = null; _ml.replying = null; EN.app.render(); } });
   }
-  function mailSentView(r) {
+  function mailSentView(r, ro) {
     var mail = r.mail || {}, at = timeOf(r.created_at), read = r.status === "read" || !!r.read_at, me = String((mail.from || "")).trim() || "You";
     return EN.mailView.letter({ id: r.id, subj: mail.subj, from: me, to: String(r.persona || "").trim() || "The GM", when: at !== null ? stamp(at) : "", body: mail.body, me: true,
-      status: read ? "Seen" : "Not read yet", back: function () { _ml.sel = null; EN.app.render(); } });
+      status: read ? "Seen" : "Not read yet", back: function () { _ml.sel = null; EN.app.render(); },
+      tools: ro ? [] : [el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" }, title: "Delete it from your Sent. The GM keeps theirs.",
+        onclick: function () { _ml.sel = null; forget([], [r.id]); } }, "✕ DELETE")] });
   }
   function mailPanel() {
     var ch = store.active(), ro = readOnlyRecord(), ctx = gmContext(ch), post = faceRead(ch).post;
     var D = ctx && EN.chat ? EN.chat.ensure(Object.assign({ needTimes: post.some(function (m) { return m && m.inboxId && !m.at; }) }, ctx)) : null;
     var inbox = post.map(function (m, i) { return { m: m, i: i }; }).filter(function (x) { return x.m && isMail(x.m); });
-    var sent = D ? D.gm.filter(sentMail) : [];
+    var gone = hiddenOf(ch), sent = D ? D.gm.filter(function (r) { return sentMail(r) && !gone[r.id]; }) : [];
     if (!ctx) _ml.writing = false;
     var folder = _ml.folder === "sent" && ctx ? "sent" : "in";
     var n = inbox.filter(function (x) { return !x.m.read; }).length;
@@ -864,16 +914,28 @@ EN.faceView = (function () {
         onSubj: function (v) { d.subj = v; }, onBody: function (v) { d.body = v; },
         send: function () { mailSend(ctx, null, d, null); },
         discard: function () { _ml.writing = false; _ml.draft = { subj: "", body: "" }; EN.app.render(); } })];
-    } else if (cur) pane = [folder === "in" ? mailLetter(cur, ro, ctx) : mailSentView(cur)];
+    } else if (cur) pane = [folder === "in" ? mailLetter(cur, ro, ctx) : mailSentView(cur, ro)];
     else pane = [el("p.msgr-empty.msgr-pick", { dataset: { post: "nopick" }, text: inbox.length || sent.length ? "Select a letter to read it." : "No letters yet." })];
-    return EN.mailView.client({ title: "Mail", folder: folder, sel: _ml.sel, rows: rows, pane: pane, open: !!cur || (_ml.writing && !!ctx), foot: POST_HELP,
+    // SELECT: letters picked to delete, in the folder showing. A letter on the record comes off it; a sent one is hidden (forget)
+    var selecting = _ml.selecting && !ro && rows.length > 0;
+    if (!selecting) _ml.selecting = false;
+    var select = selecting ? { on: true, picked: _ml.picked,
+      onToggle: function (row) { if (_ml.picked[row.id]) delete _ml.picked[row.id]; else _ml.picked[row.id] = true; EN.app.render(); },
+      bar: EN.mailView.pickBar({ key: "mail-" + folder, noun: "letter", ids: rows.map(function (r) { return r.id; }), state: _ml,
+        del: function (ids) {
+          if (ids.indexOf(_ml.sel) !== -1) _ml.sel = null;
+          _ml.selecting = false; _ml.picked = {};
+          if (folder === "in") forget(ids, []); else forget([], ids);
+        },
+        done: function () { _ml.selecting = false; _ml.picked = {}; EN.app.render(); } }) } : null;
+    return EN.mailView.client({ title: "Mail", folder: folder, sel: _ml.sel, rows: rows, pane: pane, open: !!cur || (_ml.writing && !!ctx), foot: POST_HELP, select: select,
       empty: folder === "in" ? "No letters. What comes with a subject or a package lands here." : "Nothing sent with a subject yet.",
       folders: [{ key: "in", label: "Inbox", count: n }].concat(ctx ? [{ key: "sent", label: "Sent" }] : []),
-      onFolder: function (k) { _ml.folder = k; _ml.sel = null; _ml.writing = false; _ml.replying = null; EN.app.render(); },
+      onFolder: function (k) { _ml.folder = k; _ml.sel = null; _ml.writing = false; _ml.replying = null; _ml.selecting = false; _ml.picked = {}; EN.app.render(); },
       onOpen: function (row) { if (row.x) mailOpen(row.x, ro, ctx); else { _ml.sel = row.id; _ml.writing = false; EN.app.render(); } },
-      actions: [
+      actions: selecting ? [] : [
         !ro && ctx ? el("button.btn.sm.primary", { type: "button", dataset: { post: "mail-write" }, title: "A letter to your GM, with a subject", onclick: function () { _ml.writing = true; _ml.sel = null; EN.app.render(); } }, "+ WRITE") : null,
-        ro ? null : el("button.btn.sm.ghost", { type: "button", dataset: { post: "new" }, title: "Log something that came in another way, or a note to yourself", onclick: function () { mailLog(); } }, "+ LOG")] });
+        !ro && rows.length ? EN.mailView.selectButton(function () { _ml.selecting = true; _ml.picked = {}; EN.app.render(); }) : null] });
   }
   function mailUnread(ch) { return faceRead(ch).post.filter(function (m) { return m && isMail(m) && !m.read; }).length; }
 
@@ -1068,9 +1130,10 @@ EN.faceView = (function () {
   function tagChip(t, color, title) {
     return el("span.chip.contact-chip", { title: title || "", style: { color: color, borderColor: color }, text: t });
   }
-  // a jump to where a linked row is edited: the ledger panel, or the Inventory's Bills
+  // a jump to where a linked row is edited: the ledger panel, or the Gear tab's Bills
   function toLedger(panelKey) {
-    EN.app.gotoTab("face");   // the Social tab; #POST keeps its page for the way back
+    _soc = "ledger";   // the Social tab's ledger, from its own Contacts page (18 Nov 2026)
+    EN.app.gotoTab("face");
     setTimeout(function () {
       var p = document.querySelector("#view [data-face-panel='" + panelKey + "']");
       if (p && p.scrollIntoView) p.scrollIntoView({ block: "start" });
@@ -1106,9 +1169,9 @@ EN.faceView = (function () {
     });
     L.bills.forEach(function (r) {
       var bits = [r.kind, r.principal != null && r.principal !== "" ? String(r.principal) : "", r.clock != null && r.clock !== "" ? "clock " + r.clock : ""].filter(Boolean);
-      out.push(linkLine([tagChip("BILLS", "var(--danger)", "A debt in the Inventory's Bills, held by " + (r.holder || "them")),
+      out.push(linkLine([tagChip("BILLS", "var(--danger)", "A debt in the Gear tab's Bills, held by " + (r.holder || "them")),
         el("span", { text: bits.join(" · ") || "a debt" }),
-        jumpBtn("BILLS ›", "Edit it in the Inventory's Bills", toBills)]));
+        jumpBtn("BILLS ›", "Edit it in the Gear tab's Bills", toBills)]));
     });
     if (!L.debts.length && !L.bills.length) out.push(el("p.help.contact-none", { text: "No Debts or Bills name them." }));
     // their faction's Standing with the crew: separate from their own Profile of you
@@ -1326,10 +1389,10 @@ EN.faceView = (function () {
     }
     function toSocial(id) {
       var ch = store.active();
-      _sub = "contacts"; _ct.q = ""; _ct.kind = "all"; _ct.faction = "";
+      _soc = "contacts"; _ct.q = ""; _ct.kind = "all"; _ct.faction = "";
       if (id) _open["contact-" + ctKey(ch, id)] = true;
       close();
-      EN.app.gotoTab("post");
+      EN.app.gotoTab("face");
     }
     function paint(focusId) {
       var ch = store.active(), bg = bgOf(ch), list = bgContactsOf(ch), roles = bgRoles(bg);
@@ -1627,7 +1690,7 @@ EN.faceView = (function () {
      leaves out the heading and the three-way switch, which the shell stands in for. With neither, exactly as before. */
   /* THE SOCIAL TAB AND THE #POST TAB (17 Nov 2026, the author's call). Social is the standing ledger alone. #POST is a tab of
      its own, to the left of Social on the rail, with two pages: Messages (the mail, the default) and Contacts. Both tabs are drawn
-     here: render() is Social, renderPost() is #POST. The page held in _sub is #POST's ("post" or "contacts"); Social does not read it.
+     here: render() is Social, renderPost() is #POST. The page held in _sub is #POST's ("post" or "mail"), and _soc is Social's ("ledger" or "contacts").
      A shell with its own navigation (#GRIDeck) passes opts = { sub, bare } to render() and gets that page, whichever tab it is. */
   var POST_HEAD = {
     post: ["SECURE COMM CHANNEL", "Every handle gets an address whether it wants one or not. What lands here is work, warnings, and the occasional person who knows too much about where you sleep."],
@@ -1641,8 +1704,9 @@ EN.faceView = (function () {
       el("p.help", { style: { margin: 0, maxWidth: "820px" }, text: help })
     ]);
   }
-  // the page #POST is on: Chat unless Mail or Contacts was asked for (the ledger belongs to the Social tab)
-  function postPage() { return _sub === "contacts" || _sub === "mail" ? _sub : "post"; }
+  // the page #POST is on: Chat unless Mail was asked for. Contacts and the ledger are the Social tab's (socialPage)
+  function postPage() { return _sub === "mail" ? "mail" : "post"; }
+  function socialPage() { return _soc === "contacts" ? "contacts" : "ledger"; }
   function renderPost(mount) {
     var ch = store.active();
     EN.ui.clear(mount);
@@ -1651,22 +1715,22 @@ EN.faceView = (function () {
     var nMail = mailUnread(ch), nChat = Math.max(0, unread(ch) - nMail) + chatUnread();
     function subTab(key, label) {
       return el("button.btn.sm" + (page === key ? ".primary" : ""),
-        { dataset: { tour: "social-" + key }, onclick: function () { _sub = key; EN.app.render(); } },   // social-contacts is a tour anchor
+        { dataset: { post: "page-" + key }, onclick: function () { _sub = key; EN.app.render(); } },
         [el("span", { html: label[0] }), document.createTextNode(" " + label[1])]);
     }
     var blocks = [
       heading("<span style='color:var(--accent)'>#POST</span>", H[0], H[1]),
-      /* Three pages of one tab: Chat, Mail, Contacts (18 Nov 2026). Deliberately NOT sticky like the Inventory's bar, which has to
-         carry the wallets; three buttons do not earn a pinned strip on a phone (#GRIDroid lays them out as equal cells, theme.css .face-bar). */
+      /* Two pages of one tab: Chat and Mail (Contacts moved to Social, 18 Nov 2026). Deliberately NOT sticky like the Inventory's bar,
+         which has to carry the wallets; two buttons do not earn a pinned strip on a phone (#GRIDroid lays them out as equal cells,
+         theme.css .face-bar). */
       el("div.row.wrap.face-bar", { style: { gap: "6px", marginBottom: "12px" } }, [
         subTab("post", [ICON_CHAT, "CHAT" + (nChat ? " \u00b7 " + nChat : "")]),
-        subTab("mail", [ICON_POST, "MAIL" + (nMail ? " \u00b7 " + nMail : "")]),
-        subTab("contacts", [ICON_CONTACTS, "CONTACTS"])
+        subTab("mail", [ICON_POST, "MAIL" + (nMail ? " \u00b7 " + nMail : "")])
       ])
     ];
     // Each page has a wrapper of its own. Neither is .post-sub: theme.css draws the '98 mail client off that class, around the
     // inbox this page used to be, and it would rebuild either page as one.
-    blocks.push(page === "post" ? el("div.msgr-sub", null, [messengerPanel()]) : page === "mail" ? el("div.msgr-sub", null, [mailPanel()]) : el("div.contact-sub", null, [contactsPanel()]));
+    blocks.push(page === "post" ? el("div.msgr-sub", null, [messengerPanel()]) : el("div.msgr-sub", null, [mailPanel()]));
     mount.appendChild(el("div", null, blocks));
     if (page === "post") mgAfter(mount);
   }
@@ -1675,11 +1739,25 @@ EN.faceView = (function () {
     EN.ui.clear(mount);
     if (!ch) { mount.appendChild(el("p.help", { text: "No Freelancer loaded." })); return; }
     var blocks = [];
-    var page = (opts && opts.sub) || "ledger", bare = !!(opts && opts.bare);
+    var page = (opts && opts.sub) || socialPage(), bare = !!(opts && opts.bare);
     var onPost = page === "post", onContacts = page === "contacts";
-    // the Social tab is the ledger alone; with no switch left to draw, the heading is all that is above it
-    if (!bare && !onPost && !onContacts) blocks.push(heading("MY <span style='color:var(--accent)'>SOCIALS</span>", "SOCIAL PRESSURE · FACTION STANDING",
-      "Some jobs end in gunfire. More end in a room: two chairs, two people working the same problem until one gives ground. This is the ledger that room leaves behind."));
+    /* The Social tab has two pages (18 Nov 2026): the ledger and Contacts, which came over from #POST. One heading, then the
+       switch, as #POST draws its own. A shell that draws its own navigation (bare) gets the page alone. */
+    if (!bare && !onPost && page !== "mail") {
+      blocks.push(onContacts ? heading("MY <span style='color:var(--accent)'>SOCIALS</span>", POST_HEAD.contacts[0], POST_HEAD.contacts[1])
+        : heading("MY <span style='color:var(--accent)'>SOCIALS</span>", "SOCIAL PRESSURE · FACTION STANDING",
+          "Some jobs end in gunfire. More end in a room: two chairs, two people working the same problem until one gives ground. This is the ledger that room leaves behind."));
+      blocks.push(el("div.row.wrap.face-bar", { style: { gap: "6px", marginBottom: "12px" } }, [["ledger", ICON_LEDGER, "STANDING"], ["contacts", ICON_CONTACTS, "CONTACTS"]].map(function (x) {
+        // social-contacts is the guided tour's last anchor (data/tour_creation.js)
+        return el("button.btn.sm" + (page === x[0] ? ".primary" : ""), { type: "button", "data-ro-keep": "1", dataset: { tour: "social-" + x[0], soc: x[0] },
+          onclick: function () { _soc = x[0]; EN.app.render(); } }, [el("span", { html: x[1] }), document.createTextNode(" " + x[2])]);
+      })));
+    }
+    if (page === "mail") {
+      // a shell that has no mail page of its own gets this one
+      blocks.push(el("div.msgr-sub", null, [mailPanel()]));
+      mount.appendChild(el("div", null, blocks)); return;
+    }
     if (onPost) {
       // a shell that has no messenger of its own to show gets this one (see renderPost)
       blocks.push(el("div.msgr-sub", null, [messengerPanel()]));
@@ -1712,8 +1790,11 @@ EN.faceView = (function () {
               only; the caller renders. */
            // the author's envelope, clipboard and linked figures, for a shell that draws its own navigation
            icons: { post: ICON_POST, chat: ICON_CHAT, ledger: ICON_LEDGER, contacts: ICON_CONTACTS },
-           sub: function () { return _sub; },
-           setSub: function (k) { if (k === "ledger" || k === "contacts" || k === "post" || k === "mail") _sub = k; },
+           // the Social tab's page ("ledger" or "contacts"); #POST's is postPage()
+           sub: function () { return socialPage(); },
+           // "ledger" and "contacts" are the Social tab's pages, "post" and "mail" #POST's
+           setSub: function (k) { if (k === "ledger" || k === "contacts") _soc = k; else if (k === "post" || k === "mail") _sub = k; },
+           socialPage: socialPage,
            // the rules side of this tab, by name and with no copies: they write the active record
            core: { threads: threadsOf, threadKey: threadKey, sendGm: sendGm, takeIt: takeIt, newContact: newContact, ctSet: ctSet,
                    /* P5 (15 Nov 2026), what #GRIDeck's messenger and Standing read and write: the ledger as it is read and its

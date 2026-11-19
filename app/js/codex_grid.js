@@ -168,7 +168,7 @@ window.EN = window.EN || {};
             return [r.tier, String(r.cx), r.craft != null ? glim(r.craft) : "-", glim(r.material), glim(r.recovery)];
           }), [0])
         ]) : null,
-        K.note("The Cipher Library itself is a catalog: it is sold in the Inventory tab's gray market and run from the #GRID tab.")
+        K.note("The Cipher Library itself is a catalog: it is sold in the Gear tab's gray market and run from the #GRID tab.")
       ];
     } },
 
@@ -188,7 +188,7 @@ window.EN = window.EN || {};
             return [r.tier + " [" + r.t + "]", glim(r.price), String(r.saveDc), plus(r.attack), "Tier " + r.maxNode];
           }), [0])
         ]) : null,
-        K.note("Smartdecks, B&E Buddies, Burner Relays and the hardware mods are sold in the Inventory tab's gray market, and the #GRID tab runs the B&E Buddy Cipher Suite.")
+        K.note("Smartdecks, B&E Buddies, Burner Relays and the hardware mods are sold in the Gear tab's gray market, and the #GRID tab runs the B&E Buddy Cipher Suite.")
       ];
     } },
 

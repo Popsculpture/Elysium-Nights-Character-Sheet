@@ -609,6 +609,12 @@ EN.store = (function () {
         if (m.at != null && !(typeof m.at === "string" && m.at.length <= 40 && !isNaN(Date.parse(m.at)))) delete m.at;
       });
     }
+    /* What this record deleted from its #POST that lives only in the database (ch.face.hidden, 18 Nov 2026): what it wrote to
+       the GM and letters between players, by row id, so a delete stays gone on every device. Strings only, the newest kept. */
+    if (ch.face && ch.face.hidden != null) {
+      if (!Array.isArray(ch.face.hidden)) delete ch.face.hidden;
+      else ch.face.hidden = ch.face.hidden.filter(function (x) { return typeof x === "string" && x && x.length <= 80; }).slice(-2000);
+    }
     // the inbox rows this record has filed as mail (js/gmstore.js deliverMail). Never pruned: a row it
     // forgot would come back as a second copy of the message.
     if (ch.meta && ch.meta.inboxApplied != null) {

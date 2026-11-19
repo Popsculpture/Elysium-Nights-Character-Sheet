@@ -3847,6 +3847,28 @@ EN.engine = (function () {
     });
   }
 
+  /* WHO HAS THE FLOW TAB AND THE #GRID TAB (18 Nov 2026, the author's call). The rail asks these on every render, so they
+     read the record and never derive it.
+     isAttuned: whoever can shape, which is whoever has a Reservoir of Flow Points. derive() asks the same question for its
+     Flow block, so the tab and the Reservoir can never disagree. Today that is the Shaper class alone, because Shaper is the
+     only Attuned Class the book lists (see derive's flow gate). A Talent or ability that lets someone else shape changes this
+     one line, and the tab follows.
+     jackedDeck: the Smartdeck or B&E Buddy the record has jacked in, if it still owns it (derive reads the same entry).
+     onGrid: a Codebreaker, a Sourcerer, or anyone jacked in to a Smartdeck or B&E Buddy. And anyone carrying a Burner
+     Relay: anyone can fire one, Standard Users included, and it is fired from #GRID's Ciphers panel. */
+  function isAttuned(ch) { return !!ch && ch.class === "shaper"; }
+  function jackedDeck(ch) {
+    var k = ch && ch.grid && typeof ch.grid.deckKey === "string" ? ch.grid.deckKey : null;
+    return k ? (ownedDecks(ch).find(function (o) { return o.key === k; }) || null) : null;
+  }
+  function holdsRelay(ch) {
+    return ((ch && ch.equipment) || []).some(function (e) { return e && !(e.qty != null && e.qty <= 0) && !!relayRow(e.name); });
+  }
+  function onGrid(ch) {
+    if (!ch) return false;
+    return ch.class === "codebreaker" || (ch.class === "shaper" && ch.subclass === "sourcerer") || !!jackedDeck(ch) || holdsRelay(ch);
+  }
+
   function ownedRigs(ch) {
     var out = [];
     ((ch && ch.equipment) || []).forEach(function (e) {
@@ -4477,7 +4499,7 @@ EN.engine = (function () {
        Today this is exactly the Shaper class, because Shaper is the only Attuned Class the book
        lists (see the note at the flow gate below, which quotes the passages). When a non-Shaper
        can be attuned, this line is the one that changes. */
-    var attuned = (ch.class === "shaper");
+    var attuned = isAttuned(ch);
 
     var cyberFlat = cyberFlatBonuses(ch, attuned);
     var attributes = {};
@@ -5628,6 +5650,8 @@ EN.engine = (function () {
     // stash itself. It answers with an ENTRY key, so the answer names one specific Rig.
     rigStats: rigStats,
     rigTierRow: rigTierRow, ownedRigs: ownedRigs, ownedDecks: ownedDecks,
+    // which of the Freelancer's tabs a record has (js/app.js): Flow to whoever can shape, #GRID to whoever runs the network
+    isAttuned: isAttuned, jackedDeck: jackedDeck, onGrid: onGrid,
     // Burner Relays (29 Oct 2026)
     relayRow: relayRow, cipherByName: cipherByName, relayLoadable: relayLoadable, relayRunCap: relayRunCap,
     relayInfo: relayInfo, relayOutcome: relayOutcome, wornTraitWorn: wornTraitWorn,

@@ -8,7 +8,7 @@
    NO TAB STATE OF ITS OWN. The app shown is worked out from the tab the rest of the program already tracks
    (EN.app.activeTab(): combat, flow, grid, gear, post, face, codex, print), so EN.app.gotoTab and every caller of it
    land where they should with no edits: combat, flow and grid are the Sheet; gear is Gear; post is #POST (its page,
-   Messages or Contacts, is EN.faceView.postPage()); face is Standing; codex is the Codex; print is the record.
+   Messages or Mail, is EN.faceView.postPage()); face is Standing or Contacts (EN.faceView.socialPage()); codex is the Codex; print is the record.
 
    STRANGLER BUILD. Every app began by HOSTING THE EXISTING VIEW (tab.view) inside a stage, so the skin was
    usable from the first day; each phase swaps one for a screen of its own, and this file is the only place
@@ -39,8 +39,11 @@ EN.deck.shell = (function () {
   ];
 
   function on() { return document.documentElement.classList.contains("skin-deck"); }
-  // #POST's page ("post" or "contacts"); the Social tab has only the ledger
+  // #POST's page ("post" or "mail"), and the Social tab's ("ledger" or "contacts", which moved there on 18 Nov 2026)
   function postSub() { try { return EN.faceView.postPage(); } catch (e) { return "post"; } }
+  function socSub() { try { return EN.faceView.socialPage ? EN.faceView.socialPage() : "ledger"; } catch (e) { return "ledger"; } }
+  // a tab the record has right now (js/app.js gates #POST, Flow and #GRID)
+  function shown(k) { try { return !EN.app.tabShown || EN.app.tabShown(k); } catch (e) { return true; } }
   // which app a tab key shows as
   function appOf(key) {
     if (key === "combat" || key === "flow" || key === "grid") return "sheet";
@@ -54,9 +57,13 @@ EN.deck.shell = (function () {
   var _classic = false;   // the Sheet app is showing the Freelancer tab as Classic draws it (transient, like a sub-tab)
   var _gear = "mine";     // Gear's page: mine | market | classic (the Inventory tab as Classic draws it)
   var _ledger = "standing";   // Standing's page: standing | classic (the Social tab's ledger as Classic draws it)
-  function subKey(key) { return key === "post" ? postSub() : key === "face" ? "ledger" + (_ledger === "classic" ? "-classic" : "") : (key === "combat" && _classic) ? "classic" : key === "gear" ? _gear : ""; }
+  function subKey(key) { return key === "post" ? postSub() : key === "face" ? socSub() + (_ledger === "classic" ? "-classic" : "") : (key === "combat" && _classic) ? "classic" : key === "gear" ? _gear : ""; }
   function nativeFace(c) { return !!(c && c.ch && EN.faceView && EN.faceView.core && EN.faceView.core.read); }
-  function standingView(k) { _ledger = k === "classic" ? "classic" : "standing"; if (EN.faceView && EN.faceView.setSub) EN.faceView.setSub("ledger"); EN.app.gotoTab("face"); EN.app.render(); }
+  function standingView(k) {
+    if (k !== "contacts") _ledger = k === "classic" ? "classic" : "standing";
+    if (EN.faceView && EN.faceView.setSub) EN.faceView.setSub(k === "contacts" ? "contacts" : "ledger");
+    EN.app.gotoTab("face"); EN.app.render();
+  }
   function nativeGear(c) { return !!(c && c.ch && c.d && EN.deck.gear); }
   function gearView(k) { _gear = (k === "market" || k === "classic") ? k : "mine"; EN.app.gotoTab("gear"); EN.app.render(); }
 
@@ -117,10 +124,9 @@ EN.deck.shell = (function () {
   function stageBar(key, app, c) {
     if (app === "sheet") {
       var d = c && c.d;
-      // Flow is the Shaper's; #GRID is for whoever jacks in (a Codebreaker, or anyone with a deck). The view that is
-      // open is always listed, so a jump from a card (a Relay's FIRE ON #GRID) never leaves the player with no way back.
-      var flow = !!(d && d.flow) || key === "flow";
-      var grid = !!(d && d.grid && (d.grid.isCodebreaker || d.grid.deck)) || key === "grid";
+      // Flow and #GRID are listed when the record has them (js/app.js: whoever can shape, whoever runs the network)
+      var flow = shown("flow") || key === "flow";
+      var grid = shown("grid") || key === "grid";
       var own = nativeSheet(c);   // a record with no class yet has no Sheet of this skin's to offer
       if (!flow && !grid && !own) return null;
       var items = [{ key: "combat", label: "Sheet", icon: icon("sheet") }];
@@ -132,21 +138,24 @@ EN.deck.shell = (function () {
     }
     if (app === "gear") {
       if (!nativeGear(c)) return null;
-      return segBar([["mine", "Mine"], ["market", "Market"], ["classic", "Classic inventory"]].map(function (x) {
+      return segBar([["mine", "Mine"], ["market", "Market"], ["classic", "Classic gear"]].map(function (x) {
         return { key: x[0], label: x[1], icon: x[0] === "mine" ? icon("gear") : null, on: _gear === x[0], go: function () { gearView(x[0]); } };
       }));
     }
     if (app === "standing") {
       if (!nativeFace(c) || !EN.deck.standing) return null;
-      return segBar([["standing", "Standing"], ["classic", "Classic ledger"]].map(function (x) {
-        return { key: x[0], label: x[1], icon: x[0] === "standing" ? icon("standing") : null, on: _ledger === x[0], go: function () { standingView(x[0]); } };
+      var sp = socSub();
+      return segBar([["standing", "Standing"], ["contacts", "Contacts"], ["classic", "Classic ledger"]].map(function (x) {
+        var on = x[0] === "contacts" ? sp === "contacts" : sp === "ledger" && _ledger === x[0];
+        // the guided tour's last step points at Contacts (data-tour, js/tour.js)
+        return { key: x[0], label: x[1], icon: x[0] === "standing" ? icon("standing") : x[0] === "contacts" ? (EN.faceView.icons || {}).contacts : null, on: on,
+          tour: x[0] === "contacts" ? "social-contacts" : null, go: function () { standingView(x[0]); } };
       }));
     }
     if (app === "post") {
       var s = postSub();
-      return segBar([["post", "Messages", icon("post")], ["contacts", "Contacts", (EN.faceView.icons || {}).contacts]].map(function (x) {
-        // the guided tour's last step points at Contacts (data-tour, js/tour.js)
-        return { key: x[0], label: x[1], icon: x[2], on: s === x[0], tour: x[0] === "contacts" ? "social-contacts" : null, go: function () { EN.faceView.setSub(x[0]); EN.app.render(); } };
+      return segBar([["post", "Messages", icon("post")], ["mail", "Mail", null]].map(function (x) {
+        return { key: x[0], label: x[1], icon: x[2], on: s === x[0], go: function () { EN.faceView.setSub(x[0]); EN.app.render(); } };
       }));
     }
     return null;
@@ -218,7 +227,7 @@ EN.deck.shell = (function () {
     }
     // #POST is a messenger and Standing a page of cards; Contacts and the Classic ledger are the Social tab's own pages, bare
     if ((tab.key === "face" || tab.key === "post") && nativeFace(c)) {
-      var page = tab.key === "face" ? "ledger" : postSub();
+      var page = tab.key === "face" ? socSub() : postSub();
       try {
         if (page === "post" && EN.deck.post) { EN.deck.post.render(stage, c); stage.setAttribute("data-dk-native", "post"); return; }
         if (page === "ledger" && _ledger !== "classic" && EN.deck.standing) { EN.deck.standing.render(stage, c); stage.setAttribute("data-dk-native", "standing"); return; }
@@ -235,7 +244,7 @@ EN.deck.shell = (function () {
     if (app === "gear" && _gear !== "classic" && nativeGear(c)) {
       try { EN.deck.gear.render(stage, c, _gear); stage.setAttribute("data-dk-native", "gear"); return; }
       catch (e2) {
-        console.error("#GRIDeck could not draw Gear; showing the Inventory tab", e2);
+        console.error("#GRIDeck could not draw Gear; showing the Gear tab", e2);
         clear(stage);
         if (bar) stage.appendChild(bar);
       }
@@ -266,9 +275,10 @@ EN.deck.shell = (function () {
     clear(dock);
     dock.appendChild(el("div.dk-mark", { "aria-hidden": "true", text: "#" }));
     APPS.forEach(function (a) {
-      // away from #POST, the way to Contacts is the dock's #POST button: the tour points there until the switch is on screen
+      if (!shown(a.tab)) return;   // #POST is there in a campaign only
+      // away from Standing, the way to Contacts is the dock's Standing button: the tour points there until the switch is on screen
       dock.appendChild(dockBtn(a.key, a.label, cur === a.key, function () { go(a.key); }, a.key === "post" && cur !== "post" ? unread : 0,
-        a.key === "post" && cur !== "post" ? "social-contacts" : null));
+        a.key === "standing" && cur !== "standing" ? "social-contacts" : null));
     });
     dock.appendChild(el("span.dk-grow"));
     dock.appendChild(dockBtn("codex", "Codex", cur === "codex", function () { EN.app.gotoTab("codex"); }));

@@ -54,16 +54,11 @@ EN.deck.post = (function () {
     if (t.unread && !X.ro) F().write(function (f) { t.msgs.forEach(function (x) { if (f.post[x.i] && f.post[x.i].id === x.m.id) f.post[x.i].read = true; }); });
     else redraw();
   }
-  function logNew(from) {
-    var m = { id: F().newMessageId(), from: from || "", subj: "", when: "", body: "", read: true };
-    S.th = keyOf(m.from || "Unknown node"); S.pane = "thread"; S.edit = m.id;
-    F().write(function (f) { f.post.unshift(m); });
-  }
 
   /* ---- the list of people ---- */
   function list(X, all) {
-    var out = [el("div.dk-ph", null, [el("h4.dk-sec", { text: "#POST" }), el("span.dk-grow"),
-      F().readOnly() ? null : btn("+ Log a letter", "sm.ghost", "log", function () { logNew(""); }, "Log something that came in, or write one yourself")])];
+    // no "+ Log a letter" (18 Nov 2026, the author's call: logging a letter by hand is gone from #POST on every skin)
+    var out = [el("div.dk-ph", null, [el("h4.dk-sec", { text: "#POST" }), el("span.dk-grow")])];
     if (!all.length) out.push(el("p.dk-empty", { text: "No traffic. #POST is holding nothing for this handle." }));
     all.forEach(function (t) {
       var last = t.msgs[0] ? t.msgs[0].m : null, sent = !last && t.sent.length ? t.sent[0] : null;
@@ -128,8 +123,7 @@ EN.deck.post = (function () {
     var c = contactOf(X.ch, t);
     var head = el("div.dk-pt-h", null, [el("button.dk-link.dk-back.dk-pback", { type: "button", "data-ro-keep": "1", dataset: { dkDo: "back" }, onclick: function () { S.pane = "list"; redraw(); } }, "‹"),
       avatar(t), el("b", { text: t.name }), t.sys ? chip("Notice") : t.gm ? chip(t.sub || "Campaign", "acc") : c ? chip((F().kinds.filter(function (k) { return k.k === c.kind; })[0] || {}).label || "Contact", "acc") : null,
-      el("span.dk-grow"),
-      F().readOnly() || t.sys || t.gm ? null : btn("Log a letter", "sm.ghost", "log-here", function () { logNew(t.name); }, "Log a letter from " + t.name + " by hand")]);
+      el("span.dk-grow")]);
     var msgs = t.msgs.slice().reverse().map(function (x) { return letter(X, t, x); });
     if (t.sent.length) {
       msgs.push(el("div.dk-m-div", { text: "Sent by you" }));
@@ -148,13 +142,13 @@ EN.deck.post = (function () {
     if (t.gm) return [avatar(t, true), el("h3", { text: "Your GM" }), el("p.dk-empty", { text: "The people who run " + (t.sub || "your campaign") + ". Letters go to them through the campaign; nothing about them is kept on your record." })];
     var c = contactOf(X.ch, t);
     if (!c) return [avatar(t, true), el("h3", { text: t.name }), el("p.dk-empty", { text: "Not in your contacts." }),
-      F().readOnly() ? null : btn("Add to contacts", "", "add-contact", function () { F().newContact({ name: t.name }); EN.faceView.setSub("contacts"); redraw(); }, "Start a contact card for " + t.name)];
+      F().readOnly() ? null : btn("Add to contacts", "", "add-contact", function () { F().newContact({ name: t.name }); EN.faceView.setSub("contacts"); EN.app.gotoTab("face"); }, "Start a contact card for " + t.name)];
     function kv(label, v) { return v ? [el("i", { text: label }), el("p", { text: v })] : []; }
     var disp = F().standings.filter(function (s) { return s.k === c.disposition; })[0], state = F().states.filter(function (s) { return s.k === c.state; })[0];
     return [avatar(t, true), el("h3", { text: c.name || t.name }),
       el("div.dk-chips", null, [chip((F().kinds.filter(function (k) { return k.k === c.kind; })[0] || {}).label || "Contact", "acc"), disp ? chip(disp.label) : null, c.state === "burned" ? chip("Burned", "bad") : state ? chip(state.label) : null]),
       el("div.dk-kv", null, [].concat(kv("Handle", c.handle), kv("Work", c.work), kv("Why they pick up", c.why), kv("Offers", c.offers), kv("Faction", c.faction), kv("Tell", c.tell), kv("Notes", c.notes))),
-      nav("Open in Contacts", "ghost", "open-contacts", function () { EN.faceView.setSub("contacts"); redraw(); })];
+      nav("Open in Contacts", "ghost", "open-contacts", function () { EN.faceView.setSub("contacts"); EN.app.gotoTab("face"); })];
   }
 
   function render(stage, c) {

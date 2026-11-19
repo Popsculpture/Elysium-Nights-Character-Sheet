@@ -3925,3 +3925,23 @@ html.gm-landing .gm-crew-pick{ display:none !important; }
 .mail-compose:focus-within{ border-color:var(--accent-dim); }
 .mail-cfrom{ display:flex; flex:1 1 auto; min-width:0; }
 .mail-pkgline{ margin:0; font-size:13px; color:var(--text); }
+
+/* #POST SELECT MODE (18 Nov 2026, the author's call: delete one at a time or in bulk). The same on CHATS and MAIL, both desktops:
+   a tick box takes the place of the unread dot or before the avatar, a picked row is lit, and a bar over the list counts and deletes. */
+.pick-box{ flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-top:1px;
+  border:1px solid var(--border2); background:var(--bg); color:var(--accent-ink); font-size:11px; line-height:1; font-weight:700; }
+.mail-row .pick-box{ margin-top:2px; }
+.msgr-th.picked, .mail-row.picked{ background:var(--bg3); }
+.msgr-th.picked .pick-box, .mail-row.picked .pick-box{ background:var(--accent); border-color:var(--accent); }
+.pick-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:7px 12px; border-bottom:1px solid var(--border); background:var(--bg2); }
+.pick-n{ font-family:var(--disp); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--text2); }
+.pick-bar .btn{ padding:3px 9px; min-height:0; font-size:10.5px; }
+.pick-bar .btn:disabled{ opacity:.45; cursor:default; }
+/* a line's own delete sits on its side of the chat, under the bubble */
+.msgr-m.me .msgr-act{ justify-content:flex-end; }
+.msgr-h .btn.danger{ padding:3px 9px; min-height:0; font-size:10.5px; }
+
+/* #PRINT in the settings tray (18 Nov 2026): the author's #PRINT mark beside the words, and the gear lit while #PRINT is open */
+.set-print{ display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:8px; }
+.set-print-ic{ display:inline-flex; }
+.set-print-ic svg{ width:14px; height:14px; }

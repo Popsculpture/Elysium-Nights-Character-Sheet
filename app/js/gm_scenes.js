@@ -1632,7 +1632,7 @@ EN.gmScenes = (function () {
     if (sp) reads.push(sp.speed + " Impact DC " + sp.dc);
     if (reads.length) kids.push(el("p.help", { dataset: { sc: "veh-reads-" + v.lid, md: md === null ? "" : String(md), pil: pil === null ? "" : String(pil),
       impact: sp ? String(sp.dc) : "" }, style: { margin: "6px 0 0", color: "var(--accent)" }, text: upperFirst(reads.join(DOT)) + "." }));
-    if (v.from === "crew" && v.side === "running") kids.push(help("The driver rolls their own Chase Check off the Inventory's Garage.", { color: "var(--text3)" }));
+    if (v.from === "crew" && v.side === "running") kids.push(help("The driver rolls their own Chase Check off the Gear tab's Garage.", { color: "var(--text3)" }));
 
     // Integrity, as it takes damage, through the Structure gate (damageGate)
     if (max !== null) {

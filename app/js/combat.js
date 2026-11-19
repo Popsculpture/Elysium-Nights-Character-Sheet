@@ -1261,7 +1261,7 @@ EN.combatView = (function () {
   // what the day-advance did, as one sentence, shared by the rest and downtime paths
   function dayReport(t) {
     var bits = [];
-    if (t.leaseDue.length) bits.push("LEASE PAYMENT DUE: " + t.leaseDue.join(", ") + " (grants nothing until paid, Inventory > Stash)");
+    if (t.leaseDue.length) bits.push("LEASE PAYMENT DUE: " + t.leaseDue.join(", ") + " (grants nothing until paid, Gear > Stash)");
     if (t.personaExpired) bits.push(t.personaExpired + " saved Persona" + (t.personaExpired > 1 ? "s have" : " has")
       + " gone obsolete (Social tab); taking one again needs a fresh scan or fresh observation");
     return bits.join(". ");
@@ -3830,7 +3830,7 @@ EN.combatView = (function () {
     var msg;
     if (type !== "Standard" && ownedQty(ch, type) <= 0) {              // the chosen special round is depleted
       if (base === "Standard") { msg = "Out of " + type + "; reloaded with Standard."; type = "Standard"; }  // fall back to plentiful
-      else { toast("Can't reload: no " + type + " in stash. Acquire it in Inventory."); return; }            // no plentiful variant: keep RELOAD
+      else { toast("Can't reload: no " + type + " in stash. Acquire it in Gear."); return; }            // no plentiful variant: keep RELOAD
     }
     var needsStash = type !== "Standard";                               // counted munition / specialty round → spend from stash
     /* Launcher shells are sold one at a time ("50 each") and "All launcher shells are Counted" (PHB
@@ -4386,7 +4386,7 @@ EN.combatView = (function () {
           .concat((d.resistances || []).map(function (r) {
             return bdRow(r.type + " · " + r.level, r.sources.join(", "));
           })),
-        empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Inventory → Stash.",
+        empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Gear → Stash.",
         foot: ((dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
               (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top. " : "") +
               // the one entry that carries armor DR past Standard Physical Damage
@@ -4467,7 +4467,7 @@ EN.combatView = (function () {
   function defenseLoadoutFor(ch, d, dg) {
     function gchip(label, name, parts, color, onclick) { return { label: label, name: name, tip: parts, color: color, onclick: onclick || null }; }
     var chips = [];
-    var DUE_TIP = "Lease installment due; it grants none of its benefits until you pay (Inventory > Stash).";
+    var DUE_TIP = "Lease installment due; it grants none of its benefits until you pay (Gear > Stash).";
     if (dg.armor) {
       if (dg.armorLapsed) chips.push(gchip("ARMOR · LEASE DUE", dg.armor.name, DUE_TIP, "var(--danger)"));
       else { var ap = [dg.armorDRLost ? dg.armorDR + " of " + dg.armorBaseDR + " DR" : dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
@@ -4492,7 +4492,7 @@ EN.combatView = (function () {
             : dg.armor.name + " grants Resistance to " + (resOwed > 1 ? "two damage types" : "a damage type")
                 + " of your choice. Until you choose, it grants none.";
           chips.push(gchip("ARMOR · RESISTANCE", resOwed + " unchosen",
-            resTip + " Choose on the suit's card in Inventory > Stash.", "var(--warn)"));
+            resTip + " Choose on the suit's card in Gear > Stash.", "var(--warn)"));
         }
       }
     }
@@ -4513,7 +4513,7 @@ EN.combatView = (function () {
            Resistance damageResistances was not granting, and offered to burn it. */
         if (dg.armorLapsed) {
           chips.push(gchip("MOD · INERT", m.name,
-            m.name + " is fitted to " + dg.armor.name + ", whose lease installment is due. A lapsed suit's mods grant nothing until you pay (Inventory > Stash).",
+            m.name + " is fitted to " + dg.armor.name + ", whose lease installment is due. A lapsed suit's mods grant nothing until you pay (Gear > Stash).",
             "var(--text3)"));
           return;
         }
@@ -4529,7 +4529,7 @@ EN.combatView = (function () {
           if (ab.options) {
             if (!ab.type) {
               chips.push(gchip("MOD · UNTUNED", m.name,
-                "Choose Ballistic, Piercing, Slashing or Bludgeoning for this coating on the Impact Table bench (Inventory > Workbench). Until you do, it grants nothing.",
+                "Choose Ballistic, Piercing, Slashing or Bludgeoning for this coating on the Impact Table bench (Gear > Workbench). Until you do, it grants nothing.",
                 "var(--warn)"));
             } else {
               chips.push(gchip(ab.spent ? "MOD · SPENT" : "MOD · " + ab.type.toUpperCase(), m.name,
@@ -5249,7 +5249,7 @@ EN.combatView = (function () {
         ]);
       }
       var chips = defenseLoadoutFor(ch, d, dg).map(function (c) { return gchip(c.label, c.name, c.tip, c.color, c.onclick); });
-      if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped; buy defensive gear in Inventory → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." })];
+      if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped; buy defensive gear in Gear → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." })];
       return [el("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", margin: "2px 0 8px" } }, chips)];
     }
 
@@ -6744,8 +6744,8 @@ EN.combatView = (function () {
       if (!realWeaponNames.length) {
         kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: augmentNames.length
           ? augmentNames.join(" and ") + (augmentNames.length > 1 ? " augment" : " augments")
-            + " your unarmed strike rather than being a weapon in their own right, so there is no separate row: the strike above already counts them. Hit ⚔ EQUIP on an actual weapon in Inventory → Stash to list one here."
-          : "No weapons equipped; hit ⚔ EQUIP on a weapon in Inventory → Stash to list it here." }));
+            + " your unarmed strike rather than being a weapon in their own right, so there is no separate row: the strike above already counts them. Hit ⚔ EQUIP on an actual weapon in Gear → Stash to list one here."
+          : "No weapons equipped; hit ⚔ EQUIP on a weapon in Gear → Stash to list it here." }));
       }
       specialAttacksFor(ch, d).forEach(function (a) {
         kids.push(attackRow(a.name, eng.fmtMod(a.hit), a.note, a.color, null,
@@ -6923,7 +6923,7 @@ EN.combatView = (function () {
           + nEquipped + " equipped · " + nCarried + " carried" + (nWorn ? " · " + nWorn + " worn" : "") + (nRacked ? " · " + nRacked + " racked" : "") + (nConcealed ? " · " + nConcealed + " concealed" : "") + (nHeavy ? " · " + nHeavy + " heavy" : "") + "." })
       ]));
       if (!inScene.length) {
-        kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Nothing in your loadout yet. Equip gear in Inventory, or use ＋ ADD TO LOADOUT above." }));
+        kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Nothing in your loadout yet. Equip something in Gear, or use ＋ ADD TO LOADOUT above." }));
       } else {
         // a validly racked item renders NESTED under its Carry Gear, not in the flat lists
         function isNested(e) { return !!racks.byItem[entryKey(e)]; }
@@ -7044,7 +7044,7 @@ EN.combatView = (function () {
         // a stale assignment renders as "adrift" so it can always be cleared
         var staleKey = !rackedGear ? (ch.racked || {})[key] : null;
         statusCtrl = el("div.row", { style: { gap: "6px", alignItems: "center" } }, [
-          el("span.mono", { title: "Equipped gear is managed in Inventory", style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".06em" }, text: "ON-PERSON" }),
+          el("span.mono", { title: "Equipped items are managed in Gear", style: { fontSize: "10px", color: "var(--text3)", letterSpacing: ".06em" }, text: "ON-PERSON" }),
           (targets.length || rackedGear || staleKey) ? el("select", { title: "Rack this in worn Carry Gear (Load reduced by 1, and a Holster, Scabbard, Back Scabbard or Weapon Sling draws it free on your first attack each encounter)",
             style: { fontSize: "11px", width: "auto" },
             onchange: function () { var v = this.value; store.update(function (c) {

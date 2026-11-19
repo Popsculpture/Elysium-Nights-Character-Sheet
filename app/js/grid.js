@@ -236,12 +236,12 @@ EN.gridView = (function () {
       rows.push(el("div.section-title", null, [document.createTextNode("Hardware Mods"), el("span.line"),
         el("span.mono", { style: { fontSize: "10px", color: used > slots ? "var(--danger)" : "var(--text3)", marginLeft: "6px" }, text: used + " / " + slots + " slots" })]));
       if (slots === 0) rows.push(noteP("A Standard Smartdeck has no mod slots. Upgrade the deck to install hardware mods."));
-      else if (!installedMods.length) rows.push(noteP("No hardware mods installed. Fit them at the Tech Bay (Inventory > Workbench > Tech Bay)."));
+      else if (!installedMods.length) rows.push(noteP("No hardware mods installed. Fit them at the Tech Bay (Gear > Workbench > Tech Bay)."));
       else {
         rows.push(el("div.row.wrap", { style: { gap: "6px" } }, installedMods.map(function (m) {
           return el("span.chip", { title: m.type + ": " + m.text, style: { fontSize: "9.5px", color: "var(--accent)", borderColor: "var(--accent)" } }, m.name + " · " + m.slots + (m.slots === 1 ? " slot" : " slots"));
         })));
-        rows.push(noteP("Add or remove hardware mods at the Tech Bay (Inventory > Workbench > Tech Bay)."));
+        rows.push(noteP("Add or remove hardware mods at the Tech Bay (Gear > Workbench > Tech Bay)."));
       }
     }
     return EN.ui.panel("Rig", (deck.type === "smartdeck" ? "SMARTDECK" : "B&E BUDDY") + " · " + deck.tier.toUpperCase(), rows, { corners: true });
@@ -615,7 +615,7 @@ EN.gridView = (function () {
         // A2.5: a Codebreaker still owed the starting four is pointed at the free picker, not the market
         rows.push(noteP(owed
           ? "No Complexity 1 Ciphers yet. You start with four, free: choose them " + (isFiledRec(ch) ? "in the prompt at the top of this tab" : "on the Class step of #PRINT") + ". No Glimmer, no Downtime."
-          : "No ciphers acquired yet. Buy them in the Inventory tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
+          : "No ciphers acquired yet. Buy them in the Gear tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
       } else {
         owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur, deck && deck.tier, starts.indexOf(cy.name) !== -1, !!rigStow)); });
       }

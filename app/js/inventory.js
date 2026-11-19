@@ -3858,8 +3858,9 @@ EN.inventoryView = (function () {
     var kids = [];
     if (!deck || deck.type !== "smartdeck") {
       kids.push(el("div.muted-box", { style: { padding: "22px 18px", textAlign: "center", borderColor: "var(--flow)" },
-        html: "<div style='font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--flow)'>⌬ NO SMARTDECK ON THE BENCH</div><div style='font-size:12px;color:var(--text3);margin-top:8px;max-width:460px;margin-left:auto;margin-right:auto'>Set a Smartdeck as your active rig on the #GRID tab, then bring it here to slot hardware mods. B&amp;E Buddies have no mod slots.</div>" }));
-      kids.push(el("div.row", { style: { justifyContent: "center", marginTop: "10px" } }, [
+        html: "<div style='font-family:var(--disp);font-size:13px;letter-spacing:.18em;color:var(--flow)'>⌬ NO SMARTDECK ON THE BENCH</div><div style='font-size:12px;color:var(--text3);margin-top:8px;max-width:460px;margin-left:auto;margin-right:auto'>Jack a Smartdeck in from your Stash, then bring it here to slot hardware mods. B&amp;E Buddies have no mod slots.</div>" }));
+      // #GRID is there only for whoever runs the network (engine.onGrid), so the way to it is too
+      if (EN.engine.onGrid && EN.engine.onGrid(ch)) kids.push(el("div.row", { style: { justifyContent: "center", marginTop: "10px" } }, [
         el("button.btn.sm", { style: { color: "var(--flow)", borderColor: "var(--flow)" }, onclick: function () { EN.app.gotoTab("grid"); } }, "→ OPEN #GRID")
       ]));
       return EN.ui.panel("Smartdeck Mods", "HARDWARE MOD SLOTS", kids, { corners: true });
@@ -4786,7 +4787,7 @@ EN.inventoryView = (function () {
     }
     var blocks = [];
     blocks.push(el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
-      el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" }, html: 'INVENTORY <span class="dim3" style="font-size:13px">// gear · chrome · gray market</span>' })
+      el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" }, html: 'GEAR <span class="dim3" style="font-size:13px">// stash · chrome · gray market</span>' })
     ]));
 
     /* sub-tab rail + glimmer ledger */

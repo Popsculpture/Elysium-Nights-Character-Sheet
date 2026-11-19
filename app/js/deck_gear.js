@@ -6,7 +6,7 @@
               move it, its mods, its condition, its lease, and selling or dropping it
      MARKET   the same shelves the Gray Market stocks, at the storefront picked, and a purchase that lands
               where the player says (in hand, carried, or the stash) in the one press
-   The stage bar keeps "Classic inventory", the Inventory tab as Classic draws it, for what this screen does
+   The stage bar keeps "Classic gear", the Inventory tab as Classic draws it, for what this screen does
    not hold yet: the benches (Arms Table, Impact Table, Tech Bay, Fabrication, Garage), installing and
    removing chrome, the wallet ledger, Bills and the payout splitter.
 
@@ -182,7 +182,7 @@ EN.deck.gear = (function () {
       out.push(el("div.dk-chips", null, [chip("Chrome"), cw.tier ? chip(cw.tier) : null, cw.zone ? chip(cw.zone, "acc", "Interface Zone") : null, cw.sp != null ? chip(cw.sp + " SP", "gold", "Static Points") : null, cw.side ? chip(cw.side === "L" ? "Left" : "Right") : null]));
       if (typeof prose === "string" && prose) out.push(el("p.dk-gline", null, [EN.ui.ruleText(el("span"), prose, { conditions: true })]));
       if (typeof effect === "string" && effect) out.push(el("p.dk-gline", null, [el("b", { text: "Effect: " }), EN.ui.ruleText(el("span"), effect, { conditions: true })]));
-      out.push(sec(x.stashed ? "Not installed" : "Installed", [el("p.dk-note", { text: x.stashed ? "Bought and waiting. Installing it is clinic work, on the Chrome page of the Classic inventory." : "Installing, removing and the Chrome Tax are on the Chrome page of the Classic inventory." }),
+      out.push(sec(x.stashed ? "Not installed" : "Installed", [el("p.dk-note", { text: x.stashed ? "Bought and waiting. Installing it is clinic work, on the Chrome page of the Classic gear." : "Installing, removing and the Chrome Tax are on the Chrome page of the Classic gear." }),
         el("div.dk-row", null, [nav("Open the Chrome page", "", "open-chrome", function () { classic("chrome"); })])], "chrome"));
       return out;
     }
@@ -327,7 +327,7 @@ EN.deck.gear = (function () {
       enc.dropped > 0 ? chip("Packed It " + enc.revealed + " / " + enc.budget, enc.revealed > enc.budget ? "warn" : "", "Packed It still counts what you dropped") : null]));
     kids.push(el("span.dk-grow"));
     kids.push(el("div.dk-purse", { dataset: { dkPurse: String(Number(ch.glimmer) || 0) } }, [el("b.dk-gold", { text: I().fmtG(Number(ch.glimmer) || 0) }), ch.nexus ? el("b", { text: I().fmtNx(ch.nexus) }) : null]));
-    kids.push(nav("Wallet, Bills and Split", "ghost.sm", "open-wallet", function () { classic("stash"); }, "The wallet ledger, household bills and the payout splitter are in the Classic inventory"));
+    kids.push(nav("Wallet, Bills and Split", "ghost.sm", "open-wallet", function () { classic("stash"); }, "The wallet ledger, household bills and the payout splitter are in the Classic gear"));
     return el("div.dk-gbar", null, kids);
   }
   function dropped(X) {

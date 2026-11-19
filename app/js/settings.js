@@ -1103,6 +1103,12 @@ EN.settings = (function () {
       // after #PRINT's own handler: a pick is the whole errand, so the tray goes with it
       sel.addEventListener("change", function () { close(); });
       kids.push(sel);
+      /* #PRINT lives here (18 Nov 2026, the author's call), not on the rail: the identity record and leveling, opened on
+         Advance as a tap on its old rail tab did. An unfiled record is on #PRINT already, the only page it has. */
+      if (EN.app.registered && EN.app.registered()) kids.push(el("button.btn.sm.set-wide.set-print", { type: "button", dataset: { set: "print" },
+        title: "Your identity record and leveling",
+        onclick: function () { close(); if (B.openAdvance) B.openAdvance(); EN.app.gotoTab("print"); } },
+        [el("span.set-print-ic", { html: (EN.app.tabIcon && EN.app.tabIcon("print")) || "" }), document.createTextNode(" #PRINT: RECORD AND LEVELING")]));
     }
     var isEx = !!(EN.store.activeIsExample && EN.store.activeIsExample());
     // an example is live but not saved: the same chip and adoption #PRINT draws (builder.js rosterSwitcher)

@@ -89,7 +89,7 @@ EN.deck.find = (function () {
         if (seen[e.name]) { seen[e.name].n += (e.qty || 1); return; }
         seen[e.name] = { n: e.qty || 1 };
         if (Object.keys(seen).length > MAX_EACH) return;
-        out.push({ group: "Your gear", title: e.name, count: seen[e.name], hint: classic() ? "Inventory" : "Gear", go: function () {
+        out.push({ group: "Your gear", title: e.name, count: seen[e.name], hint: "Gear", go: function () {
           if (classic()) {
             // the Inventory's Stash, with the shelf this piece is on unfolded
             try { var I = EN.inventoryView, it = I.core.findItem(e.name); if (I.openStash) I.openStash(it ? I.core.stashCategory(it) : null); } catch (x) {}
@@ -102,7 +102,7 @@ EN.deck.find = (function () {
       ((ch.face && ch.face.contacts) || []).filter(function (p) { return p && (has(p.name) || has(p.handle)); }).slice(0, MAX_EACH).forEach(function (p) {
         out.push({ group: "People", title: p.name || p.handle || "Unnamed contact", hint: p.work || "Contact", go: function () {
           try { EN.faceView.setSub("contacts"); } catch (e) {}
-          EN.app.gotoTab("post");
+          EN.app.gotoTab("face");
         } });
       });
     }

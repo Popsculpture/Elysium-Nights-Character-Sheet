@@ -1586,7 +1586,7 @@ EN.builder = (function () {
     var ciNow = ciDef ? store.active() : null;
     var ciLine = ciDef && ciNow && ciDef.held(ciNow) ? " " + ciDef.name + " " + ciDef.verb + "." : "";
     toast("Starting kit claimed: everything Carried, armor worn, " + (weaponNames.length ? weaponNames.join(" and ") + " equipped" : "no weapon in this kit") +
-      ", and 𝒢" + sel.leftover + " on the Glimmer Stick." + ciLine + loadLine + (over ? " Over your Load Budget: nothing was stashed; stash something from Inventory if you need to." : ""));
+      ", and 𝒢" + sel.leftover + " on the Glimmer Stick." + ciLine + loadLine + (over ? " Over your Load Budget: nothing was stashed; stash something from Gear if you need to." : ""));
   }
   var KIT_WEAPON_GROUPS = { Simple: 1, Martial: 1, Sidearm: 1, Longarm: 1, Heavy: 1, Launcher: 1, Thrown: 1, Bowfire: 1 };   // inventory.js isWeapon
   function kitIsWeapon(name) { var it = kitCatalogItem(name); return !!(it && KIT_WEAPON_GROUPS[it.group]); }
@@ -1733,7 +1733,7 @@ EN.builder = (function () {
           EN.ui.ruleChip("sk-load", { title: "Encumbrance & Load" })
         ]));
         if (over) kids.push(el("p.help.kit-over", { style: { margin: "4px 0 0", color: "var(--warn)" },
-          text: "⚠ Carried Load is over your Load Budget. Nothing was stashed for you: decide what stays behind in Inventory." }));
+          text: "⚠ Carried Load is over your Load Budget. Nothing was stashed for you: decide what stays behind in Gear." }));
       }
     } else {
       kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center" } }, [
@@ -3435,7 +3435,7 @@ EN.builder = (function () {
         el("span", { style: { flex: 1, minWidth: "150px", fontWeight: 600, color: integrated ? "var(--gold)" : "var(--text)" } },
           EN.ui.nameCaret(combo.feature + " + " + combo.cyberware, !collapsed)),
         el("span.chip" + (hasFeat ? ".on" : ""), { title: hasFeat ? "You have this Lineage Feature" : "Requires the " + combo.feature + " Lineage Feature", text: hasFeat ? "FEATURE ✓" : "NO FEATURE" }),
-        el("button.btn.sm" + (hasChrome ? ".primary" : ""), { title: "Mark whether the matching cyberware is installed (manual until Inventory tracks chrome)",
+        el("button.btn.sm" + (hasChrome ? ".primary" : ""), { title: "Mark whether the matching cyberware is installed (manual until Gear tracks chrome)",
           onclick: function (e) { e.stopPropagation(); toggleChrome(ch, combo.cyberware); } }, hasChrome ? "✓ CHROME" : "+ CHROME"),
         integrated ? el("span.chip", { style: { color: "var(--gold)", borderColor: "var(--gold)", boxShadow: "0 0 10px rgba(255,207,92,.3)" }, text: "● INTEGRATED" }) : null
       ]);

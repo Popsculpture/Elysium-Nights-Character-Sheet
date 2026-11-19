@@ -419,7 +419,7 @@ EN.tourData["character-creation"] = {
    "advanceOn": "condition",
    "completeWhen": "Counter reads 2 of 2 and dialog is closed",
    "title": "Fill in your contacts",
-   "body": "Add your contacts here and set each one's starting relationship to Neutral or Friendly. Once you've filed, you'll find them under #POST, Contacts, ready for whatever the next job brings.",
+   "body": "Add your contacts here and set each one's starting relationship to Neutral or Friendly. Once you've filed, you'll find them under Social, Contacts, ready for whatever the next job brings.",
    "example": null,
    "optional": false,
    "tab": "print",
@@ -803,7 +803,7 @@ EN.tourData["character-creation"] = {
    "advanceOn": "condition",
    "completeWhen": "Carry gear capacity filled (rack options disappear from other items)",
    "title": "Rack your carry gear",
-   "body": "Open Inventory and wear your belt or rig first; it can only rack items while you're wearing it. Then assign items to it as Racked. Each racked item counts as 1 less Load, but takes an action to retrieve, so check how quickly you can get to what you need.",
+   "body": "Open Gear and wear your belt or rig first; it can only rack items while you're wearing it. Then assign items to it as Racked. Each racked item counts as 1 less Load, but takes an action to retrieve, so check how quickly you can get to what you need.",
    "example": null,
    "optional": false,
    "tab": "gear",
@@ -868,9 +868,9 @@ EN.tourData["character-creation"] = {
    "advanceOn": "done",
    "optional": true,
    "title": "Your people",
-   "body": "Open #POST, then select CONTACTS. The people you added during Background are already here. As the story grows, you can add a fence, a tell, or a faction. You're registered, equipped, and ready to take a job. Time to find out who picks up.",
+   "body": "Open Social, then select CONTACTS. The people you added during Background are already here. As the story grows, you can add a fence, a tell, or a faction. You're registered, equipped, and ready to take a job. Time to find out who picks up.",
    "example": null,
-   "tab": "post",
+   "tab": "face",
    "wizard": null
   }
  ]

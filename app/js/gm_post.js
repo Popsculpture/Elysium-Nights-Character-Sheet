@@ -16,7 +16,11 @@
    GM's letters read when they open theirs (the chat migration's read_at), which shows here under the last thing the GM
    said. Letters with a subject or a package are still written on MAIL (the sub-tab once called WRITE); a chat's line goes as a message alone.
 
-   It keeps nothing that lasts: all of it is read from the database (RLS gives the people who run a campaign every letter
+   DELETE IS FOR THE ONE DELETING (18 Nov 2026, the author's call): a line, a letter or a whole chat taken out of the GM's #POST
+   stays in the player's. The rows are left in the database; this device lists the ones the GM deleted, per campaign, and
+   leaves them out of CHATS, MAIL and the rail's badge. One device's list: a GM who uses two will delete on each.
+
+   Apart from that list it keeps nothing that lasts: all of it is read from the database (RLS gives the people who run a campaign every letter
    in its mailbox, and each account its own sends), kept in memory for the campaign this tab is on, and read again when
    Realtime says something moved (js/cloud.js), when the page is opened, and when the cache is a little old.
    No em or en dashes anywhere in this file (house style).
@@ -39,7 +43,7 @@ EN.gmPost = (function () {
   var _sel = null;   // the chat open on the page, by key
   /* The page's own state, kept across redraws: the search, All or Unread, what is being typed in each chat, a send under
      way, a new chat being started (pending, picking), and whether the thread should go to its newest line. */
-  var _ui = { q: "", only: "all", drafts: {}, busy: {}, pending: null, picking: false, pickChar: "", pickAs: "", stick: false };
+  var _ui = { q: "", only: "all", drafts: {}, busy: {}, pending: null, picking: false, pickChar: "", pickAs: "", stick: false, selecting: false, picked: {} };
   /* Letters this tab has marked read, by id. A read of the mailbox that began before a mark landed comes back with the
      letter still unread, and a read replaces the rows it holds, so the mark is applied to whatever rows are there, now
      and on every read after, rather than to the row that was on the page when it was pressed. */
@@ -51,6 +55,28 @@ EN.gmPost = (function () {
   var SYSTEM = { "campaign": 1, "payroll": 1, "xp award": 1, "milestones": 1 };
   var GM_NAMES = { "the gm": 1, "your gm": 1, "gm": 1 };
   function voiceKey(name) { var k = String(name || "").trim().toLowerCase(); return !k || GM_NAMES[k] ? "the gm" : k; }
+
+  var HIDE_KEY = "en_gm_post_hidden_v1", HIDE_MAX = 2000;
+  function hideBook() { try { var b = JSON.parse(localStorage.getItem(HIDE_KEY) || "{}"); return b && typeof b === "object" && !Array.isArray(b) ? b : {}; } catch (e) { return {}; } }
+  function hidden() {
+    var h = {}, list = hideBook()[deskId()];
+    (Array.isArray(list) ? list : []).forEach(function (id) { if (typeof id === "string") h[id] = 1; });
+    return h;
+  }
+  function hide(ids) {
+    var id = deskId();
+    if (!id || !ids.length) return;
+    var b = hideBook(), list = Array.isArray(b[id]) ? b[id].filter(function (x) { return typeof x === "string"; }) : [];
+    ids.forEach(function (x) { if (x && list.indexOf(x) === -1) list.push(x); });
+    b[id] = list.length > HIDE_MAX ? list.slice(list.length - HIDE_MAX) : list;
+    try { localStorage.setItem(HIDE_KEY, JSON.stringify(b)); } catch (e) { toast("This browser would not keep the delete."); return; }
+    EN.app.render();
+  }
+  function armDel(key, label, armedLabel, title, post, fn) {
+    var b = EN.ui.armButton(key, { label: label, armedLabel: armedLabel, title: title, onConfirm: fn });
+    b.setAttribute("data-post", post);
+    return b;
+  }
 
   function deskId() {
     var d = EN.gmStore && EN.gmStore.desk ? EN.gmStore.desk() : null;
@@ -110,7 +136,8 @@ EN.gmPost = (function () {
   function unread() {
     ensure(false);
     if (!_c || _c.id !== deskId() || !_c.rows) return 0;
-    return _c.rows.filter(function (r) { return r.status === "unread"; }).length;
+    var gone = hidden();
+    return _c.rows.filter(function (r) { return r.status === "unread" && !gone[r.id]; }).length;
   }
 
   /* Realtime heard a letter, a send delivered or read, or the channel came up and may have missed some: read again. The
@@ -126,14 +153,14 @@ EN.gmPost = (function () {
   function nameOf(charId) { return (_c && _c.names[charId]) || { name: "A character no longer here", player: "" }; }
   function timeOf(iso) { var t = iso ? Date.parse(iso) : NaN; return isNaN(t) ? 0 : t; }
   function threads() {
-    var by = {};
+    var by = {}, gone = hidden();
     function slot(charId, voice) {
       var k = charId + "|" + voiceKey(voice);
       return by[k] || (by[k] = { key: k, charId: charId, voice: voiceKey(voice) === "the gm" ? "The GM" : String(voice).trim(), items: [], unread: 0 });
     }
     (_c.rows || []).forEach(function (r) {
       var m = r.mail || {};
-      if (isLetterRow(r)) return;   // a letter with a subject is MAIL's (18 Nov 2026), as it is on the player's side
+      if (isLetterRow(r) || gone[r.id]) return;   // a letter with a subject is MAIL's (18 Nov 2026), as it is on the player's side
       var t = slot(r.character_id, r.persona);
       t.items.push({ dir: "in", at: timeOf(r.created_at), subj: m.subj || "", body: m.body || "", row: r });
       if (r.status === "unread") t.unread++;
@@ -141,7 +168,7 @@ EN.gmPost = (function () {
     // what this account sent under a voice is that chat's other half, and starts one; the app's own notices are not chats
     (_c.sends || []).forEach(function (s) {
       var m = s.mail || {};
-      if (s.status === "recalled" || SYSTEM[String(m.from || "").trim().toLowerCase()] || isLetterSend(s)) return;   // a letter with a subject or a package is MAIL's
+      if (s.status === "recalled" || gone[s.id] || SYSTEM[String(m.from || "").trim().toLowerCase()] || isLetterSend(s)) return;   // a letter with a subject or a package is MAIL's
       var t = slot(s.character_id, m.from);
       // the voice as this account last wrote it, which is how the next line is signed
       if (voiceKey(m.from) !== "the gm") t.voice = String(m.from).trim();
@@ -190,11 +217,14 @@ EN.gmPost = (function () {
   }
   function openChat(t) { _sel = t.key; _ui.stick = true; _ui.picking = false; EN.app.render(); readThread(t); }
 
-  function chatRow(t, open) {
+  function chatRow(t, open, selecting) {
     var last = t.last, line = last ? (last.dir === "out" ? "You: " : "") + (last.body || last.subj || (last.pkg ? "A package" : "")) : "";
-    return el("button.msgr-th" + (open ? ".on" : "") + (t.unread ? ".un" : ""), { type: "button", "aria-pressed": open ? "true" : "false",
+    var picked = selecting && !!_ui.picked[t.key];
+    return el("button.msgr-th" + (open && !selecting ? ".on" : "") + (t.unread ? ".un" : "") + (selecting ? ".pick" : "") + (picked ? ".picked" : ""), { type: "button",
+      "aria-pressed": (selecting ? picked : open) ? "true" : "false",
       dataset: { thread: t.key, post: "chat", unread: t.unread ? "1" : "0" }, title: nameOf(t.charId).player ? "Played by " + nameOf(t.charId).player : "",
-      onclick: function () { openChat(t); } }, [
+      onclick: function () { if (selecting) { if (_ui.picked[t.key]) delete _ui.picked[t.key]; else _ui.picked[t.key] = true; EN.app.render(); } else openChat(t); } }, [
+      selecting ? el("span.pick-box", { "aria-hidden": "true", text: picked ? "✓" : "" }) : null,
       el("span.msgr-av.pc", { text: initialsOf(nameOf(t.charId).name) }),
       el("span.msgr-tt", null, [el("b", { text: chatTitle(t) }), el("span", { text: line + (last ? "  ·  " + stamp(last.at) : "") })]),
       t.unread ? el("i.msgr-ud", { title: t.unread + " unread", text: String(t.unread) }) : null]);
@@ -207,7 +237,10 @@ EN.gmPost = (function () {
     if (it.body) kids.push(el("p.msgr-t", { text: it.body }));
     if (it.pkg && it.pkg.length) kids.push(el("p.msgr-t.dim", { text: "Package: " + it.pkg.map(function (p) { return p.name + " ×" + p.qty; }).join(", ") }));
     if (!kids.length) kids.push(el("p.msgr-t.dim", { text: "(empty)" }));
-    return el("div.msgr-m" + (it.dir === "out" ? ".me" : it.row.status === "unread" ? ".new" : ""), { dataset: { msg: it.dir, id: it.dir === "out" ? it.send.id : it.row.id } }, [el("div.msgr-b", null, kids)]);
+    var rid = it.dir === "out" ? it.send.id : it.row.id;
+    return el("div.msgr-m" + (it.dir === "out" ? ".me" : it.row.status === "unread" ? ".new" : ""), { dataset: { msg: it.dir, id: rid } }, [el("div.msgr-b", null, kids),
+      el("div.msgr-act", null, [el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" }, title: "Delete it from your #POST. " + nameOf(t.charId).name + " keeps their copy.",
+        onclick: function () { hide([rid]); } }, "✕ DELETE")])]);
   }
   function statusOf(it) {
     var s = it.send;
@@ -263,8 +296,17 @@ EN.gmPost = (function () {
       el("span.msgr-av.pc", { text: initialsOf(who.name) }),
       el("span.msgr-hn", null, [el("b", { text: who.name }), el("small", { text: (who.player ? "Played by " + who.player + "  ·  " : "") + "you write as " + t.voice })]),
       el("span", { style: { flex: "1 1 auto" } }),
-      el("span.chip", { dataset: { post: "voice" }, text: "AS " + t.voice.toUpperCase() })]);
+      el("span.chip", { dataset: { post: "voice" }, text: "AS " + t.voice.toUpperCase() }),
+      t.items.length ? armDel("gmchatdel:" + t.key, "✕ DELETE CHAT", "SURE? THE WHOLE CHAT", "Delete everything in this chat from your #POST. " + who.name + " keeps theirs.",
+        "delete-chat", function () { _sel = null; hide(idsOf([t])); }) : null]);
     return [head, feed, compose(t)];
+  }
+
+  // every row in some chats: what the player wrote and what this account sent
+  function idsOf(list) {
+    var ids = [];
+    list.forEach(function (t) { t.items.forEach(function (it) { ids.push(it.dir === "out" ? it.send.id : it.row.id); }); });
+    return ids;
   }
 
   // starting a chat: whom, and as whom
@@ -308,7 +350,7 @@ EN.gmPost = (function () {
      letter on the right with REPLY, which answers it as a letter (signed as the voice it was written to, which can be changed),
      and + WRITE, which opens the letter composer that was this page before (js/gm_campaign.js: the crew or one character, signed
      as anyone, with packages). A send still waiting can be recalled from here as from SENT. */
-  var _mui = { folder: "in", sel: null, writing: false, replying: null, reply: {}, busy: false };
+  var _mui = { folder: "in", sel: null, writing: false, replying: null, reply: {}, busy: false, selecting: false, picked: {} };
   function subjOf(mail) { return String((mail || {}).subj || "").trim(); }
   function isLetterRow(r) { return !!subjOf(r.mail); }
   function isLetterSend(s) { var m = s.mail || {}; return !SYSTEM[String(m.from || "").trim().toLowerCase()] && (!!subjOf(m) || (Array.isArray(m.package) && m.package.length > 0)); }
@@ -367,8 +409,9 @@ EN.gmPost = (function () {
     }
     ensure(false);
     if (!_c || _c.id !== id || !_c.read) { mount.appendChild(el("div.muted-box", { style: { padding: "26px" }, text: "Reading the mailbox…" })); return true; }
-    var inbox = (_c.rows || []).filter(isLetterRow);
-    var sent = (_c.sends || []).filter(isLetterSend);
+    var gone = hidden();
+    var inbox = (_c.rows || []).filter(function (r) { return isLetterRow(r) && !gone[r.id]; });
+    var sent = (_c.sends || []).filter(function (s) { return isLetterSend(s) && !gone[s.id]; });
     var folder = _mui.folder === "sent" ? "sent" : "in";
     var n = inbox.filter(function (r) { return r.status === "unread"; }).length;
     var cur = (folder === "in" ? inbox : sent).filter(function (r) { return r.id === _mui.sel; })[0] || null;
@@ -387,25 +430,37 @@ EN.gmPost = (function () {
       var who = nameOf(cur.character_id);
       pane = [EN.mailView.letter({ id: cur.id, subj: subjOf(cur.mail), who: who.name, from: who.name + (who.player ? " (" + who.player + ")" : ""), to: String(cur.persona || "").trim() || "The GM",
         when: stamp(timeOf(cur.created_at)), body: (cur.mail || {}).body,
-        tools: [el("button.btn.sm", { type: "button", dataset: { post: "reply-open" }, title: "Answer it, as a letter", onclick: function () { _mui.replying = cur.id; EN.app.render(); } }, "↩ REPLY")],
+        tools: [el("button.btn.sm", { type: "button", dataset: { post: "reply-open" }, title: "Answer it, as a letter", onclick: function () { _mui.replying = cur.id; EN.app.render(); } }, "↩ REPLY"),
+          el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" }, title: "Delete it from your Mail. " + who.name + " keeps theirs.", onclick: function () { _mui.sel = null; hide([cur.id]); } }, "✕ DELETE")],
         after: _mui.replying === cur.id ? [mailReply(cur)] : [],
         back: function () { _mui.sel = null; EN.app.render(); } })];
     } else if (cur) {
       var m = cur.mail || {}, st = sendStatus(cur), pk = Array.isArray(m.package) && m.package.length ? m.package : null;
       pane = [EN.mailView.letter({ id: cur.id, subj: subjOf(m) || "A package", from: m.from || "", to: nameOf(cur.character_id).name, when: stamp(timeOf(cur.created_at)), body: m.body, me: true,
         status: st, attach: pk ? el("p.mail-pkgline", { dataset: { post: "gm-mail-pkg" }, text: pk.map(function (x) { return x.name + " ×" + x.qty; }).join(", ") }) : null,
-        tools: cur.status === "waiting" ? [el("button.btn.sm", { type: "button", dataset: { post: "recall" }, title: "Take it back. It hasn't reached them yet.", onclick: function () {
+        tools: (cur.status === "waiting" ? [el("button.btn.sm", { type: "button", dataset: { post: "recall" }, title: "Take it back. It hasn't reached them yet.", onclick: function () {
           Promise.resolve().then(function () { return C().recallSend(cur.id); }).then(function () { toast("Recalled."); ensure(true); }, function (e) { toast(C().errText(e)); });
-        } }, "RECALL")] : [],
+        } }, "RECALL")] : []).concat([el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" },
+          title: cur.status === "waiting" ? "Delete it from your Sent. It still goes to them: RECALL takes it back." : "Delete it from your Sent. They keep theirs.",
+          onclick: function () { _mui.sel = null; hide([cur.id]); } }, "✕ DELETE")]),
         back: function () { _mui.sel = null; EN.app.render(); } })];
     } else pane = [el("p.msgr-empty.msgr-pick", { dataset: { post: "nopick" }, text: inbox.length || sent.length ? "Select a letter to read it." : "No letters yet. Your players write to you from their own Mail." })];
-    mount.appendChild(el("div.msgr-sub", null, [EN.mailView.client({ title: "Mail", post: "gm-mail", folder: folder, sel: _mui.sel, rows: rows, pane: pane, open: !!cur || _mui.writing,
+    // SELECT: letters picked to delete from this device's Mail, in the folder showing
+    var selecting = _mui.selecting && rows.length > 0;
+    if (!selecting) _mui.selecting = false;
+    var select = selecting ? { on: true, picked: _mui.picked,
+      onToggle: function (row) { if (_mui.picked[row.id]) delete _mui.picked[row.id]; else _mui.picked[row.id] = true; EN.app.render(); },
+      bar: EN.mailView.pickBar({ key: "gm-mail-" + folder, noun: "letter", ids: rows.map(function (r) { return r.id; }), state: _mui,
+        del: function (ids) { if (ids.indexOf(_mui.sel) !== -1) _mui.sel = null; _mui.selecting = false; _mui.picked = {}; hide(ids); },
+        done: function () { _mui.selecting = false; _mui.picked = {}; EN.app.render(); } }) } : null;
+    mount.appendChild(el("div.msgr-sub", null, [EN.mailView.client({ title: "Mail", post: "gm-mail", folder: folder, sel: _mui.sel, rows: rows, pane: pane, open: !!cur || _mui.writing, select: select,
       empty: folder === "in" ? "No letters from your players yet. A line with no subject is in CHATS." : "Nothing sent with a subject or a package yet.",
       folders: [{ key: "in", label: "Inbox", count: n }, { key: "sent", label: "Sent" }],
-      onFolder: function (k) { _mui.folder = k; _mui.sel = null; _mui.writing = false; _mui.replying = null; EN.app.render(); },
+      onFolder: function (k) { _mui.folder = k; _mui.sel = null; _mui.writing = false; _mui.replying = null; _mui.selecting = false; _mui.picked = {}; EN.app.render(); },
       onOpen: function (row) { _mui.sel = row.id; _mui.writing = false; _mui.replying = null; EN.app.render(); if (row.r) readOne(row.r); },
-      actions: [el("button.btn.sm.primary", { type: "button", dataset: { post: "mail-write" }, title: "A letter to the crew or to one character, signed as anyone, with a package if you like",
-        onclick: function () { _mui.writing = true; _mui.sel = null; EN.app.render(); } }, "+ WRITE")],
+      actions: selecting ? [] : [el("button.btn.sm.primary", { type: "button", dataset: { post: "mail-write" }, title: "A letter to the crew or to one character, signed as anyone, with a package if you like",
+        onclick: function () { _mui.writing = true; _mui.sel = null; EN.app.render(); } }, "+ WRITE"),
+        rows.length ? EN.mailView.selectButton(function () { _mui.selecting = true; _mui.picked = {}; EN.app.render(); }) : null],
       foot: "Letters with a subject or a package. A line with no subject is in CHATS." })]));
     return true;
   }
@@ -442,6 +497,11 @@ EN.gmPost = (function () {
     // what arrives in the chat that is open is read as it comes, once the page is drawn
     if (open && open.unread) setTimeout(function () { if (_sel === open.key) readThread(open); }, 0);
 
+    var selecting = _ui.selecting && !_ui.picking && list.length > 0;
+    if (!selecting) _ui.selecting = false;
+    var bar = selecting ? EN.mailView.pickBar({ key: "gm-chats", noun: "chat", ids: list.map(function (t) { return t.key; }), state: _ui,
+      del: function (keys) { if (keys.indexOf(_sel) !== -1) _sel = null; _ui.selecting = false; _ui.picked = {}; hide(idsOf(list.filter(function (t) { return keys.indexOf(t.key) !== -1; }))); },
+      done: function () { _ui.selecting = false; _ui.picked = {}; EN.app.render(); } }) : null;
     var listBox = el("div.msgr-list", { dataset: { keepScroll: "gm-chat-list", post: "threads" } });
     function fill() {
       var q = _ui.q.trim().toLowerCase();
@@ -454,7 +514,7 @@ EN.gmPost = (function () {
       EN.ui.clear(listBox);
       if (!shown.length) listBox.appendChild(el("p.msgr-empty", { dataset: { post: "empty" }, text: list.length ? "No chat matches."
         : "No chats yet. Start one with + NEW CHAT, or wait for a player to write from their own #POST." }));
-      shown.forEach(function (t) { listBox.appendChild(chatRow(t, !!open && open.key === t.key)); });
+      shown.forEach(function (t) { listBox.appendChild(chatRow(t, !!open && open.key === t.key, selecting)); });
     }
     fill();
     var chips = ["all", "unread"].map(function (k) {
@@ -463,12 +523,14 @@ EN.gmPost = (function () {
     });
     var side = el("div.msgr-side", null, [
       el("div.msgr-sh", null, [el("h3", { text: _ui.picking ? "New chat" : "Chats" }), el("span", { style: { flex: "1 1 auto" } }),
-        _ui.picking ? el("button.btn.sm.ghost", { type: "button", dataset: { post: "pick-cancel" }, onclick: function () { _ui.picking = false; EN.app.render(); } }, "CANCEL")
+        selecting ? null : _ui.picking ? el("button.btn.sm.ghost", { type: "button", dataset: { post: "pick-cancel" }, onclick: function () { _ui.picking = false; EN.app.render(); } }, "CANCEL")
           : el("button.btn.sm", { type: "button", dataset: { post: "new-chat" }, title: "Write to a character, as the GM or as anyone", onclick: function () { _ui.picking = true; ensure(true, true); EN.app.render(); } }, "+ NEW CHAT"),
-        _ui.picking ? null : el("button.btn.sm.ghost", { type: "button", dataset: { post: "refresh" }, title: "Read the mailbox again", onclick: function () { ensure(true, true); } }, "↻")]),
+        _ui.picking || selecting || !list.length ? null : EN.mailView.selectButton(function () { _ui.selecting = true; _ui.picked = {}; EN.app.render(); }),
+        _ui.picking || selecting ? null : el("button.btn.sm.ghost", { type: "button", dataset: { post: "refresh" }, title: "Read the mailbox again", onclick: function () { ensure(true, true); } }, "↻")]),
       _ui.picking ? null : el("div.msgr-sb", null, [el("input", { type: "text", value: _ui.q, placeholder: "Search chats", "aria-label": "Search chats", dataset: { post: "search" },
         oninput: function (e) { _ui.q = e.target.value; fill(); } })]),
       _ui.picking ? null : el("div.msgr-chips", null, chips),
+      bar ? el("div.pick-bar", { dataset: { post: "pick-bar" } }, bar) : null,
       _ui.picking ? picker(list) : listBox,
       el("p.msgr-foot", { dataset: { post: "count" }, text: list.length ? list.length + (list.length === 1 ? " chat" : " chats") + (n ? " · " + n + " unread" : "") : "Chats are with one character and one voice." })]);
     var main = el("div.msgr-main", { dataset: { thread: open ? open.key : "" } }, open ? conversation(open)
@@ -482,7 +544,7 @@ EN.gmPost = (function () {
     return true;
   }
 
-  function reset() { _c = null; _sel = null; _marked = {}; _ui.pending = null; _ui.picking = false; }
+  function reset() { _c = null; _sel = null; _marked = {}; _ui.pending = null; _ui.picking = false; _ui.selecting = false; _ui.picked = {}; _mui.selecting = false; _mui.picked = {}; }
 
   return { renderInbox: renderInbox, renderMail: renderMail, compose: composeOpen, composeDone: composeDone, unread: unread, heard: heard, ensure: ensure, reset: reset, threads: function () { return _c && _c.rows ? threads() : []; } };
 })();

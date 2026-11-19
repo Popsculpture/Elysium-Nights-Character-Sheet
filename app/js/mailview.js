@@ -18,14 +18,18 @@ EN.mailView = (function () {
   function snippet(t) { return String(t || "").replace(/\s+/g, " ").trim().slice(0, 140); }
 
   /* opts: { title, actions: [nodes], folders: [{ key, label, count }], folder, onFolder(key), rows: [{ id, who, when, subj, body, unread, pkg,
-     post: the row's data-post, sys }], sel, onOpen(row), empty, pane: [nodes], foot, open: whether the right pane holds something (phone layout) } */
+     post: the row's data-post, sys }], sel, onOpen(row), empty, pane: [nodes], foot, open: whether the right pane holds something (phone layout),
+     select: { on, picked: { row id: true }, onToggle(row), bar: [nodes] } while letters are being picked to delete (a press picks, not opens) } */
   function client(opts) {
+    var S = opts.select && opts.select.on ? opts.select : null;
     var list = el("div.msgr-list.mail-list", { dataset: { keepScroll: "mail-list-" + (opts.folder || ""), post: "letters" } });
     if (!opts.rows.length) list.appendChild(el("p.msgr-empty", { dataset: { post: "mail-empty" }, text: opts.empty || "No letters." }));
     opts.rows.forEach(function (r) {
-      list.appendChild(el("button.mail-row" + (r.id === opts.sel ? ".on" : "") + (r.unread ? ".un" : ""), { type: "button", "data-ro-keep": "1",
-        dataset: { post: r.post || "letter", msg: r.id }, "aria-pressed": r.id === opts.sel ? "true" : "false", onclick: function () { opts.onOpen(r); } }, [
-        el("span.mail-dot", { "aria-hidden": "true" }),
+      var picked = !!(S && S.picked[r.id]);
+      list.appendChild(el("button.mail-row" + (r.id === opts.sel && !S ? ".on" : "") + (r.unread ? ".un" : "") + (S ? ".pick" : "") + (picked ? ".picked" : ""), { type: "button", "data-ro-keep": "1",
+        dataset: { post: r.post || "letter", msg: r.id }, "aria-pressed": (S ? picked : r.id === opts.sel) ? "true" : "false",
+        onclick: function () { if (S) S.onToggle(r); else opts.onOpen(r); } }, [
+        S ? el("span.pick-box", { "aria-hidden": "true", text: picked ? "✓" : "" }) : el("span.mail-dot", { "aria-hidden": "true" }),
         el("span.mail-row-body", null, [
           el("span.mail-row-top", null, [el("b.mail-who", { text: r.who || "" }), el("span.mail-when", { text: r.when || "" })]),
           el("span.mail-row-subj", null, [el("span.msgr-tt", null, [el("b", { text: r.subj || "(no subject)" })]),
@@ -38,7 +42,7 @@ EN.mailView = (function () {
     }));
     var side = el("div.msgr-side", null, [
       el("div.msgr-sh", null, [el("h3", { text: opts.title || "Mail" }), el("span", { style: { flex: "1 1 auto" } })].concat(opts.actions || [])),
-      tabs, list, opts.foot ? el("p.msgr-foot", { text: opts.foot }) : null]);
+      tabs, S && S.bar ? el("div.pick-bar", { dataset: { post: "pick-bar" } }, S.bar) : null, list, opts.foot ? el("p.msgr-foot", { text: opts.foot }) : null]);
     var main = el("div.msgr-main.mail-pane", null, opts.pane);
     return el("div.msgr.mail", { dataset: { post: opts.post || "mail", pane: opts.open ? "thread" : "list" } }, [side, main]);
   }
@@ -81,5 +85,28 @@ EN.mailView = (function () {
         opts.discard ? el("button.btn.sm.ghost", { type: "button", dataset: { post: P + "-discard" }, onclick: opts.discard }, "DISCARD") : null])]));
   }
 
-  return { client: client, letter: letter, compose: compose, initials: initials };
+  /* SELECT MODE, shared by every #POST list (18 Nov 2026, the author's call: delete one at a time or in bulk). The bar over a list
+     whose rows are being picked: how many, ALL (or NONE), DELETE (pressed twice: a delete is for good), and CANCEL. ids: every id
+     the list shows. state: { picked }. del(ids) deletes; done() leaves select mode. noun: "letter" or "chat". The bar draws itself
+     again on a press, so the list never redraws under it. */
+  function pickBar(o) {
+    var ids = o.ids, picked = o.state.picked, n = ids.filter(function (id) { return picked[id]; }).length;
+    var all = n === ids.length && n > 0;
+    var del = EN.ui.armButton("pickdel:" + o.key, { label: "✕ DELETE" + (n ? " " + n : ""), armedLabel: "SURE? DELETE " + n + " " + (n === 1 ? o.noun : o.noun + "s").toUpperCase(),
+      title: n ? "Take " + (n === 1 ? "it" : "them") + " out of your own #POST. Nobody else's copy changes." : "Pick something first",
+      onConfirm: function () { var go = ids.filter(function (id) { return picked[id]; }); if (go.length) o.del(go); } });
+    del.setAttribute("data-post", "pick-delete");
+    if (!n) del.disabled = true;
+    return [el("span.pick-n", { text: n ? n + " picked" : "Pick " + o.noun + "s" }), el("span", { style: { flex: "1 1 auto" } }),
+      ids.length ? el("button.btn.sm.ghost", { type: "button", dataset: { post: "pick-all" }, onclick: function () {
+        if (all) Object.keys(picked).forEach(function (k) { delete picked[k]; }); else ids.forEach(function (id) { picked[id] = true; });
+        EN.app.render(); } }, all ? "NONE" : "ALL") : null,
+      del,
+      el("button.btn.sm.ghost", { type: "button", dataset: { post: "pick-cancel" }, onclick: o.done }, "CANCEL")];
+  }
+  function selectButton(onclick) {
+    return el("button.btn.sm.ghost", { type: "button", dataset: { post: "select" }, title: "Pick several to delete at once", onclick: onclick }, "SELECT");
+  }
+
+  return { client: client, letter: letter, compose: compose, initials: initials, pickBar: pickBar, selectButton: selectButton };
 })();
