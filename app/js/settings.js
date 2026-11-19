@@ -1155,7 +1155,8 @@ EN.settings = (function () {
         title: "Switch to the Freelancer desktop", onclick: function () { EN.app.setPortal("freelancer"); rebuild(); }
       }, "✦ FREELANCER"),
       el("button.btn.sm" + (admin ? ".primary" : ""), {
-        title: "Switch to the Admin desktop", onclick: function () { EN.app.setPortal("admin"); rebuild(); }
+        // through the landing, which picks or makes the campaign (js/gm_landing.js); the tray steps aside so it can be seen
+        title: "Switch to the Admin desktop, and pick a campaign", onclick: function () { EN.app.enterAdmin(); if (EN.app.onLanding()) close(); else rebuild(); }
       }, "◆ ADMIN")
     ]));
     return kids;

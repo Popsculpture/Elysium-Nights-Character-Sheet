@@ -3824,3 +3824,27 @@ html.skin-98 .gm-crew-note{ color:#000; background:#ffffcc; border-color:#000; }
 /* '98: square avatars on the window's face; #GRIDroid: the phone layout below already takes it to one pane */
 html.skin-98 .msgr{ border-radius:0; }
 html.skin-98 .msgr-b, html.skin-98 .msgr-av, html.skin-98 .msgr-chip, html.skin-98 .msgr-ud{ border-radius:0; }
+
+/* ---- THE ADMIN LANDING (18 Nov 2026): pick or make the campaign before the desktop (js/gm_landing.js). The rail's tabs are put away
+   while it is up (its Settings gear stays); the top bar's campaign picker too, since this page is that choice. ---- */
+html.gm-landing #os-tabs .os-tabs-scroll{ visibility:hidden; }   /* the tabs go; the rail and its Settings gear stay */
+html.gm-landing .gm-crew-pick{ display:none !important; }
+.land{ max-width:760px; }
+.land-h{ font-family:var(--disp); font-size:12px; letter-spacing:.18em; color:var(--text3); margin:18px 0 8px; }
+.land-box, .land-new{ background:var(--panel); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; }
+.land-box .land-h, .land-new .land-h{ margin-top:0; }
+.land-list{ display:flex; flex-direction:column; gap:8px; }
+.land-card{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; cursor:pointer; padding:14px 16px; font-family:inherit;
+  background:var(--panel); color:var(--text2); border:1px solid var(--border); border-left:3px solid var(--border2); border-radius:var(--r); }
+.land-card:hover, .land-card:focus-visible{ border-color:var(--accent-dim); border-left-color:var(--accent); background:var(--bg3); color:var(--text); }
+.land-card.last{ border-left-color:var(--accent); }
+.land-mark{ color:var(--accent); font-size:14px; }
+.land-name{ display:flex; flex-direction:column; gap:2px; flex:1 1 auto; min-width:0; }
+.land-name b{ font-family:var(--disp); font-size:17px; letter-spacing:.06em; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.land-name small{ font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:var(--text3); }
+.land-go{ font-family:var(--disp); font-size:12px; letter-spacing:.12em; color:var(--accent); }
+.land-new{ margin-top:18px; }
+.land-row{ display:flex; gap:8px; align-items:center; }
+.land-row input{ flex:1 1 auto; min-width:0; }
+.land-jack{ max-width:320px; }
+.land-foot{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; margin-top:22px; }

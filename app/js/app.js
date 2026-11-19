@@ -273,7 +273,20 @@ EN.app = (function () {
      so gotoTab, activeTab and every caller of either mean what they always meant. */
   function deckOn() { return portal === "freelancer" && !!(EN.deck && EN.deck.shell && EN.deck.shell.on()); }
   // the key the view is drawn under: a sub-tab switch counts as a view change (scroll to the top)
-  function viewKey() { return LAST[portal] + "/" + subTab(LAST[portal]) + (deckOn() ? "/" + EN.deck.shell.subKey(LAST[portal]) : ""); }
+  function viewKey() { return (onLanding() ? "landing" : LAST[portal]) + "/" + subTab(LAST[portal]) + (deckOn() ? "/" + EN.deck.shell.subKey(LAST[portal]) : ""); }
+  /* THE ADMIN LANDING (18 Nov 2026, the author's call). Choosing the Admin desktop from Settings opens a page that picks or
+     makes the campaign to run (js/gm_landing.js) before the desktop itself. Held here, in memory: a reload, ?portal=admin and
+     a gotoTab land on the desktop as they always did, so a fight in progress is never put behind a page. */
+  var _landing = false;
+  function onLanding() { return _landing && portal === "admin" && !!EN.gmLanding; }
+  var LANDING = { key: "landing", label: "Campaigns", view: function (m) { EN.gmLanding.render(m); } };
+  function enterAdmin() {
+    _landing = true;
+    usePortal("admin");
+    if (portal !== "admin") _landing = false;   // the fence said no (a player who runs nothing): Gizmo's page, not this one
+    render();
+  }
+  function leaveLanding() { _landing = false; render(); }
   Object.keys(ALIAS).forEach(function (k) {
     if (tabByKey(k)) { console.error("Tab alias \"" + k + "\" is also a tab key; the alias is dropped."); delete ALIAS[k]; }
   });
@@ -323,6 +336,7 @@ EN.app = (function () {
     // a sheet being viewed belongs to the Freelancer desktop, and leaving for Admin ends the visit
     if (want === "admin" && store.activeIsViewing && store.activeIsViewing()) store.clearViewing();
     portal = want;
+    if (want !== "admin") _landing = false;
     try { localStorage.setItem(PORTAL_KEY, portal); } catch (e) {}
     EN.ui.disarm();
     foldRail();
@@ -602,6 +616,10 @@ EN.app = (function () {
        it was simply unreachable until a tab could disappear. */
     var tab = vis.filter(function (t) { return t.key === LAST[portal]; })[0];
     if (!tab) { tab = vis[0]; LAST[portal] = tab.key; }
+    // the landing stands in for the tab, with the rail put away (css/theme.css html.gm-landing) until a campaign is picked
+    var landing = onLanding();
+    document.documentElement.classList.toggle("gm-landing", landing);
+    if (landing) tab = LANDING;
     // a GM data file picked on Sysop's DATA page is held only while that page is open
     if (tab.key !== "sysop" && EN.gmSysop && EN.gmSysop.reset) EN.gmSysop.reset();
     if (tab.view) {
@@ -974,6 +992,7 @@ EN.app = (function () {
       if (Object.prototype.hasOwnProperty.call(ALIAS, k)) { if (!sub) sub = ALIAS[k][1]; k = ALIAS[k][0]; }
       var t = TABS.filter(function (x) { return x.key === k; })[0];
       if (!t) return;
+      _landing = false;   // a way to a tab is a way past the landing
       usePortal(t.portal);
       // the fence said no: stay on this desktop rather than file an Admin tab under Freelancer
       if (portal === t.portal) { LAST[portal] = k; if (sub) setSub(k, sub); }
@@ -982,6 +1001,7 @@ EN.app = (function () {
     subTab: subTab,
     setSub: setSub,
     portal: function () { return portal; },
+    enterAdmin: enterAdmin, leaveLanding: leaveLanding, onLanding: onLanding,
     setPortal: setPortal,
     hasAdmin: hasAdmin,
     lockReason: lockReason
