@@ -763,15 +763,15 @@ EN.faceView = (function () {
      Chat is the back-and-forth. Mail is the letters: anything with a subject or a package (what the GM sends from the Admin's
      MAIL page), the notices the app signs (Payroll, Campaign), and letters logged by hand. It reads like an inbox: the
      letters down the left, newest first, with Inbox and Sent; the one picked on the right, whole, with its package and, for a
-     letter that came through the campaign, an answer with a subject under it. A player writes to the GM with a subject here.
+     letter that came through the campaign, REPLY, an answer with a subject. Drawn as an email reads (js/mailview.js). A player writes to the GM with a subject here.
      A player writes only as themself: the database signs every letter with the character's own name, and only a letter
      logged by hand can be edited (one the GM sent is the GM's words). */
-  var _ml = { sel: null, folder: "in", writing: false, draft: { subj: "", body: "" }, reply: {}, busy: false, edit: null };
+  var _ml = { sel: null, folder: "in", writing: false, draft: { subj: "", body: "" }, reply: {}, replying: null, busy: false, edit: null };
   function isMail(m) { return !!(m && (String(m.subj || "").trim() || hasPackage(m) || fromSystem(m) || !m.inboxId)); }
   function sentMail(r) { return !!String(((r && r.mail) || {}).subj || "").trim(); }
   function mailWhen(m) { var t = timeOf(m.at); return t !== null ? stamp(t) : (m.when || ""); }
   function mailOpen(x, ro, ctx) {
-    _ml.sel = x.m.id; _ml.writing = false; _ml.edit = null;
+    _ml.sel = x.m.id; _ml.writing = false; _ml.edit = null; _ml.replying = null;
     if (!ro && ctx && EN.chat && x.m.inboxId) EN.chat.seen(ctx, [x.m.inboxId], []);
     if (!ro && !x.m.read) fset(function (f) { if (f.post[x.i] && f.post[x.i].id === x.m.id) f.post[x.i].read = true; });
     else EN.app.render();
@@ -788,7 +788,7 @@ EN.faceView = (function () {
     _ml.busy = true; EN.app.render();
     EN.chat.toGm(ctx, body, replyTo, subj).then(function () {
       _ml.busy = false;
-      if (key) delete _ml.reply[key]; else { _ml.draft = { subj: "", body: "" }; _ml.writing = false; _ml.folder = "sent"; }
+      if (key) { delete _ml.reply[key]; _ml.replying = null; } else { _ml.draft = { subj: "", body: "" }; _ml.writing = false; _ml.folder = "sent"; }
       EN.ui.toast(replyTo ? "Sent. Your answer is on its way." : "Sent to your GM.");
       EN.app.render();
     }, function (e) {
@@ -798,20 +798,23 @@ EN.faceView = (function () {
       EN.app.render();
     });
   }
+  // a letter on the record, open, as an email reads (js/mailview.js): Reply, Mark, Edit (a letter logged by hand only), Delete
   function mailLetter(x, ro, ctx) {
-    var m = x.m, i = x.i, waiting = hasPackage(m) && !m.taken;
+    var m = x.m, i = x.i, waiting = hasPackage(m) && !m.taken, who = String(m.from || "").trim() || "Unknown node";
     function put(k, v, silent) { fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post[i][k] = v; }, silent); }
     if (_ml.edit === m.id && !ro && !m.inboxId) {
       function fld(k, label, ph) {
-        return el("div.field", { style: { margin: 0, minWidth: 0, flex: k === "subj" ? "2 1 180px" : "1 1 120px" } }, [el("label.fl", { style: { margin: "0 0 2px" }, text: label }),
-          el("input", { type: "text", value: m[k] || "", placeholder: ph, dataset: { post: "edit-" + k }, style: { width: "100%", fontSize: "12px" }, oninput: function () { put(k, this.value, true); } })]);
+        return el("div.mail-crow", null, [el("span.mail-k", { text: label }),
+          el("input", { type: "text", value: m[k] || "", placeholder: ph, dataset: { post: "edit-" + k }, oninput: function () { put(k, this.value, true); } })]);
       }
-      return el("div.msgr-m.msgr-edit.mail-l", { dataset: { msg: m.id } }, [el("div.msgr-b", null, [
-        el("div.row.wrap", { style: { gap: "8px", marginBottom: "7px" } }, [fld("from", "From", "NULLJACK"), fld("subj", "Subject", "Work, if you want it"), fld("when", "When", "03:14, Tuesday")]),
-        el("textarea", { value: m.body || "", placeholder: "The letter…", dataset: { post: "edit-body" }, style: { width: "100%", minHeight: "120px", fontSize: "12px" }, oninput: function () { put("body", this.value, true); } }),
-        el("div.row.wrap", { style: { gap: "6px", marginTop: "7px" } }, [el("button.btn.sm.primary", { type: "button", dataset: { post: "edit-done" }, onclick: function () { _ml.edit = null; EN.app.render(); } }, "DONE")])])]);
+      return el("div.mail-compose", { dataset: { post: "mail-edit", msg: m.id } }, [el("div.mail-ctitle", { text: "A letter logged by hand" }),
+        fld("from", "From", "NULLJACK"), fld("subj", "Subject", "Work, if you want it"), fld("when", "When", "03:14, Tuesday"),
+        el("textarea.mail-ctext", { value: m.body || "", placeholder: "The letter…", dataset: { post: "edit-body" }, oninput: function () { put("body", this.value, true); } }),
+        el("div.mail-cfoot", null, [el("button.btn.primary", { type: "button", dataset: { post: "edit-done" }, onclick: function () { _ml.edit = null; EN.app.render(); } }, "DONE")])]);
     }
-    var acts = ro ? [] : [
+    var canReply = !ro && ctx && m.inboxId && !fromSystem(m);
+    var tools = ro ? [] : [
+      canReply ? el("button.btn.sm", { type: "button", dataset: { post: "reply-open" }, title: "Answer " + who, onclick: function () { _ml.replying = m.id; EN.app.render(); } }, "↩ REPLY") : null,
       el("button.btn.sm.ghost", { type: "button", dataset: { post: "mark" }, title: m.read ? "Put it back in the unread pile." : "Clear it off the rail's badge.",
         onclick: function () { var to = !m.read; put("read", to); } }, m.read ? "MARK UNREAD" : "MARK READ"),
       m.inboxId ? null : el("button.btn.sm.ghost", { type: "button", dataset: { post: "edit" }, title: "A letter you logged by hand is yours to correct", onclick: function () { _ml.edit = m.id; EN.app.render(); } }, "EDIT"),
@@ -820,41 +823,24 @@ EN.faceView = (function () {
             title: "Delete this letter and the package in it. Neither is kept anywhere else.",
             onConfirm: function () { _ml.sel = null; fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post.splice(i, 1); }); } })
         : el("button.btn.sm.ghost", { type: "button", dataset: { post: "delete" }, title: "Delete this letter. It is not kept anywhere else.",
-            onclick: function () { _ml.sel = null; fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post.splice(i, 1); }); } }, "✕ DELETE")
-    ];
-    var kids = [el("b.msgr-s.mail-subj", { text: m.subj || "(no subject)" }),
-      el("p.mail-meta", { text: "From " + (String(m.from || "").trim() || "Unknown node") + (mailWhen(m) ? "  ·  " + mailWhen(m) : "") }),
-      m.body ? el("p.msgr-t", { text: m.body }) : el("p.msgr-t.dim", { text: "(no message)" })];
-    if (hasPackage(m)) kids.push(pkgBox(m));
-    var out = [el("div.msgr-m.mail-l" + (m.read ? "" : ".new"), { dataset: { msg: m.id } }, [el("div.msgr-b", null, kids), acts.length ? el("div.msgr-act", null, acts) : null])];
-    // an answer, with a subject, to a letter that came through the campaign; a notice the app signs has nobody to answer
-    if (!ro && ctx && m.inboxId && !fromSystem(m)) {
+            onclick: function () { _ml.sel = null; fset(function (f) { if (f.post[i] && f.post[i].id === m.id) f.post.splice(i, 1); }); } }, "✕ DELETE")];
+    var after = [];
+    // the answer goes to whoever signed the letter, through the GM, with Re: and its subject
+    if (canReply && _ml.replying === m.id) {
       var d = _ml.reply[m.id] || (_ml.reply[m.id] = { subj: m.subj ? (/^re:/i.test(m.subj) ? m.subj : "Re: " + m.subj) : "", body: "" });
-      out.push(el("div.msgr-cmp.mail-reply", { dataset: { post: "mail-reply" } }, [
-        el("input", { type: "text", maxlength: "140", value: d.subj, placeholder: "Subject", "aria-label": "Subject", dataset: { post: "mail-reply-subj" }, oninput: function (e) { d.subj = e.target.value; } }),
-        el("div.msgr-cmp-row", null, [
-          el("textarea", { maxlength: "4000", value: d.body, placeholder: "Answer " + (String(m.from || "").trim() || "them"), "aria-label": "Answer", dataset: { post: "mail-reply-body" }, oninput: function (e) { d.body = e.target.value; } }),
-          el("button.btn.primary", { type: "button", disabled: _ml.busy, dataset: { post: "mail-reply-send" }, onclick: function () { mailSend(ctx, m.inboxId, d, m.id); } }, _ml.busy ? "…" : "SEND")])]));
+      after.push(EN.mailView.compose({ title: "Reply", to: who, subj: d.subj, body: d.body, busy: _ml.busy, post: "mail-reply", placeholder: "Answer " + who,
+        onSubj: function (v) { d.subj = v; }, onBody: function (v) { d.body = v; },
+        send: function () { mailSend(ctx, m.inboxId, d, m.id); },
+        discard: function () { delete _ml.reply[m.id]; _ml.replying = null; EN.app.render(); } }));
     }
-    return out;
+    return EN.mailView.letter({ id: m.id, subj: m.subj, from: who, to: "You", when: mailWhen(m), body: m.body, unread: !m.read,
+      avatar: fromSystem(m) ? { html: ICON_POST } : null, tools: tools, attach: hasPackage(m) ? pkgBox(m) : null, after: after,
+      back: function () { _ml.sel = null; _ml.replying = null; EN.app.render(); } });
   }
-  function mailSent(r) {
-    var mail = r.mail || {}, at = timeOf(r.created_at), read = r.status === "read" || !!r.read_at;
-    return [el("div.msgr-m.mail-l.me", { dataset: { post: "gm-sent", status: r.status || "", msg: r.id } }, [el("div.msgr-b", null, [
-      el("b.msgr-s.mail-subj", { text: mail.subj || "(no subject)" }),
-      el("p.mail-meta", { text: "To " + (String(r.persona || "").trim() || "The GM") + (at !== null ? "  ·  " + stamp(at) : "") }),
-      mail.body ? el("p.msgr-t", { text: mail.body }) : null])]),
-      el("div.msgr-seen", { dataset: { post: "seen", seen: read ? "1" : "0" }, text: read ? "Seen" : "Not read yet" })];
-  }
-  function mailWrite(ctx) {
-    var d = _ml.draft;
-    return [el("div.msgr-h", null, [el("span.msgr-av.sys", { html: ICON_POST }), el("span.msgr-hn", null, [el("b", { text: "To The GM" }), el("small", { text: ctx.campaignName || "" })]),
-      el("span", { style: { flex: "1 1 auto" } }),
-      el("button.btn.sm.ghost", { type: "button", dataset: { post: "mail-cancel" }, onclick: function () { _ml.writing = false; EN.app.render(); } }, "CANCEL")]),
-      el("div.msgr-cmp.mail-write", { dataset: { post: "mail-compose" } }, [
-        el("input", { type: "text", maxlength: "140", value: d.subj, placeholder: "Subject", "aria-label": "Subject", dataset: { post: "mail-subj" }, oninput: function (e) { d.subj = e.target.value; } }),
-        el("textarea", { maxlength: "4000", value: d.body, placeholder: "Write to the people who run " + (ctx.campaignName || "your campaign"), "aria-label": "Letter", dataset: { post: "mail-body" }, oninput: function (e) { d.body = e.target.value; } }),
-        el("div.row", { style: { justifyContent: "flex-end" } }, [el("button.btn.primary", { type: "button", disabled: _ml.busy, dataset: { post: "mail-send" }, onclick: function () { mailSend(ctx, null, d, null); } }, _ml.busy ? "…" : "SEND")])])];
+  function mailSentView(r) {
+    var mail = r.mail || {}, at = timeOf(r.created_at), read = r.status === "read" || !!r.read_at, me = String((mail.from || "")).trim() || "You";
+    return EN.mailView.letter({ id: r.id, subj: mail.subj, from: me, to: String(r.persona || "").trim() || "The GM", when: at !== null ? stamp(at) : "", body: mail.body, me: true,
+      status: read ? "Seen" : "Not read yet", back: function () { _ml.sel = null; EN.app.render(); } });
   }
   function mailPanel() {
     var ch = store.active(), ro = readOnlyRecord(), ctx = gmContext(ch), post = faceRead(ch).post;
@@ -865,46 +851,29 @@ EN.faceView = (function () {
     var folder = _ml.folder === "sent" && ctx ? "sent" : "in";
     var n = inbox.filter(function (x) { return !x.m.read; }).length;
     var cur = folder === "in" ? inbox.filter(function (x) { return x.m.id === _ml.sel; })[0] || null : sent.filter(function (r) { return r.id === _ml.sel; })[0] || null;
-    if (!cur) _ml.sel = null;
-    var listBox = el("div.msgr-list", { dataset: { keepScroll: "mail-list", post: "letters" } });
-    if (folder === "in") {
-      if (!inbox.length) listBox.appendChild(el("p.msgr-empty", { text: "No letters. What comes with a subject or a package lands here." }));
-      inbox.forEach(function (x) {
-        var m = x.m, on = cur && cur.m.id === m.id, parcel = hasPackage(m) && !m.taken, who = String(m.from || "").trim() || "Unknown node";
-        listBox.appendChild(el("button.msgr-th" + (on ? ".on" : "") + (m.read ? "" : ".un"), { type: "button", "data-ro-keep": "1", dataset: { post: "letter", msg: m.id },
-          onclick: function () { mailOpen(x, ro, ctx); } }, [
-          fromSystem(m) ? el("span.msgr-av.sys", { html: ICON_POST }) : el("span.msgr-av", { text: initialsOf(who) }),
-          el("span.msgr-tt", null, [el("b", { text: m.subj || "(no subject)" }), el("span", { text: who + (mailWhen(m) ? "  ·  " + mailWhen(m) : "") })]),
-          parcel ? el("span.msgr-pk", { html: ICON_PKG, title: "A package is waiting" }) : null,
-          m.read ? null : el("i.msgr-ud", { title: "Unread", text: "1" })]));
-      });
-    } else {
-      if (!sent.length) listBox.appendChild(el("p.msgr-empty", { text: "Nothing sent with a subject yet." }));
-      sent.forEach(function (r) {
-        var mail = r.mail || {}, on = cur && cur.id === r.id, at = timeOf(r.created_at);
-        listBox.appendChild(el("button.msgr-th" + (on ? ".on" : ""), { type: "button", "data-ro-keep": "1", dataset: { post: "sent-letter", msg: r.id },
-          onclick: function () { _ml.sel = r.id; _ml.writing = false; EN.app.render(); } }, [
-          el("span.msgr-av.sys", { html: ICON_POST }),
-          el("span.msgr-tt", null, [el("b", { text: mail.subj || "(no subject)" }), el("span", { text: "To " + (String(r.persona || "").trim() || "The GM") + (at !== null ? "  ·  " + stamp(at) : "") })])]));
-      });
-    }
-    var chips = [["in", "Inbox" + (n ? " · " + n : "")], ["sent", "Sent"]].filter(function (c) { return c[0] === "in" || ctx; }).map(function (c) {
-      return el("button.msgr-chip" + (folder === c[0] ? ".on" : ""), { type: "button", "data-ro-keep": "1", dataset: { post: "folder-" + c[0] },
-        onclick: function () { _ml.folder = c[0]; _ml.sel = null; _ml.writing = false; EN.app.render(); } }, c[1]);
-    });
-    var side = el("div.msgr-side", null, [
-      el("div.msgr-sh", null, [el("h3", { text: "Mail" }), el("span", { style: { flex: "1 1 auto" } }),
-        !ro && ctx ? el("button.btn.sm", { type: "button", dataset: { post: "mail-write" }, title: "A letter to your GM, with a subject", onclick: function () { _ml.writing = true; _ml.sel = null; EN.app.render(); } }, "+ WRITE") : null,
-        ro ? null : el("button.btn.sm.ghost", { type: "button", dataset: { post: "new" }, title: "Log something that came in another way, or a note to yourself", onclick: function () { mailLog(); } }, "+ LOG")]),
-      el("div.msgr-chips", null, chips), listBox, el("p.msgr-foot", { text: POST_HELP })]);
-    var mainKids = _ml.writing && ctx && !ro ? mailWrite(ctx)
-      : cur ? [el("div.msgr-feed.mail-feed", { dataset: { keepScroll: "mail-feed" } }, folder === "in" ? mailLetter(cur, ro, ctx) : mailSent(cur))]
-      : [el("p.msgr-empty.msgr-pick", { dataset: { post: "nopick" }, text: inbox.length || sent.length ? "Select a letter to read it." : "No letters yet." })];
-    var pane = cur || (_ml.writing && ctx) ? "thread" : "list";
-    var main = el("div.msgr-main", { dataset: { letter: cur ? (cur.m ? cur.m.id : cur.id) : "" } }, [
-      cur || (_ml.writing && ctx) ? el("button.btn.sm.ghost.msgr-back.mail-back", { type: "button", "data-ro-keep": "1", dataset: { post: "back" }, title: "Back to the letters",
-        onclick: function () { _ml.sel = null; _ml.writing = false; EN.app.render(); } }, "‹ LETTERS") : null].concat(mainKids));
-    return el("div.msgr.mail", { dataset: { post: "mail", pane: pane, unread: String(n) } }, [side, main]);
+    if (!cur) { _ml.sel = null; }
+    if (!cur || !cur.m || _ml.replying !== cur.m.id) _ml.replying = null;
+    var rows = folder === "in"
+      ? inbox.map(function (x) { var m = x.m; return { id: m.id, x: x, who: String(m.from || "").trim() || "Unknown node", when: mailWhen(m), subj: m.subj, body: m.body, unread: !m.read, pkg: hasPackage(m) && !m.taken, pkgIcon: ICON_PKG }; })
+      : sent.map(function (r) { var mail = r.mail || {}, at = timeOf(r.created_at); return { id: r.id, r: r, post: "sent-letter", who: "To " + (String(r.persona || "").trim() || "The GM"), when: at !== null ? stamp(at) : "", subj: mail.subj, body: mail.body }; });
+    var pane;
+    if (_ml.writing && ctx && !ro) {
+      var d = _ml.draft;
+      pane = [EN.mailView.compose({ title: "New letter", to: "The GM, " + (ctx.campaignName || "your campaign"), subj: d.subj, body: d.body, busy: _ml.busy, post: "mail",
+        placeholder: "Write to the people who run " + (ctx.campaignName || "your campaign"),
+        onSubj: function (v) { d.subj = v; }, onBody: function (v) { d.body = v; },
+        send: function () { mailSend(ctx, null, d, null); },
+        discard: function () { _ml.writing = false; _ml.draft = { subj: "", body: "" }; EN.app.render(); } })];
+    } else if (cur) pane = [folder === "in" ? mailLetter(cur, ro, ctx) : mailSentView(cur)];
+    else pane = [el("p.msgr-empty.msgr-pick", { dataset: { post: "nopick" }, text: inbox.length || sent.length ? "Select a letter to read it." : "No letters yet." })];
+    return EN.mailView.client({ title: "Mail", folder: folder, sel: _ml.sel, rows: rows, pane: pane, open: !!cur || (_ml.writing && !!ctx), foot: POST_HELP,
+      empty: folder === "in" ? "No letters. What comes with a subject or a package lands here." : "Nothing sent with a subject yet.",
+      folders: [{ key: "in", label: "Inbox", count: n }].concat(ctx ? [{ key: "sent", label: "Sent" }] : []),
+      onFolder: function (k) { _ml.folder = k; _ml.sel = null; _ml.writing = false; _ml.replying = null; EN.app.render(); },
+      onOpen: function (row) { if (row.x) mailOpen(row.x, ro, ctx); else { _ml.sel = row.id; _ml.writing = false; EN.app.render(); } },
+      actions: [
+        !ro && ctx ? el("button.btn.sm.primary", { type: "button", dataset: { post: "mail-write" }, title: "A letter to your GM, with a subject", onclick: function () { _ml.writing = true; _ml.sel = null; EN.app.render(); } }, "+ WRITE") : null,
+        ro ? null : el("button.btn.sm.ghost", { type: "button", dataset: { post: "new" }, title: "Log something that came in another way, or a note to yourself", onclick: function () { mailLog(); } }, "+ LOG")] });
   }
   function mailUnread(ch) { return faceRead(ch).post.filter(function (m) { return m && isMail(m) && !m.read; }).length; }
 

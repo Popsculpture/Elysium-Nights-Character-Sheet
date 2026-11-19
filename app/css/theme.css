@@ -3863,3 +3863,65 @@ html.gm-landing .gm-crew-pick{ display:none !important; }
 .mail-write textarea{ flex:1 1 auto; min-height:180px; font-size:13px; }
 .msgr.mail .mail-back{ display:none; align-self:flex-start; margin:8px 0 0 12px; }
 @media (max-width:760px){ .msgr.mail .mail-back{ display:inline-flex; } }
+
+/* ---- #POST mail as an email client (18 Nov 2026, js/mailview.js): the Freelancer's Mail and the Admin's MAIL alike ---- */
+.mail-folders{ display:flex; gap:0; padding:0 12px; border-bottom:1px solid var(--border); }
+.mail-folder{ font-family:var(--disp); font-size:11.5px; letter-spacing:.12em; text-transform:uppercase; padding:8px 12px 7px; cursor:pointer;
+  background:transparent; color:var(--text3); border:0; border-bottom:2px solid transparent; margin-bottom:-1px; border-radius:0; }
+.mail-folder:hover{ color:var(--text); }
+.mail-folder.on{ color:var(--accent); border-bottom-color:var(--accent); }
+.mail-list{ border-top:0; }
+.mail-row{ display:flex; gap:10px; width:100%; text-align:left; cursor:pointer; padding:10px 14px 10px 10px; font-family:inherit;
+  background:transparent; color:var(--text3); border:0; border-left:2px solid transparent; border-bottom:1px solid var(--border); border-radius:0; }
+.mail-row:hover{ background:var(--bg2); }
+.mail-row.on{ background:var(--bg3); border-left-color:var(--accent); }
+.mail-dot{ flex:0 0 auto; width:7px; height:7px; margin-top:6px; border-radius:50%; background:transparent; }
+.mail-row.un .mail-dot{ background:var(--gold); box-shadow:0 0 6px var(--gold); }
+.mail-row-body{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 auto; }
+.mail-row-top{ display:flex; align-items:baseline; gap:8px; min-width:0; }
+.mail-who{ flex:1 1 auto; min-width:0; font-family:var(--disp); font-size:13.5px; letter-spacing:.04em; font-weight:500; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mail-when{ flex:0 0 auto; font-family:var(--mono); font-size:10.5px; color:var(--text4); }
+.mail-row-subj{ display:flex; align-items:center; gap:6px; min-width:0; }
+.mail-row-subj .msgr-tt b{ font-family:inherit; font-size:12.5px; letter-spacing:0; font-weight:500; color:var(--text2); }
+.mail-row-snip{ font-size:12px; color:var(--text4); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mail-row.un .mail-who, .mail-row.un .mail-row-subj .msgr-tt b{ color:var(--text); font-weight:700; }
+.mail-pane{ overflow-y:auto; }
+.mail-read{ display:flex; flex-direction:column; padding:0 22px 24px; min-width:0; }
+.mail-tools{ position:sticky; top:0; z-index:1; display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:0 -22px 18px; padding:10px 22px;
+  background:var(--panel-solid); border-bottom:1px solid var(--border); }
+.mail-subj{ margin:0 0 14px; font-family:var(--disp); font-size:20px; letter-spacing:.04em; color:var(--text); line-height:1.3; overflow-wrap:anywhere; }
+.mail-head{ display:flex; align-items:center; gap:12px; padding:0 0 14px; margin-bottom:16px; border-bottom:1px solid var(--border); }
+.mail-av{ flex:0 0 auto; width:38px; height:38px; display:flex; align-items:center; justify-content:center; font-family:var(--disp); font-size:14px;
+  color:var(--accent); background:var(--bg3); border:1px solid var(--accent-dim); border-radius:50%; }
+.mail-av.sys{ color:var(--gold); border-color:var(--gold); }
+.mail-av svg{ width:18px; height:18px; }
+.mail-head-lines{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 auto; font-size:13px; color:var(--text2); }
+.mail-head-lines b{ color:var(--text); }
+.mail-k{ display:inline-block; min-width:62px; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--text4); }
+.mail-date{ flex:0 0 auto; align-self:flex-start; font-family:var(--mono); font-size:11px; color:var(--text3); }
+.mail-body{ font-size:14px; line-height:1.65; color:var(--text); white-space:pre-wrap; overflow-wrap:anywhere; max-width:72ch; }
+.mail-body.dim{ color:var(--text4); }
+.mail-attach{ margin-top:22px; padding-top:14px; border-top:1px dashed var(--border2); }
+.mail-attach > .mail-k{ display:block; margin-bottom:8px; }
+.mail-status{ margin-top:18px; font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--text4); }
+.mail-status[data-seen="1"]{ color:var(--accent); }
+.mail-compose{ display:flex; flex-direction:column; gap:0; margin:22px 0 0; border:1px solid var(--border2); background:var(--bg2); border-radius:var(--r); }
+.mail-pane > .mail-compose{ margin:18px 22px; }
+.mail-ctitle{ padding:8px 12px; font-family:var(--disp); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--text3); border-bottom:1px solid var(--border); }
+.mail-crow{ display:flex; align-items:center; gap:8px; padding:6px 12px; border-bottom:1px solid var(--border); }
+.mail-crow input, .mail-crow select{ flex:1 1 auto; min-width:0; font-size:13px; background:transparent; border:0; box-shadow:none; padding:4px 0; }
+.mail-crow input:focus, .mail-crow select:focus{ outline:none; }
+.mail-cto{ font-size:13px; color:var(--text); }
+.mail-ctext{ width:100%; min-height:180px; padding:12px; font-size:14px; line-height:1.6; background:transparent; border:0; box-shadow:none; resize:vertical; }
+.mail-ctext:focus{ outline:none; }
+.mail-cfoot{ display:flex; align-items:center; gap:8px; padding:10px 12px; border-top:1px solid var(--border); }
+.msgr.mail .msgr-back{ display:none; }
+@media (max-width:760px){ .msgr.mail .msgr-back{ display:inline-flex; } .mail-read{ padding:0 14px 20px; } .mail-tools{ margin:0 -14px 14px; padding:8px 14px; } }
+
+/* the compose form's fields are lines of the letter, not boxes: the palette's own input borders give way here */
+.mail-compose .mail-crow input[type=text], .mail-compose .mail-crow input:not([type]), .mail-compose .mail-crow select{ border:0 !important; background:transparent !important; box-shadow:none !important; padding:4px 0 !important; }
+.mail-compose textarea.mail-ctext{ border:0 !important; background:transparent !important; box-shadow:none !important; }
+.mail-compose .mail-crow:focus-within{ background:var(--bg3); }
+.mail-compose:focus-within{ border-color:var(--accent-dim); }
+.mail-cfrom{ display:flex; flex:1 1 auto; min-width:0; }
+.mail-pkgline{ margin:0; font-size:13px; color:var(--text); }

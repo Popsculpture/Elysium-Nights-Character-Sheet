@@ -116,7 +116,7 @@ EN.app = (function () {
         { key: "inbox", label: "CHATS", sub: "talk with your players",
           stub: "Your players' letters and your answers, as chats, in real time." },
         // MAIL, the key still "write": letters with a subject or a package, as the Freelancer's Mail reads them (18 Nov 2026)
-        { key: "write", label: "MAIL", sub: "a letter, signed as anyone" },
+        { key: "write", label: "MAIL", sub: "letters in and out" },
         { key: "sent",  label: "SENT",  sub: "what you have sent" }
       ],
       // unread letters from players raise the rail's dot, as unread mail does on the Freelancer's #POST
@@ -214,6 +214,8 @@ EN.app = (function () {
   // #POST: INBOX is the mailbox module's; WRITE and SENT are pages of the campaign module (the composer and the sends list it already held)
   function gmpostPage(sub, mount) {
     if (sub === "inbox") return nestedPage("gmPost", "renderInbox")(mount);
+    // MAIL (the key is still "write"): the letters, as an email client, with the composer it used to be behind + WRITE
+    if (sub === "write" && EN.gmPost && EN.gmPost.renderMail) return nestedPage("gmPost", "renderMail")(mount);
     if (!EN.gmCampaign || typeof EN.gmCampaign.renderPage !== "function") return false;
     EN.gmCampaign.renderPage(mount, sub);
     return true;

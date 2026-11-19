@@ -133,6 +133,7 @@ EN.gmPost = (function () {
     }
     (_c.rows || []).forEach(function (r) {
       var m = r.mail || {};
+      if (isLetterRow(r)) return;   // a letter with a subject is MAIL's (18 Nov 2026), as it is on the player's side
       var t = slot(r.character_id, r.persona);
       t.items.push({ dir: "in", at: timeOf(r.created_at), subj: m.subj || "", body: m.body || "", row: r });
       if (r.status === "unread") t.unread++;
@@ -140,7 +141,7 @@ EN.gmPost = (function () {
     // what this account sent under a voice is that chat's other half, and starts one; the app's own notices are not chats
     (_c.sends || []).forEach(function (s) {
       var m = s.mail || {};
-      if (s.status === "recalled" || SYSTEM[String(m.from || "").trim().toLowerCase()]) return;
+      if (s.status === "recalled" || SYSTEM[String(m.from || "").trim().toLowerCase()] || isLetterSend(s)) return;   // a letter with a subject or a package is MAIL's
       var t = slot(s.character_id, m.from);
       // the voice as this account last wrote it, which is how the next line is signed
       if (voiceKey(m.from) !== "the gm") t.voice = String(m.from).trim();
@@ -301,6 +302,117 @@ EN.gmPost = (function () {
       el("p.msgr-foot", { style: { borderTop: "0" }, text: "Left blank, it is The GM. Then pick who to write to." })].concat(rows));
   }
 
+  /* ---- MAIL (18 Nov 2026, the author's call: "give the Admin a Mail inbox too") ----
+     The letters, as the Freelancer's Mail has them: a player's letter with a subject is here, not in CHATS, and so is every letter
+     this account sent with a subject or a package. Drawn as an email client (js/mailview.js): Inbox and Sent down the left, the
+     letter on the right with REPLY, which answers it as a letter (signed as the voice it was written to, which can be changed),
+     and + WRITE, which opens the letter composer that was this page before (js/gm_campaign.js: the crew or one character, signed
+     as anyone, with packages). A send still waiting can be recalled from here as from SENT. */
+  var _mui = { folder: "in", sel: null, writing: false, replying: null, reply: {}, busy: false };
+  function subjOf(mail) { return String((mail || {}).subj || "").trim(); }
+  function isLetterRow(r) { return !!subjOf(r.mail); }
+  function isLetterSend(s) { var m = s.mail || {}; return !SYSTEM[String(m.from || "").trim().toLowerCase()] && (!!subjOf(m) || (Array.isArray(m.package) && m.package.length > 0)); }
+  function readOne(row) {
+    if (row.status !== "unread" || _marked[row.id + ":asking"]) return;
+    _marked[row.id + ":asking"] = true;
+    C().markGmRead(row.id).then(function () {
+      delete _marked[row.id + ":asking"]; _marked[row.id] = true; row.status = "read";
+      if (_c) { applyMarked(_c.rows); _c.sig = sigOf(_c.rows) + "|" + sendsSig(_c.sends) + "|" + Object.keys(_c.names).length; }
+      if (EN.app && EN.app.portal() === "admin") EN.app.render();
+    }, function (e) { delete _marked[row.id + ":asking"]; console.warn("Could not mark a letter read", e); toast(C().errText(e)); });
+  }
+  function voiceList() {
+    var out = [], seen = {};
+    function add(v) { v = String(v || "").trim(); if (v && !seen[v.toLowerCase()]) { seen[v.toLowerCase()] = 1; out.push(v); } }
+    add("The GM"); add("???");
+    (EN.gmStore && EN.gmStore.list ? EN.gmStore.list("contacts") : []).forEach(function (c) { if (c) add(c.name); });
+    Object.keys(_c.names).forEach(function (id) { add(_c.names[id].name); });
+    return out;
+  }
+  function mailReply(r) {
+    var who = nameOf(r.character_id), key = r.id;
+    var d = _mui.reply[key] || (_mui.reply[key] = { from: String(r.persona || "").trim() || "The GM", subj: (/^re:/i.test(subjOf(r.mail)) ? subjOf(r.mail) : "Re: " + subjOf(r.mail)), body: "" });
+    var dl = el("datalist#gm-mail-voices", null, voiceList().map(function (v) { return el("option", { value: v }); }));
+    var from = el("span.mail-cfrom", null, [el("input", { type: "text", maxlength: "80", value: d.from, list: "gm-mail-voices", "aria-label": "From", dataset: { post: "gm-mail-from" },
+      oninput: function (e) { d.from = e.target.value; } }), dl]);
+    return EN.mailView.compose({ title: "Reply", to: who.name, from: from, subj: d.subj, body: d.body, busy: _mui.busy, post: "gm-mail", placeholder: "Answer " + who.name,
+      onSubj: function (v) { d.subj = v; }, onBody: function (v) { d.body = v; },
+      discard: function () { delete _mui.reply[key]; _mui.replying = null; EN.app.render(); },
+      send: function () {
+        var mail = { from: String(d.from || "").trim() || "The GM", subj: String(d.subj || "").trim(), body: String(d.body || "").trim() };
+        if (!mail.subj && !mail.body) { toast("Add a subject or a message."); return; }
+        if (_mui.busy) return;
+        _mui.busy = true; EN.app.render();
+        Promise.resolve().then(function () { return C().sendToCharacter(r.character_id, mail); }).then(function () {
+          _mui.busy = false; delete _mui.reply[key]; _mui.replying = null;
+          toast("Sent. It waits until their app picks it up.");
+          ensure(true); EN.app.render();
+        }, function (e) { _mui.busy = false; console.warn("Could not send", e); toast(C().errText(e)); EN.app.render(); });
+      } });
+  }
+  function sendStatus(s) {
+    if (s.status === "recalled") return "Recalled";
+    if (s.read_at) return "Seen";
+    if (s.status === "taken") return "Taken";
+    if (s.status === "delivered" || s.status === "applied") return "Delivered";
+    return "Waiting";
+  }
+  function renderMail(mount) {
+    EN.ui.clear(mount);
+    var id = deskId();
+    if (!C() || !C().enabled() || !id) {
+      // jacked out, or no campaign: the composer page says why, as WRITE always did
+      if (EN.gmCampaign && EN.gmCampaign.renderPage) EN.gmCampaign.renderPage(mount, "write");
+      return true;
+    }
+    ensure(false);
+    if (!_c || _c.id !== id || !_c.read) { mount.appendChild(el("div.muted-box", { style: { padding: "26px" }, text: "Reading the mailbox…" })); return true; }
+    var inbox = (_c.rows || []).filter(isLetterRow);
+    var sent = (_c.sends || []).filter(isLetterSend);
+    var folder = _mui.folder === "sent" ? "sent" : "in";
+    var n = inbox.filter(function (r) { return r.status === "unread"; }).length;
+    var cur = (folder === "in" ? inbox : sent).filter(function (r) { return r.id === _mui.sel; })[0] || null;
+    if (!cur) _mui.sel = null;
+    if (!cur || _mui.replying !== cur.id) _mui.replying = null;
+    var rows = folder === "in"
+      ? inbox.map(function (r) { var who = nameOf(r.character_id); return { id: r.id, r: r, who: who.name + (who.player ? " (" + who.player + ")" : ""), when: stamp(timeOf(r.created_at)), subj: subjOf(r.mail), body: (r.mail || {}).body, unread: r.status === "unread" }; })
+      : sent.map(function (s) { var m = s.mail || {}, pkg = Array.isArray(m.package) && m.package.length > 0;
+          return { id: s.id, s: s, post: "sent-letter", who: "To " + nameOf(s.character_id).name, when: stamp(timeOf(s.created_at)), subj: subjOf(m) || (pkg ? "A package" : ""), body: m.body, pkg: pkg, pkgIcon: "▣" }; });
+    var pane;
+    if (_mui.writing) {
+      var host = el("div.gm-mail-write", { dataset: { post: "gm-mail-write" } });
+      if (EN.gmCampaign && EN.gmCampaign.renderPage) EN.gmCampaign.renderPage(host, "compose");
+      pane = [host];
+    } else if (cur && folder === "in") {
+      var who = nameOf(cur.character_id);
+      pane = [EN.mailView.letter({ id: cur.id, subj: subjOf(cur.mail), who: who.name, from: who.name + (who.player ? " (" + who.player + ")" : ""), to: String(cur.persona || "").trim() || "The GM",
+        when: stamp(timeOf(cur.created_at)), body: (cur.mail || {}).body,
+        tools: [el("button.btn.sm", { type: "button", dataset: { post: "reply-open" }, title: "Answer it, as a letter", onclick: function () { _mui.replying = cur.id; EN.app.render(); } }, "↩ REPLY")],
+        after: _mui.replying === cur.id ? [mailReply(cur)] : [],
+        back: function () { _mui.sel = null; EN.app.render(); } })];
+    } else if (cur) {
+      var m = cur.mail || {}, st = sendStatus(cur), pk = Array.isArray(m.package) && m.package.length ? m.package : null;
+      pane = [EN.mailView.letter({ id: cur.id, subj: subjOf(m) || "A package", from: m.from || "", to: nameOf(cur.character_id).name, when: stamp(timeOf(cur.created_at)), body: m.body, me: true,
+        status: st, attach: pk ? el("p.mail-pkgline", { dataset: { post: "gm-mail-pkg" }, text: pk.map(function (x) { return x.name + " ×" + x.qty; }).join(", ") }) : null,
+        tools: cur.status === "waiting" ? [el("button.btn.sm", { type: "button", dataset: { post: "recall" }, title: "Take it back. It hasn't reached them yet.", onclick: function () {
+          Promise.resolve().then(function () { return C().recallSend(cur.id); }).then(function () { toast("Recalled."); ensure(true); }, function (e) { toast(C().errText(e)); });
+        } }, "RECALL")] : [],
+        back: function () { _mui.sel = null; EN.app.render(); } })];
+    } else pane = [el("p.msgr-empty.msgr-pick", { dataset: { post: "nopick" }, text: inbox.length || sent.length ? "Select a letter to read it." : "No letters yet. Your players write to you from their own Mail." })];
+    mount.appendChild(el("div.msgr-sub", null, [EN.mailView.client({ title: "Mail", post: "gm-mail", folder: folder, sel: _mui.sel, rows: rows, pane: pane, open: !!cur || _mui.writing,
+      empty: folder === "in" ? "No letters from your players yet. A line with no subject is in CHATS." : "Nothing sent with a subject or a package yet.",
+      folders: [{ key: "in", label: "Inbox", count: n }, { key: "sent", label: "Sent" }],
+      onFolder: function (k) { _mui.folder = k; _mui.sel = null; _mui.writing = false; _mui.replying = null; EN.app.render(); },
+      onOpen: function (row) { _mui.sel = row.id; _mui.writing = false; _mui.replying = null; EN.app.render(); if (row.r) readOne(row.r); },
+      actions: [el("button.btn.sm.primary", { type: "button", dataset: { post: "mail-write" }, title: "A letter to the crew or to one character, signed as anyone, with a package if you like",
+        onclick: function () { _mui.writing = true; _mui.sel = null; EN.app.render(); } }, "+ WRITE")],
+      foot: "Letters with a subject or a package. A line with no subject is in CHATS." })]));
+    return true;
+  }
+  // the composer (js/gm_campaign.js) opens here: from a chat's LETTER WITH A PACKAGE, and closes when it sends or is cancelled
+  function composeOpen() { _mui.writing = true; _mui.sel = null; }
+  function composeDone(sent) { _mui.writing = false; if (sent) { _mui.folder = "sent"; ensure(true); } }
+
   /* The CHATS page, drawn under the #POST tab's sub-tab chips (js/app.js). */
   function renderInbox(mount) {
     EN.ui.clear(mount);
@@ -372,5 +484,5 @@ EN.gmPost = (function () {
 
   function reset() { _c = null; _sel = null; _marked = {}; _ui.pending = null; _ui.picking = false; }
 
-  return { renderInbox: renderInbox, unread: unread, heard: heard, ensure: ensure, reset: reset, threads: function () { return _c && _c.rows ? threads() : []; } };
+  return { renderInbox: renderInbox, renderMail: renderMail, compose: composeOpen, composeDone: composeDone, unread: unread, heard: heard, ensure: ensure, reset: reset, threads: function () { return _c && _c.rows ? threads() : []; } };
 })();

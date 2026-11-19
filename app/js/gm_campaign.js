@@ -240,6 +240,7 @@ EN.gmCampaign = (function () {
     var was = _send && _send.campaign === c.id && _send.uid === me() ? _send : null;
     _send = { uid: me(), campaign: c.id, to: to, from: was ? was.from : "", subj: was ? was.subj : "", body: was ? was.body : "",
               pkg: was ? was.pkg : [], search: "" };
+    if (EN.gmPost && EN.gmPost.compose) EN.gmPost.compose();   // MAIL opens on its composer (18 Nov 2026)
     EN.app.gotoTab("gmpost", "write");
   }
   function me() { return EN.cloud && EN.cloud.userId ? EN.cloud.userId() : null; }
@@ -257,6 +258,7 @@ EN.gmCampaign = (function () {
       return (Array.isArray(m.characters) ? m.characters : []).some(function (sheet) { return sheet.id === charId; });
     })) delete _d[d.id];
     _send = { uid: me(), campaign: d.id, to: charId, from: String(preset.from || ""), subj: String(preset.subj || ""), body: "", pkg: [], search: "" };
+    if (EN.gmPost && EN.gmPost.compose) EN.gmPost.compose();   // MAIL opens on its composer
     EN.app.gotoTab("gmpost", "write");
   }
   function npcCards() {
@@ -323,6 +325,7 @@ EN.gmCampaign = (function () {
     btn.disabled = true;
     (crew ? C().sendToCrew(c.id, mail) : C().sendToCharacter(to, mail)).then(function (n) {
       if (_send === s) _send = null;
+      if (EN.gmPost && EN.gmPost.composeDone) EN.gmPost.composeDone(true);   // MAIL goes back to its letters, on Sent
       if (crew && !n) toast("Nobody has a character in this campaign yet.");
       else toast(crew ? (n === 1 ? "Sent to 1 character." : "Sent to " + n + " characters.") : "Sent. It waits until their app picks it up.");
       delete _d[c.id];
@@ -368,7 +371,7 @@ EN.gmCampaign = (function () {
         var go = el("button.btn.sm.primary", { type: "button", "data-camp": "send-go", disabled: !!s.busy, onclick: function () { sendNow(c, go); } }, "SEND");
         return el("div.camp-line", { style: { marginTop: "10px" } }, [
           go,
-          el("button.btn.sm", { type: "button", "data-camp": "send-cancel", onclick: function () { _send = null; EN.app.render(); } }, "CANCEL")
+          el("button.btn.sm", { type: "button", "data-camp": "send-cancel", onclick: function () { _send = null; if (EN.gmPost && EN.gmPost.composeDone) EN.gmPost.composeDone(false); EN.app.render(); } }, "CANCEL")
         ]);
       })()
     ]);
@@ -699,6 +702,14 @@ EN.gmCampaign = (function () {
     var c = mine.filter(function (x) { return x.id === want; })[0] || mine[0];
     // the top bar's picker changes the campaign as well, so what is half done here is checked against it on the way in
     if (_for !== c.id) { _for = c.id; _remove = null; _typed = null; _renameDraft = null; _transferTo = ""; }
+    // the letter composer alone, in the right pane of the #POST tab's MAIL (js/gm_post.js renderMail)
+    if (which === "compose") {
+      var dc = _d[c.id] || load(c.id);
+      if (dc.loading) { mount.appendChild(el("div.muted-box", { style: { padding: "26px" }, text: "Reading the campaign\u2026" })); return; }
+      if (dc.error) { mount.appendChild(el("div.muted-box", { style: { padding: "26px" }, text: dc.error })); return; }
+      mount.appendChild(writePanel(c, dc));
+      return;
+    }
     mount.appendChild(el("p.camp-title", { "data-camp": "title" }, [
       el("b", { text: c.name }),
       el("span.chip.camp-role", { text: c.role === "admin" ? "ADMIN" : "CO-ADMIN" }),
