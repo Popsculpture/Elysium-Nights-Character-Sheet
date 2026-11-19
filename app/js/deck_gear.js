@@ -8,7 +8,7 @@
               where the player says (in hand, carried, or the stash) in the one press
    The stage bar keeps "Classic gear", the Inventory tab as Classic draws it, for what this screen does
    not hold yet: the benches (Arms Table, Impact Table, Tech Bay, Fabrication, Garage), installing and
-   removing chrome, the wallet ledger, Bills and the payout splitter.
+   removing chrome, the wallet ledger and Bills.
 
    NOTHING IS WORKED OUT HERE. Prices, shelves, Load, slots, racks and leases come from EN.inventoryView.core
    and EN.engine; every button calls the function the Inventory tab's own control calls (toggleEquip,
@@ -327,7 +327,7 @@ EN.deck.gear = (function () {
       enc.dropped > 0 ? chip("Packed It " + enc.revealed + " / " + enc.budget, enc.revealed > enc.budget ? "warn" : "", "Packed It still counts what you dropped") : null]));
     kids.push(el("span.dk-grow"));
     kids.push(el("div.dk-purse", { dataset: { dkPurse: String(Number(ch.glimmer) || 0) } }, [el("b.dk-gold", { text: I().fmtG(Number(ch.glimmer) || 0) }), ch.nexus ? el("b", { text: I().fmtNx(ch.nexus) }) : null]));
-    kids.push(nav("Wallet, Bills and Split", "ghost.sm", "open-wallet", function () { classic("stash"); }, "The wallet ledger, household bills and the payout splitter are in the Classic gear"));
+    kids.push(nav("Wallet and Bills", "ghost.sm", "open-wallet", function () { classic("stash"); }, "The wallet ledger and the household Bills are in the Classic gear"));
     return el("div.dk-gbar", null, kids);
   }
   function dropped(X) {

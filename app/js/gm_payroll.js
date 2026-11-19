@@ -9,7 +9,7 @@
    THE BOOK IS DATA. Every band, rate, percentage and sentence of rules text
    is read from EN.gmBook.payroll (data/gm_payroll.js), and the split note from
    EN.economy; nothing here restates a number the page prints. The arithmetic
-   of the split is EN.engine.splitPayout, the helper the player's SPLIT panel
+   of the split is EN.engine.splitPayout, the helper the player's SPLIT panel (gone since 18 Nov 2026)
    uses, so the two can never quote one payout as different shares. The crew is
    EN.gmEngine.crew() (ruling D4), so Payroll, the Encounters budget and the
    Job Board agree on who the crew is and what their Caliber is.

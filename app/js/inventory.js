@@ -15,7 +15,7 @@ EN.inventoryView = (function () {
   // (the bench addresses weapon ENTRIES, not weapon names) and the older `eng` aliases
   // are local to individual render functions.
   var ENG = function () { return EN.engine; };
-  var _sub = "stash";      // 'stash' | 'chrome' | 'market' | 'workbench'
+  var _sub = "stash";      // 'stash' | 'bills' | 'chrome' | 'workbench' | 'garage' | 'market'
   var _bench = "ballistics"; // Workbench sub-tab: 'ballistics' | 'armor' | 'tech' | 'garage'
   var _benchWeapon = null;   // Arms Table: the weapon ENTRY KEY currently being customized
   var _benchArmor = null;    // Impact Table: the armor currently being customized
@@ -2166,10 +2166,7 @@ EN.inventoryView = (function () {
       handles: "Smartdeck Hardware Mods · Cyberware Platform Mods" },
     { key: "fab", label: "Fabrication", icon: "⚒", svg: ICON_FAB, color: "var(--danger)", tag: "FABRICATION · CRAFTING & PROJECTS", codex: "gr-craft",
       blurb: "Build, repair, and modify gear as downtime Projects. Recipes, material costs, and live Engineering and Systems checks.",
-      handles: "Build from scratch · Repairs · Custom mods · Material costs · Engineering / Systems Projects" },
-    { key: "garage", label: "Garage", icon: "⛭", svg: ICON_GARAGE, color: "var(--gold)", tag: "VEHICLE CRAFTING & MODDING", codex: "ref-vehicles",
-      blurb: "Wrench on rides: engines, plating, and weapon mounts for everything from a courier bike to a mech.",
-      handles: "Ground / Aerial / Marine Vehicles · Industrial / Mechs · vehicle upgrades & mounts" }
+      handles: "Build from scratch · Repairs · Custom mods · Material costs · Engineering / Systems Projects" }
   ];
   /* ============================ BALLISTICS BENCH ============================
      Weapon Customization: install Parts (Mods + Accessories) into a weapon's
@@ -4332,71 +4329,9 @@ EN.inventoryView = (function () {
             garageMods(ch)];
   }
 
-  /* ---- payout splitter -------------------------------------------------
-     The book's default: a fixer's cut comes off the top, then the rest splits
-     evenly, and the remainder is left "to argue over" rather than rounded away.
-     A crew may also vote 10 to 30 percent into a shared Crew Kit; that share is
-     computed but not tracked here, because the Crew Kit is a table-level fund
-     the sheet has no notion of.
+  /* The payout splitter that sat here is gone (18 Nov 2026, the author's call): the GM's Payroll splits a payday with
+     EN.engine.splitPayout, the same arithmetic. */
 
-     The arithmetic is EN.engine.splitPayout, shared with the GM's Payroll tab so
-     the two can never quote different shares. It clamps both percentages to 0
-     to 100, so a typed 150 percent fixer cut no longer drives the shares
-     negative; inside that range it is the same arithmetic this file used to
-     carry. */
-  var _split = { total: "", crew: 4, fixer: 15, kit: 0, open: false };
-  function splitterPanel() {
-    var r = EN.engine.splitPayout(_split.total, _split.crew, _split.fixer, _split.kit);
-    function num(label, key, min, max, w, tip) {
-      return el("div.row", { style: { gap: "4px", alignItems: "center" } }, [
-        el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: label }),
-        el("input", { type: "number", value: String(_split[key]), min: String(min), max: String(max), title: tip,
-          style: { width: w, padding: "4px 6px", fontSize: "12.5px" },
-          oninput: function () { _split[key] = this.value; EN.app.render(); } })
-      ]);
-    }
-    function stat(label, value, color) {
-      return el("div", { style: { textAlign: "center", minWidth: "96px" } }, [
-        el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: label }),
-        el("span.mono", { style: { fontSize: "19px", color: color }, text: fmtG(value) })
-      ]);
-    }
-    var kids = [
-      el("div.row.wrap", { style: { gap: "10px", alignItems: "center", marginBottom: "10px" } }, [
-        num("PAYOUT", "total", 0, 9999999, "110px", "The contract's lump sum, before anyone takes a cut"),
-        num("CREW", "crew", 1, 12, "56px", "How many Freelancers split it"),
-        num("FIXER %", "fixer", 0, 100, "56px", "The fixer's cut, taken off the top before the split"),
-        num("CREW KIT %", "kit", 0, 100, "56px", "Optional shared fund, usually 10 to 30 percent")
-      ]),
-      el("div.row.wrap", { style: { gap: "16px", alignItems: "center" } }, [
-        stat("FIXER", r.fixer, "var(--ember)"),
-        stat("CREW KIT", r.kit, "var(--flow)"),
-        stat("EACH SHARE", r.each, "var(--success)"),
-        el("div", { style: { textAlign: "center", minWidth: "96px" } }, [
-          el("div", { style: { fontFamily: "var(--disp)", fontSize: "8.5px", letterSpacing: ".12em", color: "var(--text3)" }, text: "LEFT OVER" }),
-          el("span.mono", { style: { fontSize: "19px", color: r.over ? "var(--gold)" : "var(--text4)" }, text: fmtG(r.over) })
-        ]),
-        r.each > 0 ? el("button.btn.sm", { title: "Credit one share to this character",
-          style: { color: "var(--success)", borderColor: "var(--success)" },
-          onclick: function () {
-            store.update(function (c) { c.glimmer = (c.glimmer || 0) + r.each; }, { ledger: "Job payout: one share" });
-            toast("Share of " + fmtG(r.each) + " credited.");
-            EN.app.render();
-          } }, "+ MY SHARE") : null
-      ]),
-      // EN.economy.splitNote used to print here in full; it is the Codex's Splitting a Payout entry
-      el("p.help", { style: { margin: "10px 0 0", fontSize: "11px" } }, [
-        document.createTextNode("The default split, fixer cuts and the Crew Kit: "),
-        EN.ui.ruleLink("ref-economy/splitting-a-payout", "Splitting a Payout"),
-        document.createTextNode(", in the Codex.")
-      ]),
-      r.over ? el("p.help", { style: { margin: "4px 0 0", fontSize: "11px", color: "var(--gold)" },
-        text: fmtG(r.over) + " does not divide evenly. Somebody always notices." }) : null
-    ];
-    return EN.ui.panel("Payout Splitter", "FIXER \u00b7 CREW KIT \u00b7 SHARES", kids, { corners: true });
-  }
-
-  var _hh = { open: false };
   var _newDebt = { kind: "Personal", holder: "", principal: "", clock: "" };
 
   /* The wallet's credit/debit popovers, one per currency: the total itself is the button, and the
@@ -4724,12 +4659,14 @@ EN.inventoryView = (function () {
        exactly the skins and the state that solid-fills with the theme's own colour: unselected
        keeps every bench's own colour everywhere, and Classic's selected state (a faint tint, never
        a solid accent fill) is untouched, since it was never the skin with the collision. */
-    var flatAccentPrimary = document.documentElement.classList.contains("skin-droid") || document.documentElement.classList.contains("skin-98");
+    /* The bench buttons wear the theme's own colours (18 Nov 2026, the author's call), like every other sub-tab, rather than a
+       fixed colour per bench; the bench's colour is still its panel's. */
+    if (!BENCHES.some(function (x) { return x.key === _bench; })) _bench = BENCHES[0].key;
     out.push(el("div.row.wrap", { style: { gap: "6px", marginBottom: "12px" } }, BENCHES.map(function (b) {
       var on = _bench === b.key;
       // a bench with its own svg renders that instead of its text glyph
       var kids = b.svg ? [el("span", { html: b.svg }), document.createTextNode(" " + b.label)] : b.icon + " " + b.label;
-      return el("button.btn.sm" + (on ? ".primary" : ""), { style: (on && flatAccentPrimary) ? null : { color: b.color, borderColor: b.color },
+      return el("button.btn.sm" + (on ? ".primary" : ""), { dataset: { bench: b.key },
         onclick: function () { _bench = b.key; EN.app.render(); } }, kids);
     })));
     var b = BENCHES.find(function (x) { return x.key === _bench; }) || BENCHES[0];
@@ -4753,17 +4690,6 @@ EN.inventoryView = (function () {
       fabricationBench(ch).forEach(function (n) { out.push(n); });
       return out;
     }
-    if (_bench === "garage") {
-      out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" } }, [
-        document.createTextNode("Vehicle Ops: the live operating math for the ride you are in. Pick a chassis to pull its category, type and Handling from the catalog, or leave it on Custom and enter your own. Vehicle Mods are fitted in the panel below; the full catalog of thirteen is in the Codex under "),
-        EN.ui.ruleLink("ref-vehicles/vehicle-mods", "Vehicles"),
-        document.createTextNode(". Chases, Lead and crashes: "),
-        EN.ui.ruleLink("vc-chase", "Chases & Lead"),
-        document.createTextNode(".")
-      ]));
-      garageBench(ch).forEach(function (n) { out.push(n); });
-      return out;
-    }
     var body = [
       benchIntro(b),
       el("div.row.wrap", { style: { gap: "6px", marginBottom: "4px", alignItems: "center" } },
@@ -4776,6 +4702,24 @@ EN.inventoryView = (function () {
     out.push(EN.ui.panel(b.label, b.tag, body, { corners: true }));
     return out;
   }
+
+  /* THE GARAGE, a sub-tab of its own since 18 Nov 2026 (the author's call; it was the Workbench's fifth bench), on the rail of
+     sub-tabs only while the Freelancer owns a vehicle (ownedVehicles). */
+  function garageView(ch) {
+    var out = [];
+    out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" } }, [
+        document.createTextNode("Vehicle Ops: the live operating math for the ride you are in. Pick a chassis to pull its category, type and Handling from the catalog, or leave it on Custom and enter your own. Vehicle Mods are fitted in the panel below; the full catalog of thirteen is in the Codex under "),
+        EN.ui.ruleLink("ref-vehicles/vehicle-mods", "Vehicles"),
+        document.createTextNode(". Chases, Lead and crashes: "),
+        EN.ui.ruleLink("vc-chase", "Chases & Lead"),
+        document.createTextNode(".")
+    ]));
+    garageBench(ch).forEach(function (n) { out.push(n); });
+    return out;
+  }
+  function ownsRide(ch) { return ownedVehicles(ch).length > 0; }
+  // whoever has chrome installed, or waiting in the Chrome Stash (ch.cyberStash) to be installed
+  function ownsChrome(ch) { return EN.engine.installedCyberware(ch).length > 0 || ((ch && ch.cyberStash) || []).some(Boolean); }
 
   function render(mount) {
     var ch = store.active();
@@ -4840,7 +4784,6 @@ EN.inventoryView = (function () {
        what the source says on each path rather than the evenodd on its root; the G's stroke is
        there to thicken it and becomes currentColor, since black would neither recolor with the
        button nor be visible on a dark ground. */
-    var ICON_SPLIT = '<svg viewBox="0 0 504 513" fill="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path fill-rule="nonzero" d="M13.49,173.45L36.87,177.14C49.37,129.42 76.39,87.37 113.07,56.25C152.09,23.15 202.1,2.35 257.25,0.19C322.72,-2.39 383.08,21.86 427.72,63.12C472.34,104.38 501.24,162.65 503.81,228.11C504.77,252.7 502,276.49 496.01,298.89C491.526,315.635 485.204,331.834 477.16,347.19L476.58,346.25C470.785,337.074 462.625,329.626 452.96,324.69C448.608,322.469 444.01,320.767 439.26,319.62C444.21,309.21 448.26,298.29 451.29,286.94C456.262,268.361 458.406,249.138 457.65,229.92C455.58,177.13 432.32,130.18 396.4,96.97C360.48,63.77 311.86,44.27 259.06,46.35C214.68,48.09 174.4,64.86 142.94,91.55C114.52,115.66 93.31,147.86 82.77,184.39L101.55,187.35C107.93,188.34 112.31,194.32 111.32,200.7C110.89,203.49 109.5,205.91 107.54,207.65L55.06,254.38C50.23,258.68 42.81,258.25 38.5,253.41C37.77,252.6 37.18,251.7 36.72,250.77L1.61,190.93C-1.66,185.36 0.21,178.19 5.78,174.92C8.2,173.5 10.92,173.06 13.49,173.45ZM110.59,464.47L110.59,327.33C178.24,327.33 189.74,324.28 250.72,362.66L298.64,362.66C320.33,363.95 331.69,385.95 310.6,400.39C293.81,412.72 271.64,412.02 248.91,409.98C233.23,409.2 232.56,430.26 248.91,430.33C254.59,430.78 260.75,429.44 266.13,429.44C294.48,429.4 317.84,423.98 332.14,401.58L339.31,384.83L410.59,349.51C446.25,337.77 471.62,375.07 445.32,401.03C393.69,438.58 340.76,469.48 286.61,494.44C247.27,518.37 207.94,517.54 168.64,494.44L110.59,464.47ZM4.95,314.15L92.01,314.15L92.01,478.25L4.95,478.25L4.95,314.15Z"/><g transform="matrix(0.117247,0,0,0.105524,37.998742,-55.863747)"><path fill-rule="nonzero" stroke="currentColor" stroke-width="60" d="M1961.272,2850.509C1818.896,2850.509 1723.979,2793.559 1679.685,2676.494C2277.661,2549.939 2825.016,1989.929 2825.016,1648.228C2825.016,1493.197 2707.952,1388.788 2533.937,1388.788C2030.877,1388.788 1458.212,1800.095 1458.212,2328.456C1458.212,2445.52 1486.687,2549.929 1540.473,2644.845C1511.998,2648.009 1480.359,2651.173 1445.556,2651.173C1167.133,2651.173 980.463,2492.978 980.463,2255.686C980.463,1945.624 1205.1,1537.481 1619.571,1436.236L1610.079,1395.106C1214.592,1483.695 815.941,1730.479 815.941,2122.802C815.941,2448.684 1103.855,2698.632 1442.392,2698.632C1464.54,2698.632 1508.834,2695.468 1575.276,2692.304C1698.668,2828.352 1831.552,2894.794 1973.927,2894.794C2106.811,2894.794 2268.17,2841.007 2458.004,2733.435C2049.861,3141.577 2053.025,3578.195 1629.062,3578.195C1464.54,3578.195 1230.411,3505.426 1230.411,3378.87C1230.411,3331.411 1258.886,3299.772 1312.672,3280.789C1451.884,3239.658 1546.801,3233.331 1546.801,3100.447C1546.801,2996.038 1461.376,2929.596 1350.639,2929.596C1186.117,2929.596 1078.544,3052.988 1078.544,3204.856C1078.544,3369.378 1208.264,3631.982 1717.651,3631.982C2802.868,3631.982 2458.004,2853.663 2834.507,2458.175L2799.704,2423.373C2666.821,2546.765 2296.645,2850.499 1961.272,2850.509ZM2758.574,1600.769C2758.574,1863.373 2315.628,2502.48 1670.193,2629.036C1711.324,2236.713 2239.695,1448.902 2594.051,1448.902C2682.64,1448.902 2758.574,1509.016 2758.574,1600.769Z"/></g></svg>';
     /* the author's billing list, his second cut of it: the Glimmer G is about twice the size of
        the first, which is what makes it survive the button's 11px. The sheet inherits the root's
        evenodd and the G overrides to nonzero, exactly as the source has them, and the G's stroke
@@ -4861,8 +4804,10 @@ EN.inventoryView = (function () {
     // current colour, so it recolors with .primary the same way the text label does
     function subTab(key, label) {
       var kids = Array.isArray(label) ? [el("span", { html: label[0] }), document.createTextNode(" " + label[1])] : [document.createTextNode(label)];
-      return el("button.btn.sm" + (_sub === key ? ".primary" : ""), { onclick: function () { _sub = key; EN.app.render(); } }, kids);
+      return el("button.btn.sm" + (_sub === key ? ".primary" : ""), { dataset: { invSub: key }, onclick: function () { _sub = key; EN.app.render(); } }, kids);
     }
+    var hasChrome = ownsChrome(ch), hasRide = ownsRide(ch);
+    if ((_sub === "chrome" && !hasChrome) || (_sub === "garage" && !hasRide)) _sub = "stash";
     blocks.push(el("div.row.between.wrap.inv-bar", { style: { gap: "10px", marginBottom: "12px", alignItems: "center",
         position: "sticky", top: "var(--sticky-top)", zIndex: 60,
         padding: "10px clamp(14px,3vw,40px)",
@@ -4871,10 +4816,19 @@ EN.inventoryView = (function () {
         background: "var(--bg1)",
         backdropFilter: "blur(6px)",
         borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" } }, [
+      /* Stash, Bills, Chrome, Workbench, Garage, Gray Market (18 Nov 2026, the author's call). Bills is a page of its own beside the
+         Stash (it was a button by the wallets); Chrome is there for whoever owns cyberware and the Garage for whoever owns a vehicle. */
       el("div.row.wrap", { style: { gap: "6px" } }, [
         subTab("stash", [ICON_STASH, "STASH"]),
-        subTab("chrome", [ICON_CHROME, "CHROME"]),
+        (function () {
+          // something overdue says so on the button, in the danger colour, from any page
+          var due = billsOverdue(ch), b = subTab("bills", [ICON_BILLS, due ? "⚠ BILLS" : "BILLS"]);
+          b.title = "Bills: lifestyle, safehouse, leases, Hypercare, licences and debts" + (due ? ". Something is overdue." : "");
+          if (due && _sub !== "bills") { b.style.color = "var(--danger)"; b.style.borderColor = "var(--danger)"; }
+          return b; })(),
+        hasChrome ? subTab("chrome", [ICON_CHROME, "CHROME"]) : null,
         subTab("workbench", [ICON_WORKBENCH_TAB, "WORKBENCH"]),
+        hasRide ? subTab("garage", [ICON_GARAGE, "GARAGE"]) : null,
         subTab("market", [ICON_MARKET, "GRAY MARKET"])
       ]),
       // wallets on top, the panels they open beneath, so the bar stays compact
@@ -4887,23 +4841,12 @@ EN.inventoryView = (function () {
           walletPop("nexus", "var(--flow)",
             "Nexus tokens, the high-scrutiny currency. Brokered commissions, lease buyouts, favors with a paper trail. Tap to credit or debit.",
             fmtNx(ch.nexus || 0))
-        ]),
-        el("div.row.wrap", { style: { gap: "6px", alignItems: "center", justifyContent: "flex-end" } }, [
-          el("button.btn.sm" + (_split.open ? ".primary" : ""), { title: "Split a contract payout: fixer's cut off the top, then even shares",
-            onclick: function () { _split.open = !_split.open; EN.app.render(); } },
-            [el("span", { html: ICON_SPLIT }), document.createTextNode(" SPLIT")]),
-          el("button.btn.sm" + (_hh.open ? ".primary" : ""), { title: "Bills: lifestyle, safehouse, leases, Hypercare, licences and debts",
-            style: billsOverdue(ch) ? { color: "var(--danger)", borderColor: "var(--danger)" } : null,
-            onclick: function () { _hh.open = !_hh.open; EN.app.render(); } },
-            (billsOverdue(ch) ? [document.createTextNode("⚠ ")] : [])
-              .concat([el("span", { html: ICON_BILLS }), document.createTextNode(" BILLS")]))
         ])
       ])
     ]));
-    if (_split.open) blocks.push(splitterPanel());
-    if (_hh.open) blocks.push(billsPanel(ch));
 
-    var body = _sub === "market" ? marketView(ch) : _sub === "chrome" ? chromeView(ch) : _sub === "workbench" ? workbenchView(ch) : stashView(ch);
+    var body = _sub === "market" ? marketView(ch) : _sub === "chrome" ? chromeView(ch) : _sub === "workbench" ? workbenchView(ch)
+      : _sub === "garage" ? garageView(ch) : _sub === "bills" ? [billsPanel(ch)] : stashView(ch);
     // One wrapper around the sub-view so a skin can frame it (theme.css draws the '98
     // browser window off .inv-sub and reads the address line off data-sub). Nothing
     // else keys on the wrapper; the sub-views' own blocks are untouched inside it.
@@ -4916,11 +4859,12 @@ EN.inventoryView = (function () {
   // openBench: land on one Workbench sub-tab from another view (the Freelancer
   // tab's damaged-plating readout sends the player to the Impact Table)
   function openBench(key) {
+    if (key === "garage") { _sub = "garage"; return; }   // the Garage is a sub-tab of its own now
     _sub = "workbench";
     if (BENCHES.some(function (b) { return b.key === key; })) _bench = key;
   }
-  // openBills: land on the Inventory with Bills open (a Social contact card sends a debt here)
-  function openBills() { _hh.open = true; }
+  // openBills: land on the Gear tab's Bills (a Social contact card sends a debt here)
+  function openBills() { _sub = "bills"; }
   /* Land on the Stash with one category already expanded. The device cards send you here to
      equip a deck or a Rig, and every stash category is collapsed by default, so without the
      expand the card tells you to go press a button and then drops you three clicks away from
@@ -4958,7 +4902,7 @@ EN.inventoryView = (function () {
              isDefensive: isDefensive, sell: sell, drop: drop, donate: donate, toggleConceal: invToggleConceal,
              pickUpDropped: pickUpDropped, droppedRowPickable: droppedRowPickable,
              upkeepOf: upkeepOf, leaseDaysOf: leaseDaysOf, buyoutCost: buyoutCost, fmtBuyout: fmtBuyout, setPremium: setPremium,
-             openSub: function (k) { if (["stash", "chrome", "market", "workbench"].indexOf(k) !== -1) _sub = k; },
+             openSub: function (k) { if (["stash", "bills", "chrome", "market", "workbench", "garage"].indexOf(k) !== -1) _sub = k; },
              openBenchOn: function (bench, key) { openBench(bench); if (bench === "ballistics" && key) _benchWeapon = key; if (bench === "armor" && key) _benchArmor = key; },
              toggleEquip: toggleEquip, toggleSlotEquip: toggleSlotEquip, setCarry: invSetCarry,
              buy: buy, buyCyber: buyCyber, uninstallToStash: uninstallToStash,

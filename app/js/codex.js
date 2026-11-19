@@ -2008,9 +2008,8 @@ EN.codexView = (function () {
         // Reward Types and the GM Reward Tables moved to the Game Master's Toolkit: ref-rewards, Admin only
         kids.push(ruleBlock("Splitting a Payout", E.splitNote
           + "\n\nNot every reward divides cleanly:\n" + bullets(E.splitNonStandard)
-          // the tool that does the math is on a different tab on each desktop (one splitter, EN.engine.splitPayout)
-          + (ctx.portal === "admin" ? "\n\nThe Downtime tab's Payday page splits a payout with the same math as a Freelancer's Payout Splitter."
-                                    : "\n\nThe Gear tab has a Payout Splitter that does this math.")));
+          // the GM's Payday does the math (EN.engine.splitPayout); the Freelancer's own splitter is gone (18 Nov 2026)
+          + (ctx.portal === "admin" ? "\n\nThe Downtime tab's Payday page splits a payout with this math." : "")));
         // the rest of the chapter: fences, Flow-touched and haunted goods, identity theft, services, bribes
         kids.push(ruleBlock("Typical Fence Rates", E.fenceRatesNote + "\n\n"
           + E.fenceRates.map(function (f) { return f.goods + " | " + f.payout + " | " + f.notes; }).join("\n")
