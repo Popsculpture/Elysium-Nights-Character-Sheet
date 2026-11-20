@@ -2825,7 +2825,6 @@ EN.combatView = (function () {
        Loadout    a filtered view of Inventory: what's carried / worn / equipped for the scene
        Notes      a freeform field (shared with the #PRINT Identity notes)
      DEFEND is intentionally NOT a tab; it lives in its own always-visible section. */
-  var _useAsk = null;   // the Loadout row whose USE is asking "on me or someone else" (js/consume.js), by entry key
   var _panelTab = "all";   // the panel opens on All (19 Nov 2026, the author's call): Weapons, Abilities and Features in one scroll
   var _featShowHidden = false;    // reveal computed features the player has hidden
 
@@ -4187,7 +4186,7 @@ EN.combatView = (function () {
   }
   // the three trays, wherever they are wanted: the Freelancer tab mounts them into its own view
   function mountTrays(mount) {
-    [rollTrayModal(), dmgTrayModal(), defTrayModal()].forEach(function (t) { if (t) mount.appendChild(t); });
+    [rollTrayModal(), dmgTrayModal(), defTrayModal(), EN.consume && EN.consume.trayModal ? EN.consume.trayModal() : null].forEach(function (t) { if (t) mount.appendChild(t); });
   }
 
   /* SMALL WRITES AND READS THE TAB'S OWN CONTROLS MADE INLINE (P3, 15 Nov 2026), at file level so a second screen makes the very
@@ -7010,19 +7009,14 @@ EN.combatView = (function () {
         })) : null
       ]);
     }
-    // USE: a piece that can go on someone else asks first; the rest go at once (js/consume.js does the piece, js/inventory.js spends it)
+    // USE opens the piece's tray (js/consume.js): the player rolls, and ON ME or ON SOMEONE ELSE is chosen there
     function useBtn(key, e, it) {
       var IC = EN.inventoryView && EN.inventoryView.core;
       if (!IC || !IC.isExpendable || !IC.isExpendable(it)) return null;
       var sp = EN.consume && EN.consume.spec(e.name);
-      function go(who) { _useAsk = null; if (EN.consume) EN.consume.use(key, who); else IC.useOne(key); EN.app.render(); }
-      if (sp && sp.target && _useAsk === key) return el("span.lo-ask", { dataset: { loAsk: key } }, [
-        el("button.btn.sm.primary", { type: "button", dataset: { loUseOn: "me" }, title: "Use it on yourself: the result goes on this sheet", onclick: function (ev) { ev.stopPropagation(); go("me"); } }, "ON ME"),
-        el("button.btn.sm", { type: "button", dataset: { loUseOn: "other" }, title: "Use it on someone else: it rolls and says what they get; your sheet is left alone", onclick: function (ev) { ev.stopPropagation(); go("other"); } }, "ON SOMEONE ELSE"),
-        el("button.btn.sm.ghost", { type: "button", dataset: { loUseOn: "cancel" }, onclick: function (ev) { ev.stopPropagation(); _useAsk = null; EN.app.render(); } }, "CANCEL")]);
       return el("button.btn.sm.primary.lo-use", { type: "button", dataset: { loUse: key },
         title: (sp && sp.act ? sp.act + ". " : "") + "Use one" + (e.qty > 1 ? " (" + e.qty + " on hand)" : ": it's the last one"),
-        onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); if (sp && sp.target) { _useAsk = key; EN.app.render(); } else go("me"); } }, "USE");
+        onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); if (EN.consume) EN.consume.open(key); else IC.useOne(key); } }, "USE");
     }
     // a piece used down to 0: gray, x0, RESTOCK opens the Gray Market on it; CLEAR takes the row away
     /* a piece used down to 0: its row gray at x0, RESTOCK opens the Gray Market on it, CLEAR takes the row away. What the last use
