@@ -1239,6 +1239,7 @@ EN.settings = (function () {
     var names = {};
     (L.optionalRules || []).forEach(function (r) { names[r.key] = r.name; });
     (L.gmControlList || []).forEach(function (c) { names[c.key] = c.name; });
+    (L.uplinkList || []).forEach(function (u) { names[u.key] = "Market uplink: " + u.name; });
     var keys = L.houseKeys.filter(function (k) { return k !== "morale"; });
     var kids = [el("div.set-sectitle", { text: "// TABLE RULES", dataset: { sum: T.campaign ? "SET BY YOUR GM" : "THIS DEVICE" } })];
     kids.push(el("p.set-hint", { dataset: { tr: "hint" }, text: T.campaign

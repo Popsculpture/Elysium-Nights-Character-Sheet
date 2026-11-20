@@ -601,7 +601,9 @@ EN.gmCampaign = (function () {
     var L = EN.launch, r = (L.optionalRules || []).filter(function (x) { return x.key === key; })[0];
     if (r) return on ? r.on : r.off;
     var g = (L.gmControlList || []).filter(function (x) { return x.key === key; })[0];
-    return g ? g.hint : "";
+    if (g) return g.hint;
+    var u = (L.uplinkList || []).filter(function (x) { return x.key === key; })[0];
+    return u ? (on ? u.on : u.off) : "";
   }
   function ruleName(key) {
     var r = (C().houseRules || []).filter(function (x) { return x.key === key; })[0];
@@ -611,11 +613,13 @@ EN.gmCampaign = (function () {
     var L = EN.launch, onCampaign = scope !== "device", st = stageFor(scope);
     var base = onCampaign ? C().ruleValues(scope) : L.deviceValues();
     function shown(k) { return typeof st.rules[k] === "boolean" ? st.rules[k] : base[k]; }
-    var pending = L.houseKeys.filter(function (k) { return typeof st.rules[k] === "boolean" && st.rules[k] !== base[k]; });
+    // the market uplinks are a campaign's alone: outside one, every storefront is open, so this device has no switch for them
+    var keys = L.houseKeys.filter(function (k) { return onCampaign || !(L.isUplink && L.isUplink(k)); });
+    var pending = keys.filter(function (k) { return typeof st.rules[k] === "boolean" && st.rules[k] !== base[k]; });
     var kids = [el("p.help", { style: { margin: "0 0 10px" }, text: onCampaign
       ? "These apply to every sheet in this campaign. Players see them locked in their Settings. Change what you like, then APPLY TO THE TABLE: nothing is sent until you do."
-      : "No campaign is picked, so these are this device's own switches, which a Freelancer here in no campaign follows. They apply as soon as you press APPLY." })];
-    L.houseKeys.forEach(function (k) {
+      : "No campaign is picked, so these are this device's own switches, which a Freelancer here in no campaign follows. They apply as soon as you press APPLY. (Every market uplink is open outside a campaign.)" })];
+    keys.forEach(function (k) {
       var on = shown(k), changed = pending.indexOf(k) !== -1;
       kids.push(el("div", { dataset: { rule: k }, style: { padding: "8px 0", borderTop: "1px solid var(--border)" } }, [
         el("label.fl", { text: ruleName(k) + (changed ? "  (CHANGED)" : "") }),
@@ -651,7 +655,7 @@ EN.gmCampaign = (function () {
         onclick: function () {
           var dev = L.deviceValues();
           st.rules = {};
-          L.houseKeys.forEach(function (k) { if (dev[k] !== base[k]) st.rules[k] = dev[k]; });
+          L.houseKeys.forEach(function (k) { if (!(L.isUplink && L.isUplink(k)) && dev[k] !== base[k]) st.rules[k] = dev[k]; });
           if (EN.ui.disarm) EN.ui.disarm();
           EN.app.render();
         } }, "START FROM THIS DEVICE"));

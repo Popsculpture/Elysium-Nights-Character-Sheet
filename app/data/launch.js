@@ -119,7 +119,20 @@ EN.launch = (function () {
      drawing that one (the engine drawing a crew sheet on the Admin desktop).
        the sheet     with one: its campaign. Without: this tab's campaign on the Admin desktop, the open sheet's
                      on the Freelancer desktop. */
-  var HOUSE_KEYS = ["encumbrance", "weaponJam", "morale", "loadLower", "fiveFinger"];
+  /* MARKET UPLINKS (19 Nov 2026, the author's call). In a campaign the GM chooses which of the Gray Market's storefronts its
+     players can use: The Undercut is on unless the GM turns it off, The Register and Guild Surplus are off until the GM turns them
+     on. The Five-Finger Supply was a house rule already (fiveFinger, a GM control). Outside a campaign every uplink is there, so
+     these are the campaign's alone: no device switch, and a sheet no campaign decides for reads them on. */
+  var UPLINKS = [
+    { key: "uplinkUndercut", front: "undercut", name: "The Undercut",
+      on: "On: The Undercut, the gray market at list price, is open to this table.", off: "Off: The Undercut is closed to this table." },
+    { key: "uplinkRegister", front: "register", name: "The Register",
+      on: "On: The Register, corporate retail with compliance surcharges and markups, is open to this table.", off: "Off: The Register is closed to this table." },
+    { key: "uplinkSurplus", front: "surplus", name: "Guild Surplus",
+      on: "On: Guild Surplus, overstock and salvage at a deep discount, is open to this table.", off: "Off: Guild Surplus is closed to this table." }
+  ];
+  function isUplink(key) { return UPLINKS.some(function (u) { return u.key === key; }); }
+  var HOUSE_KEYS = ["encumbrance", "weaponJam", "morale", "loadLower", "fiveFinger", "uplinkUndercut", "uplinkRegister", "uplinkSurplus"];
   function isControl(key) { return key === "loadLower" || key === "fiveFinger"; }
   function tableId(ch) {
     var C = EN.campaigns;
@@ -158,7 +171,17 @@ EN.launch = (function () {
     return Object.prototype.hasOwnProperty.call(_memo, k) ? _memo[k] : (_memo[k] = compute());
   }
   function rule(key, ch) {
-    return memoed("r", key, ch, function () { var v = decided(key, ch); return v === null ? deviceRule(key) : v; });
+    // an uplink no campaign decides is open: outside a campaign every storefront is there
+    return memoed("r", key, ch, function () { var v = decided(key, ch); return v === null ? (isUplink(key) ? true : deviceRule(key)) : v; });
+  }
+  /* The storefronts a sheet may use (js/inventory.js): the uplinks its campaign leaves open, and the Five-Finger Supply when the GM
+     control is on. A campaign that closes every uplink still has The Undercut, so a market is never empty. */
+  function uplinkOpen(front, ch) {
+    if (front === "fivefinger") return gmControl("fiveFinger", ch);
+    var u = UPLINKS.filter(function (x) { return x.front === front; })[0];
+    if (!u) return false;
+    if (rule(u.key, ch)) return true;
+    return front === "undercut" && !UPLINKS.some(function (x) { return rule(x.key, ch); });
   }
   function gmControl(key, ch) {
     return memoed("c", key, ch, function () { var v = decided(key, ch); return v === null ? deviceControl(key) : v; });
@@ -173,7 +196,7 @@ EN.launch = (function () {
   // what this device's own switches say, as one map, for the sheets that follow the device
   function deviceValues() {
     var out = {};
-    HOUSE_KEYS.forEach(function (k) { out[k] = isControl(k) ? deviceControl(k) : deviceRule(k); });
+    HOUSE_KEYS.forEach(function (k) { out[k] = isUplink(k) ? true : isControl(k) ? deviceControl(k) : deviceRule(k); });
     return out;
   }
   /* Writes this device's switches from a map of rule to true or false. The GM controls are stored as a master and
@@ -182,7 +205,7 @@ EN.launch = (function () {
   function setDeviceRules(map) {
     var now = deviceValues(), next = {};
     HOUSE_KEYS.forEach(function (k) { next[k] = typeof (map || {})[k] === "boolean" ? map[k] : now[k]; });
-    HOUSE_KEYS.forEach(function (k) { if (!isControl(k)) setRule(k, next[k]); });
+    HOUSE_KEYS.forEach(function (k) { if (!isControl(k) && !isUplink(k)) setRule(k, next[k]); });
     setGmControls(HOUSE_KEYS.some(function (k) { return isControl(k) && next[k]; }));
     HOUSE_KEYS.forEach(function (k) { if (isControl(k)) setGmItem(k, next[k]); });
   }
@@ -603,5 +626,7 @@ EN.launch = (function () {
            houseKeys: HOUSE_KEYS, tableRules: tableRules, deviceValues: deviceValues, setDeviceRules: setDeviceRules, invalidate: invalidate,
            isHeld: isHeld, isCompanion: isCompanion, source: source, offer: offer,
            isToolkit: isToolkit, isToolkitItem: isToolkitItem,
+           // the market uplinks a campaign decides (19 Nov 2026): the list, which keys they are, and whether a storefront is open
+           uplinkList: UPLINKS, isUplink: isUplink, uplinkOpen: uplinkOpen,
            showAvailability: showAvailability };
 })();

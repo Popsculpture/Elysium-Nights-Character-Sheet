@@ -159,7 +159,11 @@ EN.campaigns = (function () {
     { key: "weaponJam", name: "Weapon Jam", def: true },
     { key: "morale", name: "Morale", def: true },
     { key: "loadLower", name: "GM -1 Load", def: false },
-    { key: "fiveFinger", name: "Five-Finger Supply", def: false }
+    { key: "fiveFinger", name: "Five-Finger Supply", def: false },
+    // the market uplinks (19 Nov 2026): The Undercut is the default; the GM opens the others
+    { key: "uplinkUndercut", name: "Market uplink: The Undercut", def: true },
+    { key: "uplinkRegister", name: "Market uplink: The Register", def: false },
+    { key: "uplinkSurplus", name: "Market uplink: Guild Surplus", def: false }
   ];
   function ruleOf(key) { return HOUSE_RULES.filter(function (r) { return r.key === key; })[0] || null; }
   // what the database sent, kept to the rules it may hold: a map of true and false, or null when there is none to read

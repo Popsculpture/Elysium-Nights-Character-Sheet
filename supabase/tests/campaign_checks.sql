@@ -1439,7 +1439,8 @@ begin
   foreach bad in array array[
     'null'::jsonb, '[]'::jsonb, '{}'::jsonb, '"morale"'::jsonb, '7'::jsonb, '{"nope": true}'::jsonb, '{"Morale": false}'::jsonb, '{"morale ": false}'::jsonb,
     '{"morale": "off"}'::jsonb, '{"morale": 0}'::jsonb, '{"morale": null}'::jsonb, '{"morale": [false]}'::jsonb, '{"morale": {"on": false}}'::jsonb,
-    '{"morale": false, "nope": true}'::jsonb, '{"nope": true, "morale": false}'::jsonb
+    '{"morale": false, "nope": true}'::jsonb, '{"nope": true, "morale": false}'::jsonb,
+    '{"uplinkregister": true}'::jsonb, '{"uplinkFiveFinger": true}'::jsonb, '{"uplinkRegister": "on"}'::jsonb
   ] loop
     err := null;
     begin perform public.set_house_rules(hr, bad, '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlerrm; end;
@@ -1550,16 +1551,16 @@ begin
   out := out || case when err is null then 'PASS' else 'FAIL' end || ' and set a rule (' || coalesce(err, 'no error') || E')\n';
   perform set_config('role', 'authenticated', true);
 
-  -- each of the five rules can be set, and nothing else is a rule
+  -- each of the eight rules can be set (the three market uplinks since 19 Nov 2026), and nothing else is a rule
   v := '';
-  foreach f in array array['encumbrance', 'weaponJam', 'morale', 'loadLower', 'fiveFinger'] loop
+  foreach f in array array['encumbrance', 'weaponJam', 'morale', 'loadLower', 'fiveFinger', 'uplinkUndercut', 'uplinkRegister', 'uplinkSurplus'] loop
     err := null;
     begin perform public.set_house_rules(hr, jsonb_build_object(f, false), '{"from": "Campaign", "subj": "House Rules"}'); exception when others then err := sqlerrm; end;
     if err is not null then v := v || f || ' = ' || err || '; '; end if;
   end loop;
   select settings into j from public.campaigns where id = hr;
-  out := out || case when v = '' and j = '{"encumbrance": false, "weaponJam": false, "morale": false, "loadLower": false, "fiveFinger": false}'::jsonb then 'PASS' else 'FAIL' end
-    || ' each of the five rules can be set (' || v || coalesce(j::text, 'null') || E')\n';
+  out := out || case when v = '' and j = '{"encumbrance": false, "weaponJam": false, "morale": false, "loadLower": false, "fiveFinger": false, "uplinkUndercut": false, "uplinkRegister": false, "uplinkSurplus": false}'::jsonb then 'PASS' else 'FAIL' end
+    || ' each of the eight rules can be set (' || v || coalesce(j::text, 'null') || E')\n';
 
   -- the function is for signed-in accounts only
   perform set_config('role', 'anon', true);

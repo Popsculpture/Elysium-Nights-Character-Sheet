@@ -94,8 +94,13 @@ EN.inventoryView = (function () {
   // the two device settings this view reads (data/launch.js): GM controls, and the Encumbrance rule
   function gmOn(key) { return !!(EN.launch && EN.launch.gmControl && EN.launch.gmControl(key)); }
   function encOn() { return !(EN.launch && EN.launch.rule) || EN.launch.rule("encumbrance"); }
-  // the storefronts this device offers: Five-Finger Supply is a GM control
-  function storefronts() { return STOREFRONTS.filter(function (s) { return s.key !== "fivefinger" || gmOn("fiveFinger"); }); }
+  /* The storefronts this sheet may use: in a campaign, the market uplinks its GM left open (The Undercut by default), and the
+     Five-Finger Supply when that GM control is on; outside a campaign, every uplink (data/launch.js uplinkOpen). */
+  function storefronts() {
+    var L = EN.launch;
+    if (!L || !L.uplinkOpen) return STOREFRONTS.filter(function (s) { return s.key !== "fivefinger" || gmOn("fiveFinger"); });
+    return STOREFRONTS.filter(function (s) { return L.uplinkOpen(s.key); });
+  }
 
   function fmtG(n) { return "𝒢" + (n || 0).toLocaleString(); }
   function fmtNx(n) { return "◎" + (Math.round((n || 0) * 100) / 100); }
@@ -4798,7 +4803,8 @@ EN.inventoryView = (function () {
   function render(mount) {
     var ch = store.active();
     clear(mount);
-    if (_mode === "fivefinger" && !gmOn("fiveFinger")) _mode = "undercut";   // GM controls off: no Five-Finger Supply
+    // a storefront this sheet may no longer use (the GM closed it, or the Five-Finger control is off): the first one open
+    if (!storefronts().some(function (s) { return s.key === _mode; })) _mode = (storefronts()[0] || STOREFRONTS[0]).key;
     if (!ch) {
       mount.appendChild(el("div.muted-box", { style: { marginTop: "40px", padding: "40px" }, text: "No Freelancer on file; register one on the #PRINT tab." }));
       return;
