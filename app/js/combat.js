@@ -4320,6 +4320,7 @@ EN.combatView = (function () {
   /* THE STAT STRIP'S NUMBERS (#GRIDeck P3, 15 Nov 2026): Defense, DR, Speed, Initiative and Size, each with the rows that
      add up to it. Lifted whole from render so a second screen shows the same breakdowns; the Initiative picker, which is
      DOM, stays with each screen. */
+  var SIZE_ABBR = { Tiny: "TNY", Small: "SML", Medium: "MED", Large: "LRG", Huge: "HUG", Gargantuan: "GAR" };
   function statModelFor(ch, d, fx) {
     var dg = d.defenseGear || {};
     var agiMod = d.attributes.AGI.mod;
@@ -4457,6 +4458,21 @@ EN.combatView = (function () {
           rows: rows,
           foot: trait ? trait.text : null,
           rules: [["ref-size", "Size"], ["sk-load", "Encumbrance & Load"]] };
+      })(),
+      /* STATIC, the Chrome Tax (19 Nov 2026, the author's call): Total Static from installed chrome, the Threshold it reaches,
+         and what that costs. Read from derive (d.chromeTax), the number the Gear tab's Cybernetic Frame shows. */
+      STATIC: (function () {
+        var tx = d.chromeTax || { total: 0, index: 0, name: "Safe Capacity", resDiePenalty: 0, fpPenalty: 0, effects: [] };
+        var rows = eng.installedCyberware(ch).map(function (cw) { return { label: (cw.name || cw.base) + (cw.side ? " (" + cw.side + ")" : ""), val: (cw.sp || 0) + " SP", raw: true }; });
+        rows.push({ label: "Threshold", val: "T" + tx.index + " · " + tx.name, raw: true });
+        if (tx.resDiePenalty) rows.push({ label: "Resilience Dice", val: -tx.resDiePenalty, note: tx.held ? "restored on a Long Rest" : null });
+        if (tx.fpPenalty && d.flow) rows.push({ label: "Max Flow Points", val: -tx.fpPenalty });
+        return { title: "Static", total: tx.total, sign: false,
+          formula: "Total Static: the SP of every installed implant, across the whole body; the Threshold it reaches is the Chrome Tax",
+          empty: rows.length > 1 ? null : "No chrome installed: no Static, no Chrome Tax.",
+          rows: rows,
+          foot: (tx.effects || []).length ? tx.effects.join(" ") : (tx.index ? null : "Safe capacity: no penalty."),
+          rules: [["gr-chrome/the-chrome-tax", "Chrome Tax"]] };
       })()
     };
     return { dg: dg, init: init, initAttr: initAttr, initVal: initVal, spDisplay: spDisplay, defAttrName: defAttrName, BD: BD };
@@ -5179,8 +5195,19 @@ EN.combatView = (function () {
       // Size sits beside Speed and Defense, the way the manuscript's Step 8
       // orders them. It is derived from height, so a character with no height
       // recorded shows a dash rather than defaulting to Medium.
-      statEl("SIZE", "SIZE", d.size || "-", d.heightFt != null ? eng.fmtFtIn(d.heightFt) : "set a height",
-        function (n) { if (!d.size) n.querySelector(".v").style.color = "var(--text3)"; })
+      // the Size by its three letters (19 Nov 2026, the author's list); the word is in the title
+      statEl("SIZE", "SIZE", SIZE_ABBR[d.size] || d.size || "-", d.heightFt != null ? eng.fmtFtIn(d.heightFt) : "set a height",
+        function (n) { if (!d.size) n.querySelector(".v").style.color = "var(--text3)"; else n.querySelector(".v").setAttribute("title", d.size); }),
+      // Static, right of Size (19 Nov 2026): the total and its Threshold, short; a press opens the breakdown and its Chrome Tax rule
+      (function () {
+        var tx = d.chromeTax || { total: 0, index: 0, resDiePenalty: 0 };
+        var n = statEl("STATIC", "STATIC", tx.total || 0, "T" + (tx.index || 0) + (tx.resDiePenalty ? " · \u2212" + tx.resDiePenalty + " res. die" : " · no penalty"), function (m) {
+          var v = m.querySelector(".v");
+          if (!tx.total) v.style.color = "var(--text3)"; else if (tx.index) v.style.color = tx.index >= 3 ? "var(--danger)" : "var(--warn)";
+        });
+        n.setAttribute("data-stat", "static");
+        return n;
+      })()
     ]));
     // breakdown panel (shows when a stat above is selected)
     if (_open.statbd && BD[_open.statbd]) {

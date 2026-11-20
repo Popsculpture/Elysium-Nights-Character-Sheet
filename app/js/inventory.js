@@ -1593,7 +1593,9 @@ EN.inventoryView = (function () {
         el("div.row.wrap", { style: { gap: "10px" } }, scaleLegend)
       ])
     ]);
-    var taxReadout = el("div", { style: { display: "flex", gap: "16px", alignItems: "flex-start" } }, [gauge, taxText]);
+    // the gauge and its readout; the boxes it costs (Resilience Dice, the Reservoir) go under it, once they are built below
+    var taxReadout = el("div.chrome-tax", { style: { display: "flex", flexDirection: "column", gap: "12px", minWidth: 0 } }, [
+      el("div", { style: { display: "flex", gap: "16px", alignItems: "flex-start" } }, [gauge, taxText])]);
     var frameGrid = el("div.chrome-frame", { style: { display: "grid", gridTemplateColumns: "minmax(150px, 0.85fr) minmax(240px, 1.15fr)", gap: "16px", alignItems: "center" } }, [
       el("div", { html: silhouetteBody(installed, tax) }),
       taxReadout
@@ -1645,13 +1647,11 @@ EN.inventoryView = (function () {
     var resBase = d.resilienceMax + tax.resDiePenalty;
     var boxes = [impactBox("RESILIENCE DICE", d.resilienceMax, resBase, tax.resDiePenalty, taxColor, { anchor: "rc-resilience", title: "Resilience Dice" })];
     if (d.flow) boxes.push(impactBox("FLOW RESERVOIR (FP)", d.flow.max, d.flow.max + tax.fpPenalty, tax.fpPenalty, taxColor));
-    /* A wrapping row in the old grid's 1.25 : 1 proportions. The fixed two-column grid was
-       406px at its narrowest, wider than a phone, so the impact boxes (and the Resilience
-       chip on them) ran off the right edge; this wraps the boxes under the matrix instead. */
-    var statsRow = el("div.chrome-stats", { style: { display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "flex-start", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" } }, [
-      el("div", { style: { flex: "1.25 1 220px", minWidth: 0 } }, [attrMatrix]),
-      el("div", { style: { flex: "1 1 170px", minWidth: 0, display: "flex", flexDirection: "column", gap: "10px" } }, boxes)
-    ]);
+    /* What the Chrome Tax costs sits directly under the Static gauge (19 Nov 2026, the author's call): Resilience Dice, and the
+       Reservoir for whoever has one, side by side while they fit. The Attribute Matrix has the row under the frame to itself. */
+    taxReadout.appendChild(el("div.chrome-cost", { dataset: { chromeCost: "1" }, style: { display: "flex", flexWrap: "wrap", gap: "10px" } },
+      boxes.map(function (b) { b.style.flex = "1 1 150px"; b.style.minWidth = "0"; return b; })));
+    var statsRow = el("div.chrome-stats", { style: { marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--border)" } }, [attrMatrix]);
 
     var framePanel = EN.ui.panel("Cybernetic Frame", "BIOMETRIC OVERLAY · CHROME TAX", [
       frameGrid,
@@ -1667,6 +1667,20 @@ EN.inventoryView = (function () {
     var tierChipColor = function (t) { return t === "Blackware" ? "var(--danger)" : t === "Brandware" ? "var(--accent)" : t === "Prototype" ? "var(--flow)" : "var(--text3)"; };
     // the implant's catalog "Prerequisite For" spec line ("" when it has none)
     function cyberPrereq(cw) { var d = ENG().cyberDef ? ENG().cyberDef(cw) : null; return (d && d.prereqFor) || ""; }
+    /* Which book prints an implant (19 Nov 2026, the author's call: in place of the TOOLKIT chip, the book is named at the foot
+       of the implant's rules). The Handbook prints an implant as "<Tier> <Implant>"; one it does not print at this tier is the
+       Game Master's Toolkit's (data/launch.js isToolkit). A custom piece from an old save names no book. */
+    function cyberSource(cw) {
+      if (!cw || cw.custom || !cw.key) return "";
+      var L = EN.launch;
+      if (!L || !L.isToolkit) return "";
+      return (L.isToolkit("cyberware", cw.key) || (cw.tier && L.isToolkit("cyberTier", cw.tier))) ? "Game Master's Toolkit" : "Player's Handbook";
+    }
+    /* ONE IMPLANT, as a card (19 Nov 2026, the author's call: "the whole card to look more organized"). Three rows:
+         the name (a press opens its rules) and where it is, INSTALLED or STASHED;
+         its spec, label and value: Tier (a Codex link), Static, Zone, and the Enhancement Bonus when it has one;
+         the actions along the foot: INSTALL or REPLACE and DROP for a stashed piece, the side and UNINSTALL for an installed one.
+       Opened, the rules sit between the spec and the foot, with the book that prints it at the bottom. */
     function cyberRow(cw, idx, where) {
       var aRule = cyberAnatomyRule(cw.key);
       var sided = !!cw.sided && !(aRule && aRule.pair), oid = where + "-cw-" + idx, open = !!_open[oid];
@@ -1676,68 +1690,75 @@ EN.inventoryView = (function () {
       var lo = { conditions: true, used: {} };
       var conflict = where === "installed"
         ? cyberInstallBlock(installed.filter(function (x) { return x !== cw; }), cw) : "";
-      var chips = [
-        where === "installed" ? tagChip("● INSTALLED", "var(--success)", "Installed, counts toward your Static") : tagChip("STASHED", "var(--text3)", "In your stash, not yet installed"),
-        // a save from before the install guard can hold a banned pairing (Crown with Engine, two Crowns): flag it, never auto-uninstall
-        conflict ? tagChip("CONFLICT", "var(--danger)", conflict) : null,
-        // a save from before the anatomy guard can hold a third Cyberarm or a second heart: flag it, never auto-uninstall
-        overLimit ? tagChip("OVER LIMIT", "var(--warn)", overLimit) : null,
-        // implants the Handbook doesn't print (the Mystech ones, the Blackware and Prototype tiers) are held; an owned piece keeps working
-        toolkitChip("cyberware", cw.key) || toolkitChip("cyberTier", cw.tier),
-        // the quality tier is a rule, so its chip peeks the Codex entry on a tap (the title stays for hover)
-        cw.tier ? (function () {
-          var tip = ((EN.cyberware || {}).qualityTiers || {})[cw.tier] || "", col = tierChipColor(cw.tier);
-          return el("span.chip", { title: tip, style: { fontSize: "9px", color: col, borderColor: col, marginLeft: "8px" } },
-            [tipLink("gr-chrome/" + slugOf(cw.tier), String(cw.tier).toUpperCase(), tip)]);
-        })() : null,
-        tagChip((cw.sp || 0) + " SP", heatColor(cw.sp || 0)),
-        tagChip("◆ " + cw.zone, "var(--accent)", "Interface Zone"),
-        (function () { var e = enhScaled(cw); return e ? tagChip("✦ " + e, "var(--gold)", where === "installed" ? "Enhancement Bonus, applied to your attributes" : "Enhancement Bonus, applies once installed") : null; })()
-      ];
-      var actions;
-      if (where === "stash") {
-        actions = el("div.row", { style: { gap: "6px" } }, [
-          // blocked (Crown with Engine, a second Crown): disabled, the reason in its title; installFromStash refuses too
-          // blocked by anatomy (a third Cyberarm, a second heart no better than yours) the same way;
-          // a better version over a full slot is a REPLACE, naming what comes out
-          (function () {
-            var block = cyberInstallBlock(installed, cw) || plan.block || "";
-            var swap = !block && plan.replace != null;
-            return el("button.btn.sm.primary", { disabled: !!block, dataset: swap ? { cyberReplace: "1" } : null,
-              title: block || (swap ? "Install at a clinic, replacing your " + plan.out.name + cyberSideTag(plan.out) + ": it goes back to your Chrome Stash, and Static recalculates"
-                                    : "Install at a clinic; moves it to Installed Chrome and adds its SP to your Static"),
-              onclick: function (e) { e.stopPropagation(); installFromStash(idx); } }, swap ? "\u21c4 REPLACE" : "⧉ INSTALL");
-          })(),
-          el("button.btn.sm", { title: "Discard this implant", style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function (e) { e.stopPropagation(); dropStash(idx); } }, "DROP")
-        ]);
-      } else {
-        var sideToggle = sided ? el("div.row", { style: { gap: "3px" } }, ["L", "R"].map(function (s) {
-          return el("button.btn.sm" + (cw.side === s ? ".primary" : ""), { title: "Install side", style: { padding: "1px 8px", minWidth: "24px" },
-            onclick: function (e) { e.stopPropagation(); store.update(function (c) { if (c.cyberware[idx]) c.cyberware[idx].side = s; }); } }, s);
-        })) : null;
-        actions = el("div.row", { style: { gap: "8px", alignItems: "center" } }, [
-          sideToggle,
-          el("button.btn.sm", { title: "Uninstall, returns to your Chrome Stash", style: { color: "var(--danger)", borderColor: "var(--danger)" }, onclick: function (e) { e.stopPropagation(); uninstallToStash(idx); } }, "✕")
-        ]);
+      function kv(label, value, col, tip) {
+        return el("span.cw-kv", { title: tip || "" }, [el("i", { text: label }), typeof value === "string" ? el("b", { style: col ? { color: col } : null, text: value }) : value]);
       }
-      return el("div.feature", { style: { borderLeftColor: where === "installed" ? heatColor(cw.sp || 0) : "var(--border2)" } }, [
-        el("h4", { style: { cursor: "pointer", flexWrap: "wrap", gap: "6px" }, onclick: function () { _open[oid] = !open; EN.app.render(); } }, [
-          el("span", null, EN.ui.nameCaret(cw.name, open).concat(chips)),
-          actions
-        ]),
-        // the swap, spelled out on the row so the player sees what comes out before they install
+      var tierTip = cw.tier ? ((EN.cyberware || {}).qualityTiers || {})[cw.tier] || "" : "";
+      var enh = enhScaled(cw);
+      var spec = [
+        // the quality tier is a rule, so it peeks the Codex entry on a tap (the title stays for hover)
+        cw.tier ? kv("Tier", el("b", { style: { color: tierChipColor(cw.tier) } }, [tipLink("gr-chrome/" + slugOf(cw.tier), String(cw.tier), tierTip)]), null, tierTip) : null,
+        kv("Static", (cw.sp || 0) + " SP", heatColor(cw.sp || 0), where === "installed" ? "Counts toward your Total Static" : "Adds to your Total Static once installed"),
+        kv("Zone", cw.zone || "Hardware", "var(--accent)", "Interface Zone"),
+        enh ? kv("Bonus", enh, "var(--gold)", where === "installed" ? "Enhancement Bonus, applied to your attributes" : "Enhancement Bonus, applies once installed") : null
+      ];
+      // a save from before the install guard can hold a banned pairing, or one from before the anatomy guard a third Cyberarm:
+      // both are flagged, never auto-uninstalled
+      var flags = [conflict ? tagChip("CONFLICT", "var(--danger)", conflict) : null, overLimit ? tagChip("OVER LIMIT", "var(--warn)", overLimit) : null].filter(Boolean);
+      var acts = [];
+      if (where === "stash") {
+        // blocked (Crown with Engine, a second Crown, a third Cyberarm): disabled, the reason in its title; installFromStash refuses too.
+        // a better version over a full slot is a REPLACE, naming what comes out
+        var block = cyberInstallBlock(installed, cw) || plan.block || "";
+        var swap = !block && plan.replace != null;
+        acts.push(el("span.cw-grow"));
+        acts.push(el("button.btn.sm.primary", { type: "button", disabled: !!block, dataset: Object.assign({ cw: "install" }, swap ? { cyberReplace: "1" } : {}),
+          title: block || (swap ? "Install at a clinic, replacing your " + plan.out.name + cyberSideTag(plan.out) + ": it goes back to your Chrome Stash, and Static recalculates"
+                                : "Install at a clinic; moves it to Installed Chrome and adds its SP to your Static"),
+          onclick: function (e) { e.stopPropagation(); installFromStash(idx); } }, swap ? "\u21c4 REPLACE" : "\u29c9 INSTALL"));
+        // dropping it is for good, so it asks first
+        var drop = EN.ui.armButton("cwdrop:" + idx + ":" + (cw.key || cw.name), { label: "DROP", armedLabel: "SURE? IT'S GONE", title: "Throw this implant away. It is not kept anywhere else.",
+          onConfirm: function () { dropStash(idx); } });
+        drop.classList.add("ghost"); drop.setAttribute("data-cw", "drop");
+        acts.push(drop);
+      } else {
+        if (sided) acts.push(el("span.cw-side", null, [el("i", { text: "Side" })].concat(["L", "R"].map(function (s) {
+          return el("button.btn.sm" + (cw.side === s ? ".primary" : ""), { type: "button", title: s === "L" ? "Installed on the left" : "Installed on the right", dataset: { cwSide: s },
+            onclick: function (e) { e.stopPropagation(); store.update(function (c) { if (c.cyberware[idx]) c.cyberware[idx].side = s; }); } }, s);
+        }))));
+        acts.push(el("span.cw-grow"));
+        acts.push(el("button.btn.sm.ghost.cw-out", { type: "button", dataset: { cw: "uninstall" }, title: "Uninstall it: it goes back to your Chrome Stash, and its SP comes off your Static",
+          onclick: function (e) { e.stopPropagation(); uninstallToStash(idx); } }, "\u23cf UNINSTALL"));
+      }
+      var details = !open ? [] : [
+        ENG().cyberEffect(cw) ? rulesLine({ margin: "0", color: "var(--accent)" }, null, null, ENG().cyberEffect(cw), lo) : null,
+        // the spec line "Prerequisite For:", read live from the catalog like the Effect (a saved implant carries no catalog prose)
+        cyberPrereq(cw) ? rulesLine({ margin: "0" }, "Prerequisite For", "var(--flow)", cyberPrereq(cw), lo) : null,
+        // ...and what THIS tier changes about it
+        ENG().cyberTierNote && ENG().cyberTierNote(cw.key, cw.tier) ? rulesLine({ margin: "0", color: "var(--gold)" }, null, null, ENG().cyberTierNote(cw.key, cw.tier), lo) : null,
+        ENG().cyberDesc(cw) ? EN.ui.ruleText(el("p", { style: { margin: "0" } }), ENG().cyberDesc(cw), lo) : null,
+        cyberSource(cw) ? el("p.cw-src", { dataset: { cwSource: cyberSource(cw) }, text: "Source: " + cyberSource(cw) }) : null
+      ].filter(Boolean);
+      var installedHere = where === "installed";
+      return el("div.feature.cw-card", { dataset: { cw: where, cwKey: cw.key || "" }, style: { borderLeftColor: installedHere ? heatColor(cw.sp || 0) : "var(--border2)" } }, [
+        // the card's heading: a press anywhere on it opens or closes the rules (the name is the keyboard's way in)
+        el("h4.cw-top", { onclick: function () { _open[oid] = !open; EN.app.render(); } }, [
+          el("span.cw-name", { role: "button", tabindex: "0", "aria-expanded": open ? "true" : "false", title: open ? "Hide its rules" : "Show its rules",
+            onkeydown: function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); _open[oid] = !open; EN.app.render(); } } },
+            // the name and its caret, as every card in the app draws them (EN.ui.nameCaret)
+            [el("b", null, EN.ui.nameCaret(cw.name + cyberSideTag(cw), open))]),
+          flags.length ? el("span.cw-grow") : null].concat(flags).concat([
+          el("span.cw-state" + (installedHere ? ".on" : ""), { title: installedHere ? "Installed: it counts toward your Static" : "In your Chrome Stash, not yet installed" }, installedHere ? "\u25cf INSTALLED" : "STASHED")
+        ])),
+        el("div.cw-spec", null, spec.filter(Boolean)),
+        // the swap, spelled out on the card so the player sees what comes out before they install
         where === "stash" && plan.replace != null && !cyberInstallBlock(installed, cw)
-          ? el("p.help", { dataset: { cyberSwap: "1" }, style: { margin: "4px 0 0", color: "var(--warn)" },
+          ? el("p.help", { dataset: { cyberSwap: "1" }, style: { margin: "0", color: "var(--warn)" },
               text: "Replaces your " + plan.out.name + cyberSideTag(plan.out) + " (" + (plan.out.sp || 0) + " SP), which goes back to your Chrome Stash. Total Static " +
                     (tax.total || 0) + " \u2192 " + ((tax.total || 0) - (plan.out.sp || 0) + (cw.sp || 0)) + " SP." })
           : null,
-        open && ENG().cyberEffect(cw) ? rulesLine({ margin: "4px 0 0", color: "var(--accent)" }, null, null, ENG().cyberEffect(cw), lo) : null,
-        // the spec line "Prerequisite For:", read live from the catalog like the Effect (a saved implant carries no catalog prose)
-        open && cyberPrereq(cw) ? rulesLine({ margin: "4px 0 0" }, "Prerequisite For", "var(--flow)", cyberPrereq(cw), lo) : null,
-        // ...and what THIS tier changes about it, which the market card has always shown and this panel never did
-        open && ENG().cyberTierNote && ENG().cyberTierNote(cw.key, cw.tier)
-          ? rulesLine({ margin: "3px 0 0", color: "var(--gold)" }, null, null, ENG().cyberTierNote(cw.key, cw.tier), lo) : null,
-        open && ENG().cyberDesc(cw) ? EN.ui.ruleText(el("p", { style: { margin: "6px 0 0" } }), ENG().cyberDesc(cw), lo) : null
+        details.length ? el("div.cw-rules", null, details) : null,
+        el("div.cw-foot", null, acts)
       ]);
     }
     // one list: INSTALLED pieces float to the top, auto-sorted by Zone → Tier; STASHED pieces follow

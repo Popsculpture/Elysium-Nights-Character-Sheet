@@ -3952,3 +3952,36 @@ html.gm-landing .gm-crew-pick{ display:none !important; }
 .chrome-cols > .chrome-frame-panel{ flex:3 1 520px; min-width:0; margin:0; }
 .chrome-cols > .chrome-list{ flex:2 1 340px; min-width:0; margin:0; }
 .chrome-cols > .chrome-list .feature{ flex-wrap:wrap; }
+
+/* An implant's card on the Chrome page (19 Nov 2026): the name and where it is, its spec as label and value, the rules when
+   opened (with the book that prints it), and the actions along the foot. */
+.cw-card{ display:flex; flex-direction:column; gap:8px; padding:11px 13px; }
+.cw-top{ display:flex; align-items:center; gap:10px; min-width:0; }
+.cw-name{ display:inline-flex; align-items:baseline; gap:6px; min-width:0; flex:1 1 auto; padding:0; margin:0; background:none; border:0; color:var(--text); font:inherit; text-align:left; cursor:pointer; }
+.cw-name b{ font-family:var(--disp); font-size:14px; letter-spacing:.03em; font-weight:700; overflow-wrap:anywhere; }
+.cw-name .collapse-caret{ color:var(--text3); font-size:11px; }
+.cw-name:hover b, .cw-name:focus-visible b{ color:var(--accent); }
+.cw-state{ flex:0 0 auto; font-family:var(--mono); font-size:9.5px; letter-spacing:.12em; color:var(--text3); }
+.cw-state.on{ color:var(--success); }
+.cw-spec{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px; }
+.cw-kv{ display:inline-flex; align-items:baseline; gap:6px; min-width:0; }
+.cw-kv i{ font-style:normal; font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); }
+.cw-kv b{ font-family:var(--mono); font-size:11.5px; font-weight:600; color:var(--text); }
+.cw-kv b a{ color:inherit; }
+.cw-spec .chip{ margin:0 !important; }
+.cw-rules{ display:flex; flex-direction:column; gap:6px; padding-top:8px; border-top:1px dashed var(--border); font-size:12.5px; }
+.cw-src{ margin:2px 0 0 !important; font-family:var(--mono); font-size:10px !important; letter-spacing:.06em; color:var(--text3) !important; }
+.cw-foot{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding-top:8px; border-top:1px solid var(--border); }
+.cw-grow{ flex:1 1 auto; }
+.cw-side{ display:inline-flex; align-items:center; gap:4px; }
+.cw-side i{ font-style:normal; font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text4); margin-right:2px; }
+.cw-side .btn{ min-width:28px; justify-content:center; padding:2px 8px; }
+.cw-foot .btn{ min-height:0; }
+/* UNINSTALL is a quiet word, not an alarm: it is undone by INSTALL. It warms to the danger colour only under the pointer. */
+.cw-out{ color:var(--text3) !important; border-color:var(--border2) !important; }
+.cw-out:hover, .cw-out:focus-visible{ color:var(--danger) !important; border-color:var(--danger) !important; }
+
+.feature h4.cw-top{ margin:0; cursor:pointer; flex-wrap:nowrap; }
+.cw-flags{ display:inline-flex; flex-wrap:wrap; gap:4px; }
+.cw-flags .chip{ margin:0 !important; }
+.cw-name:focus-visible{ outline:1px solid var(--accent); outline-offset:2px; }
