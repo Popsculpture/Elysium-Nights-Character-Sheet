@@ -163,15 +163,15 @@ EN.deck.sheet = (function () {
       var on = g.items.filter(function (x) { return x.on; })[0];
       tiles.push(tile(g.slot.id, SLOT_NAME[g.slot.id] || g.slot.id, on ? on.name : "None", on ? g.slot.verbs.act : "press to choose", !on));
     });
-    tiles.push(el("button.dk-slot", { type: "button", "data-ro-keep": "1", dataset: { dkSlot: "load" }, title: "Your Loadout, in Gear", onclick: function () { EN.deck.shell.go("gear"); } },
+    tiles.push(el("button.dk-slot", { type: "button", "data-ro-keep": "1", dataset: { dkSlot: "load" }, title: "Your Loadout, in the Stash", onclick: function () { EN.deck.shell.go("gear"); } },
       [el("i", { text: "Load" }), el("b", { text: (enc.current != null ? enc.current : 0) + " / " + (enc.budget != null ? enc.budget : "?") }),
-       el("span" + (enc.state === "overloaded" ? ".dk-badt" : enc.state === "encumbered" ? ".dk-warnt" : ""), { text: enc.state ? enc.state.charAt(0).toUpperCase() + enc.state.slice(1) : "open Gear" })]));
+       el("span" + (enc.state === "overloaded" ? ".dk-badt" : enc.state === "encumbered" ? ".dk-warnt" : ""), { text: enc.state ? enc.state.charAt(0).toUpperCase() + enc.state.slice(1) : "open the Stash" })]));
     out.push(el("div.dk-slots", { dataset: { dkSlots: "1" } }, tiles));
     if (S.slot === "weapons") {
       out.push(el("div.dk-card.dk-swap", { dataset: { dkSwap: "weapons" } }, [el("h5", { text: "Weapons you own" })].concat(M.weapons.length ? M.weapons.map(function (w) {
         return el("button.dk-opt" + (w.on ? ".dk-on" : ""), { type: "button", "aria-pressed": w.on ? "true" : "false", dataset: { dkEquip: w.key }, onclick: function () { I.toggleEquip(w.entry); } },
           [el("b", { text: w.name }), el("small", { text: w.on ? "in hand: press to put away" : "press to equip" })]);
-      }) : [el("p.dk-empty", { text: "You own no weapons. The Market is in Gear." })])));
+      }) : [el("p.dk-empty", { text: "You own no weapons. The Market is in the Stash." })])));
     } else if (S.slot) {
       var g = M.slots.filter(function (x) { return x.slot.id === S.slot; })[0];
       if (g) out.push(el("div.dk-card.dk-swap", { dataset: { dkSwap: g.slot.id } }, [el("h5", { text: (SLOT_NAME[g.slot.id] || g.slot.id) + ": one at a time" })].concat(g.items.map(function (x) {
@@ -352,7 +352,7 @@ EN.deck.sheet = (function () {
         el("div", null, [el("b", { text: dep.title }), el("p", { text: dep.say + " " + mine.length + " " + d.resource.name + (mine.length === 1 ? " ability is" : " abilities are") + " unavailable until " + (dep.stowed ? "you take your " + dep.what + " out." : "a " + dep.what + " is equipped.") })]),
         el("div.dk-row", null, [dep.stowed
           ? btn("Take out (" + dep.stowed.action + ")", "warn", "dep-take-out", function () { K.setInHand(dep.deckKey, true); EN.ui.toast("Your " + dep.what + " is out (" + dep.stowed.action + ")."); })
-          : nav("Equip a " + dep.what + " in Gear", "", "dep-equip", function () { if (EN.inventoryView.openStash) EN.inventoryView.openStash(dep.cat); EN.app.gotoTab("gear"); })])]));
+          : nav("Equip a " + dep.what + " in the Stash", "", "dep-equip", function () { if (EN.inventoryView.openStash) EN.inventoryView.openStash(dep.cat); EN.app.gotoTab("gear"); })])]));
     } else if (mine.length) {
       out.push(h(d.resource.name + " abilities", dead ? chip(dep.what + " bricked", "bad") : null));
       mine.forEach(function (f) { out.push(abilityCard(X, f, rName, dead)); });
@@ -416,7 +416,7 @@ EN.deck.sheet = (function () {
         el("span.dk-boxes", { title: dg.armor.name + ": current DR out of the suit's printed base", text: dg.armorDR + " / " + dg.armorBaseDR + " DR" }), el("span.dk-grow"),
         btn("Lose 1 DR", "sm.bad", "dr-loss", function () { DM.markArmorDR(1); }, "Lose 1 DR until repaired", dg.armorBreached),
         dg.armorDRLost > 0 ? btn("Undo", "sm.ghost", "dr-undo", function () { DM.markArmorDR(-1); }, "Undo one point of DR loss: a misclick fix, not a repair") : null,
-        dg.armorDRLost > 0 ? nav("Repair in Gear", "sm.ghost", "dr-repair", function () { if (EN.inventoryView.openBench) EN.inventoryView.openBench("armor"); EN.deck.shell.gearView("classic"); }) : null]));
+        dg.armorDRLost > 0 ? nav("Repair in the Stash", "sm.ghost", "dr-repair", function () { if (EN.inventoryView.openBench) EN.inventoryView.openBench("armor"); EN.deck.shell.gearView("classic"); }) : null]));
       if (open) kids.push(el("div.dk-ftx", null, [el("p", { text: def.text }), rule("ref-def/" + EN.codexView.slug(def.name), def.name + " in the Codex")]));
       out.push(el("div.dk-card.dk-abl", { dataset: { dkDefense: def.name } }, kids));
     });

@@ -62,7 +62,7 @@ EN.deck.find = (function () {
       { label: "Open the Codex", hint: "Rules", when: true, go: function () { EN.app.gotoTab("codex"); } },
       { label: "Open Settings", hint: "", when: !!EN.settings, go: function () { EN.settings.open(); } },
       { label: "Go to the Sheet", hint: "App", when: true, go: function () { shell.go("sheet"); } },
-      { label: "Go to Gear", hint: "App", when: true, go: function () { shell.go("gear"); } },
+      { label: "Go to Stash", hint: "App", when: true, go: function () { shell.go("gear"); } },
       { label: "Go to #POST", hint: "App", when: true, go: function () { shell.go("post"); } },
       { label: "Go to Standing", hint: "App", when: true, go: function () { shell.go("standing"); } }
     ].filter(function (a) { return a.when; });
@@ -89,7 +89,7 @@ EN.deck.find = (function () {
         if (seen[e.name]) { seen[e.name].n += (e.qty || 1); return; }
         seen[e.name] = { n: e.qty || 1 };
         if (Object.keys(seen).length > MAX_EACH) return;
-        out.push({ group: "Your gear", title: e.name, count: seen[e.name], hint: "Gear", go: function () {
+        out.push({ group: "Your gear", title: e.name, count: seen[e.name], hint: "Stash", go: function () {
           if (classic()) {
             // the Inventory's Stash, with the shelf this piece is on unfolded
             try { var I = EN.inventoryView, it = I.core.findItem(e.name); if (I.openStash) I.openStash(it ? I.core.stashCategory(it) : null); } catch (x) {}

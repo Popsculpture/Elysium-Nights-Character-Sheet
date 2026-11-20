@@ -33,7 +33,7 @@ EN.deck.shell = (function () {
   // the four apps, in dock order: the tab each opens, and the Social page for the two that share one tab
   var APPS = [
     { key: "sheet",    label: "Sheet",    tab: "combat" },
-    { key: "gear",     label: "Gear",     tab: "gear" },
+    { key: "gear",     label: "Stash",    tab: "gear" },   // the Stash since 20 Nov 2026 (the author's call), as on Classic's rail
     { key: "post",     label: "#POST",    tab: "post", sub: "post" },
     { key: "standing", label: "Standing", tab: "face", sub: "ledger" }
   ];
@@ -71,7 +71,8 @@ EN.deck.shell = (function () {
   function icon(name) {
     var A = EN.app, F = (EN.faceView && EN.faceView.icons) || {};
     if (name === "sheet") return A.tabIcon("combat");
-    if (name === "gear") return A.tabIcon("gear");
+    if (name === "gear") return A.tabIcon("gear");                  // the locker, the Stash's
+    if (name === "mine") return (EN.icons && EN.icons.archive) || "";   // the archive box, its Gear page's, as on Classic
     if (name === "post") return F.post || "";
     if (name === "standing") return F.ledger || "";
     if (name === "codex") return A.tabIcon("codex");
@@ -138,8 +139,8 @@ EN.deck.shell = (function () {
     }
     if (app === "gear") {
       if (!nativeGear(c)) return null;
-      return segBar([["mine", "Mine"], ["market", "Market"], ["classic", "Classic gear"]].map(function (x) {
-        return { key: x[0], label: x[1], icon: x[0] === "mine" ? icon("gear") : null, on: _gear === x[0], go: function () { gearView(x[0]); } };
+      return segBar([["mine", "Gear"], ["market", "Market"], ["classic", "Classic stash"]].map(function (x) {
+        return { key: x[0], label: x[1], icon: x[0] === "mine" ? icon("mine") : null, on: _gear === x[0], go: function () { gearView(x[0]); } };
       }));
     }
     if (app === "standing") {
@@ -244,7 +245,7 @@ EN.deck.shell = (function () {
     if (app === "gear" && _gear !== "classic" && nativeGear(c)) {
       try { EN.deck.gear.render(stage, c, _gear); stage.setAttribute("data-dk-native", "gear"); return; }
       catch (e2) {
-        console.error("#GRIDeck could not draw Gear; showing the Gear tab", e2);
+        console.error("#GRIDeck could not draw the Stash; showing Classic's", e2);
         clear(stage);
         if (bar) stage.appendChild(bar);
       }
