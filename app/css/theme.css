@@ -3985,3 +3985,8 @@ html.gm-landing .gm-crew-pick{ display:none !important; }
 .cw-flags{ display:inline-flex; flex-wrap:wrap; gap:4px; }
 .cw-flags .chip{ margin:0 !important; }
 .cw-name:focus-visible{ outline:1px solid var(--accent); outline-offset:2px; }
+
+/* The Actions panel's All page (19 Nov 2026): Weapons, Abilities and Features in one scroll, each under a heading of its own */
+.act-all-h{ display:flex; align-items:center; gap:10px; margin:14px 0 8px; font-family:var(--disp); font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); }
+.act-all-h:first-child{ margin-top:2px; }
+.act-all-h .line{ flex:1 1 auto; height:1px; background:var(--border2); }

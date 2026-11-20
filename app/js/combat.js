@@ -7170,21 +7170,34 @@ EN.combatView = (function () {
     function loadoutCount() {
       return (ch.equipment || []).filter(function (e) { return e.qty > 0 && (isEquippedAny(ch, entryKey(e)) || carryStatus(ch, entryKey(e)) !== "stashed"); }).length;
     }
+    /* All, Weapons, Abilities, Features, then Loadout and Notes (19 Nov 2026, the author's order). All is the three play pages in
+       one scroll, in that order, each under its own heading. */
     var TAB_DEFS = [
-      { key: "abilities", label: "Abilities", count: activeFeats.length },
-      { key: "features", label: "Features", count: passiveFeats.length + (ch.customFeatures || []).length },
+      { key: "all", label: "All", count: null },
       // the badge counts WEAPONS, so it counts the rows this tab will actually draw
       // for one. It used to count everything equipped, which read WEAPONS (2) over an
       // empty list for a character holding Knuckles and Shock Gloves.
       { key: "weapons", label: "Weapons", count: realWeaponRows.length },
+      { key: "abilities", label: "Abilities", count: activeFeats.length },
+      { key: "features", label: "Features", count: passiveFeats.length + (ch.customFeatures || []).length },
       { key: "loadout", label: "Loadout", count: loadoutCount() },
       { key: "notes", label: "Notes", count: null }
     ];
     var navRow = el("div.row.wrap.view-nav", { style: { gap: "6px", marginBottom: "10px" } }, TAB_DEFS.map(function (t) {
-      return el("button.btn.sm" + (_panelTab === t.key ? ".primary" : ""), { onclick: function () { _panelTab = t.key; EN.app.render(); } },
+      return el("button.btn.sm" + (_panelTab === t.key ? ".primary" : ""), { dataset: { actTab: t.key }, onclick: function () { _panelTab = t.key; EN.app.render(); } },
         t.label + (t.count != null ? " (" + t.count + ")" : ""));
     }));
-    var bodyKids = _panelTab === "features" ? featuresKids()
+    function allKids() {
+      var out = [];
+      [["weapons", weaponsKids], ["abilities", abilitiesKids], ["features", featuresKids]].forEach(function (g) {
+        var def = TAB_DEFS.filter(function (t) { return t.key === g[0]; })[0];
+        out.push(el("div.act-all-h", { dataset: { actAll: g[0] } }, [el("span", { text: def.label + (def.count != null ? " (" + def.count + ")" : "") }), el("span.line")]));
+        out.push(el("div.act-all-g", { dataset: { actGroup: g[0] } }, g[1]()));
+      });
+      return out;
+    }
+    var bodyKids = _panelTab === "all" ? allKids()
+      : _panelTab === "features" ? featuresKids()
       : _panelTab === "weapons" ? weaponsKids()
       : _panelTab === "loadout" ? loadoutKids()
       : _panelTab === "notes" ? notesKids()
