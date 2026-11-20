@@ -183,13 +183,13 @@ EN.inventoryView = (function () {
     // the Freelancer tab opens on its Weapons list next time (the unarmed strike lives there too)
     if (on && EN.combatView && EN.combatView.setPanelTab) EN.combatView.setPanelTab("weapons");
     toast(!on ? entry.name + " unequipped."
-      : aug ? entry.name + " equipped; it augments your unarmed strike on the Freelancer tab's Weapons list. ATTACKS › takes you there."
-            : entry.name + " equipped; it's on the Freelancer tab's Weapons list. ATTACKS › takes you there.");
+      : aug ? entry.name + " equipped; it augments your unarmed strike on the HUD tab's Weapons list. ATTACKS › takes you there."
+            : entry.name + " equipped; it's on the HUD tab's Weapons list. ATTACKS › takes you there.");
   }
   // ATTACKS ›: straight to the Weapons list on the Freelancer tab, scrolled into view
   function attacksBtn() {
     if (!EN.combatView || !EN.combatView.showAttacks) return null;
-    return el("button.btn.sm.to-attacks", { type: "button", title: "Go to the Weapons list on the Freelancer tab",
+    return el("button.btn.sm.to-attacks", { type: "button", title: "Go to the Weapons list on the HUD tab",
       style: { color: "var(--accent)", borderColor: "var(--accent)" },
       onclick: function () { EN.combatView.showAttacks(); } }, "ATTACKS ›");
   }
@@ -203,14 +203,14 @@ EN.inventoryView = (function () {
     var last = mine[mine.length - 1];
     if (isWeapon(it)) {
       if (mine.some(function (e) { return isEquipped(ch, entryKey(e)); }))
-        return [el("span.chip.mkt-equipped", { title: "Equipped: it's on the Freelancer tab's Weapons list", style: { color: "var(--accent)", borderColor: "var(--accent)" } }, "✓ EQUIPPED"), attacksBtn()];
-      return [el("button.btn.sm.mkt-equip", { type: "button", title: "Equip your " + it.name + ": it goes on the Freelancer tab's Weapons list",
+        return [el("span.chip.mkt-equipped", { title: "Equipped: it's on the HUD tab's Weapons list", style: { color: "var(--accent)", borderColor: "var(--accent)" } }, "✓ EQUIPPED"), attacksBtn()];
+      return [el("button.btn.sm.mkt-equip", { type: "button", title: "Equip your " + it.name + ": it goes on the HUD tab's Weapons list",
         style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(last); } }, "⚔ EQUIP")];
     }
     var slot = EN.engine.equipSlotFor ? EN.engine.equipSlotFor(ch, it, last) : null;
     if (!slot) return [];
     if (mine.some(function (e) { return slot.get(ch) === entryKey(e); }))
-      return [el("span.chip.mkt-equipped", { title: "Live on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" } }, slot.verbs.off)];
+      return [el("span.chip.mkt-equipped", { title: "Live on the HUD tab", style: { color: "var(--accent)", borderColor: "var(--accent)" } }, slot.verbs.off)];
     return [el("button.btn.sm.mkt-equip", { type: "button", title: "Make your " + it.name + " the live one (one at a time)",
       style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleSlotEquip(slot, it, last); } }, slot.verbs.on)];
   }
@@ -228,7 +228,7 @@ EN.inventoryView = (function () {
     var was = slot.get(store.active()) === key;
     store.update(function (c) { EN.engine.setEquipSlot(c, slot.id, was ? null : key); });
     toast(was ? it.name + " stowed."
-              : it.name + " " + slot.verbs.act + "; it now reads live on the Freelancer tab.");
+              : it.name + " " + slot.verbs.act + "; it now reads live on the HUD tab.");
   }
   /* ---- Loadout status from the Stash (carried / worn / racked) -----------
      Mirrors the Freelancer tab's Loadout controls so the whole loadout can be
@@ -1309,11 +1309,11 @@ EN.inventoryView = (function () {
       : el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end" } },
           (entry && !notCarried(it) ? [carryCtrl(ch, it, entry)] : []).concat(leaseBtns).concat(isWeapon(it) ? [
             isEquipped(ch, ownedKey)
-              ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the Freelancer tab", onclick: function () { toggleEquip(entry); } }, "✓ EQUIPPED")
-              : el("button.btn.sm", { title: "Equip, add to the Attacks list on the Freelancer tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(entry); } }, "⚔ EQUIP")
+              ? el("button.btn.sm.primary", { title: "Unequip, remove from the Attacks list on the HUD tab", onclick: function () { toggleEquip(entry); } }, "✓ EQUIPPED")
+              : el("button.btn.sm", { title: "Equip, add to the Attacks list on the HUD tab", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleEquip(entry); } }, "⚔ EQUIP")
           ] : []).concat(isWeapon(it) && isEquipped(ch, ownedKey) ? [attacksBtn()] : []).concat(equipSlot ? [
             equipSlot.get(ch) === ownedKey
-              ? el("button.btn.sm.primary", { title: "Stow it; it stops applying on the Freelancer tab", onclick: function () { toggleSlotEquip(equipSlot, it, entry); } }, equipSlot.verbs.off)
+              ? el("button.btn.sm.primary", { title: "Stow it; it stops applying on the HUD tab", onclick: function () { toggleSlotEquip(equipSlot, it, entry); } }, equipSlot.verbs.off)
               : el("button.btn.sm", { title: "Make this the live one (one at a time)", style: { color: "var(--accent)", borderColor: "var(--accent)" }, onclick: function () { toggleSlotEquip(equipSlot, it, entry); } }, equipSlot.verbs.on)
           ] : []).concat(_mode === "fivefinger" ? [
             el("button.btn.sm", { title: "Give one away", style: { color: "var(--success)", borderColor: "var(--success)" }, onclick: function () { donate(ownedKey); } }, "DONATE"),
@@ -1429,7 +1429,7 @@ EN.inventoryView = (function () {
         String(enc.tier || "").toUpperCase() + " LOADOUT"),
       el("span.chip", { title: (encStates[enc.state] || {}).effect || "", style: { fontSize: "9px", color: stateColor, borderColor: stateColor } },
         String((encStates[enc.state] || {}).name || enc.state || "").toUpperCase()),
-      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Calculated from on-person gear; hauls live on the Freelancer tab's Loadout sub-tab." }),
+      el("span.help", { style: { margin: 0, fontSize: "10.5px" }, text: "Calculated from on-person gear; hauls live on the HUD tab's Loadout sub-tab." }),
       // the Encumbrance rules sit only in this bar's hover titles, so a "?" peeks them on touch
       EN.ui.ruleChip("sk-load", { title: "Encumbrance & Load" })
     ]);

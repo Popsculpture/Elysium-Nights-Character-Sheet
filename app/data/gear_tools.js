@@ -73,7 +73,7 @@ EN.gearCatalog.tools = {
         { name: "Handheld Resonant Tools", intro: "Drawn and activated when needed. None use a Body Slot." }
       ] },
     { key: "rigs", title: "Smartdecks, B&E Buddies & Trauma Rigs",
-      intro: "Powered personal hardware, every piece of it a #GRID Node in its own right. Smartdecks are Power User rigs for Codebreakers and serious grid runners; B&E Buddies are handheld, civilian-grade cracker boxes that anyone can operate; Trauma Rigs are the Stitcher's chemistry, and anyone can buy one of those too. Equip one from your stash to activate it: a Smartdeck or Buddy on the #GRID tab, a Trauma Rig on the Freelancer tab under Actions, Abilities.",
+      intro: "Powered personal hardware, every piece of it a #GRID Node in its own right. Smartdecks are Power User rigs for Codebreakers and serious grid runners; B&E Buddies are handheld, civilian-grade cracker boxes that anyone can operate; Trauma Rigs are the Stitcher's chemistry, and anyone can buy one of those too. Equip one from your stash to activate it: a Smartdeck or Buddy on the #GRID tab, a Trauma Rig on the HUD tab under Actions, Abilities.",
       groups: [
         { name: "Smartdecks", intro: "Power User hardware. Governs Cipher complexity ceiling, Device Bonus, and mod slots. Restricted citywide; Contraband in corporate sectors." },
         { name: "B&E Buddies", intro: "Standard User rigs. No Bandwidth, no multi-Link, and locked out of Premium+ Nodes. Restricted." },

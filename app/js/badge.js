@@ -164,7 +164,9 @@ EN.badge = (function () {
       ico.d.forEach(function (d) { finger.appendChild(s("path", { d: d })); });
       g.appendChild(finger);
     }
-    g.appendChild(txt("Caliber", { x: 352, y: 160, "text-anchor": "middle", "font-size": 38, "font-weight": 700, fill: "#ffffff" }));
+    // a black outline, drawn behind the letters as the figure's is (19 Nov 2026, the author's call)
+    g.appendChild(txt("Caliber", { x: 352, y: 160, "text-anchor": "middle", "font-size": 38, "font-weight": 700, fill: "#ffffff", stroke: "#000000", "stroke-width": 3,
+      "paint-order": "stroke", "stroke-linejoin": "round", "data-bd": "caliber-label" }));
     g.appendChild(txt(String(F.caliber), { x: 352, y: 292, "text-anchor": "middle", "font-size": 150, "font-weight": 800, fill: "#ffffff", stroke: "#000000", "stroke-width": 4,
       "paint-order": "stroke", "stroke-linejoin": "round", "data-bd": "caliber" }));
 

@@ -220,7 +220,7 @@ EN.deck.shell = (function () {
     if (app === "sheet" && tab.key === "combat" && !_classic && nativeSheet(c)) {
       try { EN.deck.sheet.render(stage, c); stage.setAttribute("data-dk-native", "sheet"); return; }
       catch (e) {
-        console.error("#GRIDeck could not draw the Sheet; showing the Freelancer tab", e);
+        console.error("#GRIDeck could not draw the Sheet; showing the HUD tab", e);
         clear(stage);
         if (bar) stage.appendChild(bar);
       }
