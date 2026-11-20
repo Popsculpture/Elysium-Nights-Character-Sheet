@@ -2825,7 +2825,7 @@ EN.combatView = (function () {
        Loadout    a filtered view of Inventory: what's carried / worn / equipped for the scene
        Notes      a freeform field (shared with the #PRINT Identity notes)
      DEFEND is intentionally NOT a tab; it lives in its own always-visible section. */
-  var _panelTab = "abilities";
+  var _panelTab = "all";   // the panel opens on All (19 Nov 2026, the author's call): Weapons, Abilities and Features in one scroll
   var _featShowHidden = false;    // reveal computed features the player has hidden
 
   /* resource features that bundle several abilities (Moxie Gambits, Overdrive Maneuvers, Triage
@@ -7147,6 +7147,13 @@ EN.combatView = (function () {
           el("span.lo-name", { style: { fontWeight: 600, fontSize: "13px" } }, EN.ui.nameCaret(e.name, descOpen)),
           e.qty > 1 ? el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "×" + e.qty }) : null,
           el("span", { style: { flex: "1 1 auto" } }),
+          // an expendable is spent by using it (19 Nov 2026): one press, one off the stack
+          (function () {
+            var IC = EN.inventoryView && EN.inventoryView.core;
+            if (!IC || !IC.isExpendable || !IC.isExpendable(it)) return null;
+            return el("button.btn.sm.primary.lo-use", { type: "button", dataset: { loUse: key }, title: "Use one" + (e.qty > 1 ? " (" + e.qty + " on hand)" : ": it's the last one"),
+              onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); IC.useOne(key); } }, "USE");
+          })(),
           statusCtrl
         ]),
         chips.length ? el("div.row.wrap", { style: { gap: "5px", marginTop: "6px" } }, chips) : null

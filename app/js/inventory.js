@@ -929,6 +929,27 @@ EN.inventoryView = (function () {
      carry now and off the log, so a revealed item counts once against the Load Budget however many
      times it is dropped and picked up (the 24 October ruling, section 9, item 10). A donated unit
      (`gone`) is someone else's now, so its row keeps no unit to pick up. */
+  /* USE (19 Nov 2026, the author's call: "consumable/expendable items in Loadout need a Use button"). An expendable is gone once
+     it is used: the Consumables shelf (medical, breaching, rations and the like) and the Resonance Tonics. Four pieces on that shelf
+     are kept, not spent, and get no USE: a Data Drive, a Faraday Pouch and a Glimmer Stick are reused, and a Hypercare Contract is a
+     service the app pays out on its own. Using one takes one off the stack, the way a sale does, and says what is left. */
+  var KEPT_NOT_SPENT = { "Data Drive": 1, "Faraday Pouch": 1, "Glimmer Stick": 1, "Hypercare Contract": 1 };
+  function isExpendable(it) {
+    return !!it && !KEPT_NOT_SPENT[it.name] && (it.bucket === "consumables" || it.group === "Resonance Tonics");
+  }
+  function useOne(key) {
+    var name = "", left = 0;
+    store.update(function (c) {
+      var e = findEntry(c, key);
+      if (!e || !(e.qty > 0)) return;
+      name = e.name;
+      e.qty = (e.qty || 1) - 1;
+      left = e.qty;
+      if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; });
+      unequipIfGone(c, key, e.name);
+    });
+    if (name) toast("Used a " + name + "." + (left > 0 ? " " + left + " left." : " That was the last one."));
+  }
   function drop(key, gone) {
     store.update(function (c) {
       var e = findEntry(c, key);
@@ -4921,6 +4942,8 @@ EN.inventoryView = (function () {
               file already had, by name, and no copies. They write the active record through store.update. `buy`
               and `sell` still read this tab's storefront (_mode) until Gear passes one in. */
            core: {
+             // the HUD's Loadout: which pieces are spent by using them, and the one writer that spends one
+             isExpendable: isExpendable, useOne: useOne,
              isWeapon: isWeapon,   // P3: the Sheet's slot strip lists the weapons a Freelancer owns
              /* P4, #GRIDeck's Gear: the shelves and what a storefront asks, the piece an entry is and where it sorts, the
                 carry and lease controls' own writers, and a way to open this tab on one of its pages or benches. */
