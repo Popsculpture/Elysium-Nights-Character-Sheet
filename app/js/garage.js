@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · the Garage tab (19 Nov 2026, the author's call)
-   Once a vehicle is owned or leased the Gear tab has a Garage, and the Garage is its own complete vehicle sheet in three pages:
+   Once a vehicle is owned or leased the Stash tab has a Garage, and the Garage is its own complete vehicle sheet in three pages:
      VEHICLE    the ride as a character sheet: nickname, Integrity track (a hit, a direct amount, a repair), the stats the book
                 gives it (Speed, Handling, Structure, Defense, Node Tier, seats, mod slots, ram and crash dice), its current speed
                 (which sets the Impact DC), altitude, traits with their rules, and the piloting panel with ROLL buttons that open

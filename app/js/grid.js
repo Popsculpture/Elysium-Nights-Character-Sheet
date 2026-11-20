@@ -615,7 +615,7 @@ EN.gridView = (function () {
         // A2.5: a Codebreaker still owed the starting four is pointed at the free picker, not the market
         rows.push(noteP(owed
           ? "No Complexity 1 Ciphers yet. You start with four, free: choose them " + (isFiledRec(ch) ? "in the prompt at the top of this tab" : "on the Class step of #PRINT") + ". No Glimmer, no Downtime."
-          : "No ciphers acquired yet. Buy them in the Gear tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
+          : "No ciphers acquired yet. Buy them in the Stash tab's gray market (Cipher Library), then cast them here.", "var(--text2)"));
       } else {
         owned.forEach(function (cy) { rows.push(cipherCard(cy, runCx, bwCur, deck && deck.tier, starts.indexOf(cy.name) !== -1, !!rigStow)); });
       }

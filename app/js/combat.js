@@ -1261,7 +1261,7 @@ EN.combatView = (function () {
   // what the day-advance did, as one sentence, shared by the rest and downtime paths
   function dayReport(t) {
     var bits = [];
-    if (t.leaseDue.length) bits.push("LEASE PAYMENT DUE: " + t.leaseDue.join(", ") + " (grants nothing until paid, Gear > Stash)");
+    if (t.leaseDue.length) bits.push("LEASE PAYMENT DUE: " + t.leaseDue.join(", ") + " (grants nothing until paid, Stash > Gear)");
     if (t.personaExpired) bits.push(t.personaExpired + " saved Persona" + (t.personaExpired > 1 ? "s have" : " has")
       + " gone obsolete (Social tab); taking one again needs a fresh scan or fresh observation");
     return bits.join(". ");
@@ -3830,7 +3830,7 @@ EN.combatView = (function () {
     var msg;
     if (type !== "Standard" && ownedQty(ch, type) <= 0) {              // the chosen special round is depleted
       if (base === "Standard") { msg = "Out of " + type + "; reloaded with Standard."; type = "Standard"; }  // fall back to plentiful
-      else { toast("Can't reload: no " + type + " in stash. Acquire it in Gear."); return; }            // no plentiful variant: keep RELOAD
+      else { toast("Can't reload: no " + type + " in stash. Buy it in the Stash's Gray Market."); return; }            // no plentiful variant: keep RELOAD
     }
     var needsStash = type !== "Standard";                               // counted munition / specialty round → spend from stash
     /* Launcher shells are sold one at a time ("50 each") and "All launcher shells are Counted" (PHB
@@ -4387,7 +4387,7 @@ EN.combatView = (function () {
           .concat((d.resistances || []).map(function (r) {
             return bdRow(r.type + " · " + r.level, r.sources.join(", "));
           })),
-        empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Gear → Stash.",
+        empty: (dg.armor || d.naturalDR || d.cyberDR) ? null : "No armor equipped; WEAR armor in Stash → Gear.",
         foot: ((dg.armorDRLost ? "Damaged plating: " + dg.armorDRLost + " point" + (dg.armorDRLost === 1 ? "" : "s") + " of DR gone until repaired, on the Impact Table. " : "") +
               (dg.armor && (dg.armor.traits || []).indexOf("Plated") !== -1 ? "Plated: when you Block, add half this DR (rounded down) on top. " : "") +
               // the one entry that carries armor DR past Standard Physical Damage
@@ -4460,7 +4460,7 @@ EN.combatView = (function () {
           rules: [["ref-size", "Size"], ["sk-load", "Encumbrance & Load"]] };
       })(),
       /* STATIC, the Chrome Tax (19 Nov 2026, the author's call): Total Static from installed chrome, the Threshold it reaches,
-         and what that costs. Read from derive (d.chromeTax), the number the Gear tab's Cybernetic Frame shows. */
+         and what that costs. Read from derive (d.chromeTax), the number the Stash tab's Cybernetic Frame shows. */
       STATIC: (function () {
         var tx = d.chromeTax || { total: 0, index: 0, name: "Safe Capacity", resDiePenalty: 0, fpPenalty: 0, effects: [] };
         var rows = eng.installedCyberware(ch).map(function (cw) { return { label: (cw.name || cw.base) + (cw.side ? " (" + cw.side + ")" : ""), val: (cw.sp || 0) + " SP", raw: true }; });
@@ -4483,7 +4483,7 @@ EN.combatView = (function () {
   function defenseLoadoutFor(ch, d, dg) {
     function gchip(label, name, parts, color, onclick) { return { label: label, name: name, tip: parts, color: color, onclick: onclick || null }; }
     var chips = [];
-    var DUE_TIP = "Lease installment due; it grants none of its benefits until you pay (Gear > Stash).";
+    var DUE_TIP = "Lease installment due; it grants none of its benefits until you pay (Stash > Gear).";
     if (dg.armor) {
       if (dg.armorLapsed) chips.push(gchip("ARMOR · LEASE DUE", dg.armor.name, DUE_TIP, "var(--danger)"));
       else { var ap = [dg.armorDRLost ? dg.armorDR + " of " + dg.armorBaseDR + " DR" : dg.armorDR + " DR"]; if (dg.blockBonus) ap.push("+" + dg.blockBonus + " Block"); if (dg.armor.wardDie && !dg.focus) ap.push(dg.armor.wardDie + " Ward"); if (dg.speedPenalty) ap.push(dg.speedPenalty + " SPD"); if (dg.armor.slots) ap.push(dg.armor.slots + " slots"); chips.push(gchip("ARMOR", dg.armor.name, ap.join(" · "), "var(--success)")); }
@@ -4508,7 +4508,7 @@ EN.combatView = (function () {
             : dg.armor.name + " grants Resistance to " + (resOwed > 1 ? "two damage types" : "a damage type")
                 + " of your choice. Until you choose, it grants none.";
           chips.push(gchip("ARMOR · RESISTANCE", resOwed + " unchosen",
-            resTip + " Choose on the suit's card in Gear > Stash.", "var(--warn)"));
+            resTip + " Choose on the suit's card in Stash > Gear.", "var(--warn)"));
         }
       }
     }
@@ -4529,7 +4529,7 @@ EN.combatView = (function () {
            Resistance damageResistances was not granting, and offered to burn it. */
         if (dg.armorLapsed) {
           chips.push(gchip("MOD · INERT", m.name,
-            m.name + " is fitted to " + dg.armor.name + ", whose lease installment is due. A lapsed suit's mods grant nothing until you pay (Gear > Stash).",
+            m.name + " is fitted to " + dg.armor.name + ", whose lease installment is due. A lapsed suit's mods grant nothing until you pay (Stash > Gear).",
             "var(--text3)"));
           return;
         }
@@ -5276,7 +5276,7 @@ EN.combatView = (function () {
         ]);
       }
       var chips = defenseLoadoutFor(ch, d, dg).map(function (c) { return gchip(c.label, c.name, c.tip, c.color, c.onclick); });
-      if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped; buy defensive gear in Gear → The Undercut, then WEAR / RAISE / ATTUNE it from your Stash." })];
+      if (!chips.length) return [el("p.help", { style: { margin: "2px 0 8px", fontSize: "11px", color: "var(--text3)" }, text: "No armor, shield, or Warding Focus equipped; buy defensive gear in the Stash → The Undercut, then WEAR / RAISE / ATTUNE it on its Gear page." })];
       return [el("div", { style: { display: "flex", flexWrap: "wrap", gap: "6px", margin: "2px 0 8px" } }, chips)];
     }
 
@@ -6772,8 +6772,8 @@ EN.combatView = (function () {
       if (!realWeaponNames.length) {
         kids.push(el("p.help", { style: { margin: "4px 0 6px" }, text: augmentNames.length
           ? augmentNames.join(" and ") + (augmentNames.length > 1 ? " augment" : " augments")
-            + " your unarmed strike rather than being a weapon in their own right, so there is no separate row: the strike above already counts them. Hit ⚔ EQUIP on an actual weapon in Gear → Stash to list one here."
-          : "No weapons equipped; hit ⚔ EQUIP on a weapon in Gear → Stash to list it here." }));
+            + " your unarmed strike rather than being a weapon in their own right, so there is no separate row: the strike above already counts them. Hit ⚔ EQUIP on an actual weapon in Stash → Gear to list one here."
+          : "No weapons equipped; hit ⚔ EQUIP on a weapon in Stash → Gear to list it here." }));
       }
       specialAttacksFor(ch, d).forEach(function (a) {
         kids.push(attackRow(a.name, eng.fmtMod(a.hit), a.note, a.color, null,

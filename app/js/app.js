@@ -70,9 +70,10 @@ EN.app = (function () {
   // the author's operative silhouette, for Freelancer alone
   var ICON_FREELANCER = '<svg viewBox="0 0 122.88 121.42" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M0,121.42l0-19.63c10.5-4.67,42.65-13.56,44.16-26.41c0.34-2.9-6.5-13.96-8.07-19.26 c-3.36-5.35-4.56-13.85-0.89-19.5c1.46-2.25,0.84-10.44,0.84-13.53c0-30.77,53.92-30.78,53.92,0c0,3.89-0.9,11.04,1.22,14.1 c3.54,5.12,1.71,14.19-1.27,18.93c-1.91,5.57-9.18,16.11-8.56,19.26c2.31,11.74,32.13,19.63,41.52,23.8l0,22.23L0,121.42L0,121.42z"/></svg>';
   var ICON_FLOW = '<svg viewBox="0 0 512 480.24" fill="currentColor" aria-hidden="true"><path fill-rule="nonzero" d="M512 220.6c-163.88 61.72-149.02 38.94-206.92 208.29-57.91-169.35-43.06-146.57-206.92-208.26 163.86-61.72 149.01-38.95 206.92-208.3C362.98 181.68 348.12 158.91 512 220.6zM193.38 382.9c-76.59 28.86-69.65 18.21-96.71 97.34C69.63 401.11 76.59 411.76 0 382.9c76.59-28.81 69.63-18.15 96.67-97.31 27.06 79.16 20.12 68.5 96.71 97.31zm8.2-316.66c-52.13 19.66-47.41 12.38-65.81 66.28-18.43-53.86-13.69-46.62-65.84-66.28C122.08 46.63 117.34 53.87 135.77 0c18.4 53.87 13.68 46.63 65.81 66.24z"/></svg>';
-  // the author's archive box (a lidded storage crate), used for Inventory's rail tab and its
-  // Stash sub-tab, which is the same idea at two scales: the whole tab and one bucket inside it
+  // the author's archive box (a lidded storage crate), for the Gear sub-tab inside the Stash (20 Nov 2026, the author's call:
+  // the rail tab is the Stash with his locker, its first page is Gear with this box). js/inventory.js reads it as EN.icons.archive.
   var ICON_ARCHIVE = '<svg viewBox="0 0 122.878 110.041" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.149,0h120.583c0.631,0,1.146,0.518,1.146,1.149v28.383 c0,0.634-0.516,1.149-1.146,1.149H1.149C0.518,30.681,0,30.166,0,29.532V1.149C0,0.518,0.518,0,1.149,0L1.149,0z M7.224,36.787 h108.433c0.526,0,0.962,0.43,0.962,0.961v71.331c0,0.529-0.436,0.962-0.962,0.962H7.224c-0.528,0-0.961-0.433-0.961-0.962V37.749 C6.263,37.217,6.695,36.787,7.224,36.787L7.224,36.787z M45.005,48.526h32.87c3.529,0,6.419,2.888,6.419,6.417l0,0 c0,3.529-2.89,6.416-6.419,6.416h-32.87c-3.532,0-6.419-2.887-6.419-6.416l0,0C38.586,51.414,41.474,48.526,45.005,48.526 L45.005,48.526z"/></svg>';
+  EN.icons = EN.icons || {}; EN.icons.archive = ICON_ARCHIVE;
   // the author's memory stick with an info mark cut into it, for the Codex. It stands where a
   // book used to: the rules are something you carry in a slot on this sheet, not something you
   // shelve. The author's second cut squares the viewBox and widens the stick through the <g>'s
@@ -91,7 +92,7 @@ EN.app = (function () {
     { key: "face",    label: "Social",    glyph: "◑", icon: ICON_SOCIAL, sub: "standing and contacts", portal: "freelancer", gated: registered, view: function (m) { EN.faceView.render(m); } },
     { key: "grid",    label: "#GRID",     glyph: "⌬", icon: ICON_GRID, sub: "the network", portal: "freelancer", gated: runsGrid, keepOpen: true, view: function (m) { EN.gridView.render(m); } },
     { key: "flow",    label: "Flow",      glyph: "❋", icon: ICON_FLOW, sub: "the current", portal: "freelancer", gated: canShape, view: function (m) { EN.flowView.render(m); } },
-    { key: "gear",    label: "Gear",      glyph: "▣", icon: ICON_ARCHIVE, sub: "stash, chrome, gray market", portal: "freelancer", gated: registered, view: function (m) { EN.inventoryView.render(m); } },
+    { key: "gear",    label: "Stash",     glyph: "▣", icon: (EN.inventoryView && EN.inventoryView.icons && EN.inventoryView.icons.stash) || ICON_ARCHIVE, sub: "gear, chrome, gray market", portal: "freelancer", gated: registered, view: function (m) { EN.inventoryView.render(m); } },
     { key: "codex",   label: "Codex",     glyph: "❒", icon: ICON_CODEX, sub: "rules on hand", portal: "freelancer", gated: registered, view: function (m) { EN.codexView.render(m); } },
     /* #PRINT is in the settings gear (18 Nov 2026, the author's call), not on the rail: `rail: false` keeps it out of the rail
        and the swipe order, and it is still a tab, so gotoTab("print") and an unfiled record (which has no other) land on it. */

@@ -1130,7 +1130,7 @@ EN.faceView = (function () {
   function tagChip(t, color, title) {
     return el("span.chip.contact-chip", { title: title || "", style: { color: color, borderColor: color }, text: t });
   }
-  // a jump to where a linked row is edited: the ledger panel, or the Gear tab's Bills
+  // a jump to where a linked row is edited: the ledger panel, or the Stash tab's Bills
   function toLedger(panelKey) {
     _soc = "ledger";   // the Social tab's ledger, from its own Contacts page (18 Nov 2026)
     EN.app.gotoTab("face");
@@ -1169,9 +1169,9 @@ EN.faceView = (function () {
     });
     L.bills.forEach(function (r) {
       var bits = [r.kind, r.principal != null && r.principal !== "" ? String(r.principal) : "", r.clock != null && r.clock !== "" ? "clock " + r.clock : ""].filter(Boolean);
-      out.push(linkLine([tagChip("BILLS", "var(--danger)", "A debt in the Gear tab's Bills, held by " + (r.holder || "them")),
+      out.push(linkLine([tagChip("BILLS", "var(--danger)", "A debt in the Stash tab's Bills, held by " + (r.holder || "them")),
         el("span", { text: bits.join(" · ") || "a debt" }),
-        jumpBtn("BILLS ›", "Edit it in the Gear tab's Bills", toBills)]));
+        jumpBtn("BILLS ›", "Edit it in the Stash tab's Bills", toBills)]));
     });
     if (!L.debts.length && !L.bills.length) out.push(el("p.help.contact-none", { text: "No Debts or Bills name them." }));
     // their faction's Standing with the crew: separate from their own Profile of you

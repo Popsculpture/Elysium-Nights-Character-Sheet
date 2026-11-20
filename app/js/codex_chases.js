@@ -105,7 +105,7 @@ window.EN = window.EN || {};
       var kids = [
         rb(K, O.pilotingCheck.name, O.pilotingCheck.text),
         // the Garage is the Freelancer's calculator for this check; the GM runs chases on Scenes
-        ctx.portal === "admin" ? null : K.note("The Gear tab's Garage works this check out for the vehicle you pick."),
+        ctx.portal === "admin" ? null : K.note("The Stash tab's Garage works this check out for the vehicle you pick."),
         rb(K, "Proficient and Untrained Pilots", O.proficiency)
       ];
       // the Handbook's table is Category, What it Covers, Examples: no intro line, no In Play column (social W10)
