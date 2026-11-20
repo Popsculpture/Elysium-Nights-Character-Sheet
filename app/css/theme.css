@@ -3945,3 +3945,10 @@ html.gm-landing .gm-crew-pick{ display:none !important; }
 .set-print{ display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:8px; }
 .set-print-ic{ display:inline-flex; }
 .set-print-ic svg{ width:14px; height:14px; }
+
+/* The Chrome page (19 Nov 2026): the Cybernetic Frame and the Chrome list side by side while there is room for both, the list
+   under the frame once there is not. The frame keeps the larger share; each column's floor is what its contents need. */
+.chrome-cols{ display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; margin-bottom:14px; }
+.chrome-cols > .chrome-frame-panel{ flex:3 1 520px; min-width:0; margin:0; }
+.chrome-cols > .chrome-list{ flex:2 1 340px; min-width:0; margin:0; }
+.chrome-cols > .chrome-list .feature{ flex-wrap:wrap; }

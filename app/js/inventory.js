@@ -1754,9 +1754,15 @@ EN.inventoryView = (function () {
     if (!chromeRows.length) chromeRows = [el("p.help", { style: { margin: 0 }, text: "Empty. Buy chrome from the gray-market Cybernetics panel; it lands here, then hit INSTALL to bring it online." })];
     var stashPanel = EN.ui.panel("Chrome", installed.length + " INSTALLED · " + stash.length + " STASHED · " + tax.total + " SP",
       chromeRows, { corners: true });
+    stashPanel.classList.add("chrome-list");
+    framePanel.classList.add("chrome-frame-panel");
+
+    /* The frame and the Chrome list side by side where the page is wide enough, the list under the frame where it is not
+       (19 Nov 2026, the author's call). A wrapping row, so it follows the page's own width on every skin (css/theme.css .chrome-cols). */
+    var cols = el("div.chrome-cols", { dataset: { chromeCols: "1" } }, [framePanel, stashPanel]);
 
     /* --- Open Architecture, only for NextGen-lineage characters --- */
-    var blocks = [framePanel, stashPanel];
+    var blocks = [cols];
     if (ch.lineage === "nextgen") { var oaPanel = chromeOAPanel(ch); if (oaPanel) blocks.push(oaPanel); }
     return blocks;
   }
