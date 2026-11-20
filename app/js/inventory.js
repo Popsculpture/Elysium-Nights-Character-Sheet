@@ -4148,12 +4148,33 @@ EN.inventoryView = (function () {
     return jack ? DATAJACK_NAME : "";
   }
 
+  /* The piloting numbers as data (19 Nov 2026), for the Garage's vehicle sheet (js/garage.js): the same formula garageBench draws, from the
+     same operating state (_garage), so the sheet's rolls and the Vehicle Ops panel can never disagree. */
+  function garagePilot(ch) {
+    var eng = EN.engine, R = EN.rules, d = eng.derive(ch), cat = _garage.cat;
+    var tier = eng.effectiveGearTier(ch, "vehicles", cat), info = R.profTiers[tier] || R.profTiers.untrained;
+    var untrained = tier === "untrained", typeName = (_garage.type || "").trim();
+    var focus = typeName ? eng.focusesFor(ch, "vehicles", cat).filter(function (f) { return eng.aspectMatches(f.aspect, typeName); })[0] : null;
+    var specRec = eng.specFor(ch, "vehicles", cat), spec = typeName && specRec && eng.aspectMatches(specRec.aspect, typeName) ? specRec : null;
+    var cal = focus ? (d.caliber || 1) : 0, directDrive = garageDirectDrive(ch);
+    var attr = directDrive ? _garage.attr : "AGI";
+    var mod = d.attributes[attr].mod, handling = Number(_garage.handling) || 0;
+    var barred = untrained && garageBarredCat(cat) && !_garage.allow;
+    var mods = [{ label: d.attributes[attr].name + " Modifier", value: mod }];
+    if (info.d20) mods.push({ label: "Vehicle Proficiency (" + info.name + ")", value: info.d20 });
+    if (handling) mods.push({ label: "Handling", value: handling });
+    if (cal) mods.push({ label: "Caliber (" + cat + " Focus)", value: cal });
+    return { cat: cat, info: info, untrained: untrained, barred: barred, mod: mod, handling: handling, cal: cal, focus: focus, spec: spec, mods: mods,
+             total: mod + info.d20 + handling + cal, defense: 10 + handling + info.d20, d: d };
+  }
+
   /* ---- Garage panel 2: fit Vehicle Mods to an owned vehicle -------------- */
-  function garageMods(ch) {
+  function garageMods(ch, onlyKey) {
     // the fit and pull buttons below called a reRender that only garageBench defined, so
     // every click threw a ReferenceError after the store write (pre-existing, found 16 October)
     function reRender() { EN.app.render(); }
-    var owned = ownedVehicles(ch);
+    // the Chop Shop shows the vehicle chosen on the sheet (onlyKey); with none named, every vehicle owned
+    var owned = ownedVehicles(ch).filter(function (r) { return !onlyKey || r.key === onlyKey; });
     var kids = [];
     if (!owned.length) {
       kids.push(el("div.muted-box", { style: { padding: "18px", textAlign: "center" },
@@ -4368,6 +4389,26 @@ EN.inventoryView = (function () {
           el("span.mono", { style: { fontSize: "22px", color: "var(--gold)" }, text: eng.fmtMod(cal) })
         ]) : null
       ]));
+      // ROLL, through the HUD's roll tray (19 Nov 2026): the Chase Check, the Control Check against the Impact DC of the vehicle's current
+      // speed (js/garage.js keeps that), a Ram, and a Mounted weapon. Each carries the proficiency, Handling and Caliber shown above.
+      if (EN.garage && EN.garage.roll) {
+        var rm = [{ label: attrName + " Modifier", value: mod }];
+        if (tierInfo.d20) rm.push({ label: "Vehicle Proficiency (" + tierInfo.name + ")", value: tierInfo.d20 });
+        if (handling) rm.push({ label: "Handling", value: handling });
+        if (focus) rm.push({ label: "Caliber (" + cat + " Focus)", value: cal });
+        var ro = { snag: untrained, spec: spec ? spec.aspect || true : null, cat: cat };
+        var cdc = EN.garage.controlDc ? EN.garage.controlDc(ch) : null;
+        var mm = [{ label: "Tech Modifier", value: tecMod }];
+        if (mountInfo.d20) mm.push({ label: "Weapon Proficiency (" + MOUNT_CAT + ")", value: mountInfo.d20 });
+        if (focus) mm.push({ label: "Caliber (" + cat + " Focus)", value: cal });
+        body.push(el("div.row.wrap.garage-rolls", { dataset: { garage: "rolls" }, style: { gap: "6px", alignItems: "center", margin: "0 0 8px" } }, [
+          el("span.mono", { style: { fontSize: "9px", color: "var(--text3)", letterSpacing: ".1em" }, text: "ROLL" }),
+          el("button.btn.sm.primary", { type: "button", dataset: { roll: "chase" }, title: "Roll the Chase Check in the roll tray", onclick: function () { EN.garage.roll("Chase Check", "PILOTING \u00b7 " + cat.toUpperCase(), rm, ro); } }, "CHASE CHECK"),
+          el("button.btn.sm", { type: "button", dataset: { roll: "control" }, title: "Roll a Control Check" + (cdc ? " against Impact DC " + cdc.dc + " (" + cdc.speed + ")" : ""), onclick: function () { EN.garage.roll("Control Check" + (cdc ? " (DC " + cdc.dc + ")" : ""), "PILOTING \u00b7 " + cat.toUpperCase(), rm, ro); } }, "CONTROL CHECK" + (cdc ? " \u00b7 DC " + cdc.dc : "")),
+          el("button.btn.sm", { type: "button", dataset: { roll: "ram" }, title: "Roll the opposed piloting check to ram", onclick: function () { EN.garage.roll("Ram", "OPPOSED PILOTING", rm, ro); } }, "RAM"),
+          el("button.btn.sm", { type: "button", dataset: { roll: "mount" }, title: "Roll a Mounted weapon attack: Tech + the gun's own proficiency", onclick: function () { EN.garage.roll("Mounted Weapon", "MOUNTED \u00b7 TECH", mm, { snag: !!mountInfo.snag, spec: spec ? spec.aspect || true : null, cat: cat }); } }, "MOUNTED WEAPON")
+        ]));
+      }
       // the book's Piloting Check, then the untrained rule or the Focus and Specialization riders
       body.push(EN.ui.ruleText(el("p.help", { style: { margin: "0 0 6px", fontSize: "11px" } }, [
         EN.ui.ruleLink("vc-piloting/the-piloting-check", "The Piloting Check")]),
@@ -4404,8 +4445,7 @@ EN.inventoryView = (function () {
       ]));
     }
     return [EN.ui.panel("Garage · Vehicle Ops", cat.toUpperCase() + (typeName ? " · " + typeName.toUpperCase() : ""), body,
-              { corners: true, headerRight: EN.ui.ruleChip("vc-piloting", { title: "Piloting a Vehicle" }) }),
-            garageMods(ch)];
+              { corners: true, headerRight: EN.ui.ruleChip("vc-piloting", { title: "Piloting a Vehicle" }) })];
   }
 
   /* The payout splitter that sat here is gone (18 Nov 2026, the author's call): the GM's Payroll splits a payday with
@@ -4784,10 +4824,12 @@ EN.inventoryView = (function () {
 
   /* THE GARAGE, a sub-tab of its own since 18 Nov 2026 (the author's call; it was the Workbench's fifth bench), on the rail of
      sub-tabs only while the Freelancer owns a vehicle (ownedVehicles). */
-  function garageView(ch) {
+  // the Garage tab: the vehicle sheet, the chase helper and the Chop Shop (js/garage.js); Vehicle Ops is the sheet's piloting panel
+  function garageView(ch) { return EN.garage && EN.garage.render ? EN.garage.render(ch) : garageOps(ch); }
+  function garageOps(ch) {
     var out = [];
     out.push(el("p.help", { style: { margin: "0 0 10px", maxWidth: "720px" } }, [
-        document.createTextNode("Vehicle Ops: the live operating math for the ride you are in. Pick a chassis to pull its category, type and Handling from the catalog, or leave it on Custom and enter your own. Vehicle Mods are fitted in the panel below; the full catalog of thirteen is in the Codex under "),
+        document.createTextNode("Vehicle Ops: the live operating math for the ride you are in. Pick a chassis to pull its category, type and Handling from the catalog, or leave it on Custom and enter your own. Vehicle Mods are fitted on the Chop Shop page; the full catalog of thirteen is in the Codex under "),
         EN.ui.ruleLink("ref-vehicles/vehicle-mods", "Vehicles"),
         document.createTextNode(". Chases, Lead and crashes: "),
         EN.ui.ruleLink("vc-chase", "Chases & Lead"),
@@ -4939,7 +4981,11 @@ EN.inventoryView = (function () {
   // openBench: land on one Workbench sub-tab from another view (the Freelancer
   // tab's damaged-plating readout sends the player to the Impact Table)
   function openBench(key) {
-    if (key === "garage") { _sub = "garage"; return; }   // the Garage is a sub-tab of its own now
+    if (key === "garage" || key === "chop") {   // the Garage is a sub-tab of its own now; its Chop Shop is a page of it (19 Nov 2026)
+      _sub = "garage";
+      if (EN.garage && EN.garage.setPage) EN.garage.setPage(key === "chop" ? "chop" : "vehicle");
+      return;
+    }
     _sub = "workbench";
     if (BENCHES.some(function (b) { return b.key === key; })) _bench = key;
   }
@@ -4976,6 +5022,9 @@ EN.inventoryView = (function () {
            core: {
              // the HUD's Loadout: which pieces are spent by using them, and the one writer that spends one
              isExpendable: isExpendable, useOne: useOne, clearSpent: clearSpent, openMarketOn: openMarketOn,
+             // the Garage's pieces, for the vehicle sheet (js/garage.js, 19 Nov 2026)
+             garage: { owned: ownedVehicles, profileOf: vehicleProfileOf, loadout: vehicleLoadout, legality: aggregateVehicleLegality, ops: garageOps, mods: garageMods,
+                       pilot: garagePilot, pickChassis: garagePickChassis, state: _garage, mapSpeed: garageMapSpeed, fmtG: fmtG },
              isWeapon: isWeapon,   // P3: the Sheet's slot strip lists the weapons a Freelancer owns
              /* P4, #GRIDeck's Gear: the shelves and what a storefront asks, the piece an entry is and where it sorts, the
                 carry and lease controls' own writers, and a way to open this tab on one of its pages or benches. */

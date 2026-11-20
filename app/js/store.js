@@ -609,6 +609,34 @@ EN.store = (function () {
         if (m.at != null && !(typeof m.at === "string" && m.at.length <= 40 && !isNaN(Date.parse(m.at)))) delete m.at;
       });
     }
+    /* The Garage's vehicle sheets and chase (ch.garage, 19 Nov 2026, js/garage.js): what the player sets for each owned vehicle, by its entry key,
+       and the chase being tracked. Everything is clamped to what the sheet can show; a record from outside is not trusted. */
+    if (ch.garage != null) {
+      var gg = ch.garage;
+      if (!gg || typeof gg !== "object" || Array.isArray(gg)) delete ch.garage;
+      else {
+        var SPD = ["Stationary", "Slow", "Standard", "Fast", "Very Fast"], ALT = ["Deck", "Low", "High"], RIV = ["Slow", "Standard", "Fast", "Very Fast", "On foot"];
+        var og = {};
+        if (typeof gg.sel === "string" && gg.sel.length <= 80) og.sel = gg.sel;
+        og.v = {};
+        if (gg.v && typeof gg.v === "object" && !Array.isArray(gg.v)) {
+          Object.keys(gg.v).slice(0, 40).forEach(function (k) {
+            var x = gg.v[k]; if (!x || typeof x !== "object" || Array.isArray(x) || k.length > 80) return;
+            og.v[k] = { nick: typeof x.nick === "string" ? x.nick.slice(0, 40) : "", dmg: Math.max(0, Math.min(9999, x.dmg | 0)), spd: SPD.indexOf(x.spd) !== -1 ? x.spd : "Stationary",
+                        alt: ALT.indexOf(x.alt) !== -1 ? x.alt : "Deck", disabled: !!x.disabled, hit: !!x.hit, field: !!x.field, notes: typeof x.notes === "string" ? x.notes.slice(0, 500) : "" };
+          });
+        }
+        var cc = gg.chase;
+        if (cc && typeof cc === "object" && !Array.isArray(cc)) {
+          og.chase = { on: !!cc.on, role: cc.role === "pursuing" ? "pursuing" : "fleeing", lead: Math.max(0, Math.min(5, Number(cc.lead) | 0)), round: Math.max(1, Math.min(999, cc.round | 0 || 1)),
+                       mine: cc.mine ? 1 : 0, theirs: cc.theirs ? 1 : 0, res: !!cc.res, heat: Math.max(0, Math.min(20, cc.heat | 0)), rival: RIV.indexOf(cc.rival) !== -1 ? cc.rival : "Standard",
+                       end: cc.end === "escaped" || cc.end === "contact" ? cc.end : "",
+                       log: (Array.isArray(cc.log) ? cc.log : []).filter(function (l) { return l && typeof l.t === "string" && l.t; }).slice(0, 12).map(function (l) { return { t: l.t.slice(0, 200) }; }) };
+          if (cc.lead == null) og.chase.lead = 2;
+        }
+        ch.garage = og;
+      }
+    }
     /* The expendables used down to 0 (ch.spentGear, 19 Nov 2026): their gray rows on the Loadout, by name and where they were carried. */
     if (ch.spentGear != null) {
       if (!Array.isArray(ch.spentGear)) delete ch.spentGear;

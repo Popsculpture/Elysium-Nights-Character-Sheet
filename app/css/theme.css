@@ -4001,3 +4001,10 @@ html.gm-landing .gm-crew-pick{ display:none !important; }
 .lo-spent .btn{ filter:none; }
 .lo-spent:hover, .lo-spent:focus-within{ opacity:.85; }
 .lo-zero{ font-size:11px; color:var(--text3); }
+
+/* The Garage tab (19 Nov 2026): the vehicle sheet, the chase tracker and the rules; the pages share the bar the other tabs draw */
+.garage .garage-grid{ align-items:flex-start; }
+.garage .garage-cell{ padding:6px 8px; border:1px solid var(--border); background:var(--bg1); border-radius:4px; }
+.garage .garage-rule .btn.ghost{ width:100%; }
+.garage .garage-table td, .garage .garage-table th{ text-align:left; }
+.garage .garage-trait .btn.ghost{ padding-left:0; }
