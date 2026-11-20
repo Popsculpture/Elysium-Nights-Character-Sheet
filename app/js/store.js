@@ -609,6 +609,12 @@ EN.store = (function () {
         if (m.at != null && !(typeof m.at === "string" && m.at.length <= 40 && !isNaN(Date.parse(m.at)))) delete m.at;
       });
     }
+    /* The expendables used down to 0 (ch.spentGear, 19 Nov 2026): their gray rows on the Loadout, by name and where they were carried. */
+    if (ch.spentGear != null) {
+      if (!Array.isArray(ch.spentGear)) delete ch.spentGear;
+      else ch.spentGear = ch.spentGear.filter(function (x) { return x && typeof x === "object" && typeof x.name === "string" && x.name && x.name.length <= 120; })
+        .map(function (x) { return { name: x.name, carry: x.carry === "worn" ? "worn" : "carried" }; }).slice(-60);
+    }
     /* What this record deleted from its #POST that lives only in the database (ch.face.hidden, 18 Nov 2026): what it wrote to
        the GM and letters between players, by row id, so a delete stays gone on every device. Strings only, the newest kept. */
     if (ch.face && ch.face.hidden != null) {

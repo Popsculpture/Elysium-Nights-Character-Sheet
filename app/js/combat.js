@@ -2825,6 +2825,7 @@ EN.combatView = (function () {
        Loadout    a filtered view of Inventory: what's carried / worn / equipped for the scene
        Notes      a freeform field (shared with the #PRINT Identity notes)
      DEFEND is intentionally NOT a tab; it lives in its own always-visible section. */
+  var _useAsk = null;   // the Loadout row whose USE is asking "on me or someone else" (js/consume.js), by entry key
   var _panelTab = "all";   // the panel opens on All (19 Nov 2026, the author's call): Weapons, Abilities and Features in one scroll
   var _featShowHidden = false;    // reveal computed features the player has hidden
 
@@ -5761,7 +5762,8 @@ EN.combatView = (function () {
         var gOpts = (g.options || []).filter(offered);
         if (!gOpts.length) return;
         opts.push(el("optgroup", { label: g.name }, gOpts.map(function (o) {
-          return el("option", { value: o.key, disabled: statusApplied(ch, o), text: o.name });
+          // a consumable only the Game Master's Toolkit prints says so, as every picker marks Toolkit gear
+          return el("option", { value: o.key, disabled: statusApplied(ch, o), text: o.name + (o.kind === "consumable" && EN.ui.heldSuffix ? EN.ui.heldSuffix("item", o.name) : "") });
         })));
       });
       return el("select", { style: { width: "auto", minWidth: "170px" } }, opts);
@@ -6949,7 +6951,9 @@ EN.combatView = (function () {
         el("p.help", { style: { margin: 0, flex: "1 1 auto" }, text: "What you brought to the scene. "
           + nEquipped + " equipped · " + nCarried + " carried" + (nWorn ? " · " + nWorn + " worn" : "") + (nRacked ? " · " + nRacked + " racked" : "") + (nConcealed ? " · " + nConcealed + " concealed" : "") + (nHeavy ? " · " + nHeavy + " heavy" : "") + "." })
       ]));
-      if (!inScene.length) {
+      // expendables used down to 0 (ch.spentGear): gray rows at 0 in the section they were carried in, with RESTOCK
+      var spent = (Array.isArray(ch.spentGear) ? ch.spentGear : []).filter(function (x) { return x && x.name; }).map(function (x) { return { __spent: true, name: x.name, carry: x.carry }; });
+      if (!inScene.length && !spent.length) {
         kids.push(el("p.help", { style: { margin: "0 0 6px", color: "var(--text3)" }, text: "Nothing in your loadout yet. Equip something in Gear, or use ＋ ADD TO LOADOUT above." }));
       } else {
         // a validly racked item renders NESTED under its Carry Gear, not in the flat lists
@@ -6959,7 +6963,10 @@ EN.combatView = (function () {
         var equipped = inScene.filter(function (e) { return isEquippedAny(ch, entryKey(e)) && !isNested(e); });
         // racked items whose Carry Gear is missing or over capacity: still on-person, no break
         var strays = inScene.filter(function (e) { return !isEquippedAny(ch, entryKey(e)) && carryStatus(ch, entryKey(e)) === "racked" && !isNested(e); });
+        carried = carried.concat(spent.filter(function (x) { return x.carry !== "worn"; }));
+        worn = worn.concat(spent.filter(function (x) { return x.carry === "worn"; }));
         function pushRow(e) {
+          if (e.__spent) { kids.push(spentRow(e)); return; }
           kids.push(loadoutRow(e, false, slotConflicts));
           (racks.byGear[entryKey(e)] || []).forEach(function (child) { kids.push(loadoutRow(child, true, slotConflicts)); });
         }
@@ -6990,6 +6997,49 @@ EN.combatView = (function () {
         }
       }
       return kids;
+    }
+    function usedCard(name) {
+      var res = EN.consume && EN.consume.last(name);
+      if (!res) return null;
+      return el("div.lo-used", { dataset: { loUsed: name } }, [
+        el("div.lo-used-h", null, [el("span", { text: res.who === "other" ? "USED ON SOMEONE ELSE" : "USED" }), el("span", { style: { flex: "1 1 auto" } }),
+          el("button.btn.sm.ghost", { type: "button", title: "Close", dataset: { loUsedClose: "1" }, onclick: function (ev) { ev.stopPropagation(); EN.consume.dismiss(); EN.app.render(); } }, "\u2715")]),
+        el("div.lo-used-b", null, res.lines.map(function (t) { return EN.ui.ruleText(el("p", null), t, { conditions: true, used: {} }); })),
+        res.actions && res.actions.length ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px" } }, res.actions.map(function (a) {
+          return el("button.btn.sm", { type: "button", title: a.title || "", dataset: { loUsedAct: a.label }, onclick: function (ev) { ev.stopPropagation(); a.run(); } }, a.label);
+        })) : null
+      ]);
+    }
+    // USE: a piece that can go on someone else asks first; the rest go at once (js/consume.js does the piece, js/inventory.js spends it)
+    function useBtn(key, e, it) {
+      var IC = EN.inventoryView && EN.inventoryView.core;
+      if (!IC || !IC.isExpendable || !IC.isExpendable(it)) return null;
+      var sp = EN.consume && EN.consume.spec(e.name);
+      function go(who) { _useAsk = null; if (EN.consume) EN.consume.use(key, who); else IC.useOne(key); EN.app.render(); }
+      if (sp && sp.target && _useAsk === key) return el("span.lo-ask", { dataset: { loAsk: key } }, [
+        el("button.btn.sm.primary", { type: "button", dataset: { loUseOn: "me" }, title: "Use it on yourself: the result goes on this sheet", onclick: function (ev) { ev.stopPropagation(); go("me"); } }, "ON ME"),
+        el("button.btn.sm", { type: "button", dataset: { loUseOn: "other" }, title: "Use it on someone else: it rolls and says what they get; your sheet is left alone", onclick: function (ev) { ev.stopPropagation(); go("other"); } }, "ON SOMEONE ELSE"),
+        el("button.btn.sm.ghost", { type: "button", dataset: { loUseOn: "cancel" }, onclick: function (ev) { ev.stopPropagation(); _useAsk = null; EN.app.render(); } }, "CANCEL")]);
+      return el("button.btn.sm.primary.lo-use", { type: "button", dataset: { loUse: key },
+        title: (sp && sp.act ? sp.act + ". " : "") + "Use one" + (e.qty > 1 ? " (" + e.qty + " on hand)" : ": it's the last one"),
+        onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); if (sp && sp.target) { _useAsk = key; EN.app.render(); } else go("me"); } }, "USE");
+    }
+    // a piece used down to 0: gray, x0, RESTOCK opens the Gray Market on it; CLEAR takes the row away
+    /* a piece used down to 0: its row gray at x0, RESTOCK opens the Gray Market on it, CLEAR takes the row away. What the last use
+       did sits under it, in full colour (the gray is the row's, not the result's). */
+    function spentRow(x) {
+      var IC = EN.inventoryView.core;
+      var row = el("div.feature.lo-row.lo-spent", { dataset: { loSpent: x.name } }, [
+        el("div.row", { style: { gap: "8px", alignItems: "center", flexWrap: "wrap" } }, [
+          el("span.lo-name", { style: { fontWeight: 600, fontSize: "13px" }, text: x.name }),
+          el("span.mono.lo-zero", { text: "\u00d70" }),
+          el("span", { style: { flex: "1 1 auto" } }),
+          el("button.btn.sm.primary", { type: "button", dataset: { loRestock: x.name }, title: "Buy more: the Gray Market, on the shelf that sells it", onclick: function () { IC.openMarketOn(x.name); } }, "RESTOCK"),
+          el("button.btn.sm.ghost", { type: "button", dataset: { loClear: x.name }, title: "Take this row off the Loadout", onclick: function () { if (EN.consume.last(x.name)) EN.consume.dismiss(); IC.clearSpent(x.name); } }, "CLEAR")
+        ])
+      ]);
+      var card = usedCard(x.name);
+      return card ? el("div.lo-spent-wrap", null, [row, card]) : row;
     }
     function loadoutRow(e, nested, slotConflicts) {
       var it = invItem(e.name), key = entryKey(e);
@@ -7147,17 +7197,12 @@ EN.combatView = (function () {
           el("span.lo-name", { style: { fontWeight: 600, fontSize: "13px" } }, EN.ui.nameCaret(e.name, descOpen)),
           e.qty > 1 ? el("span.mono", { style: { fontSize: "11px", color: "var(--text3)" }, text: "×" + e.qty }) : null,
           el("span", { style: { flex: "1 1 auto" } }),
-          // an expendable is spent by using it (19 Nov 2026): one press, one off the stack
-          (function () {
-            var IC = EN.inventoryView && EN.inventoryView.core;
-            if (!IC || !IC.isExpendable || !IC.isExpendable(it)) return null;
-            return el("button.btn.sm.primary.lo-use", { type: "button", dataset: { loUse: key }, title: "Use one" + (e.qty > 1 ? " (" + e.qty + " on hand)" : ": it's the last one"),
-              onclick: function (ev) { if (ev && ev.stopPropagation) ev.stopPropagation(); IC.useOne(key); } }, "USE");
-          })(),
+          // an expendable is spent by using it, and does what it says (19 Nov 2026, js/consume.js)
+          useBtn(key, e, it),
           statusCtrl
         ]),
         chips.length ? el("div.row.wrap", { style: { gap: "5px", marginTop: "6px" } }, chips) : null
-      ].concat(descKids));
+      ].concat(descKids).concat([usedCard(e.name)]));
     }
 
     /* ---- NOTES tab: freeform, shared with the #PRINT Identity notes ---- */

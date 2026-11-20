@@ -3990,3 +3990,14 @@ html.gm-landing .gm-crew-pick{ display:none !important; }
 .act-all-h{ display:flex; align-items:center; gap:10px; margin:14px 0 8px; font-family:var(--disp); font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); }
 .act-all-h:first-child{ margin-top:2px; }
 .act-all-h .line{ flex:1 1 auto; height:1px; background:var(--border2); }
+
+/* USE on the Loadout (19 Nov 2026): what a consumable did, under its row; the "on me or someone else" ask; a piece used down to 0 */
+.lo-used{ margin-top:8px; padding:8px 10px; border:1px solid var(--accent-dim, var(--border2)); border-left:3px solid var(--accent); background:var(--bg2); cursor:default; }
+.lo-used-h{ display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; color:var(--accent); }
+.lo-used-h .btn{ padding:0 6px; min-height:0; }
+.lo-used-b p{ margin:4px 0 0; font-size:12px; line-height:1.45; color:var(--text2); }
+.lo-ask{ display:inline-flex; flex-wrap:wrap; gap:4px; }
+.lo-spent{ opacity:.55; filter:grayscale(1); border-left-color:var(--border) !important; }
+.lo-spent .btn{ filter:none; }
+.lo-spent:hover, .lo-spent:focus-within{ opacity:.85; }
+.lo-zero{ font-size:11px; color:var(--text3); }

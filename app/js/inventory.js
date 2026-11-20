@@ -150,6 +150,13 @@ EN.inventoryView = (function () {
   // instance so two daggers never have to share one equipped/carried state.
   function addToStash(c, name, extra) {
     c.equipment = c.equipment || [];
+    // a piece spent to 0 (its gray row on the Loadout) comes back where it was carried
+    var spentWas = Array.isArray(c.spentGear) ? c.spentGear.filter(function (x) { return x && x.name === name; })[0] : null;
+    if (spentWas) {
+      c.spentGear = c.spentGear.filter(function (x) { return x !== spentWas; });
+      var sk = isStackable(findItem(name)) ? name : null;
+      if (sk && !c.equipment.some(function (x) { return x.name === name && !x.id && x.qty > 0; })) { c.carry = c.carry || {}; c.carry[sk] = spentWas.carry || "carried"; }
+    }
     if (isStackable(findItem(name))) {
       var e = c.equipment.find(function (x) { return x.name === name && !x.id; });
       if (e) { e.qty = (e.qty || 1) + 1; return e; }
@@ -937,18 +944,37 @@ EN.inventoryView = (function () {
   function isExpendable(it) {
     return !!it && !KEPT_NOT_SPENT[it.name] && (it.bucket === "consumables" || it.group === "Resonance Tonics");
   }
-  function useOne(key) {
+  /* The last one used leaves its row on the Loadout, gray at 0 with RESTOCK (19 Nov 2026, the author's call): the entry goes, as it
+     always did, and ch.spentGear remembers its name and where it was carried, until it is restocked (addToStash) or cleared. */
+  function useOne(key, opts) {
     var name = "", left = 0;
     store.update(function (c) {
       var e = findEntry(c, key);
       if (!e || !(e.qty > 0)) return;
       name = e.name;
+      var was = (c.carry || {})[key] || "carried";
       e.qty = (e.qty || 1) - 1;
       left = e.qty;
-      if (e.qty <= 0) c.equipment = c.equipment.filter(function (x) { return x !== e; });
+      if (e.qty <= 0) {
+        c.equipment = c.equipment.filter(function (x) { return x !== e; });
+        c.spentGear = (Array.isArray(c.spentGear) ? c.spentGear : []).filter(function (x) { return x && x.name !== name; });
+        c.spentGear.push({ name: name, carry: was === "worn" ? "worn" : "carried" });
+      }
       unequipIfGone(c, key, e.name);
     });
-    if (name) toast("Used a " + name + "." + (left > 0 ? " " + left + " left." : " That was the last one."));
+    if (name && !(opts && opts.quiet)) toast("Used a " + name + "." + (left > 0 ? " " + left + " left." : " That was the last one."));
+    return name ? { name: name, left: left } : null;
+  }
+  // a spent row taken off the Loadout by hand
+  function clearSpent(name) { store.update(function (c) { if (Array.isArray(c.spentGear)) c.spentGear = c.spentGear.filter(function (x) { return x && x.name !== name; }); }); }
+  /* RESTOCK: the Gray Market, on the shelf that sells it, with it searched for (19 Nov 2026). The storefront and the quantity are the
+     player's, as for any buy. */
+  function openMarketOn(name) {
+    var it = findItem(name);
+    _sub = "market";
+    _mktQuery = name;
+    _mktType = it && it.bucket === "consumables" ? "consumables" : it && it.group === "Resonance Tonics" ? "flow" : "all";
+    EN.app.gotoTab("gear");
   }
   function drop(key, gone) {
     store.update(function (c) {
@@ -4943,7 +4969,7 @@ EN.inventoryView = (function () {
               and `sell` still read this tab's storefront (_mode) until Gear passes one in. */
            core: {
              // the HUD's Loadout: which pieces are spent by using them, and the one writer that spends one
-             isExpendable: isExpendable, useOne: useOne,
+             isExpendable: isExpendable, useOne: useOne, clearSpent: clearSpent, openMarketOn: openMarketOn,
              isWeapon: isWeapon,   // P3: the Sheet's slot strip lists the weapons a Freelancer owns
              /* P4, #GRIDeck's Gear: the shelves and what a storefront asks, the piece an entry is and where it sorts, the
                 carry and lease controls' own writers, and a way to open this tab on one of its pages or benches. */

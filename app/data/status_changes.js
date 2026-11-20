@@ -138,7 +138,12 @@ EN.statusChanges = (function () {
   var CONSUMABLE_STATUSES = [
     { item: "Combat Stim Pack",   endsOn: "End of your 3rd turn, then a Body Save DC 12 or Dazed 1 round." },
     { item: "Nightwatch Tablets", endsOn: "4 hours, or extended by a fresh dose at the cost of a Crash Stack." },
-    { item: "Detox Patch",        endsOn: "8 hours." }
+    { item: "Detox Patch",        endsOn: "8 hours." },
+    // turned on by USE on the HUD's Loadout as well as by hand (19 Nov 2026)
+    { item: "Focus Draught",          endsOn: "The end of your turn, then a DC 12 Mystique Save or 1 Strain." },
+    { item: "Attunement Draught",     endsOn: "10 minutes." },
+    { item: "Resonant Shield Elixir", endsOn: "1 minute, or the end of the encounter." },
+    { item: "Overchannel Amp Shot",   endsOn: "The end of the encounter, then 2 Strain and a DC 12 Body Save or 1 Fatigue." }
   ];
 
   var consumables = CONSUMABLE_STATUSES.map(function (c) {
