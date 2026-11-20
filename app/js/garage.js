@@ -247,9 +247,9 @@ EN.garage = (function () {
   function statePanel(ch, v, pil) {
     var s = statsOf(ch, v), st = integrity(ch, v).st, im = impact(st.spd), cr = crashOf(st.spd, s.airborne), rm = ramOf(s.mass, st.spd);
     var kids = [
-      el("div.row.wrap", { style: { gap: "6px", alignItems: "center", marginBottom: "10px" } }, [el("span.mono", { style: { fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "SPEED RIGHT NOW" })].concat(SPEEDS.map(function (sp) {
+      el("div.ctl-rows", { style: { marginTop: 0 } }, [el("span.ctl-label", { text: "SPEED RIGHT NOW" }), el("div.ctl-set", null, SPEEDS.map(function (sp) {
         return el("button.btn.sm" + (st.spd === sp ? ".primary" : ""), { type: "button", dataset: { garageSpeed: sp }, onclick: function () { vset(v.key, function (x) { x.spd = sp; }); } }, sp.toUpperCase());
-      }))),
+      }))]),
       el("div.row.wrap.garage-grid", { style: { gap: "10px 14px", margin: "0 0 8px" } }, [
         cell("IMPACT DC", im.dc, st.spd.toUpperCase(), { key: "impact", link: "vc-damage/the-impact-dc", title: "One DC, keyed to speed at the moment things go wrong: Control Checks, and every save a collision or crash forces." }),
         cell("CRASH", cr.n ? cr.n + "d10" : "none", cr.n ? "DC " + cr.dc + (s.airborne ? " · AIRBORNE +1 STEP" : "") : "AT REST", { key: "crash", link: "vc-damage/crashes", title: "Crash damage ignores Structure. A controlled stop takes half and hurts no occupant." }),
@@ -258,9 +258,9 @@ EN.garage = (function () {
       ])
     ];
     if (G().state && /Aerial|Starcraft/.test(v.prof.category) || s.airborne) {
-      kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "6px 0" } }, [el("span.mono", { style: { fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "ALTITUDE" })].concat(BANDS.map(function (b) {
+      kids.push(el("div.ctl-rows", null, [el("span.ctl-label", { text: "ALTITUDE" }), el("div.ctl-set", null, [].concat(BANDS.map(function (b) {
         return el("button.btn.sm" + (st.alt === b ? ".primary" : ""), { type: "button", dataset: { garageAlt: b }, title: BAND_NOTE[b], onclick: function () { vset(v.key, function (x) { x.alt = b; }); } }, b.toUpperCase());
-      })).concat([el("span.help", { style: { margin: 0, fontSize: "11px", flex: "1 1 260px" }, text: BAND_NOTE[st.alt] + " Changing bands costs one round of climb or dive." })])));
+      })).concat([el("span.help", { style: { margin: 0, fontSize: "11px", flex: "1 1 260px" }, text: BAND_NOTE[st.alt] + " Changing bands costs one round of climb or dive." })]))]));
     }
     return EN.ui.panel("Right now", st.spd.toUpperCase(), kids, { corners: true, headerRight: EN.ui.ruleChip("vc-damage", { title: "Damage, Collisions & Crashes" }) });
   }
@@ -349,7 +349,8 @@ EN.garage = (function () {
           });
         } }, label);
     }
-    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "6px 0" } }, [el("span.mono", { style: { fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "THE ROUND" }),
+    var ctl = [];   // the labelled sets, in one grid (.ctl-rows) so they line up
+    ctl.push(el("span.ctl-label", { text: "THE ROUND" }), el("div.ctl-set", null, [
       res(2, 1, "DOMINANT WIN"), res(1, 1, "WIN"), res(0, 0, "STALEMATE"), res(1, -1, "LOSS"), res(2, -1, "DOMINANT LOSS"),
       el("button.btn.sm.primary", { type: "button", disabled: ended, dataset: { chase: "next" }, title: "Start the next round: the System Hit allowance resets", onclick: function () { cset(function (x) { x.round = (x.round | 0 || 1) + 1; x.res = false; x.mine = 0; x.theirs = 0; }); } }, "NEXT ROUND")]));
     function hit(who) {
@@ -370,18 +371,19 @@ EN.garage = (function () {
           else logIt(x, "The fleeing side crashed at Lead " + x.lead + ": the GM rules whether the wreck is reachable before its crew scatters.");
         }); } }, who === "me" ? "I CRASHED" : "THEY CRASHED");
     }
-    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "6px 0" } }, [el("span.mono", { style: { fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "ON TOP OF IT" }), hit("them"), hit("me"), crash("me"), crash("them")]));
+    ctl.push(el("span.ctl-label", { text: "ON TOP OF IT" }), el("div.ctl-set", null, [ hit("them"), hit("me"), crash("me"), crash("them")]));
     // the straightaway: the strictly higher Speed rating gains Edge; Handling never counts
     var s = v ? statsOf(ch, v) : null, rivalRank = c.rival === "On foot" ? 0 : RATINGS.indexOf(c.rival), myRank = s ? RATINGS.indexOf(s.straight) : 0;
     var edge = myRank > rivalRank ? "YOU GAIN EDGE" : myRank < rivalRank ? "THEY GAIN EDGE" : "NEITHER";
-    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "6px 0" } }, [el("span.mono", { style: { fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "THEIR SPEED" })].concat(RATINGS.concat(["On foot"]).map(function (r) {
+    ctl.push(el("span.ctl-label", { text: "THEIR SPEED" }), el("div.ctl-set", null, [].concat(RATINGS.concat(["On foot"]).map(function (r) {
       return el("button.btn.sm" + (c.rival === r ? ".primary" : ""), { type: "button", dataset: { chaseRival: r }, onclick: function () { cset(function (x) { x.rival = r; }); } }, r.toUpperCase());
     })).concat([el("span.mono", { dataset: { chase: "straight" }, style: { fontSize: "11px", color: myRank === rivalRank ? "var(--text3)" : "var(--accent)" }, text: "ON A STRAIGHTAWAY: " + edge + (s ? " (yours: " + s.straight + (s.plates ? ", Plate Kit counts one lower" : "") + ")" : "") })])));
-    kids.push(el("div.row.wrap", { style: { gap: "6px", alignItems: "center", margin: "6px 0" } }, [el("span.mono", { style: { fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "HEAT" }),
+    ctl.push(el("span.ctl-label", { text: "HEAT" }), el("div.ctl-set", null, [
       el("button.btn.sm", { type: "button", dataset: { chaseHeat: "-1" }, onclick: function () { cset(function (x) { x.heat = Math.max(0, (x.heat | 0) - 1); }); } }, "−"),
       el("span.mono", { dataset: { chase: "heat" }, style: { fontSize: "18px", minWidth: "26px", textAlign: "center" }, text: String(c.heat) }),
       el("button.btn.sm", { type: "button", dataset: { chaseHeat: "1" }, onclick: function () { cset(function (x) { x.heat = Math.min(20, (x.heat | 0) + 1); }); } }, "+"),
       el("span.help", { style: { margin: 0, fontSize: "11px", flex: "1 1 280px" }, text: "+1 for a loud, public chase, +1 more for a crash, casualties, or property nobody can ignore. Keep it here; the GM owns what the territory does about it." })]));
+    kids.push(el("div.ctl-rows", null, ctl));
     if (c.log.length) kids.push(el("div", { dataset: { chase: "log" }, style: { marginTop: "6px", paddingTop: "6px", borderTop: "1px solid var(--border)" } }, c.log.map(function (l, n) {
       return el("div.mono", { style: { fontSize: "11px", color: n ? "var(--text3)" : "var(--text2)", padding: "1px 0" }, text: l.t });
     })));
@@ -455,19 +457,18 @@ EN.garage = (function () {
       then();
     }
     var missing = i.max - i.cur, half = Math.floor(i.max / 2);
-    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", margin: "8px 0" } }, [
-      el("span.mono", { style: { fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "GARAGE" }),
+    var lanes = [el("span.ctl-label", { text: "GARAGE" }), el("div.ctl-set", null, [
       el("button.btn.sm.primary", { type: "button", disabled: missing <= 0, dataset: { chop: "garage-half" }, title: "One week's Repair Reserve (" + fmt(p0.reserve) + ") in parts and labor restores up to half the maximum Integrity (" + half + "). Needs upkeep current and a garage.",
         onclick: function () { spend(p0.reserve, "Garage repair", function () { repair(v, Math.min(missing, half), "Garage repair"); }); } }, "GARAGE REPAIR · " + fmt(p0.reserve)),
       el("button.btn.sm", { type: "button", disabled: missing <= 0, dataset: { chop: "garage-full" }, title: "A full restore from 0 costs two weeks' Reserve (" + fmt(p0.reserve * 2) + ") paid at once and a full Downtime of work",
-        onclick: function () { spend(p0.reserve * 2, "Full restore", function () { repair(v, missing, "Full restore"); }); } }, "FULL RESTORE · " + fmt(p0.reserve * 2))]));
+        onclick: function () { spend(p0.reserve * 2, "Full restore", function () { repair(v, missing, "Full restore"); }); } }, "FULL RESTORE · " + fmt(p0.reserve * 2))])];
     var cap = Math.max(0, half - i.cur);
-    kids.push(el("div.row.wrap", { style: { gap: "8px", alignItems: "center", margin: "8px 0" } }, [
-      el("span.mono", { style: { fontSize: "9px", letterSpacing: ".12em", color: "var(--text3)" }, text: "FIELD" }),
+    lanes.push(el("span.ctl-label", { text: "FIELD" }), el("div.ctl-set", null, [
       el("input", { type: "number", min: "1", value: _amt.field, placeholder: "successes", title: "Successes on the Tech (Engineering) Dice Pool with an Engineering Toolkit", dataset: { chop: "field-n" }, style: { width: "92px", padding: "4px 6px" }, oninput: function () { _amt.field = this.value; } }),
       el("button.btn.sm", { type: "button", disabled: st.field || i.wrecked || cap <= 0, dataset: { chop: "field" }, title: i.wrecked ? "Wrecked: no field repair, garage lane only" : st.field ? "Once per vehicle per day: used" : "5 Integrity per success, once per vehicle per day, and never above half the maximum. It clears Disabled.",
         onclick: function () { var n = Math.floor(Number(_amt.field)); if (!(n > 0)) { toast("Enter the successes first."); return; } _amt.field = ""; repair(v, Math.min(cap, n * 5), "Field repair"); vset(v.key, function (x) { x.field = true; x.disabled = false; }); } }, "FIELD REPAIR"),
       el("button.btn.sm.ghost", { type: "button", dataset: { chop: "field-reset" }, title: "A new day: the field repair can be used again", onclick: function () { vset(v.key, function (x) { x.field = false; }); } }, st.field ? "✓ USED TODAY · NEW DAY" : "NEW DAY")]));
+    kids.push(el("div.ctl-rows", null, lanes));
     kids.push(el("p.help", { style: { margin: "6px 0 0", fontSize: "11px" } }, [document.createTextNode("Upkeep, storage and the rest: "), EN.ui.ruleLink("ref-vehicles", "Vehicles"), document.createTextNode(" in the Codex. Weekly upkeep for " + v.label + ": " + fmt(p0.upkeep) + " (" + fmt(p0.fuel) + " Fuel and Routine plus " + fmt(p0.reserve) + " Repair Reserve).")]));
     return EN.ui.panel("Repairs", i.cur + " / " + i.max + " INTEGRITY", kids, { corners: true });
   }

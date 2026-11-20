@@ -3137,7 +3137,7 @@ html.skin-98 .aoe-box{
 
 /* the chapter strip under the search: a small button per chapter, wrapping onto as many rows as it needs;
    on Admin the Game Master chapters follow their own label */
-.cx-chaps{ display:flex; flex-wrap:wrap; align-items:center; gap:5px; min-width:0; margin:-4px 0 18px; }
+.cx-chaps{ display:flex; flex-wrap:wrap; align-items:center; column-gap:var(--btn-gap); row-gap:var(--btn-row-gap); min-width:0; margin:-4px 0 18px; }
 .cx-chaps:empty{ display:none; }
 .cx-chaps .cx-chap{ padding:4px 9px; font-size:10.5px; letter-spacing:.08em; max-width:100%; white-space:normal; text-align:left; overflow-wrap:anywhere; }
 .cx-chaps-br{ flex:0 0 100%; height:0; }
@@ -4007,3 +4007,15 @@ html.gm-landing .gm-crew-pick{ display:none !important; }
 .garage .garage-rule .btn.ghost{ width:100%; }
 .garage .garage-table td, .garage .garage-table th{ text-align:left; }
 .garage .garage-trait .btn.ghost{ padding-left:0; }
+
+/* Button spacing, everywhere (20 Nov 2026, the author's call: no button clusters). A row that holds two or more buttons side by side
+   keeps them a set distance apart, across and between wrapped lines, whatever gap the code that drew it asked for. One rule here
+   rather than hundreds of hand-set gaps; a row of other things is left as it was. */
+:root{ --btn-gap:10px; --btn-row-gap:8px; }
+:is(.row, [style*="display: flex"], [style*="display: inline-flex"]):has(> .btn ~ .btn){ column-gap:var(--btn-gap) !important; row-gap:var(--btn-row-gap) !important; }
+/* A labelled set of choices (the chase tracker's rounds, speeds and Heat): the labels share one column, so every set starts on the
+   same line, and a set wraps under itself, never under its label. */
+.ctl-rows{ display:grid; grid-template-columns:max-content 1fr; column-gap:16px; row-gap:10px; align-items:center; margin:10px 0; }
+.ctl-rows > .ctl-label{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; color:var(--text3); text-transform:uppercase; white-space:nowrap; }
+.ctl-rows > .ctl-set{ display:flex; flex-wrap:wrap; align-items:center; column-gap:var(--btn-gap); row-gap:var(--btn-row-gap); min-width:0; }
+@media (max-width:560px){ .ctl-rows{ grid-template-columns:1fr; row-gap:4px; } .ctl-rows > .ctl-set{ margin-bottom:8px; } }
