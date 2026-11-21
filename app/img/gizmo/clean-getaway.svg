@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 84" width="448" height="336" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Clean Getaway</title>
+<desc id="desc">Gizmo snaps a look over his shoulder, faces forward, and tips his upper curve in a quick salute. His body breaks into horizontal scan lines that thin out in three hard steps, then each line turns into a solid green dash and shoots off to the right, a few at a time, until nothing is left. Plays once over three seconds and ends on an empty transparent frame.</desc>
+<style>
+.live{animation:live 3s steps(1,end) both}
+.gizmo{transform-origin:56px 78px;animation:pose 3s ease-in-out both}
+.top{transform-origin:32px 34px;animation:salute 3s ease-in-out both}
+.eyes{transform-origin:33px 41px;animation:lids 3s linear both}
+.pupils{animation:look 3s ease-in-out both}
+.brows{animation:brows 3s ease-in-out both}
+.scan-a,.scan-b,.row,.streak{opacity:0}
+.scan-a{animation:scanA 3s steps(1,end) both}
+.scan-b{animation:scanB 3s steps(1,end) both}
+.row{animation:3s steps(1,end) both}
+.w1{animation-name:w1}@keyframes w1{0%{opacity:0}64%{opacity:1}72.4%,100%{opacity:0}}.k1{transform-origin:41px 4px;animation:k1 3s linear both,kv1 3s steps(1,end) both}@keyframes k1{0%,72.4%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}75.4%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}81.4%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv1{0%{opacity:0}72.4%{opacity:1}81.4%,100%{opacity:0}}.w2{animation-name:w2}@keyframes w2{0%{opacity:0}64%{opacity:1}74.8%,100%{opacity:0}}.k2{transform-origin:41px 8px;animation:k2 3s linear both,kv2 3s steps(1,end) both}@keyframes k2{0%,74.8%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}77.8%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}83.8%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv2{0%{opacity:0}74.8%{opacity:1}83.8%,100%{opacity:0}}.w3{animation-name:w3}@keyframes w3{0%{opacity:0}64%{opacity:1}71.2%,100%{opacity:0}}.k3{transform-origin:41px 12px;animation:k3 3s linear both,kv3 3s steps(1,end) both}@keyframes k3{0%,71.2%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}74.2%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}80.2%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv3{0%{opacity:0}71.2%{opacity:1}80.2%,100%{opacity:0}}.w4{animation-name:w4}@keyframes w4{0%{opacity:0}64%{opacity:1}73.6%,100%{opacity:0}}.k4{transform-origin:41px 16px;animation:k4 3s linear both,kv4 3s steps(1,end) both}@keyframes k4{0%,73.6%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}76.6%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}82.6%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv4{0%{opacity:0}73.6%{opacity:1}82.6%,100%{opacity:0}}.w5{animation-name:w5}@keyframes w5{0%{opacity:0}64%{opacity:1}70.0%,100%{opacity:0}}.k5{transform-origin:41px 20px;animation:k5 3s linear both,kv5 3s steps(1,end) both}@keyframes k5{0%,70.0%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}73.0%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}79.0%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv5{0%{opacity:0}70.0%{opacity:1}79.0%,100%{opacity:0}}.w6{animation-name:w6}@keyframes w6{0%{opacity:0}64%{opacity:1}72.4%,100%{opacity:0}}.k6{transform-origin:41px 24px;animation:k6 3s linear both,kv6 3s steps(1,end) both}@keyframes k6{0%,72.4%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}75.4%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}81.4%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv6{0%{opacity:0}72.4%{opacity:1}81.4%,100%{opacity:0}}.w7{animation-name:w7}@keyframes w7{0%{opacity:0}64%{opacity:1}74.8%,100%{opacity:0}}.k7{transform-origin:41px 28px;animation:k7 3s linear both,kv7 3s steps(1,end) both}@keyframes k7{0%,74.8%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}77.8%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}83.8%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv7{0%{opacity:0}74.8%{opacity:1}83.8%,100%{opacity:0}}.w8{animation-name:w8}@keyframes w8{0%{opacity:0}64%{opacity:1}71.2%,100%{opacity:0}}.k8{transform-origin:41px 32px;animation:k8 3s linear both,kv8 3s steps(1,end) both}@keyframes k8{0%,71.2%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}74.2%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}80.2%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv8{0%{opacity:0}71.2%{opacity:1}80.2%,100%{opacity:0}}.w9{animation-name:w9}@keyframes w9{0%{opacity:0}64%{opacity:1}73.6%,100%{opacity:0}}.k9{transform-origin:41px 36px;animation:k9 3s linear both,kv9 3s steps(1,end) both}@keyframes k9{0%,73.6%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}76.6%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}82.6%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv9{0%{opacity:0}73.6%{opacity:1}82.6%,100%{opacity:0}}.w10{animation-name:w10}@keyframes w10{0%{opacity:0}64%{opacity:1}70.0%,100%{opacity:0}}.k10{transform-origin:41px 40px;animation:k10 3s linear both,kv10 3s steps(1,end) both}@keyframes k10{0%,70.0%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}73.0%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}79.0%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv10{0%{opacity:0}70.0%{opacity:1}79.0%,100%{opacity:0}}.w11{animation-name:w11}@keyframes w11{0%{opacity:0}64%{opacity:1}72.4%,100%{opacity:0}}.k11{transform-origin:41px 44px;animation:k11 3s linear both,kv11 3s steps(1,end) both}@keyframes k11{0%,72.4%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}75.4%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}81.4%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv11{0%{opacity:0}72.4%{opacity:1}81.4%,100%{opacity:0}}.w12{animation-name:w12}@keyframes w12{0%{opacity:0}64%{opacity:1}74.8%,100%{opacity:0}}.k12{transform-origin:41px 48px;animation:k12 3s linear both,kv12 3s steps(1,end) both}@keyframes k12{0%,74.8%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}77.8%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}83.8%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv12{0%{opacity:0}74.8%{opacity:1}83.8%,100%{opacity:0}}.w13{animation-name:w13}@keyframes w13{0%{opacity:0}64%{opacity:1}71.2%,100%{opacity:0}}.k13{transform-origin:41px 52px;animation:k13 3s linear both,kv13 3s steps(1,end) both}@keyframes k13{0%,71.2%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}74.2%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}80.2%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv13{0%{opacity:0}71.2%{opacity:1}80.2%,100%{opacity:0}}.w14{animation-name:w14}@keyframes w14{0%{opacity:0}64%{opacity:1}73.6%,100%{opacity:0}}.k14{transform-origin:41px 56px;animation:k14 3s linear both,kv14 3s steps(1,end) both}@keyframes k14{0%,73.6%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}76.6%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}82.6%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv14{0%{opacity:0}73.6%{opacity:1}82.6%,100%{opacity:0}}.w15{animation-name:w15}@keyframes w15{0%{opacity:0}64%{opacity:1}70.0%,100%{opacity:0}}.k15{transform-origin:41px 60px;animation:k15 3s linear both,kv15 3s steps(1,end) both}@keyframes k15{0%,70.0%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}73.0%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}79.0%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv15{0%{opacity:0}70.0%{opacity:1}79.0%,100%{opacity:0}}.w16{animation-name:w16}@keyframes w16{0%{opacity:0}64%{opacity:1}72.4%,100%{opacity:0}}.k16{transform-origin:41px 64px;animation:k16 3s linear both,kv16 3s steps(1,end) both}@keyframes k16{0%,72.4%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}75.4%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}81.4%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv16{0%{opacity:0}72.4%{opacity:1}81.4%,100%{opacity:0}}.w17{animation-name:w17}@keyframes w17{0%{opacity:0}64%{opacity:1}74.8%,100%{opacity:0}}.k17{transform-origin:41px 68px;animation:k17 3s linear both,kv17 3s steps(1,end) both}@keyframes k17{0%,74.8%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}77.8%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}83.8%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv17{0%{opacity:0}74.8%{opacity:1}83.8%,100%{opacity:0}}.w18{animation-name:w18}@keyframes w18{0%{opacity:0}64%{opacity:1}71.2%,100%{opacity:0}}.k18{transform-origin:41px 72px;animation:k18 3s linear both,kv18 3s steps(1,end) both}@keyframes k18{0%,71.2%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}74.2%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}80.2%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv18{0%{opacity:0}71.2%{opacity:1}80.2%,100%{opacity:0}}.w19{animation-name:w19}@keyframes w19{0%{opacity:0}64%{opacity:1}73.6%,100%{opacity:0}}.k19{transform-origin:41px 76px;animation:k19 3s linear both,kv19 3s steps(1,end) both}@keyframes k19{0%,73.6%{transform:translateX(0) scaleX(1);animation-timing-function:cubic-bezier(.3,0,.8,.5)}76.6%{transform:translateX(6px) scaleX(2.2);animation-timing-function:cubic-bezier(.4,0,1,.7)}82.6%,100%{transform:translateX(130px) scaleX(2.2)}}@keyframes kv19{0%{opacity:0}73.6%{opacity:1}82.6%,100%{opacity:0}}
+@keyframes live{0%{opacity:1}58%,100%{opacity:0}}
+@keyframes scanA{0%{opacity:0}58%{opacity:1}61%,100%{opacity:0}}
+@keyframes scanB{0%{opacity:0}61%{opacity:1}64%,100%{opacity:0}}
+@keyframes pose{
+0%{transform:rotate(0) scale(1,1)}
+5%{transform:rotate(0) scale(1,1);animation-timing-function:cubic-bezier(.2,.8,.3,1)}
+8.3%,22%{transform:rotate(-4deg) scale(.9,1)}
+26.7%{transform:rotate(0) scale(1,1)}
+31%,46%{transform:rotate(0) scale(.98,1.04)}
+50%{transform:rotate(0) scale(1,1)}
+53.3%{transform:rotate(0) scale(1.05,.93)}
+56.7%,100%{transform:rotate(0) scale(1,1)}}
+@keyframes salute{
+0%{transform:rotate(0)}
+30%{transform:rotate(0);animation-timing-function:cubic-bezier(.2,.8,.3,1)}
+35%,41.7%{transform:rotate(15deg)}
+45%{transform:rotate(-8deg)}
+50%,100%{transform:rotate(0)}}
+@keyframes lids{
+0%,5%,26.7%,31%,50%,100%{transform:scale(1,1)}
+8.3%,22%{transform:scale(1,.75)}
+35%,43%{transform:scale(1,.85)}}
+@keyframes look{
+0%{transform:translate(0,0)}
+5%{transform:translate(0,0);animation-timing-function:cubic-bezier(.2,.8,.3,1)}
+8.3%,22%{transform:translate(-3.3px,0)}
+26.7%,54%{transform:translate(-1px,-.4px)}
+56.7%,100%{transform:translate(0,0)}}
+@keyframes brows{
+0%,5%,26.7%,50%,100%{transform:translateY(0)}
+8.3%,22%{transform:translateY(1px)}
+33%,45%{transform:translateY(-1.6px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<!-- Neutral Gizmo, reused for every scan-line stage. -->
+<g id="giz" transform="translate(24 0)">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/>
+</g>
+<mask id="m31" maskUnits="userSpaceOnUse" x="0" y="0" width="112" height="84"><path d="M56 0V84" stroke="#fff" stroke-width="112" stroke-dasharray="3 1"/></mask>
+<mask id="m22" maskUnits="userSpaceOnUse" x="0" y="0" width="112" height="84"><path d="M56 0V84" stroke="#fff" stroke-width="112" stroke-dasharray="2 2"/></mask>
+<clipPath id="r1"><rect x="0" y="4" width="112" height="1"/></clipPath><clipPath id="r2"><rect x="0" y="8" width="112" height="1"/></clipPath><clipPath id="r3"><rect x="0" y="12" width="112" height="1"/></clipPath><clipPath id="r4"><rect x="0" y="16" width="112" height="1"/></clipPath><clipPath id="r5"><rect x="0" y="20" width="112" height="1"/></clipPath><clipPath id="r6"><rect x="0" y="24" width="112" height="1"/></clipPath><clipPath id="r7"><rect x="0" y="28" width="112" height="1"/></clipPath><clipPath id="r8"><rect x="0" y="32" width="112" height="1"/></clipPath><clipPath id="r9"><rect x="0" y="36" width="112" height="1"/></clipPath><clipPath id="r10"><rect x="0" y="40" width="112" height="1"/></clipPath><clipPath id="r11"><rect x="0" y="44" width="112" height="1"/></clipPath><clipPath id="r12"><rect x="0" y="48" width="112" height="1"/></clipPath><clipPath id="r13"><rect x="0" y="52" width="112" height="1"/></clipPath><clipPath id="r14"><rect x="0" y="56" width="112" height="1"/></clipPath><clipPath id="r15"><rect x="0" y="60" width="112" height="1"/></clipPath><clipPath id="r16"><rect x="0" y="64" width="112" height="1"/></clipPath><clipPath id="r17"><rect x="0" y="68" width="112" height="1"/></clipPath><clipPath id="r18"><rect x="0" y="72" width="112" height="1"/></clipPath><clipPath id="r19"><rect x="0" y="76" width="112" height="1"/></clipPath>
+</defs>
+<!-- Live Gizmo: the upper curve is its own piece so it can tip for the salute. -->
+<g class="live"><g class="gizmo"><g transform="translate(24 0)">
+<path d="M19 76 V30 M45 30 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="top" d="M19 35 V22 a13 13 0 0 1 26 0 V35" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g></g>
+<!-- Scan-line stages: 3 of 4 rows, 2 of 4 rows, then single rows that launch as dashes. -->
+<g class="scan-a" mask="url(#m31)"><use href="#giz"/></g>
+<g class="scan-b" mask="url(#m22)"><use href="#giz"/></g>
+<g clip-path="url(#r1)"><use class="row w1" href="#giz"/></g><rect class="streak k1" x="41" y="4" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r2)"><use class="row w2" href="#giz"/></g><rect class="streak k2" x="41" y="8" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r3)"><use class="row w3" href="#giz"/></g><rect class="streak k3" x="41" y="12" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r4)"><use class="row w4" href="#giz"/></g><rect class="streak k4" x="41" y="16" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r5)"><use class="row w5" href="#giz"/></g><rect class="streak k5" x="41" y="20" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r6)"><use class="row w6" href="#giz"/></g><rect class="streak k6" x="41" y="24" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r7)"><use class="row w7" href="#giz"/></g><rect class="streak k7" x="41" y="28" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r8)"><use class="row w8" href="#giz"/></g><rect class="streak k8" x="41" y="32" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r9)"><use class="row w9" href="#giz"/></g><rect class="streak k9" x="41" y="36" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r10)"><use class="row w10" href="#giz"/></g><rect class="streak k10" x="41" y="40" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r11)"><use class="row w11" href="#giz"/></g><rect class="streak k11" x="41" y="44" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r12)"><use class="row w12" href="#giz"/></g><rect class="streak k12" x="41" y="48" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r13)"><use class="row w13" href="#giz"/></g><rect class="streak k13" x="41" y="52" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r14)"><use class="row w14" href="#giz"/></g><rect class="streak k14" x="41" y="56" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r15)"><use class="row w15" href="#giz"/></g><rect class="streak k15" x="41" y="60" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r16)"><use class="row w16" href="#giz"/></g><rect class="streak k16" x="41" y="64" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r17)"><use class="row w17" href="#giz"/></g><rect class="streak k17" x="41" y="68" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r18)"><use class="row w18" href="#giz"/></g><rect class="streak k18" x="41" y="72" width="30" height="1" fill="#2ee6a0"/>
+<g clip-path="url(#r19)"><use class="row w19" href="#giz"/></g><rect class="streak k19" x="41" y="76" width="30" height="1" fill="#2ee6a0"/>
+</svg>

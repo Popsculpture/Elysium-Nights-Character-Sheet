@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 100" width="520" height="400" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Paperclip Maximizer</title>
+<desc id="desc">A loose pixel drifts down beside Gizmo. He taps it with his lower tip and it becomes a tiny copy of himself. He looks pleased and makes a second one. Then the copies start appearing on their own, in waves: along the floor, stacked up both sides of the frame, and climbing on him. He panics. He sweeps the left side clear with his lower tip, sweeps the right side clear, and shakes the climbers off. One copy is left. He glances at the viewer, slides it behind his body, and looks at the ceiling. Ten second loop on a transparent background.</desc>
+<style>
+
+.gizmo{transform-origin:32px 78px;animation:pose 10s ease-in-out infinite}
+.shk{transform-origin:32px 78px;animation:shk 10s steps(1,end) infinite}
+.seg{animation:kick 10s ease-in-out infinite}
+.arm{stroke-dasharray:100 300;stroke-dashoffset:103;animation:10s linear infinite}
+.arm-l{animation-name:armL}.arm-r{animation-name:armR}
+.m,.px1,.px2,.pop{opacity:0;animation:10s steps(1,end) infinite}
+.hop{animation:hop .4s steps(1,end) infinite}
+.bA{animation:bA 10s linear infinite}.bB{animation:bB 10s linear infinite}.bC{animation:bC 10s linear infinite}
+.m1{animation:m1 10s ease-in-out infinite}
+.m2{transform-origin:28px 70px;animation:m2 10s ease-in-out infinite}
+.px1{animation:px1 10s ease-in infinite,px1v 10s steps(1,end) infinite}
+.px2{animation:px2 10s ease-in infinite,px2v 10s steps(1,end) infinite}
+.pop{animation-name:pop}
+.eyes{transform-origin:33px 41px;animation:lids 10s linear infinite}
+.pupils{animation:look 10s ease-in-out infinite}
+.brows{animation:brows 10s ease-in-out infinite}
+@keyframes hop{0%{transform:translateY(0)}50%,100%{transform:translateY(-1.5px)}}
+@keyframes mv0{0%{opacity:0}39.0%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv1{0%{opacity:0}39.5%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv2{0%{opacity:0}37.0%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv3{0%{opacity:0}36.0%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv4{0%{opacity:0}33.5%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv5{0%{opacity:0}34.0%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv6{0%{opacity:0}30.0%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv7{0%{opacity:0}27.5%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv8{0%{opacity:0}28.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv9{0%{opacity:0}30.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv10{0%{opacity:0}33.5%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv11{0%{opacity:0}34.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv12{0%{opacity:0}36.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv13{0%{opacity:0}36.5%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv14{0%{opacity:0}37.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv15{0%{opacity:0}39.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv16{0%{opacity:0}42.5%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv17{0%{opacity:0}43.0%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv18{0%{opacity:0}42.0%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv19{0%{opacity:0}39.5%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv20{0%{opacity:0}40.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv21{0%{opacity:0}39.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv22{0%{opacity:0}42.5%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv23{0%{opacity:0}43.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv24{0%{opacity:0}45.0%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv25{0%{opacity:0}45.5%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv26{0%{opacity:0}46.0%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv27{0%{opacity:0}42.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv28{0%{opacity:0}45.5%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv29{0%{opacity:0}46.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv30{0%{opacity:0}49.0%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv31{0%{opacity:0}47.5%{opacity:1}61.5%{opacity:0}100%{opacity:0}}
+@keyframes mv32{0%{opacity:0}48.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv33{0%{opacity:0}47.0%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mv100{0%{opacity:0}47.0%{opacity:1}73.5%{opacity:0}100%{opacity:0}}
+@keyframes mv101{0%{opacity:0}47.7%{opacity:1}73.5%{opacity:0}100%{opacity:0}}
+@keyframes mv102{0%{opacity:0}48.4%{opacity:1}73.5%{opacity:0}100%{opacity:0}}
+@keyframes mv103{0%{opacity:0}49.1%{opacity:1}73.5%{opacity:0}100%{opacity:0}}
+@keyframes mv104{0%{opacity:0}49.8%{opacity:1}73.5%{opacity:0}100%{opacity:0}}
+@keyframes mv105{0%{opacity:0}50.5%{opacity:1}73.5%{opacity:0}100%{opacity:0}}
+@keyframes mv106{0%{opacity:0}51.2%{opacity:1}73.5%{opacity:0}100%{opacity:0}}
+@keyframes mv107{0%{opacity:0}51.9%{opacity:1}73.5%{opacity:0}100%{opacity:0}}
+@keyframes mvA{0%{opacity:0}10%{opacity:1}67.5%{opacity:0}100%{opacity:0}}
+@keyframes mvB{0%{opacity:0}20%{opacity:1}86%{opacity:0}100%{opacity:0}}
+@keyframes m1{0%,12%{transform:translateX(0)}13%{transform:translate(4px,-4px)}14.5%,100%{transform:translateX(9px)}}
+@keyframes m2{0%,82.5%{transform:translateX(0) scaleX(1)}86%,100%{transform:translateX(-8px) scaleX(.1)}}
+@keyframes px1{0%,3%{transform:translate(58px,-16px)}7.5%,100%{transform:translate(27px,77px)}}
+@keyframes px1v{0%{opacity:0}3%{opacity:1}10%{opacity:0}100%{opacity:0}}
+@keyframes px2{0%,14.5%{transform:translate(64px,-16px)}18.5%,100%{transform:translate(27px,77px)}}
+@keyframes px2v{0%{opacity:0}14.5%{opacity:1}20%{opacity:0}100%{opacity:0}}
+@keyframes pop{0%{opacity:0}10%{opacity:1}12%{opacity:0}20%{opacity:1}22%{opacity:0}100%{opacity:0}}
+@keyframes kick{0%,8%,11.5%,18.5%,21.5%,100%{transform:rotate(0deg)}9%,19.3%{transform:rotate(1.5deg);animation-timing-function:cubic-bezier(.5,0,.3,1)}10%,20%{transform:rotate(-2.25deg)}}
+@keyframes armL{0%{stroke-dashoffset:103}55.5%{stroke-dashoffset:103;animation-timing-function:cubic-bezier(.3,.6,.5,1)}59%,60%{stroke-dashoffset:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}62%,100%{stroke-dashoffset:103}}
+@keyframes armR{0%{stroke-dashoffset:103}62.5%{stroke-dashoffset:103;animation-timing-function:cubic-bezier(.3,.6,.5,1)}65.5%,66.5%{stroke-dashoffset:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}68.5%,100%{stroke-dashoffset:103}}
+@keyframes bA{0%,56.5%{transform:translateX(0);animation-timing-function:cubic-bezier(.4,0,.8,.6)}61.5%,100%{transform:translateX(-150px)}}
+@keyframes bB{0%,63%{transform:translateX(0);animation-timing-function:cubic-bezier(.4,0,.8,.6)}67.5%,100%{transform:translateX(150px)}}
+@keyframes bC{0%,69.5%{transform:translateY(0);animation-timing-function:cubic-bezier(.5,0,1,.7)}73.5%,100%{transform:translateY(115px)}}
+@keyframes pose{0%,9.5%,15%,19.5%,27%,52.5%,55.5%,61.5%,68%,79%,93%,100%{transform:translateY(0) rotate(0) scale(1,1)}11%,13.5%{transform:translateY(0) rotate(4deg) scale(1,1)}21%,25%{transform:translateY(0) rotate(4deg) scale(1,1)}54%{transform:translateY(-4px) rotate(0) scale(.97,1.04)}57%,60%{transform:translateY(0) rotate(-8deg) scale(1,1)}63.5%,66.5%{transform:translateY(0) rotate(8deg) scale(1,1)}76%{transform:translateY(0) rotate(0) scale(1.03,.96)}81%,91%{transform:translateY(0) rotate(0) scale(.98,1.03)}}
+@keyframes shk{0%{transform:translateX(0)}44.000%{transform:translateX(0.7px)}44.500%{transform:translateX(-0.7px)}45.000%{transform:translateX(0.7px)}45.500%{transform:translateX(-0.7px)}46.000%{transform:translateX(0.7px)}46.500%{transform:translateX(-0.7px)}47.000%{transform:translateX(0.7px)}47.500%{transform:translateX(-0.7px)}48.000%{transform:translateX(0.7px)}48.500%{transform:translateX(-0.7px)}49.000%{transform:translateX(0.7px)}49.500%{transform:translateX(-0.7px)}50.000%{transform:translateX(0.7px)}50.500%{transform:translateX(-0.7px)}51.000%{transform:translateX(0.7px)}51.500%{transform:translateX(-0.7px)}52.000%{transform:translateX(0.7px)}52.500%{transform:translateX(0)}
+69.0%{transform:rotate(-6deg)}69.5%{transform:rotate(6deg)}70.0%{transform:rotate(-6deg)}70.5%{transform:rotate(6deg)}71.0%{transform:rotate(-6deg)}71.5%{transform:rotate(6deg)}72.0%{transform:rotate(-6deg)}72.5%,100%{transform:rotate(0)}}
+@keyframes lids{0%,9.5%,93%,95%,98%,100%{transform:scale(1,1)}10.5%,26%{transform:scale(1.08,1.08)}27.5%,40%{transform:scale(1.15,1.15)}41.5%,55%{transform:scale(1.25,1.25)}56.5%,67.5%{transform:scale(1,.6)}69%,73%{transform:scale(1,.1)}75%,78%{transform:scale(1,.6)}79.5%,81.5%{transform:scale(1.2,1.2)}83%,86%{transform:scale(1,.8)}87.5%,91.5%{transform:scale(1.12,1.12)}96.5%{transform:scale(1,.08)}}
+@keyframes look{0%,2.5%,95%,100%{transform:translate(0,0)}4%{transform:translate(1.2px,-1.8px)}8%,14%{transform:translate(.3px,1.9px)}15.5%{transform:translate(1.2px,-1.8px)}19%,26%{transform:translate(-.5px,1.9px)}27.5%,33%{transform:translate(1.4px,1.1px)}34.5%,40%{transform:translate(-3.1px,1.1px)}41.5%,46%{transform:translate(1.4px,1.1px)}47.5%,52%{transform:translate(-1px,-2.4px)}53.5%,55.5%{transform:translate(-1px,-.3px)}57%,61%{transform:translate(-3.1px,1px)}63.5%,67.5%{transform:translate(1.4px,1px)}75%,78%{transform:translate(-1px,-.3px)}79.5%,81.5%{transform:translate(-.5px,1.9px)}82.3%,83%{transform:translate(-1px,-.3px)}84%,86%{transform:translate(-2.5px,1.6px)}87.5%,91.5%{transform:translate(-2.4px,-2.4px)}}
+@keyframes brows{0%,9.5%,75%,78.5%,95%,100%{transform:translateY(0)}10.5%,26%{transform:translateY(-1.5px)}27.5%,40%{transform:translateY(-2.5px)}41.5%,55%{transform:translateY(-3px)}56.5%,73%{transform:translateY(1.5px)}79.5%,81.5%{transform:translateY(-3px)}87.5%,91.5%{transform:translateY(-2.6px)}}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs><g id="mini"><g transform="scale(.22)">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="27" cy="41" r="5.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="5.6" fill="#e9f1fb"/><circle cx="28" cy="41.5" r="2.7" fill="#07090d"/><circle cx="40" cy="41.5" r="2.7" fill="#07090d"/>
+</g></g></defs>
+<g transform="translate(40 10)">
+<!-- Floor and stack copies that go out to the left, and to the right. -->
+<g class="bA"><g class="m" style="animation-name:mv0"><use class="" href="#mini" x="-36" y="61" style="animation-delay:-0.00s"/></g><g class="m" style="animation-name:mv1"><use class="hop" href="#mini" x="-29" y="61" style="animation-delay:-0.13s"/></g><g class="m" style="animation-name:mv2"><use class="" href="#mini" x="-22" y="61" style="animation-delay:-0.26s"/></g><g class="m" style="animation-name:mv3"><use class="hop" href="#mini" x="-15" y="61" style="animation-delay:-0.39s"/></g><g class="m" style="animation-name:mv4"><use class="" href="#mini" x="-8" y="61" style="animation-delay:-0.12s"/></g><g class="m" style="animation-name:mv5"><use class="hop" href="#mini" x="-1" y="61" style="animation-delay:-0.25s"/></g><g class="m" style="animation-name:mv6"><use class="" href="#mini" x="6" y="61" style="animation-delay:-0.38s"/></g><g class="m" style="animation-name:mv7"><use class="hop" href="#mini" x="13" y="61" style="animation-delay:-0.11s"/></g><g class="m" style="animation-name:mv16"><use class="" href="#mini" x="-36" y="45" style="animation-delay:-0.08s"/></g><g class="m" style="animation-name:mv17"><use class="hop" href="#mini" x="-29" y="45" style="animation-delay:-0.21s"/></g><g class="m" style="animation-name:mv18"><use class="" href="#mini" x="-22" y="45" style="animation-delay:-0.34s"/></g><g class="m" style="animation-name:mv19"><use class="hop" href="#mini" x="-15" y="45" style="animation-delay:-0.07s"/></g><g class="m" style="animation-name:mv24"><use class="" href="#mini" x="-36" y="29" style="animation-delay:-0.32s"/></g><g class="m" style="animation-name:mv25"><use class="hop" href="#mini" x="-29" y="29" style="animation-delay:-0.05s"/></g><g class="m" style="animation-name:mv26"><use class="" href="#mini" x="-22" y="29" style="animation-delay:-0.18s"/></g><g class="m" style="animation-name:mv30"><use class="" href="#mini" x="-36" y="13" style="animation-delay:-0.30s"/></g><g class="m" style="animation-name:mv31"><use class="hop" href="#mini" x="-29" y="13" style="animation-delay:-0.03s"/></g></g>
+<g class="bB"><g class="m" style="animation-name:mv8"><use class="" href="#mini" x="34" y="61" style="animation-delay:-0.24s"/></g><g class="m" style="animation-name:mv9"><use class="hop" href="#mini" x="41" y="61" style="animation-delay:-0.37s"/></g><g class="m" style="animation-name:mv10"><use class="" href="#mini" x="48" y="61" style="animation-delay:-0.10s"/></g><g class="m" style="animation-name:mv11"><use class="hop" href="#mini" x="55" y="61" style="animation-delay:-0.23s"/></g><g class="m" style="animation-name:mv12"><use class="" href="#mini" x="62" y="61" style="animation-delay:-0.36s"/></g><g class="m" style="animation-name:mv13"><use class="hop" href="#mini" x="69" y="61" style="animation-delay:-0.09s"/></g><g class="m" style="animation-name:mv14"><use class="" href="#mini" x="76" y="61" style="animation-delay:-0.22s"/></g><g class="m" style="animation-name:mv15"><use class="hop" href="#mini" x="83" y="61" style="animation-delay:-0.35s"/></g><g class="m" style="animation-name:mv20"><use class="" href="#mini" x="62" y="45" style="animation-delay:-0.20s"/></g><g class="m" style="animation-name:mv21"><use class="hop" href="#mini" x="69" y="45" style="animation-delay:-0.33s"/></g><g class="m" style="animation-name:mv22"><use class="" href="#mini" x="76" y="45" style="animation-delay:-0.06s"/></g><g class="m" style="animation-name:mv23"><use class="hop" href="#mini" x="83" y="45" style="animation-delay:-0.19s"/></g><g class="m" style="animation-name:mv27"><use class="hop" href="#mini" x="69" y="29" style="animation-delay:-0.31s"/></g><g class="m" style="animation-name:mv28"><use class="" href="#mini" x="76" y="29" style="animation-delay:-0.04s"/></g><g class="m" style="animation-name:mv29"><use class="hop" href="#mini" x="83" y="29" style="animation-delay:-0.17s"/></g><g class="m" style="animation-name:mv32"><use class="" href="#mini" x="76" y="13" style="animation-delay:-0.16s"/></g><g class="m" style="animation-name:mv33"><use class="hop" href="#mini" x="83" y="13" style="animation-delay:-0.29s"/></g><g class="m" style="animation-name:mvA"><g class="m1"><use class="hop" href="#mini" x="21" y="61"/></g></g></g>
+<g class="gizmo"><g class="shk">
+<path class="arm arm-l" pathLength="100" d="M19 76 V79 a6 6 0 0 1 -6 6 H-42" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="arm arm-r" pathLength="100" d="M19 76 V79 a6 6 0 0 0 6 6 H92" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19 46 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><g class="seg" style="transform-origin:19px 40px"><path d="M19 40 V44.5" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><g class="seg" style="transform-origin:19px 44.5px"><path d="M19 44.5 V49" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><g class="seg" style="transform-origin:19px 49px"><path d="M19 49 V53.5" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><g class="seg" style="transform-origin:19px 53.5px"><path d="M19 53.5 V58" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><g class="seg" style="transform-origin:19px 58px"><path d="M19 58 V62.5" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><g class="seg" style="transform-origin:19px 62.5px"><path d="M19 62.5 V67" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><g class="seg" style="transform-origin:19px 67px"><path d="M19 67 V71.5" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><g class="seg" style="transform-origin:19px 71.5px"><path d="M19 71.5 V76" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g></g></g></g></g></g></g></g>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g><g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g>
+<!-- The last one, which he hides. -->
+<g class="m" style="animation-name:mvB"><g class="m2"><use href="#mini" x="21" y="61"/></g></g>
+<!-- Climbers on Gizmo. -->
+<g class="bC"><g class="m" style="animation-name:mv100"><use class="" href="#mini" x="8" y="50" style="animation-delay:-0.20s"/></g><g class="m" style="animation-name:mv101"><use class="hop" href="#mini" x="46" y="46" style="animation-delay:-0.33s"/></g><g class="m" style="animation-name:mv102"><use class="" href="#mini" x="12" y="26" style="animation-delay:-0.06s"/></g><g class="m" style="animation-name:mv103"><use class="hop" href="#mini" x="42" y="22" style="animation-delay:-0.19s"/></g><g class="m" style="animation-name:mv104"><use class="" href="#mini" x="22" y="-9" style="animation-delay:-0.32s"/></g><g class="m" style="animation-name:mv105"><use class="hop" href="#mini" x="34" y="-11" style="animation-delay:-0.05s"/></g><g class="m" style="animation-name:mv106"><use class="" href="#mini" x="47" y="62" style="animation-delay:-0.18s"/></g><g class="m" style="animation-name:mv107"><use class="hop" href="#mini" x="3" y="64" style="animation-delay:-0.31s"/></g></g>
+<rect class="px1" x="-1" y="-1" width="2" height="2" fill="#a6ff4d"/><rect class="px2" x="-1" y="-1" width="2" height="2" fill="#a6ff4d"/>
+<g class="pop" fill="#ffcc66"><rect x="22" y="66" width="1.5" height="1.5"/><rect x="33" y="68" width="1.5" height="1.5"/><rect x="27" y="62" width="1.5" height="1.5"/></g>
+</g>
+</svg>

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 84" width="416" height="336" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Plug In</title>
+<desc id="desc">Gizmo leans sideways as a short cable unfurls from behind him and plugs into a small port at the right edge of the frame. A bright green pulse runs back along the cable and around his outline. His eyes brighten with recognition, the cable retracts, and he returns to neutral. Four second loop on a transparent background.</desc>
+<style>
+.gizmo{transform-origin:42px 78px;animation:pose 4s ease-in-out infinite}
+.cable{stroke-dasharray:100;stroke-dashoffset:100;animation:cable 4s linear infinite}
+.plug{opacity:0;offset-path:path('M56 62 C 66 80, 84 61, 97 61');offset-rotate:auto;offset-distance:0%;animation:plug 4s linear infinite,plugvis 4s steps(1,end) infinite}
+.cable-pulse{stroke-dasharray:16 300;stroke-dashoffset:20;animation:cablepulse 4s linear infinite}
+.pulse-a{stroke-dasharray:12 300;stroke-dashoffset:16;animation:pulseA 4s linear infinite}
+.pulse-b{stroke-dasharray:22 300;stroke-dashoffset:26;animation:pulseB 4s linear infinite}
+.led,.bright{opacity:0;animation:led 4s steps(1,end) infinite}
+.bright{animation-name:bright}
+.sparks{opacity:0;animation:sparks 4s steps(1,end) infinite}
+.eyes{transform-origin:33px 41px;animation:lids 4s linear infinite}
+.pupils{animation:look 4s ease-in-out infinite}
+.brows{animation:brows 4s ease-in-out infinite}
+@keyframes pose{
+0%,4%{transform:rotate(0) scale(1,1)}
+8%{transform:rotate(-3deg) scale(1,1)}
+16%{transform:rotate(8deg) scale(1,1)}
+20%,29%{transform:rotate(7deg) scale(1,1)}
+30.5%{transform:rotate(9deg) scale(1,1)}
+33%,45%{transform:rotate(7deg) scale(1,1)}
+47.5%{transform:rotate(7deg) scale(1.04,1.04)}
+52%,60%{transform:rotate(7deg) scale(1,1)}
+64%,76%{transform:rotate(4deg) scale(1,1.035)}
+82%{transform:rotate(5deg) scale(1,1)}
+90%{transform:rotate(-2.5deg) scale(1,1)}
+96%,100%{transform:rotate(0) scale(1,1)}}
+@keyframes cable{
+0%{stroke-dashoffset:100}
+12%{stroke-dashoffset:100;animation-timing-function:cubic-bezier(.2,.7,.3,1)}
+29%{stroke-dashoffset:0}
+76%{stroke-dashoffset:0;animation-timing-function:cubic-bezier(.6,0,.9,.4)}
+88%,100%{stroke-dashoffset:100}}
+@keyframes plug{
+0%{offset-distance:0%}
+12%{offset-distance:0%;animation-timing-function:cubic-bezier(.2,.7,.3,1)}
+29%{offset-distance:100%}
+76%{offset-distance:100%;animation-timing-function:cubic-bezier(.6,0,.9,.4)}
+88%,100%{offset-distance:0%}}
+@keyframes plugvis{0%{opacity:0}13%{opacity:1}87%,100%{opacity:0}}
+@keyframes cablepulse{0%,34%{stroke-dashoffset:-104}46%,100%{stroke-dashoffset:20}}
+@keyframes pulseA{0%,45.5%{stroke-dashoffset:16}62%,100%{stroke-dashoffset:-104}}
+@keyframes pulseB{0%,45.5%{stroke-dashoffset:26}58%,100%{stroke-dashoffset:-104}}
+@keyframes led{0%{opacity:0}29.5%{opacity:1}76%,100%{opacity:0}}
+@keyframes sparks{0%{opacity:0}29.5%{opacity:1}33.5%,100%{opacity:0}}
+@keyframes bright{0%{opacity:0}62%{opacity:1}83%,100%{opacity:0}}
+@keyframes lids{
+0%,60.5%,84%,88.5%,92.5%,100%{transform:scale(1,1)}
+63%{transform:scale(1.2,1.2)}
+66%,80%{transform:scale(1.1,1.1)}
+90.5%{transform:scale(1,.08)}}
+@keyframes look{
+0%,3%,92%,100%{transform:translate(0,0)}
+6%,44%{transform:translate(1.3px,.6px)}
+48%,58%{transform:translate(0,0)}
+62%,83%{transform:translate(-1px,-.7px)}}
+@keyframes brows{
+0%,4%,16%,45%,90%,100%{transform:translateY(0)}
+8%{transform:translateY(.8px)}
+48%,58%{transform:translateY(-1px)}
+63%,82%{transform:translateY(-2.2px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<!-- Cable sits behind Gizmo and starts under his right-hand tube. -->
+<path class="cable" pathLength="100" d="M56 62 C 66 80, 84 61, 97 61" fill="none" stroke="#6b7c93" stroke-width="1.8"/>
+<path class="cable-pulse" pathLength="100" d="M56 62 C 66 80, 84 61, 97 61" fill="none" stroke="#2ee6a0" stroke-width="3"/>
+<rect class="plug" x="-2.5" y="-2" width="5" height="4" fill="#e9f1fb" stroke="#07090d" stroke-width=".6"/>
+<g class="gizmo"><g transform="translate(10 0)">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- The pulse enters where the cable meets him and splits both ways round the clip. -->
+<path class="pulse-a" pathLength="100" d="M45 62 V22 a13 13 0 0 0 -26 0 V76" fill="none" stroke="#d4ffea" stroke-width="4.5"/>
+<path class="pulse-b" pathLength="100" d="M45 62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#d4ffea" stroke-width="4.5"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="bright" fill="#ffffff" stroke="#2ee6a0" stroke-width="1"><circle cx="27" cy="41" r="4.6"/><circle cx="39" cy="41" r="4.6"/></g>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/>
+<g class="bright" fill="#ffffff"><rect x="27" y="40" width="1.1" height="1.1"/><rect x="39" y="40" width="1.1" height="1.1"/></g></g></g>
+</g></g>
+<g class="sparks" fill="#ffcc66"><rect x="93" y="52" width="2" height="2"/><rect x="90" y="56" width="2" height="2"/><rect x="93" y="67" width="2" height="2"/></g>
+<rect x="98" y="54" width="6" height="14" fill="#6b7c93"/>
+<rect x="98" y="58.5" width="3" height="5" fill="#07090d"/>
+<rect x="100.5" y="55.5" width="2" height="2" fill="#07090d"/>
+<rect class="led" x="100.5" y="55.5" width="2" height="2" fill="#2ee6a0"/>
+</svg>

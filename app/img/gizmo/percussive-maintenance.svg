@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 118 88" width="472" height="352" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Percussive Maintenance</title>
+<desc id="desc">A miniature service panel pops out to Gizmo's right with a red fault light flickering on top, and its door swings open. He leans over, peers at it, and gives the viewer a flat look. He squashes thin and pops back out as a green baseball bat with his own eyes on the barrel, winds up, and swings himself into the panel. The panel lurches, sparks fly, and the light turns green. He stands back up, pops back into a paperclip, the door slams, and he snaps into a stiff, excessively professional pose before relaxing. Six second loop on a transparent background.</desc>
+<style>
+.clip{transform-origin:56px 78px;animation:clip 6s ease-in-out infinite,clipvis 6s steps(1,end) infinite}
+.bat{opacity:0;transform-origin:56px 76px;animation:bat 6s ease-in-out infinite,batvis 6s steps(1,end) infinite}
+.panel{transform-origin:86px 57px;transform:scale(0);animation:panel 6s ease-out infinite}
+.jolt{transform-origin:92px 57px;animation:jolt 6s ease-in-out infinite}
+.door{transform-origin:87.5px 57px;animation:door 6s ease-in-out infinite}
+.lamp,.red,.green,.sparks,.bit-ok,.poof,.swoosh{opacity:0;animation:6s steps(1,end) infinite}
+.lamp{animation-name:lamp}.red{animation-name:red}.green{animation-name:green}
+.sparks{animation-name:sparks}.bit-ok{animation-name:bitok}.poof{animation-name:poof}.swoosh{animation-name:swoosh}
+.bit-bad{animation:bitbad 6s steps(1,end) infinite}
+.flicker{animation:flicker .6s steps(1,end) infinite}
+.eyes{transform-origin:33px 41px;animation:lids 6s linear infinite}
+.pupils{animation:look 6s ease-in-out infinite}
+.brows{animation:brows 6s ease-in-out infinite}
+.bat-eyes{transform-origin:33px 41px;animation:batlids 6s linear infinite}
+.bat-pupils{animation:batlook 6s ease-in-out infinite}
+@keyframes clip{
+0%,7%,95%,100%{transform:rotate(0) scale(1,1)}
+10%,14%{transform:rotate(2deg) scale(1,1)}
+17%,25%{transform:rotate(6deg) scale(1,.95)}
+28%,33%{transform:rotate(0) scale(1,1)}
+35.8%{transform:rotate(0) scale(1.1,.9);animation-timing-function:linear}
+38.5%,72%{transform:rotate(0) scale(.1,1.12);animation-timing-function:linear}
+74%{transform:rotate(0) scale(1.15,.94)}
+76%{transform:rotate(0) scale(1,1);animation-timing-function:cubic-bezier(.3,0,.2,1)}
+79.5%{transform:rotate(0) scale(.96,1.08)}
+82.5%,91%{transform:rotate(0) scale(.97,1.05)}}
+@keyframes clipvis{0%{opacity:1}38.5%{opacity:0}72%,100%{opacity:1}}
+@keyframes batvis{0%{opacity:0}38.5%{opacity:1}72%,100%{opacity:0}}
+@keyframes bat{
+0%,38.5%{transform:translate(0,0) rotate(0) scale(.1,1.1);animation-timing-function:linear}
+40.5%{transform:translate(0,0) rotate(0) scale(1.18,.95)}
+42%{transform:translate(0,0) rotate(0) scale(1,1)}
+44%{transform:translate(0,-3px) rotate(0) scale(1,1)}
+46%,47%{transform:translate(0,0) rotate(0) scale(1,1)}
+53%{transform:translate(-6px,-10px) rotate(-32deg) scale(1,1)}
+55%{transform:translate(-6px,-10px) rotate(-34deg) scale(1,1);animation-timing-function:cubic-bezier(.6,0,1,.6)}
+57.5%{transform:translate(-6px,-10px) rotate(64deg) scale(1,1);animation-timing-function:steps(1,end)}
+58.33%{transform:translate(-6px,-10px) rotate(50deg) scale(1,1);animation-timing-function:steps(1,end)}
+59.17%{transform:translate(-6px,-10px) rotate(56deg) scale(1,1);animation-timing-function:steps(1,end)}
+60%{transform:translate(-6px,-10px) rotate(51deg) scale(1,1);animation-timing-function:steps(1,end)}
+60.83%{transform:translate(-6px,-10px) rotate(54deg) scale(1,1);animation-timing-function:steps(1,end)}
+61.67%{transform:translate(-6px,-10px) rotate(52deg) scale(1,1);animation-timing-function:steps(1,end)}
+62.5%,64%{transform:translate(-6px,-10px) rotate(52.5deg) scale(1,1)}
+70%{transform:translate(0,0) rotate(0) scale(1,1);animation-timing-function:linear}
+72%,100%{transform:translate(0,0) rotate(0) scale(.1,1.1)}}
+@keyframes panel{
+0%,3%{transform:scale(0)}
+5%{transform:scale(1.15)}
+7%,84%{transform:scale(1)}
+85.5%{transform:scale(1.1)}
+87.5%,100%{transform:scale(0)}}
+@keyframes jolt{
+0%{transform:translate(0,0) rotate(0)}
+57.4%{transform:translate(0,0) rotate(0);animation-timing-function:steps(1,end)}
+57.5%{transform:translate(3px,4px) rotate(10deg)}
+59.2%{transform:translate(-1px,-1.5px) rotate(-4deg)}
+60.8%{transform:translate(.5px,.5px) rotate(1.5deg)}
+62.5%,100%{transform:translate(0,0) rotate(0)}}
+@keyframes door{
+0%,12%,79%,100%{transform:scaleX(1)}
+16%{transform:scaleX(.12)}
+76%{transform:scaleX(.12);animation-timing-function:cubic-bezier(.6,0,1,.7)}}
+@keyframes lamp{0%{opacity:0}3%{opacity:1}88%,100%{opacity:0}}
+@keyframes red{0%{opacity:0}3%{opacity:1}57.5%,100%{opacity:0}}
+@keyframes green{0%{opacity:0}57.5%{opacity:1}60%{opacity:0}61.7%{opacity:1}88%,100%{opacity:0}}
+@keyframes flicker{0%{opacity:1}25%{opacity:0}33%{opacity:1}67%,100%{opacity:0}}
+@keyframes sparks{0%{opacity:0}57.5%{opacity:1}61.5%,100%{opacity:0}}
+@keyframes poof{0%{opacity:0}38.5%{opacity:1}41%{opacity:0}72%{opacity:1}74.5%,100%{opacity:0}}
+@keyframes swoosh{0%{opacity:0}56.6%{opacity:1}59.2%,100%{opacity:0}}
+@keyframes bitbad{0%{opacity:1}57.5%{opacity:0}90%,100%{opacity:1}}
+@keyframes bitok{0%{opacity:0}57.5%{opacity:1}90%,100%{opacity:0}}
+@keyframes lids{
+0%,5%,94%,95.5%,98.5%,100%{transform:scale(1,1)}
+8%,14%{transform:scale(1,.9)}
+17%,25%{transform:scale(1,.7)}
+28%,72%{transform:scale(1,.5)}
+74%{transform:scale(1.2,1.2)}
+79.5%,91%{transform:scale(1.06,1.06)}
+97%{transform:scale(1,.08)}}
+@keyframes look{
+0%,5%,95%,100%{transform:translate(0,0)}
+7%,25%{transform:translate(1.3px,.7px)}
+28%,72%{transform:translate(-1px,-.3px)}
+74%,91%{transform:translate(-1px,-.5px)}}
+@keyframes brows{
+0%,5%,95%,100%{transform:translateY(0)}
+8%,14%{transform:translateY(.8px)}
+17%,25%{transform:translateY(1.4px)}
+28%,72%{transform:translateY(1.9px)}
+74%{transform:translateY(-2px)}
+79.5%,91%{transform:translateY(-1.3px)}}
+@keyframes batlids{
+0%,46%{transform:scale(1,.7)}
+53%,57.4%{transform:scale(1,.5)}
+57.5%,62%{transform:scale(1.25,1.25)}
+65%,100%{transform:scale(1,1)}}
+@keyframes batlook{
+0%,57%{transform:translate(1.4px,.4px)}
+58%,63%{transform:translate(0,0)}
+66%,100%{transform:translate(-1px,-.3px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<!-- Service panel and its fault lamp pop in together, behind him in the stack. -->
+<g class="panel"><g class="jolt">
+<g class="lamp"><rect x="91.5" y="50" width="1" height="1.5" fill="#6b7c93"/><rect x="90.5" y="47" width="3" height="3" fill="#07090d"/></g>
+<g class="red"><rect class="flicker" x="90.5" y="47" width="3" height="3" fill="#ff3b4e"/></g>
+<rect class="green" x="90.5" y="47" width="3" height="3" fill="#2ee6a0"/>
+<rect x="86" y="51" width="12" height="12" fill="#6b7c93" stroke="#07090d" stroke-width=".6"/>
+<rect x="87.5" y="52.5" width="9" height="9" fill="#07090d"/>
+<rect x="89" y="54" width="4" height="1" fill="#e9f1fb"/><rect x="89" y="56" width="2" height="1" fill="#e9f1fb"/>
+<rect class="bit-bad" x="92" y="57" width="2.5" height="2.5" fill="#ffcc66" transform="rotate(28 93.25 58.25)"/>
+<rect class="bit-ok" x="92.5" y="57.5" width="2.5" height="2.5" fill="#ffcc66"/>
+<g class="door"><rect x="87.5" y="52.5" width="9" height="9" fill="#6b7c93" stroke="#07090d" stroke-width=".5"/><rect x="94" y="56" width="1" height="2.5" fill="#07090d"/></g>
+</g></g>
+<path class="swoosh" d="M30.2 11.5 A58 58 0 0 1 94.4 28.7" fill="none" stroke="#e9f1fb" stroke-width="2"/>
+<!-- Paperclip form. -->
+<g class="clip"><g transform="translate(24 0)">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g>
+<!-- Bat form: same green line, same eyes, pivoting on the knob. -->
+<g class="bat">
+<path d="M53.5 74 V54 C53.5 44 48.5 40 48.5 30 V17 a7.5 7.5 0 0 1 15 0 V30 C63.5 40 58.5 44 58.5 54 V74 Z" fill="#1c5744" stroke="#2ee6a0" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M51 76.5 H61" stroke="#2ee6a0" stroke-width="3.5" stroke-linecap="round"/>
+<g transform="translate(56 25) scale(.6) translate(-33 -41)">
+<path d="M22 33 l7 -3" stroke="#2ee6a0" stroke-width="2.6" stroke-linecap="round" transform="translate(0 2) rotate(44 25.5 31.5)"/>
+<path d="M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.6" stroke-linecap="round" transform="translate(0 2)"/>
+<g class="bat-eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="bat-pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g>
+</g>
+<g class="poof" fill="#ffcc66"><rect x="40" y="28" width="2" height="2"/><rect x="71" y="24" width="2" height="2"/><rect x="38" y="56" width="2" height="2"/><rect x="73" y="58" width="2" height="2"/><rect x="55" y="3" width="2" height="2"/></g>
+<g class="sparks"><rect x="81" y="43" width="2" height="2" fill="#ffcc66"/><rect x="101" y="44" width="2" height="2" fill="#ffcc66"/><rect x="103" y="57" width="2" height="2" fill="#ffcc66"/><rect x="96" y="37" width="2" height="2" fill="#e9f1fb"/><rect x="82" y="66" width="2" height="2" fill="#e9f1fb"/><rect x="99" y="68" width="2" height="2" fill="#ffcc66"/></g>
+</svg>

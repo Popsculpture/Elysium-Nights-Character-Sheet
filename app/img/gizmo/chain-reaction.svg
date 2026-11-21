@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 100" width="600" height="400" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Chain Reaction</title>
+<desc id="desc">Two cyan doubles made of sparse dithered pixels step out of Gizmo, one to each side. The three lean into each other like links in a chain and do a wave, hopping one after another. They try it again faster, collide, and end up tangled in a knot with six eyes pointing in different directions. The knot strains and shakes, then bursts apart. The doubles slide back into Gizmo one at a time, his outline flashing cyan each time, and he sways dizzily with his eyes rolling before he recovers. Nine second loop on a transparent background.</desc>
+<style>
+
+.fL,.fC,.fR,.cown{transform-origin:32px 44px}
+.fL{animation:fL 9s ease-in-out infinite}.fC{animation:fC 9s ease-in-out infinite}.fR{animation:fR 9s ease-in-out infinite}
+.cown{animation:cown 9s ease-in-out infinite}
+.ks{animation:ks 9s steps(1,end) infinite}
+.vL,.vR,.absorb,.poof{opacity:0;animation:9s steps(1,end) infinite}
+.vL{animation-name:vL}.vR{animation-name:vR}.absorb{animation-name:absorb}.poof{animation-name:poof}
+.eyes{transform-origin:33px 41px;animation:lids 9s linear infinite}
+.pupils{animation:look 9s ease-in-out infinite}
+.brows{animation:brows 9s ease-in-out infinite}
+.eL,.eR{transform-origin:33px 41px}
+.eL{animation:eL 9s linear infinite}.eR{animation:eR 9s linear infinite}
+.pL{animation:pL 9s ease-in-out infinite}.pR{animation:pR 9s ease-in-out infinite}
+@keyframes fL{0%,5%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}12%{transform:translate(-40px,0px) rotate(0deg) scale(1,1)}18%,19%{transform:translate(-22px,0px) rotate(14deg) scale(1,1);animation-timing-function:cubic-bezier(.1,.6,.4,1)}21.5%{transform:translate(-22px,-10px) rotate(14deg) scale(1,1);animation-timing-function:cubic-bezier(.6,0,.9,.4)}24%,36%{transform:translate(-22px,0px) rotate(14deg) scale(1,1);animation-timing-function:cubic-bezier(.1,.6,.4,1)}38%{transform:translate(-22px,-10px) rotate(14deg) scale(1,1);animation-timing-function:cubic-bezier(.6,0,.9,.4)}40%{transform:translate(-22px,-1px) rotate(14deg) scale(1,1)}41.9%{transform:translate(-16px,0px) rotate(14deg) scale(1,1);animation-timing-function:steps(1,end)}42%{transform:translate(20px,4px) rotate(75deg) scale(1,1)}55.9%{transform:translate(20px,4px) rotate(75deg) scale(1,1);animation-timing-function:steps(1,end)}56%{transform:translate(-50px,0px) rotate(-8deg) scale(1,1)}58.5%,60%{transform:translate(-44px,0px) rotate(0deg) scale(1,1);animation-timing-function:cubic-bezier(.5,0,.8,.5)}66%,100%{transform:translate(0px,0px) rotate(0deg) scale(0.1,1)}}
+@keyframes fC{0%,12%,58%,100%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}18%,22%{transform:translate(0px,0px) rotate(-14deg) scale(1,1);animation-timing-function:cubic-bezier(.1,.6,.4,1)}24.5%{transform:translate(0px,-10px) rotate(-14deg) scale(1,1);animation-timing-function:cubic-bezier(.6,0,.9,.4)}27%,38%{transform:translate(0px,0px) rotate(-14deg) scale(1,1);animation-timing-function:cubic-bezier(.1,.6,.4,1)}40.5%{transform:translate(0px,-9px) rotate(-14deg) scale(1,1);animation-timing-function:cubic-bezier(.6,0,.9,.4)}41.9%{transform:translate(0px,-4px) rotate(-14deg) scale(1,1);animation-timing-function:steps(1,end)}42%{transform:translate(0px,0px) rotate(-40deg) scale(1,1)}55.9%{transform:translate(0px,0px) rotate(-40deg) scale(1,1);animation-timing-function:steps(1,end)}56%{transform:translate(0px,-3px) rotate(0deg) scale(1,1)}}
+@keyframes fR{0%,5%{transform:translate(0px,0px) rotate(0deg) scale(1,1)}12%{transform:translate(40px,0px) rotate(0deg) scale(1,1)}18%,25%{transform:translate(22px,0px) rotate(14deg) scale(1,1);animation-timing-function:cubic-bezier(.1,.6,.4,1)}27.5%{transform:translate(22px,-10px) rotate(14deg) scale(1,1);animation-timing-function:cubic-bezier(.6,0,.9,.4)}30%,40%{transform:translate(22px,0px) rotate(14deg) scale(1,1)}41.9%{transform:translate(16px,0px) rotate(14deg) scale(1,1);animation-timing-function:steps(1,end)}42%{transform:translate(-18px,-4px) rotate(-115deg) scale(1,1)}55.9%{transform:translate(-18px,-4px) rotate(-115deg) scale(1,1);animation-timing-function:steps(1,end)}56%{transform:translate(50px,0px) rotate(8deg) scale(1,1)}58.5%,68%{transform:translate(44px,0px) rotate(0deg) scale(1,1);animation-timing-function:cubic-bezier(.5,0,.8,.5)}73%,100%{transform:translate(0px,0px) rotate(0deg) scale(0.1,1)}}
+@keyframes cown{0%,65.9%,69%,72.9%,76%,91%,100%{transform:rotate(0) scale(1,1)}66%,73%{transform:rotate(0) scale(1.1,1.04)}79%{transform:rotate(5deg) scale(1,1)}83%{transform:rotate(-5deg) scale(1,1)}86.5%{transform:rotate(3deg) scale(1,1)}}
+@keyframes ks{0%{transform:translateX(0)}47.222%{transform:translateX(1.3px)}47.778%{transform:translateX(-1.3px)}48.333%{transform:translateX(1.3px)}48.889%{transform:translateX(-1.3px)}49.444%{transform:translateX(1.3px)}50.000%{transform:translateX(-1.3px)}50.556%{transform:translateX(1.3px)}51.111%{transform:translateX(-1.3px)}51.667%{transform:translateX(1.3px)}52.222%{transform:translateX(-1.3px)}52.778%{transform:translateX(1.3px)}53.333%{transform:translateX(-1.3px)}53.889%{transform:translateX(1.3px)}54.444%{transform:translateX(-1.3px)}55.000%{transform:translateX(1.3px)}55.556%{transform:translateX(-1.3px)}56.111%{transform:translateX(0)}100%{transform:translateX(0)}}
+@keyframes vL{0%{opacity:0}5%{opacity:1}66%{opacity:0}100%{opacity:0}}
+@keyframes vR{0%{opacity:0}5%{opacity:1}73%{opacity:0}100%{opacity:0}}
+@keyframes absorb{0%{opacity:0}66%{opacity:1}67.7%{opacity:0}73%{opacity:1}74.7%{opacity:0}100%{opacity:0}}
+@keyframes poof{0%{opacity:0}41.6%{opacity:1}44.5%{opacity:0}55.9%{opacity:1}58%{opacity:0}100%{opacity:0}}
+@keyframes lids{0%,5%,30.5%,35.5%,58%,74%,93%,95%,98%,100%{transform:scale(1,1)}7%,11.5%{transform:scale(1.1,1.1)}18%,30%{transform:scale(1,.6)}36%,41.9%{transform:scale(1,.6)}42%,55.9%{transform:scale(1.2,1.2)}66%,67.5%{transform:scale(1.2,1.2)}73%,74.5%{transform:scale(1.2,1.2)}77%,88%{transform:scale(1,.75)}96.5%{transform:scale(1,.08)}}
+@keyframes look{0%,5%,13%,36%,93%,100%{transform:translate(0,0)}6.5%,8.5%{transform:translate(-3.2px,0)}9.5%,11.5%{transform:translate(1.4px,0)}18%,30%{transform:translate(-1px,-1px)}42%,46%{transform:translate(1.4px,1px)}48%,55.9%{transform:translate(-3px,-1px)}58%,64%{transform:translate(-3.2px,0)}67.5%,72%{transform:translate(1.4px,0)}76%{transform:translate(-1px,-2.4px)}78.5%{transform:translate(1.4px,-.3px)}81%{transform:translate(-1px,1.8px)}83.5%{transform:translate(-3.2px,-.3px)}86%{transform:translate(-1px,-2.4px)}88.5%{transform:translate(1.2px,0)}}
+@keyframes brows{0%,5%,31%,35.5%,58%,93%,100%{transform:translateY(0)}7%,30%{transform:translateY(-2px)}36%,41.9%{transform:translateY(-2px)}42%,55.9%{transform:translateY(-3px)}77%,88%{transform:translateY(-1px)}}
+@keyframes eL{0%,45.5%,47.3%,100%{transform:scale(1,1)}46.4%{transform:scale(1,.08)}}
+@keyframes eR{0%,50.5%,52.3%,100%{transform:scale(1,1)}51.4%{transform:scale(1,.08)}}
+@keyframes pL{0%,18%{transform:translate(1.4px,0)}19%,41.9%{transform:translate(-1px,-1px)}42%,55.9%{transform:translate(-3px,-1.5px)}58%,100%{transform:translate(1.4px,.3px)}}
+@keyframes pR{0%,18%{transform:translate(-3.2px,0)}19%,41.9%{transform:translate(-1px,-1px)}42%,55.9%{transform:translate(.8px,1.9px)}58%,100%{transform:translate(-3.2px,.3px)}}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs><pattern id="dots" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="#fff"/></pattern>
+<mask id="dither" maskUnits="userSpaceOnUse" x="0" y="0" width="150" height="100"><rect width="150" height="100" fill="url(#dots)"/></mask></defs>
+<!-- Two cyan doubles: dithered bodies, solid pale eyes. -->
+<g mask="url(#dither)"><g transform="translate(43 16)"><g class="ks">
+<g class="vL"><g class="fL"><path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#3ce0ff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#3ce0ff" stroke-width="2.2" stroke-linecap="round"/></g></g><g class="vR"><g class="fR"><path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#3ce0ff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#3ce0ff" stroke-width="2.2" stroke-linecap="round"/></g></g>
+</g></g></g>
+<g transform="translate(43 16)"><g class="ks">
+<g class="vL"><g class="fL"><g class="eL"><circle cx="27" cy="41" r="4.6" fill="#b8f3ff"/><circle cx="39" cy="41" r="4.6" fill="#b8f3ff"/><g class="pL"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g></g></g><g class="vR"><g class="fR"><g class="eR"><circle cx="27" cy="41" r="4.6" fill="#b8f3ff"/><circle cx="39" cy="41" r="4.6" fill="#b8f3ff"/><g class="pR"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g></g></g>
+<g class="fC"><g class="cown">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path class="absorb" d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#3ce0ff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g><g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g>
+</g>
+<g class="poof" fill="#ffcc66"><rect x="6" y="20" width="2" height="2"/><rect x="56" y="16" width="2" height="2"/><rect x="2" y="56" width="2" height="2"/><rect x="60" y="60" width="2" height="2"/><rect x="30" y="-6" width="2" height="2"/></g>
+</g>
+</svg>

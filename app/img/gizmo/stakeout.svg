@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 86 104" width="344" height="416" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Stakeout</title>
+<desc id="desc">A street lamp flickers into view beside Gizmo. A holographic collar flips up at his sides and a holographic hat drops onto his head; he tips the brim down and leans on the post. Pixel rain starts to fall in hard steps. He checks left, checks right, and taps his lower tip. The lamp flickers and he glances up at it. The rain stops. He shakes off the hat and collar, straightens, and the lamp cuts out. Ten second loop on a transparent background.</desc>
+<style>
+.gizmo{transform-origin:32px 78px;animation:pose 10s ease-in-out infinite}
+.foot{transform-origin:19px 54px;animation:tap 10s ease-in-out infinite}
+.hat{opacity:0;transform-origin:32px 13px;animation:hat 10s ease-in-out infinite,hatv 10s steps(1,end) infinite}
+.col-l,.col-r,.lamp,.bulb,.rain{opacity:0;animation:10s steps(1,end) infinite}
+.col-l{animation-name:colL}.col-r{animation-name:colR}.lamp{animation-name:lamp}.bulb{animation-name:bulb}.rain{animation-name:rain}
+.drop{animation:fall .9s steps(11,end) infinite}
+.eyes{transform-origin:33px 41px;animation:lids 10s linear infinite}
+.pupils{animation:look 10s ease-in-out infinite}
+.brows{animation:brows 10s ease-in-out infinite}
+@keyframes pose{
+0%,14.2%,16%,18%,88%,100%{transform:rotate(0) scale(1,1)}
+14.7%{transform:rotate(0) scale(1.03,.96)}
+26%{transform:rotate(12.5deg) scale(1,1)}
+27.5%,80.9%{transform:rotate(13deg) scale(1,.98)}
+81%,82%,83%{transform:rotate(9deg) scale(1,1)}
+81.5%,82.5%,83.5%{transform:rotate(3deg) scale(1,1)}
+84.5%{transform:rotate(6deg) scale(1,1)}}
+@keyframes tap{
+0%,56%,58.5%,61%,63.5%,66%,100%{transform:rotate(0)}
+57.5%,60%,62.5%,65%{transform:rotate(-9deg)}}
+@keyframes hat{
+0%,12%{transform:translateY(-16px) rotate(0);animation-timing-function:cubic-bezier(.5,0,1,.7)}
+14.5%{transform:translateY(0) rotate(0)}
+15.2%{transform:translateY(-1px) rotate(0)}
+16%{transform:translateY(0) rotate(0)}
+18%,81%{transform:translateY(5px) rotate(-5deg);animation-timing-function:cubic-bezier(.2,.6,.6,1)}
+86%,100%{transform:translate(-34px,-30px) rotate(-140deg)}}
+@keyframes hatv{0%{opacity:0}12%{opacity:1}13%{opacity:0}13.5%{opacity:1}86%,100%{opacity:0}}
+@keyframes colL{0%{opacity:0}9%{opacity:1}10%{opacity:0}10.5%{opacity:1}82%{opacity:0}83%{opacity:1}83.5%{opacity:0}100%{opacity:0}}
+@keyframes colR{0%{opacity:0}10.5%{opacity:1}11.5%{opacity:0}12.0%{opacity:1}83.5%{opacity:0}84.5%{opacity:1}85.0%{opacity:0}100%{opacity:0}}
+@keyframes lamp{0%{opacity:0}3%{opacity:1}4%{opacity:0}4.5%{opacity:1}5.5%{opacity:0}6%{opacity:1}89%{opacity:0}89.5%{opacity:1}90.5%{opacity:0}91%{opacity:1}91.5%,100%{opacity:0}}
+@keyframes bulb{0%{opacity:0}6%{opacity:1}60%{opacity:0}61%{opacity:1}61.5%{opacity:0}63%{opacity:1}88%,100%{opacity:0}}
+@keyframes rain{0%{opacity:0}28%{opacity:1}74%,100%{opacity:0}}
+@keyframes fall{from{transform:translateY(0)}to{transform:translateY(116px)}}
+@keyframes lids{
+0%,15%,82%,95.5%,98.5%,100%{transform:scale(1,1)}
+18%,80.5%{transform:scale(1,.6)}
+97%{transform:scale(1,.08)}}
+@keyframes look{
+0%,3%,94%,100%{transform:translate(0,0)}
+4.5%,7.5%{transform:translate(1.1px,-1.9px)}
+9.5%,11%{transform:translate(0,1.5px)}
+12.5%,14.5%{transform:translate(-1px,-2.4px)}
+18%,34%{transform:translate(-1px,-.3px)}
+36.5%,42%{transform:translate(-3.3px,0)}
+46%,52%{transform:translate(1.4px,0)}
+55%,59.5%{transform:translate(-1px,.9px)}
+60.5%,64%{transform:translate(1.1px,-1.9px)}
+66.5%,74.5%{transform:translate(-1px,-.3px)}
+76%,79.5%{transform:translate(-1px,-2.4px)}
+81%,88%{transform:translate(-1px,-.3px)}
+89.5%,92%{transform:translate(1.1px,-1.9px)}}
+@keyframes brows{
+0%,15%,83%,100%{transform:translateY(0)}
+18%,80.5%{transform:translateY(1.4px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<mask id="holo" maskUnits="userSpaceOnUse" x="-60" y="-70" width="180" height="170"><path d="M30 -70 V100" stroke="#fff" stroke-width="180" stroke-dasharray="2.5 1"/></mask>
+</defs>
+<g transform="translate(8 18)">
+<!-- Street lamp: post, curved arm, hooded head, yellow bulb. -->
+<g class="lamp">
+<rect x="58" y="2" width="3" height="78" fill="#6b7c93" stroke="#07090d" stroke-width=".5"/>
+<path d="M59.5 4 V0 a6 6 0 0 0 -6 -6 H51" fill="none" stroke="#6b7c93" stroke-width="2"/>
+<rect x="46.5" y="-10" width="9" height="3.5" fill="#07090d"/>
+<rect x="56" y="78" width="7" height="2.5" fill="#07090d"/>
+<rect class="bulb" x="48" y="-6.5" width="6" height="2.5" fill="#ffcc66"/>
+</g>
+<g class="gizmo">
+<path d="M19 60 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="foot" d="M19 54 V76" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+<!-- Holographic collar flaps and hat, cut with scan gaps. -->
+<g mask="url(#holo)" fill="#3ce0ff">
+<path class="col-l" d="M13.5 63 L21.5 63 L10.5 46 Z"/>
+<path class="col-r" d="M42.5 63 L50.5 63 L53.5 46 Z"/>
+</g>
+<g class="hat"><g mask="url(#holo)">
+<path d="M17 13 V4 C17 -2 25 -3.5 32 -1.5 C39 -3.5 47 -2 47 4 V13 Z" fill="#3ce0ff"/>
+<path d="M9 13.5 H55" stroke="#3ce0ff" stroke-width="2.8" stroke-linecap="round"/>
+</g><rect x="17" y="8.3" width="30" height="2.4" fill="#07090d"/></g>
+</g>
+</g>
+<g class="rain" fill="#6b7c93">
+<rect class="drop" x="5" y="-6" width="1" height="3.5" style="animation-delay:-0.00s"/>
+<rect class="drop" x="12" y="-6" width="1" height="3.5" style="animation-delay:-0.37s"/>
+<rect class="drop" x="19" y="-6" width="1" height="3.5" style="animation-delay:-0.74s"/>
+<rect class="drop" x="25" y="-6" width="1" height="3.5" style="animation-delay:-0.21s"/>
+<rect class="drop" x="31" y="-6" width="1" height="3.5" style="animation-delay:-0.58s"/>
+<rect class="drop" x="38" y="-6" width="1" height="3.5" style="animation-delay:-0.05s"/>
+<rect class="drop" x="44" y="-6" width="1" height="3.5" style="animation-delay:-0.42s"/>
+<rect class="drop" x="50" y="-6" width="1" height="3.5" style="animation-delay:-0.79s"/>
+<rect class="drop" x="57" y="-6" width="1" height="3.5" style="animation-delay:-0.26s"/>
+<rect class="drop" x="63" y="-6" width="1" height="3.5" style="animation-delay:-0.63s"/>
+<rect class="drop" x="70" y="-6" width="1" height="3.5" style="animation-delay:-0.10s"/>
+<rect class="drop" x="76" y="-6" width="1" height="3.5" style="animation-delay:-0.47s"/>
+<rect class="drop" x="81" y="-6" width="1" height="3.5" style="animation-delay:-0.84s"/>
+<rect class="drop" x="9" y="-6" width="1" height="3.5" style="animation-delay:-0.31s"/>
+</g>
+</svg>

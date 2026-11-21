@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 94" width="520" height="376" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Copycat</title>
+<desc id="desc">Gizmo slides to the right and leaves a cyan copy of himself, made of sparse dithered pixels, standing where he was. He does a double take. He leans, blinks, tilts, and feints, and the copy repeats each move a moment later. Then he leans again and the copy ignores him, crosses its eyes, and wobbles. He glares. The copy stretches tall and rolls its eyes in opposite directions. He runs his lower tip along the floor, hooks the copy, and yanks it back into his outline, which flashes cyan. He slides back to where he started and checks the empty spot. Eight second loop on a transparent background.</desc>
+<style>
+.gslide{animation:gslide 8s ease-in-out infinite}
+.gperf,.gown,.cperf,.cown,.cstuff{transform-origin:32px 78px}
+.gperf{animation:perf 8s ease-in-out infinite}
+.cperf{animation:perf 8s ease-in-out .32s infinite}
+.gown{animation:gown 8s ease-in-out infinite}
+.cown{animation:cown 8s ease-in-out infinite}
+.cstuff{animation:cstuff 8s ease-in-out infinite}
+.cvis,.absorb{opacity:0;animation:8s steps(1,end) infinite}
+.cvis{animation-name:cvis}.absorb{animation-name:absorb}
+.arm{stroke-dasharray:100 300;stroke-dashoffset:103;animation:hook 8s linear infinite}
+.eyes{transform-origin:33px 41px;animation:lids 8s linear infinite}
+.pupils{animation:look 8s ease-in-out infinite}
+.brow-l{transform-origin:25.5px 31.5px;animation:browL 8s ease-in-out infinite}
+.brow-r{animation:browR 8s ease-in-out infinite}
+.ce-blink{transform-origin:33px 41px;animation:cblink 8s linear infinite}
+.ce-l{transform-origin:27px 41px;animation:ceL 8s ease-in-out infinite}
+.ce-r{transform-origin:39px 41px;animation:ceR 8s ease-in-out infinite}
+.cp-l{animation:cpL 8s ease-in-out infinite}
+.cp-r{animation:cpR 8s ease-in-out infinite}
+@keyframes gslide{
+0%,6%,90%,100%{transform:translateX(0)}
+7.5%{transform:translateX(-2px)}
+15%,82%{transform:translateX(44px)}}
+/* The shared routine: lean, tilt, feint. The copy runs the same keyframes 0.32s late. */
+@keyframes perf{
+0%,26%,32%,39%,45%,47%,50%,100%{transform:rotate(0)}
+28%,30%{transform:rotate(8deg)}
+41%,43%{transform:rotate(-8deg)}
+48.5%{transform:rotate(5deg)}}
+@keyframes gown{
+0%,7%,17.5%,53%,57.5%,82.5%,100%{transform:rotate(0) scale(1,1)}
+9%,13.5%{transform:rotate(6deg) scale(1,1)}
+15.5%{transform:rotate(-3deg) scale(1,1)}
+54.5%,56%{transform:rotate(8deg) scale(1,1)}
+60.5%,72.5%{transform:rotate(-5deg) scale(1,1)}
+76%,79%{transform:rotate(6deg) scale(1,1)}
+80.5%{transform:rotate(0) scale(1.1,1.04)}}
+@keyframes cown{
+0%,56.5%,62.5%,65.5%,73%,100%{transform:rotate(0) scale(1,1)}
+58%{transform:rotate(6deg) scale(1,1)}
+59.5%{transform:rotate(-6deg) scale(1,1)}
+61%{transform:rotate(4deg) scale(1,1)}
+67.5%,71.5%{transform:rotate(0) scale(.8,1.14)}
+69.5%{transform:rotate(0) scale(.84,1.1)}}
+@keyframes cstuff{
+0%,76%{transform:translateX(0) scale(1,1);animation-timing-function:cubic-bezier(.5,0,1,.7)}
+80%,100%{transform:translateX(41px) scale(.1,.9)}}
+@keyframes cvis{0%{opacity:0}9%{opacity:1}80%,100%{opacity:0}}
+@keyframes absorb{0%{opacity:0}80%{opacity:1}82.5%,100%{opacity:0}}
+@keyframes hook{
+0%{stroke-dashoffset:103}
+72%{stroke-dashoffset:103;animation-timing-function:cubic-bezier(.2,.7,.3,1)}
+75.5%{stroke-dashoffset:0}
+76%{stroke-dashoffset:0;animation-timing-function:cubic-bezier(.5,0,1,.7)}
+80%,100%{stroke-dashoffset:103}}
+@keyframes lids{
+0%,16%,25.5%,34.6%,36.4%,59%,84%,94%,97%,100%{transform:scale(1,1)}
+19%,24%{transform:scale(1.2,1.2)}
+35.5%,95.5%{transform:scale(1,.08)}
+60.5%,72%{transform:scale(1,.5)}
+73.5%,79%{transform:scale(1,.7)}
+80.5%{transform:scale(1.2,1.2)}}
+@keyframes look{
+0%,6%,17.6%,18.6%,92%,100%{transform:translate(0,0)}
+16%,17%{transform:translate(-3.3px,0)}
+19.2%,24%{transform:translate(-3.3px,0)}
+26%,50%{transform:translate(-2.6px,0)}
+52%,72%{transform:translate(-3.3px,0)}
+73.5%,79%{transform:translate(-3px,1px)}
+81%,84%{transform:translate(-1px,-.3px)}
+86%,89.5%{transform:translate(-3.3px,0)}}
+@keyframes browL{
+0%,17%,26%,58.5%,74%,100%{transform:translateY(0) rotate(0)}
+19.2%,24%{transform:translateY(-2.5px) rotate(0)}
+60.5%,72.5%{transform:translateY(1.6px) rotate(44deg)}}
+@keyframes browR{
+0%,17%,26%,58.5%,74%,100%{transform:translateY(0)}
+19.2%,24%{transform:translateY(-2.5px)}
+60.5%,72.5%{transform:translateY(1.6px)}}
+@keyframes cblink{0%,38.6%,40.4%,100%{transform:scale(1,1)}39.5%{transform:scale(1,.08)}}
+@keyframes ceL{
+0%,56%,62.5%,65.5%,100%{transform:scale(1)}
+57.5%,61.5%{transform:scale(1.3)}
+67%,72%{transform:scale(1.2)}
+74.5%,80%{transform:scale(1.3)}}
+@keyframes ceR{
+0%,56%,62.5%,65.5%,100%{transform:scale(1)}
+57.5%,61.5%{transform:scale(.7)}
+67%,72%{transform:scale(1.2)}
+74.5%,80%{transform:scale(1.3)}}
+@keyframes cpL{
+0%,9%{transform:translate(0,0)}
+12%,56%{transform:translate(1.4px,0)}
+57.5%,61.5%{transform:translate(1.6px,0)}
+63%,65.5%{transform:translate(1.4px,0)}
+67%{transform:translate(-1px,-2.5px)}
+68.7%{transform:translate(1.5px,-.4px)}
+70.3%{transform:translate(-1px,2px)}
+72%{transform:translate(-3.3px,-.4px)}
+74.5%,100%{transform:translate(-.5px,1.6px)}}
+@keyframes cpR{
+0%,9%{transform:translate(0,0)}
+12%,56%{transform:translate(1.4px,0)}
+57.5%,61.5%{transform:translate(-3.4px,0)}
+63%,65.5%{transform:translate(1.4px,0)}
+67%{transform:translate(-1px,2px)}
+68.7%{transform:translate(1.5px,-.4px)}
+70.3%{transform:translate(-1px,-2.5px)}
+72%{transform:translate(-3.3px,-.4px)}
+74.5%,100%{transform:translate(-.5px,1.6px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<!-- Screen-fixed dither: one solid unit square in every 2x2 cell. -->
+<pattern id="dots" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="#fff"/></pattern>
+<mask id="dither" maskUnits="userSpaceOnUse" x="0" y="0" width="130" height="94"><rect width="130" height="94" fill="url(#dots)"/></mask>
+</defs>
+<!-- The copy: dithered cyan body, solid pale eyes so its faces read. Body and eyes run the same transform chain. -->
+<g class="cvis">
+<g mask="url(#dither)"><g transform="translate(24 6)"><g class="cstuff"><g class="cperf"><g class="cown">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#3ce0ff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#3ce0ff" stroke-width="2.2" stroke-linecap="round"/>
+</g></g></g></g></g>
+<g transform="translate(24 6)"><g class="cstuff"><g class="cperf"><g class="cown"><g class="ce-blink">
+<g class="ce-l"><circle cx="27" cy="41" r="4.6" fill="#b8f3ff"/><circle class="cp-l" cx="28" cy="41.5" r="2" fill="#07090d"/></g>
+<g class="ce-r"><circle cx="39" cy="41" r="4.6" fill="#b8f3ff"/><circle class="cp-r" cx="40" cy="41.5" r="2" fill="#07090d"/></g>
+</g></g></g></g></g>
+</g>
+<g transform="translate(24 6)"><g class="gslide"><g class="gperf"><g class="gown">
+<!-- Lower tip runs left along the floor and hooks up behind the copy. -->
+<path class="arm" pathLength="100" d="M19 76 V79 a6 6 0 0 1 -6 6 H-29 a5 5 0 0 1 -5 -5 V72" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="absorb" d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#3ce0ff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="brow-l" d="M22 33 l7 -3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<path class="brow-r" d="M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g></g></g>
+</svg>

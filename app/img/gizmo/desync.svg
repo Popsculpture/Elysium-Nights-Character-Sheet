@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 84" width="352" height="336" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Desync</title>
+<desc id="desc">Gizmo starts turning to look to his right and freezes halfway. A cyan echo made of sparse dithered pixels carries on with the turn and drifts a short distance away while his body stays stuck and his eyes slide over to watch it. Both outlines snap together into the finished turn, he swings back to face front, and blinks twice in confusion. Four second loop on a transparent background.</desc>
+<style>
+.gizmo{transform-origin:50px 78px;animation:turn 4s linear infinite}
+.echo{transform-origin:50px 78px;animation:echo 4s linear infinite}
+.echo-vis{opacity:0;animation:echovis 4s steps(1,end) infinite}
+.eyes{transform-origin:33px 41px;animation:lids 4s linear infinite}
+.pupils{animation:look 4s ease-in-out infinite}
+.brow-l{animation:browL 4s ease-in-out infinite}
+.brow-r{animation:browR 4s ease-in-out infinite}
+@keyframes turn{
+0%{transform:translateX(0) rotate(0) scale(1,1)}
+5%{transform:translateX(0) rotate(0) scale(1,1);animation-timing-function:cubic-bezier(.5,0,1,1)}
+15%{transform:translateX(0) rotate(3deg) scale(.95,1);animation-timing-function:steps(1,end)}
+16.25%{transform:translateX(-.75px) rotate(3deg) scale(.95,1);animation-timing-function:steps(1,end)}
+17.5%{transform:translateX(0) rotate(3deg) scale(.95,1);animation-timing-function:steps(1,end)}
+55%{transform:translateX(0) rotate(9deg) scale(.84,1.03);animation-timing-function:ease-out}
+58%{transform:translateX(0) rotate(6.5deg) scale(.87,1);animation-timing-function:ease-in-out}
+61%{transform:translateX(0) rotate(7deg) scale(.86,1)}
+64%{transform:translateX(0) rotate(7deg) scale(.86,1);animation-timing-function:ease-in-out}
+72%{transform:translateX(0) rotate(0) scale(1,1);animation-timing-function:ease-in-out}
+74.5%{transform:translateX(0) rotate(-1deg) scale(1,1);animation-timing-function:ease-in-out}
+77%,100%{transform:translateX(0) rotate(0) scale(1,1)}}
+@keyframes echo{
+0%{transform:translate(0,0) rotate(3deg) scale(.95,1)}
+15%{transform:translate(0,0) rotate(3deg) scale(.95,1);animation-timing-function:cubic-bezier(0,.4,.5,1)}
+30%{transform:translate(2px,0) rotate(7deg) scale(.86,1)}
+54.99%{transform:translate(10px,-1.5px) rotate(8deg) scale(.86,1)}
+55%,100%{transform:translate(0,0) rotate(9deg) scale(.84,1.03)}}
+@keyframes echovis{0%{opacity:0}15%{opacity:1}57.5%,100%{opacity:0}}
+@keyframes lids{
+0%,36%,60%,76.5%,86%,100%{transform:scale(1,1)}
+40%,54.99%{transform:scale(1.15,1.15)}
+55%{transform:scale(1.25,1.25)}
+78%,84%{transform:scale(1,.08)}
+80%,82.5%{transform:scale(1.1,1.1)}}
+@keyframes look{
+0%{transform:translate(0,0)}
+5%{transform:translate(0,0);animation-timing-function:cubic-bezier(.5,0,1,1)}
+15%,36%{transform:translate(.7px,0)}
+42%,64%{transform:translate(1.4px,-.2px)}
+72%,90%{transform:translate(-1px,-.3px)}
+95%,100%{transform:translate(0,0)}}
+@keyframes browL{
+0%,36%,95%,100%{transform:translateY(0)}
+40%,54.99%{transform:translateY(-1.5px)}
+55%{transform:translateY(-3px)}
+62%{transform:translateY(-1px)}
+72%,90%{transform:translateY(-2px)}}
+@keyframes browR{
+0%,36%,95%,100%{transform:translateY(0)}
+40%,54.99%{transform:translateY(-1.5px)}
+55%{transform:translateY(-3px)}
+62%{transform:translateY(-1px)}
+72%,90%{transform:translateY(.9px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<!-- Screen-fixed dither: one solid unit square in every 2x2 cell, so the echo is hard pixels with real gaps. -->
+<pattern id="dots" width="2" height="2" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="#fff"/></pattern>
+<mask id="dither" maskUnits="userSpaceOnUse" x="0" y="0" width="88" height="84"><rect width="88" height="84" fill="url(#dots)"/></mask>
+</defs>
+<!-- Echo sits behind him so it only shows where it has pulled away. -->
+<g class="echo-vis" mask="url(#dither)"><g class="echo"><g transform="translate(18 0)">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#3ce0ff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#3ce0ff" stroke-width="2.2" stroke-linecap="round"/>
+<circle cx="27" cy="41" r="4.6" fill="#3ce0ff"/><circle cx="39" cy="41" r="4.6" fill="#3ce0ff"/>
+</g></g></g>
+<g class="gizmo"><g transform="translate(18 0)">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="brow-l" d="M22 33 l7 -3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<path class="brow-r" d="M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g>
+</svg>

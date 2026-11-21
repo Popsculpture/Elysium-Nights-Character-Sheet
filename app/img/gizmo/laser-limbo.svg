@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184 92" width="736" height="368" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Laser Limbo</title>
+<desc id="desc">Three sets of red security beams switch on across the frame. Gizmo studies them, then squashes flat and slides under the first, tips onto his side and floats through the gap in the second pair, and pinches thin to slip between the last two. He straightens up on the far side and leans back, smug. His lower tip is still in the last beam. Every beam starts flashing, he looks down at his foot, and bolts out of frame. The beams cut out and he slides back in from the left to where he started. Eight second loop on a transparent background.</desc>
+<style>
+
+.slide{animation:slide 8s ease-in-out infinite}
+.rot{transform-origin:32px 42.5px;animation:rot 8s ease-in-out infinite}
+.sq{transform-origin:32px 78px;animation:sq 8s ease-in-out infinite}
+.beams,.alarm-r,.alarm-w,.bang{opacity:0;animation:8s steps(1,end) infinite}
+.beams{animation-name:beams}.alarm-r{animation-name:alarmR}.alarm-w{animation-name:alarmW}.bang{animation-name:bang}
+.posts{opacity:0;animation:posts 8s steps(1,end) infinite}
+.eyes{transform-origin:33px 41px;animation:lids 8s linear infinite}
+.pupils{animation:look 8s ease-in-out infinite}
+.brows{animation:brows 8s ease-in-out infinite}
+@keyframes beams{0%{opacity:0}3%{opacity:1}4%{opacity:0}4.6%{opacity:1}62%{opacity:0}100%{opacity:0}}
+@keyframes alarmR{0%{opacity:0}62.0%{opacity:1}62.625%{opacity:0}63.25%{opacity:1}63.875%{opacity:0}64.5%{opacity:1}65.125%{opacity:0}65.75%{opacity:1}66.375%{opacity:0}67.0%{opacity:1}67.625%{opacity:0}68.25%{opacity:1}68.875%{opacity:0}69.5%{opacity:1}70.125%{opacity:0}70.75%{opacity:1}71.375%{opacity:0}72.0%{opacity:1}72.625%{opacity:0}73.25%{opacity:1}73.875%{opacity:0}74.5%{opacity:1}75.125%{opacity:0}75.75%{opacity:1}76.375%{opacity:0}77.0%{opacity:1}77.625%{opacity:0}78.25%{opacity:1}78.875%{opacity:0}79.5%{opacity:1}80.125%{opacity:0}100%{opacity:0}}
+@keyframes alarmW{0%{opacity:0}62.625%{opacity:1}63.25%{opacity:0}63.875%{opacity:1}64.5%{opacity:0}65.125%{opacity:1}65.75%{opacity:0}66.375%{opacity:1}67.0%{opacity:0}67.625%{opacity:1}68.25%{opacity:0}68.875%{opacity:1}69.5%{opacity:0}70.125%{opacity:1}70.75%{opacity:0}71.375%{opacity:1}72.0%{opacity:0}72.625%{opacity:1}73.25%{opacity:0}73.875%{opacity:1}74.5%{opacity:0}75.125%{opacity:1}75.75%{opacity:0}76.375%{opacity:1}77.0%{opacity:0}77.625%{opacity:1}78.25%{opacity:0}78.875%{opacity:1}79.5%{opacity:0}100%{opacity:0}}
+@keyframes bang{0%{opacity:0}62%{opacity:1}68%{opacity:0}100%{opacity:0}}
+@keyframes posts{0%{opacity:0}3%{opacity:1}82%{opacity:0}100%{opacity:0}}
+@keyframes slide{0%,13.5%{transform:translate(-16px,0px)}20%,24%{transform:translate(34px,0px)}25.5%{transform:translate(39px,-3px)}27%{transform:translate(44px,0px);animation-timing-function:linear}36%{transform:translate(90px,0px)}39%,43.5%{transform:translate(100px,0px)}50%,66%{transform:translate(132px,0px)}68%{transform:translate(126px,0px);animation-timing-function:cubic-bezier(.6,0,1,.7)}72%{transform:translate(200px,0px)}89.9%{transform:translate(200px,0px);animation-timing-function:steps(1,end)}90%{transform:translate(-66px,0px);animation-timing-function:cubic-bezier(.1,.6,.3,1)}97%,100%{transform:translate(-16px,0px)}}
+@keyframes rot{0%,24%,39%,53%,62%,65.5%,73%,100%{transform:rotate(0)}27%,36%{transform:rotate(90deg)}55%,61.5%{transform:rotate(-6deg)}67.5%{transform:rotate(-8deg)}69%,72%{transform:rotate(10deg)}}
+@keyframes sq{0%,11%,22.5%,41%,52.5%,61.9%,64.5%,67%,73%,100%{transform:scale(1,1)}13.5%,20%{transform:scale(1.15,.45)}21.4%{transform:scale(.95,1.08)}43.5%,50%{transform:scale(.18,1.12)}51.4%{transform:scale(1.1,.94)}62%{transform:scale(.96,1.07)}68.5%,72%{transform:scale(1.15,.92)}}
+@keyframes lids{0%,5%,22%,52.5%,97%,100%{transform:scale(1,1)}6.5%,11%{transform:scale(1,.7)}13.5%,20%{transform:scale(1,.8)}54.5%,61.9%{transform:scale(1,.55)}62%,66%{transform:scale(1.3,1.3)}67.5%,73%{transform:scale(1.1,1.1)}}
+@keyframes look{0%,5%,26.5%,36%,98%,100%{transform:translate(0,0)}6.5%,24.5%{transform:translate(1.4px,.1px)}39%,52.5%{transform:translate(1.4px,0)}54.5%,63.5%{transform:translate(-1px,-.3px)}64.3%,66%{transform:translate(-2.6px,1.6px)}67.5%,96%{transform:translate(1.4px,0)}}
+@keyframes brows{0%,5%,12%,52.5%,97%,100%{transform:translateY(0)}6.5%,11%{transform:translateY(1px)}54.5%,61.9%{transform:translateY(-1.3px)}62%,73%{transform:translateY(-3px)}}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<g class="posts"><rect x="31.5" y="38" width="3" height="4" fill="#6b7c93"/><rect x="47.5" y="38" width="3" height="4" fill="#6b7c93"/><rect x="89.5" y="28" width="3" height="4" fill="#6b7c93"/><rect x="103.5" y="28" width="3" height="4" fill="#6b7c93"/><rect x="89.5" y="68" width="3" height="4" fill="#6b7c93"/><rect x="103.5" y="68" width="3" height="4" fill="#6b7c93"/><rect x="144.5" y="2.5" width="3" height="4" fill="#6b7c93"/><rect x="151.5" y="2.5" width="3" height="4" fill="#6b7c93"/><rect x="144.5" y="85.5" width="3" height="4" fill="#6b7c93"/><rect x="151.5" y="85.5" width="3" height="4" fill="#6b7c93"/></g>
+<g class="beams"><g fill="none" stroke="#ff3b4e" stroke-width="1.4"><path d="M34 40 H48"/><path d="M92 30 H104 M92 70 H104"/><path d="M146 6 V86 M153 6 V86"/></g></g><g class="alarm-r"><g fill="none" stroke="#ff3b4e" stroke-width="1.4"><path d="M34 40 H48"/><path d="M92 30 H104 M92 70 H104"/><path d="M146 6 V86 M153 6 V86"/></g></g><g class="alarm-w"><g fill="none" stroke="#e9f1fb" stroke-width="1.4"><path d="M34 40 H48"/><path d="M92 30 H104 M92 70 H104"/><path d="M146 6 V86 M153 6 V86"/></g></g>
+<g transform="translate(0 6)"><g class="slide"><g class="rot"><g class="sq">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g><g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g></g></g>
+<g class="bang" fill="#ffcc66"><rect x="163" y="1" width="2.5" height="6"/><rect x="163" y="8.5" width="2.5" height="2.5"/></g>
+</svg>

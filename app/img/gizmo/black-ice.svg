@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 84 92" width="336" height="368" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Black ICE</title>
+<desc id="desc">A red bolt strikes Gizmo from the upper right. He flashes red and breaks into twelve chunky blocks that tumble into a heap. One eye blinks and looks around from the top of the pile. The blocks rise and restack in the wrong order, with his lower curve on top and his eyes swapped. His eyes look down at himself, go wide, and he shudders, then snaps back into the right order and holds a rattled stare. Eight second loop on a transparent background.</desc>
+<style>
+.live{animation:live 8s steps(1,end) infinite}
+.pose{transform-origin:32px 78px;animation:pose 8s ease-in-out infinite}
+.trem{animation:trem 8s steps(1,end) infinite}
+.broken{opacity:0;animation:broken 8s steps(1,end) infinite}
+.shud{animation:shud 8s steps(1,end) infinite}
+.blk{animation:8s linear infinite}
+.k0L{animation-name:k0L}@keyframes k0L{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(-1.5px,-3.5px) rotate(-6deg)}19.5%{transform:translate(-1.5px,-3.5px) rotate(-6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}30.5%{transform:translate(9px,49.5px) rotate(150deg)}32.0%{transform:translate(9px,48.0px) rotate(150deg)}33.5%{transform:translate(9px,49.5px) rotate(150deg)}44.0%{transform:translate(9px,49.5px) rotate(150deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}53.0%,100%{transform:translate(0px,11px) rotate(0)}}.k0R{animation-name:k0R}@keyframes k0R{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(1.5px,-3.5px) rotate(6deg)}20.1%{transform:translate(1.5px,-3.5px) rotate(6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}31.1%{transform:translate(6px,47.5px) rotate(-120deg)}32.6%{transform:translate(6px,46.0px) rotate(-120deg)}34.1%{transform:translate(6px,47.5px) rotate(-120deg)}44.7%{transform:translate(6px,47.5px) rotate(-120deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}53.7%,100%{transform:translate(0px,11px) rotate(0)}}.k1L{animation-name:k1L}@keyframes k1L{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(-1.5px,-1.7px) rotate(-6deg)}18.3%{transform:translate(-1.5px,-1.7px) rotate(-6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}29.3%{transform:translate(-1px,39.5px) rotate(100deg)}30.8%{transform:translate(-1px,38.0px) rotate(100deg)}32.3%{transform:translate(-1px,39.5px) rotate(100deg)}45.4%{transform:translate(-1px,39.5px) rotate(100deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}54.4%,100%{transform:translate(0px,23px) rotate(0)}}.k1R{animation-name:k1R}@keyframes k1R{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(1.5px,-1.7px) rotate(6deg)}18.9%{transform:translate(1.5px,-1.7px) rotate(6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}29.9%{transform:translate(3px,38.5px) rotate(-20deg)}31.4%{transform:translate(3px,37.0px) rotate(-20deg)}32.9%{transform:translate(3px,38.5px) rotate(-20deg)}46.1%{transform:translate(3px,38.5px) rotate(-20deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}55.1%,100%{transform:translate(0px,23px) rotate(0)}}.k2L{animation-name:k2L}@keyframes k2L{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(-1.5px,-0.1px) rotate(-6deg)}17.1%{transform:translate(-1.5px,-0.1px) rotate(-6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}28.1%{transform:translate(5px,15.0px) rotate(-12deg)}29.6%{transform:translate(5px,13.5px) rotate(-12deg)}31.1%{transform:translate(5px,15.0px) rotate(-12deg)}46.8%{transform:translate(5px,15.0px) rotate(-12deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}55.8%,100%{transform:translate(15px,-4px) rotate(0)}}.k2R{animation-name:k2R}@keyframes k2R{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(1.5px,-0.1px) rotate(6deg)}17.7%{transform:translate(1.5px,-0.1px) rotate(6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}28.7%{transform:translate(1px,29.0px) rotate(160deg)}30.2%{transform:translate(1px,27.5px) rotate(160deg)}31.7%{transform:translate(1px,29.0px) rotate(160deg)}47.5%{transform:translate(1px,29.0px) rotate(160deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}56.5%,100%{transform:translate(-15px,-4px) rotate(0)}}.k3L{animation-name:k3L}@keyframes k3L{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(-1.5px,1.3px) rotate(-6deg)}15.9%{transform:translate(-1.5px,1.3px) rotate(-6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}26.9%{transform:translate(-9px,18.5px) rotate(60deg)}28.4%{transform:translate(-9px,17.0px) rotate(60deg)}29.9%{transform:translate(-9px,18.5px) rotate(60deg)}48.2%{transform:translate(-9px,18.5px) rotate(60deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}57.2%,100%{transform:translate(0px,11px) rotate(0)}}.k3R{animation-name:k3R}@keyframes k3R{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(1.5px,1.3px) rotate(6deg)}16.5%{transform:translate(1.5px,1.3px) rotate(6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}27.5%{transform:translate(10px,20.5px) rotate(-50deg)}29.0%{transform:translate(10px,19.0px) rotate(-50deg)}30.5%{transform:translate(10px,20.5px) rotate(-50deg)}48.9%{transform:translate(10px,20.5px) rotate(-50deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}57.9%,100%{transform:translate(0px,11px) rotate(0)}}.k4L{animation-name:k4L}@keyframes k4L{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(-1.5px,2.6px) rotate(-6deg)}14.7%{transform:translate(-1.5px,2.6px) rotate(-6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}25.7%{transform:translate(2px,10.5px) rotate(-70deg)}27.2%{transform:translate(2px,9.0px) rotate(-70deg)}28.7%{transform:translate(2px,10.5px) rotate(-70deg)}49.6%{transform:translate(2px,10.5px) rotate(-70deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}58.6%,100%{transform:translate(0px,-53px) rotate(0)}}.k4R{animation-name:k4R}@keyframes k4R{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(1.5px,2.6px) rotate(6deg)}15.3%{transform:translate(1.5px,2.6px) rotate(6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}26.3%{transform:translate(-2px,8.5px) rotate(35deg)}27.8%{transform:translate(-2px,7.0px) rotate(35deg)}29.3%{transform:translate(-2px,8.5px) rotate(35deg)}50.3%{transform:translate(-2px,8.5px) rotate(35deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}59.3%,100%{transform:translate(0px,-53px) rotate(0)}}.k5L{animation-name:k5L}@keyframes k5L{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(-1.5px,3.9px) rotate(-6deg)}13.5%{transform:translate(-1.5px,3.9px) rotate(-6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}24.5%{transform:translate(-7px,2.5px) rotate(90deg)}26.0%{transform:translate(-7px,1.0px) rotate(90deg)}27.5%{transform:translate(-7px,2.5px) rotate(90deg)}51.0%{transform:translate(-7px,2.5px) rotate(90deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}60.0%,100%{transform:translate(0px,0px) rotate(0)}}.k5R{animation-name:k5R}@keyframes k5R{0%,10%{transform:translate(0,0) rotate(0)}12.5%{transform:translate(1.5px,3.9px) rotate(6deg)}14.1%{transform:translate(1.5px,3.9px) rotate(6deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}25.1%{transform:translate(4px,2.5px) rotate(20deg)}26.6%{transform:translate(4px,1.0px) rotate(20deg)}28.1%{transform:translate(4px,2.5px) rotate(20deg)}51.7%{transform:translate(4px,2.5px) rotate(20deg);animation-timing-function:cubic-bezier(.2,.8,.3,1)}60.7%,100%{transform:translate(0px,0px) rotate(0)}}
+.bolt,.hit,.sparks{opacity:0;animation:8s steps(1,end) infinite}
+.bolt{animation-name:bolt}.hit{animation-name:hit}.sparks{animation-name:sparks}
+.beL{animation:beL 8s linear infinite}.beR{animation:beR 8s linear infinite}
+.bpupil{animation:bpup 8s ease-in-out infinite}
+.eyes{transform-origin:33px 41px;animation:lids 8s linear infinite}
+.pupils{animation:look 8s ease-in-out infinite}
+.brows{animation:brows 8s ease-in-out infinite}
+@keyframes live{0%{opacity:1}10%{opacity:0}76%,100%{opacity:1}}
+@keyframes broken{0%{opacity:0}10%{opacity:1}76%,100%{opacity:0}}
+@keyframes shud{0%{transform:translateX(0)}71.875%{transform:translateX(0.9px)}72.500%{transform:translateX(-0.9px)}73.125%{transform:translateX(0.9px)}73.750%{transform:translateX(-0.9px)}74.375%{transform:translateX(0.9px)}75.000%{transform:translateX(-0.9px)}75.625%{transform:translateX(0.9px)}76%,100%{transform:translateX(0)}}
+@keyframes trem{0%{transform:translateX(0)}81.875%{transform:translateX(0.6px)}82.500%{transform:translateX(-0.6px)}83.125%{transform:translateX(0.6px)}83.750%{transform:translateX(-0.6px)}84.375%{transform:translateX(0.6px)}85.000%,100%{transform:translateX(0)}}
+@keyframes pose{
+0%,5%,79%,100%{transform:rotate(0) scale(1,1)}
+7.5%,75.9%{transform:rotate(-3deg) scale(1,1.02)}
+76%{transform:rotate(0) scale(1.08,.94)}}
+@keyframes bolt{0%{opacity:0}8.1%{opacity:1}10.6%,100%{opacity:0}}
+@keyframes hit{0%{opacity:0}10%{opacity:1}11.25%,100%{opacity:0}}
+@keyframes sparks{0%{opacity:0}10%{opacity:1}13.1%,100%{opacity:0}}
+@keyframes beL{
+0%,38.4%,40.2%,41.6%,43.4%,67%,100%{transform:scale(1,1)}
+39.3%,42.5%{transform:scale(1,.08)}
+69%,76%{transform:scale(1.2,1.2)}}
+@keyframes beR{0%,67%,100%{transform:scale(1,1)}69%,76%{transform:scale(1.2,1.2)}}
+@keyframes bpup{
+0%,33%{transform:translate(0,0)}
+35%,37.5%{transform:translate(-2.6px,0)}
+41%,44%{transform:translate(1px,-.5px)}
+60%{transform:translate(0,0)}
+62.5%,66.5%{transform:translate(-.8px,1.9px)}
+69%,100%{transform:translate(-1px,-.3px)}}
+@keyframes lids{
+0%,5%,91%,94%,97%,100%{transform:scale(1,1)}
+7%,88%{transform:scale(1.2,1.2)}
+95.5%{transform:scale(1,.08)}}
+@keyframes look{
+0%,4.5%,93%,100%{transform:translate(0,0)}
+6.5%,70%{transform:translate(1.3px,-1.4px)}
+76%,89%{transform:translate(-1px,-.3px)}}
+@keyframes brows{
+0%,5%,93%,100%{transform:translateY(0)}
+7%,70%{transform:translateY(-2.5px)}
+76%,89%{transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<g id="frag">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+</g>
+<clipPath id="c0L"><rect x="10" y="5" width="23" height="15"/></clipPath><clipPath id="c0R"><rect x="33" y="5" width="23" height="15"/></clipPath><clipPath id="c1L"><rect x="10" y="20" width="23" height="15"/></clipPath><clipPath id="c1R"><rect x="33" y="20" width="23" height="15"/></clipPath><clipPath id="c2L"><rect x="10" y="35" width="23" height="12"/></clipPath><clipPath id="c2R"><rect x="33" y="35" width="23" height="12"/></clipPath><clipPath id="c3L"><rect x="10" y="47" width="23" height="11"/></clipPath><clipPath id="c3R"><rect x="33" y="47" width="23" height="11"/></clipPath><clipPath id="c4L"><rect x="10" y="58" width="23" height="11"/></clipPath><clipPath id="c4R"><rect x="33" y="58" width="23" height="11"/></clipPath><clipPath id="c5L"><rect x="10" y="69" width="23" height="11"/></clipPath><clipPath id="c5R"><rect x="33" y="69" width="23" height="11"/></clipPath>
+</defs>
+<g transform="translate(8 6)">
+<!-- Whole Gizmo, shown before the hit and after he snaps back. -->
+<g class="live"><g class="trem"><g class="pose">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g></g>
+<!-- Twelve blocks: six rows, split left and right. Each is a clipped copy of his body; the eye row carries live eyes. -->
+<g class="broken"><g class="shud">
+<g class="blk k0L" style="transform-origin:25px 12.5px"><g clip-path="url(#c0L)"><use href="#frag"/></g></g>
+<g class="blk k0R" style="transform-origin:40px 12.5px"><g clip-path="url(#c0R)"><use href="#frag"/></g></g>
+<g class="blk k1L" style="transform-origin:25px 27.5px"><g clip-path="url(#c1L)"><use href="#frag"/></g></g>
+<g class="blk k1R" style="transform-origin:40px 27.5px"><g clip-path="url(#c1R)"><use href="#frag"/></g></g>
+<g class="blk k2L" style="transform-origin:25px 41.0px"><g clip-path="url(#c2L)"><use href="#frag"/></g><g class="beye beL" style="transform-origin:27px 41px"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle class="bpupil bpL" cx="28" cy="41.5" r="2" fill="#07090d"/></g></g>
+<g class="blk k2R" style="transform-origin:40px 41.0px"><g clip-path="url(#c2R)"><use href="#frag"/></g><g class="beye beR" style="transform-origin:39px 41px"><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><circle class="bpupil bpR" cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+<g class="blk k3L" style="transform-origin:25px 52.5px"><g clip-path="url(#c3L)"><use href="#frag"/></g></g>
+<g class="blk k3R" style="transform-origin:40px 52.5px"><g clip-path="url(#c3R)"><use href="#frag"/></g></g>
+<g class="blk k4L" style="transform-origin:25px 63.5px"><g clip-path="url(#c4L)"><use href="#frag"/></g></g>
+<g class="blk k4R" style="transform-origin:40px 63.5px"><g clip-path="url(#c4R)"><use href="#frag"/></g></g>
+<g class="blk k5L" style="transform-origin:25px 74.5px"><g clip-path="url(#c5L)"><use href="#frag"/></g></g>
+<g class="blk k5R" style="transform-origin:40px 74.5px"><g clip-path="url(#c5R)"><use href="#frag"/></g></g>
+<g class="hit"><path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#ff3b4e" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g>
+</g></g>
+</g>
+<g class="bolt"><path d="M84 4 L66 20 L71 25 L54 41" fill="none" stroke="#ff3b4e" stroke-width="2.4" stroke-linejoin="miter"/><path d="M84 4 L66 20 L71 25 L54 41" fill="none" stroke="#e9f1fb" stroke-width=".8"/></g>
+<g class="sparks" fill="#ffcc66"><rect x="58" y="32" width="2" height="2"/><rect x="61" y="44" width="2" height="2"/><rect x="50" y="29" width="2" height="2"/><rect x="57" y="50" width="1.5" height="1.5"/></g>
+</svg>

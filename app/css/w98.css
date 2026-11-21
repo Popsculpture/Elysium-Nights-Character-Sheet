@@ -499,3 +499,10 @@ html.skin-98 .w98-pspane .set-hint{ font-size:11px; }
 
 /* a phone gives him less of a small screen */
 @media (max-width: 759px){ html.skin-98 .w98-gz-svg{ width:52px; height:68px; } html.skin-98 .w98-gz-bubble::after{ right:20px; } }
+
+/* GIZMO'S ANTICS (js/w98_gizmo_act.js): the scene is laid over his place, centred on him, and his still drawing steps aside while it plays */
+html.skin-98 .w98-gz-fig{ position:relative; overflow:visible; }
+html.skin-98 .w98-gz-fig.acting .w98-gz-svg{ visibility:hidden; }
+html.skin-98 .w98-gz-stage{ position:absolute; left:50%; bottom:0; max-width:none; pointer-events:none; user-select:none; -webkit-user-drag:none;
+  transform:translate(calc(-50% + var(--gz-dx, 0px)), var(--gz-dy, 0px)); }
+html.skin-98 .w98-gizmo{ padding-top:var(--gz-lift, 0px); }

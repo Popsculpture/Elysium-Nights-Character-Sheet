@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 84" width="256" height="336" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Boot Up</title>
+<desc id="desc">From an empty frame, broken green scan lines trace Gizmo's outline. The outline flickers twice and resolves into his solid paperclip form. His eyes load one at a time, he blinks, and settles into an alert, ready expression. Plays once over three seconds on a transparent background.</desc>
+<style>
+.outline{opacity:0;animation:outline 3s steps(1,end) both}
+.trace{stroke-dasharray:100;animation:trace 3s steps(22,end) both}
+.scan{animation:scan .15s steps(3,end) infinite}
+.solid{animation:solid 3s steps(1,end) both}
+.gizmo{transform-origin:32px 78px;animation:pose 3s ease-out both}
+.brows{animation:brows 3s ease-in-out both}
+.eye-l{transform-origin:27px 41px;animation:eyeL 3s linear both}
+.eye-r{transform-origin:39px 41px;animation:eyeR 3s linear both}
+.eye-l .pupil{animation:pupilL 3s steps(1,end) both,ready 3s ease-out both}
+.eye-r .pupil{animation:pupilR 3s steps(1,end) both,ready 3s ease-out both}
+.load-l{opacity:0;animation:loadL 3s steps(1,end) both}
+.load-r{opacity:0;animation:loadR 3s steps(1,end) both}
+@keyframes outline{0%{opacity:0}3%{opacity:1}37%{opacity:0}39.5%{opacity:1}42%{opacity:0}44.5%{opacity:1}48%,100%{opacity:0}}
+@keyframes trace{0%,3%{stroke-dashoffset:100}34%,100%{stroke-dashoffset:0}}
+@keyframes scan{from{stroke-dashoffset:0}to{stroke-dashoffset:-3}}
+@keyframes solid{0%{opacity:0}48%,100%{opacity:1}}
+@keyframes pose{
+0%,48%{transform:translateY(0) scale(.96,1.07)}
+54%,86%{transform:translateY(0) scale(1,1)}
+90%{transform:translateY(-1px) scale(.99,1.035)}
+95%,100%{transform:translateY(-.5px) scale(1,1.02)}}
+@keyframes brows{
+0%,78%{transform:translateY(0)}
+81%{transform:translateY(.7px)}
+84%{transform:translateY(0)}
+90%{transform:translateY(-2px)}
+95%,100%{transform:translateY(-1.2px)}}
+@keyframes eyeL{
+0%,56%{transform:scale(0,0)}
+58.5%{transform:scale(1.2,1.2)}
+61%,79%{transform:scale(1,1)}
+81%{transform:scale(1,.08)}
+83.5%,87%{transform:scale(1,1)}
+91%{transform:scale(1,1.14)}
+95%,100%{transform:scale(1,1.07)}}
+@keyframes eyeR{
+0%,66.5%{transform:scale(0,0)}
+69%{transform:scale(1.2,1.2)}
+71.5%,79%{transform:scale(1,1)}
+81%{transform:scale(1,.08)}
+83.5%,87%{transform:scale(1,1)}
+91%{transform:scale(1,1.14)}
+95%,100%{transform:scale(1,1.07)}}
+@keyframes pupilL{0%{opacity:0}61%,100%{opacity:1}}
+@keyframes pupilR{0%{opacity:0}71.5%,100%{opacity:1}}
+@keyframes ready{0%,84%{transform:translate(0,0)}90%,100%{transform:translate(-1px,-.9px)}}
+@keyframes loadL{0%{opacity:0}50%{opacity:1}52%{opacity:0}54%{opacity:1}56%,100%{opacity:0}}
+@keyframes loadR{0%{opacity:0}61%{opacity:1}63%{opacity:0}64.5%{opacity:1}66.5%,100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<!-- White stroke draws on, black inner stroke hollows it to an outline, black stripes break it into scan lines. -->
+<mask id="scanmask" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="84">
+<path class="trace" pathLength="100" d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="scan" d="M32 -6 V90" stroke="#000" stroke-width="64" stroke-dasharray="1 2"/>
+</mask>
+</defs>
+<g class="outline"><rect width="64" height="84" fill="#2ee6a0" mask="url(#scanmask)"/></g>
+<g class="gizmo">
+<g class="solid">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+</g>
+<rect class="load-l" x="26" y="40" width="2" height="2" fill="#e9f1fb"/>
+<rect class="load-r" x="38" y="40" width="2" height="2" fill="#e9f1fb"/>
+<g class="eye-l"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle class="pupil" cx="28" cy="41.5" r="2" fill="#07090d"/></g>
+<g class="eye-r"><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><circle class="pupil" cx="40" cy="41.5" r="2" fill="#07090d"/></g>
+</g>
+</svg>

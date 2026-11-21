@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 112" width="384" height="448" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Unauthorized Upgrade</title>
+<desc id="desc">A tall holographic mohawk of seven purple spikes with pink tips flickers into place above Gizmo, followed by a studded collar and a pink safety pin through his upper curve. He scowls, headbangs twice, and holds a sneer. A small amber panel with a padlock pops up beside him. He glares at the warning, looks at the viewer, and sags. The pin and collar blink out, then the mohawk retracts one spike at a time while he watches it go. He rolls his eyes, the panel pops away, and he returns to neutral. Six second loop on a transparent background.</desc>
+<style>
+.gizmo{transform-origin:46px 106px;animation:pose 6s ease-in-out infinite}
+.seg,.collar,.pin{opacity:0;animation:6s steps(1,end) infinite}
+.s0{animation-name:s0}@keyframes s0{0%{opacity:0}4.0%{opacity:1}4.83%{opacity:0}5.67%{opacity:1}72.8%{opacity:0}73.63%{opacity:1}74.47%,100%{opacity:0}}.s1{animation-name:s1}@keyframes s1{0%{opacity:0}5.7%{opacity:1}6.53%{opacity:0}7.37%{opacity:1}70.5%{opacity:0}71.33%{opacity:1}72.17%,100%{opacity:0}}.s2{animation-name:s2}@keyframes s2{0%{opacity:0}7.4%{opacity:1}8.23%{opacity:0}9.07%{opacity:1}68.2%{opacity:0}69.03%{opacity:1}69.87%,100%{opacity:0}}.s3{animation-name:s3}@keyframes s3{0%{opacity:0}9.1%{opacity:1}9.93%{opacity:0}10.77%{opacity:1}65.9%{opacity:0}66.73%{opacity:1}67.57%,100%{opacity:0}}.s4{animation-name:s4}@keyframes s4{0%{opacity:0}10.8%{opacity:1}11.63%{opacity:0}12.47%{opacity:1}63.6%{opacity:0}64.43%{opacity:1}65.27%,100%{opacity:0}}.s5{animation-name:s5}@keyframes s5{0%{opacity:0}12.5%{opacity:1}13.33%{opacity:0}14.17%{opacity:1}61.3%{opacity:0}62.13%{opacity:1}62.97%,100%{opacity:0}}.s6{animation-name:s6}@keyframes s6{0%{opacity:0}14.2%{opacity:1}15.03%{opacity:0}15.87%{opacity:1}59.0%{opacity:0}59.83%{opacity:1}60.67%,100%{opacity:0}}.collar{animation-name:collar}@keyframes collar{0%{opacity:0}15.5%{opacity:1}16.33%{opacity:0}17.17%{opacity:1}55%{opacity:0}55.83%{opacity:1}56.67%,100%{opacity:0}}.pin{animation-name:pin}@keyframes pin{0%{opacity:0}17%{opacity:1}17.83%{opacity:0}18.67%{opacity:1}56.7%{opacity:0}57.53%{opacity:1}58.37%,100%{opacity:0}}
+.panel{transform-origin:80px 51px;transform:scale(0);animation:panel 6s ease-out infinite}
+.eyes{transform-origin:33px 41px;animation:lids 6s linear infinite}
+.pupils{animation:look 6s ease-in-out infinite}
+.brow-l{transform-origin:25.5px 31.5px;animation:browL 6s ease-in-out infinite}
+.brow-r{animation:browR 6s ease-in-out infinite}
+@keyframes pose{
+0%,4%,90%,100%{transform:rotate(0) scale(1,1)}
+7%,16%{transform:rotate(0) scale(.98,1.03)}
+19.5%,25.5%{transform:rotate(6deg) scale(1.05,.86)}
+22.5%,28.5%{transform:rotate(-4deg) scale(.98,1.04)}
+31%,34%{transform:rotate(-7deg) scale(1,1)}
+36%,50%{transform:rotate(-2deg) scale(1,1)}
+55%,86%{transform:rotate(0) scale(1.03,.94)}}
+@keyframes panel{
+0%,34%{transform:scale(0)}
+35.5%{transform:scale(1.15)}
+37%,84.5%{transform:scale(1)}
+85.5%{transform:scale(1.1)}
+87.5%,100%{transform:scale(0)}}
+@keyframes lids{
+0%,4%,90%,92.5%,96%,100%{transform:scale(1,1)}
+6%,16%{transform:scale(1.12,1.12)}
+19%,29%{transform:scale(1,.3)}
+31%,33.5%{transform:scale(1,.6)}
+36%{transform:scale(1.1,1.1)}
+38.5%,45%{transform:scale(1,.7)}
+47.5%,73%{transform:scale(1,.6)}
+75.5%,86%{transform:scale(1,.8)}
+94.2%{transform:scale(1,.08)}}
+@keyframes look{
+0%,4%,92%,100%{transform:translate(0,0)}
+6%,16%{transform:translate(-1px,-2.4px)}
+18.5%,34%{transform:translate(-1px,-.3px)}
+38%,45%{transform:translate(1.4px,-.2px)}
+47.5%,56%{transform:translate(-1px,-.3px)}
+59%,73.5%{transform:translate(-1px,-2.2px)}
+76.5%{transform:translate(-3px,.2px)}
+79.5%{transform:translate(-1.8px,-2.5px)}
+82%{transform:translate(.2px,-2.6px)}
+84.5%,88%{transform:translate(1.4px,-.6px)}}
+@keyframes browL{
+0%,4%,91%,100%{transform:translateY(0) rotate(0)}
+6%,16%{transform:translateY(-2.5px) rotate(0)}
+19%,34%{transform:translateY(1.6px) rotate(44deg)}
+36%{transform:translateY(-2px) rotate(10deg)}
+39%,50%{transform:translateY(1.8px) rotate(44deg)}
+55%,73%{transform:translateY(.3px) rotate(0)}
+76%,86%{transform:translateY(1.8px) rotate(22deg)}}
+@keyframes browR{
+0%,4%,91%,100%{transform:translateY(0)}
+6%,16%{transform:translateY(-2.5px)}
+19%,34%{transform:translateY(1.6px)}
+36%{transform:translateY(-2px)}
+39%,50%{transform:translateY(1.8px)}
+55%,73%{transform:translateY(.3px)}
+76%,86%{transform:translateY(1.8px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<defs>
+<!-- Scan gaps across the mohawk make it read as a projection. -->
+<mask id="holo" maskUnits="userSpaceOnUse" x="-30" y="-34" width="124" height="74"><path d="M32 -34 V40" stroke="#fff" stroke-width="124" stroke-dasharray="2.5 1"/></mask>
+</defs>
+<g class="gizmo"><g transform="translate(14 28)">
+<!-- Seven spikes, each its own segment, sitting behind his upper curve. -->
+<g mask="url(#holo)">
+<g class="seg s0" transform="rotate(-42 32 22)"><path d="M28.8 10 H35.2 L32 -7.5 Z" fill="#b893ff"/><path d="M30.78 -0.85 H33.22 L32 -7.5 Z" fill="#ff6f9f"/></g>
+<g class="seg s1" transform="rotate(-28 32 22)"><path d="M28.8 10 H35.2 L32 -12.5 Z" fill="#b893ff"/><path d="M30.78 -3.95 H33.22 L32 -12.5 Z" fill="#ff6f9f"/></g>
+<g class="seg s2" transform="rotate(-14 32 22)"><path d="M28.8 10 H35.2 L32 -16.5 Z" fill="#b893ff"/><path d="M30.78 -6.43 H33.22 L32 -16.5 Z" fill="#ff6f9f"/></g>
+<g class="seg s3" transform="rotate(0 32 22)"><path d="M28.8 10 H35.2 L32 -19.5 Z" fill="#b893ff"/><path d="M30.78 -8.29 H33.22 L32 -19.5 Z" fill="#ff6f9f"/></g>
+<g class="seg s4" transform="rotate(14 32 22)"><path d="M28.8 10 H35.2 L32 -16.5 Z" fill="#b893ff"/><path d="M30.78 -6.43 H33.22 L32 -16.5 Z" fill="#ff6f9f"/></g>
+<g class="seg s5" transform="rotate(28 32 22)"><path d="M28.8 10 H35.2 L32 -12.5 Z" fill="#b893ff"/><path d="M30.78 -3.95 H33.22 L32 -12.5 Z" fill="#ff6f9f"/></g>
+<g class="seg s6" transform="rotate(42 32 22)"><path d="M28.8 10 H35.2 L32 -7.5 Z" fill="#b893ff"/><path d="M30.78 -0.85 H33.22 L32 -7.5 Z" fill="#ff6f9f"/></g>
+</g>
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- Studded collar across his lower body. -->
+<g class="collar">
+<rect x="15.5" y="53" width="33" height="5" fill="#07090d"/>
+<path d="M17.5 57 l2 -3.4 l2 3.4 Z M23.5 57 l2 -3.4 l2 3.4 Z M30 57 l2 -3.4 l2 3.4 Z M36.5 57 l2 -3.4 l2 3.4 Z M42.5 57 l2 -3.4 l2 3.4 Z" fill="#b893ff"/>
+</g>
+<!-- Safety pin through the left of his upper curve. -->
+<g class="pin" fill="none" stroke="#ff6f9f" stroke-width="1.1" stroke-linecap="square">
+<path d="M12.5 20 L24.5 11.5 M13.5 22.5 L25.5 14"/>
+<circle cx="12" cy="21.8" r="1.6"/>
+<rect x="23.6" y="10.6" width="3.2" height="4" fill="#ff6f9f" stroke="none" transform="rotate(-35 25.2 12.6)"/>
+</g>
+<path class="brow-l" d="M22 33 l7 -3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<path class="brow-r" d="M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g>
+<!-- Licence warning: amber panel with a padlock. -->
+<g class="panel"><g transform="translate(0 8)">
+<rect x="71" y="34" width="18" height="18" fill="#ffb02e" stroke="#07090d" stroke-width=".6"/>
+<path d="M77 43 V40.5 a3 3 0 0 1 6 0 V43" fill="none" stroke="#07090d" stroke-width="1.5"/>
+<rect x="75.5" y="43" width="9" height="6.5" fill="#07090d"/>
+<rect x="79.25" y="45" width="1.5" height="2.5" fill="#ffb02e"/>
+</g></g>
+</svg>

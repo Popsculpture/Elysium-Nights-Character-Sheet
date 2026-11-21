@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 84" width="448" height="336" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: No Cameras</title>
+<desc id="desc">A miniature camera drone with a blinking red recording light floats in from the right and hovers around Gizmo. His eyes follow it and grow steadily more annoyed. When it pushes in close he winds back, leans his whole body into it, and shoves it spinning out of frame. He holds a suspicious sideways glance, then relaxes. Six second loop on a transparent background.</desc>
+<style>
+.gizmo{transform-origin:56px 78px;animation:pose 6s ease-in-out infinite}
+.eyes{transform-origin:33px 41px;animation:lids 6s linear infinite}
+.pupils{animation:look 6s ease-in-out infinite}
+.brow-l{transform-origin:25.5px 31.5px;animation:browL 6s ease-in-out infinite}
+.brow-r{transform-origin:40.5px 31.5px;animation:browR 6s ease-in-out infinite}
+.drone{transform:translate(124px,10px);animation:drone 6s ease-in-out infinite}
+.spin{animation:spin 6s linear infinite}
+.bob{animation:bob .6s ease-in-out infinite alternate}
+.rec{animation:rec .6s steps(1,end) infinite}
+.rotor-a{animation:rotA .1s steps(1,end) infinite}
+.rotor-b{opacity:0;animation:rotB .1s steps(1,end) infinite}
+.hit{opacity:0;animation:hit 6s steps(1,end) infinite}
+@keyframes pose{
+0%,12%{transform:rotate(0) scale(1,1)}
+14.5%{transform:rotate(-1.5deg) scale(1,1.025)}
+20%{transform:rotate(-1deg) scale(1,1)}
+36%{transform:rotate(-2deg) scale(1,1)}
+50%{transform:rotate(-3deg) scale(1,1)}
+54%{transform:rotate(-9deg) scale(1,.97);animation-timing-function:cubic-bezier(.5,0,.3,1)}
+57%{transform:rotate(15deg) scale(1,1.03)}
+60.5%{transform:rotate(13deg) scale(1,1.02)}
+67%{transform:rotate(-1deg) scale(1,1)}
+71%,86%{transform:rotate(1.5deg) scale(1,1)}
+92%{transform:rotate(0) scale(1,.98)}
+96%,100%{transform:rotate(0) scale(1,1)}}
+@keyframes lids{
+0%,12.5%,18%,90%,91.5%,95.5%,100%{transform:scaleY(1)}
+14.5%{transform:scaleY(1.12)}
+26%{transform:scaleY(.85)}
+36%{transform:scaleY(.7)}
+46%{transform:scaleY(.55)}
+50%,55.5%{transform:scaleY(.45)}
+57%{transform:scaleY(.3)}
+60.5%{transform:scaleY(.9)}
+66%,86%{transform:scaleY(.5)}
+93.5%{transform:scaleY(.08)}}
+@keyframes look{
+0%,12.5%,91%,100%{transform:translate(0,0)}
+14.5%,18%{transform:translate(1.3px,-1.4px)}
+27%{transform:translate(1.1px,.9px)}
+36%{transform:translate(1.4px,-.4px)}
+42%{transform:translate(1.3px,-1.1px)}
+50%,56%{transform:translate(1.5px,-.3px)}
+59%,62%{transform:translate(1.3px,-.8px)}
+66%,86%{transform:translate(1.5px,-.2px)}}
+@keyframes browL{
+0%,12.5%,91%,100%{transform:translateY(0) rotate(0)}
+14.5%,17%{transform:translateY(-1.4px) rotate(0)}
+24%{transform:translateY(.5px) rotate(12deg)}
+34%{transform:translateY(1.2px) rotate(26deg)}
+46%,55.5%{transform:translateY(2px) rotate(44deg)}
+57%{transform:translateY(2.4px) rotate(48deg)}
+61%{transform:translateY(.5px) rotate(20deg)}
+66%,86%{transform:translateY(1.6px) rotate(36deg)}}
+@keyframes browR{
+0%,12.5%,91%,100%{transform:translateY(0) rotate(0)}
+14.5%,17%{transform:translateY(-1.4px) rotate(0)}
+24%{transform:translateY(.5px) rotate(0)}
+34%{transform:translateY(1.2px) rotate(-3deg)}
+46%,55.5%{transform:translateY(2px) rotate(-6deg)}
+57%{transform:translateY(2.4px) rotate(-8deg)}
+61%{transform:translateY(.5px) rotate(0)}
+66%,86%{transform:translateY(-1.6px) rotate(4deg)}}
+@keyframes drone{
+0%,4%{transform:translate(124px,10px)}
+18%{transform:translate(92px,20px)}
+27%{transform:translate(89px,50px)}
+36%{transform:translate(83px,33px)}
+42%{transform:translate(95px,25px)}
+50%{transform:translate(79px,38px)}
+55.5%{transform:translate(79px,37px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}
+67%,100%{transform:translate(136px,20px)}}
+@keyframes spin{0%,55.5%{transform:rotate(0)}67%,100%{transform:rotate(300deg)}}
+@keyframes bob{from{transform:translateY(-1px)}to{transform:translateY(1px)}}
+@keyframes rec{0%{opacity:1}66%,100%{opacity:0}}
+@keyframes rotA{0%{opacity:1}50%,100%{opacity:0}}
+@keyframes rotB{0%{opacity:0}50%,100%{opacity:1}}
+@keyframes hit{0%{opacity:0}55.5%{opacity:1}59%,100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<g class="gizmo"><g transform="translate(24 0)">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="brow-l" d="M22 33 l7 -3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<path class="brow-r" d="M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g>
+<g class="hit" fill="#ffcc66"><rect x="86" y="27" width="2" height="2"/><rect x="91" y="32" width="2" height="2"/><rect x="87" y="46" width="2" height="2"/></g>
+<g class="drone"><g class="spin"><g class="bob">
+<g class="rotor-a" fill="#6b7c93"><rect x="-7.5" y="-5.5" width="6" height="1"/><rect x="1.5" y="-5.5" width="6" height="1"/></g>
+<g class="rotor-b" fill="#6b7c93"><rect x="-5.5" y="-5.5" width="2" height="1"/><rect x="3.5" y="-5.5" width="2" height="1"/></g>
+<rect x="-5" y="-4.5" width="1" height="2" fill="#6b7c93"/><rect x="4" y="-4.5" width="1" height="2" fill="#6b7c93"/>
+<rect x="-5" y="-2.5" width="10" height="5.5" fill="#6b7c93" stroke="#07090d" stroke-width=".5"/>
+<rect x="-7" y="-1.5" width="2.5" height="3.5" fill="#07090d"/>
+<rect x="-6.5" y="-1" width="1" height="1" fill="#e9f1fb"/>
+<rect x="1.2" y="-1.4" width="2.6" height="2.6" fill="#07090d"/>
+<rect class="rec" x="1.2" y="-1.4" width="2.6" height="2.6" fill="#ff3b4e"/>
+</g></g></g>
+</svg>

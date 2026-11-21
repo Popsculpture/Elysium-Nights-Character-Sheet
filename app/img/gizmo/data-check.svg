@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 84" width="384" height="336" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Data Check</title>
+<desc id="desc">Tiny data squares drift past Gizmo. He leans in and tracks them with narrowed eyes, then stretches the inner end of his paperclip body up to catch a yellow one. He pulls it down between his brows, gives it a skeptical look, flicks it away, and straightens up. Five second loop on a transparent background.</desc>
+<style>
+.gizmo{transform-origin:48px 78px;animation:pose 5s ease-in-out infinite}
+.tip{animation:tip 5s ease-in-out infinite}
+.catch{transform:translate(-18px,26px);animation:catch 5s ease-in-out infinite}
+.spark{opacity:0;animation:spark 5s steps(1,end) infinite}
+.eyes{transform-origin:33px 41px;animation:lids 5s linear infinite}
+.pupil-l{animation:lookL 5s ease-in-out infinite}
+.pupil-r{animation:lookR 5s ease-in-out infinite}
+.brow-l{animation:browL 5s ease-in-out infinite}
+.brow-r{animation:browR 5s ease-in-out infinite}
+.d{transform:translateX(-8px);animation:5s linear infinite}
+.d1{animation-name:d1}.d2{animation-name:d2}.d3{animation-name:d3}.d4{animation-name:d4}.d5{animation-name:d5}
+@keyframes pose{
+0%,5%{transform:rotate(0) scale(1,1)}
+12%,64%{transform:rotate(-6deg) scale(1,.97)}
+67%{transform:rotate(-7.5deg) scale(1,.96)}
+70%{transform:rotate(-4deg) scale(1,1)}
+76%{transform:rotate(-5deg) scale(1,.98)}
+86%{transform:rotate(2deg) scale(1,1.02)}
+92%,100%{transform:rotate(0) scale(1,1)}}
+@keyframes tip{
+0%,29%{transform:translateY(0)}
+32%{transform:translateY(1.5px);animation-timing-function:cubic-bezier(.3,0,.2,1)}
+36%{transform:translateY(-9px)}
+44%,50%{transform:translateY(1.5px)}
+53%{transform:translateY(.3px)}
+56%,64%{transform:translateY(1.5px)}
+67%{transform:translateY(4px);animation-timing-function:cubic-bezier(.3,0,.2,1)}
+70%{transform:translateY(-5px)}
+77%,100%{transform:translateY(0)}}
+@keyframes catch{
+0%{transform:translate(-18px,26px)}
+14%{transform:translate(-18px,26px);animation-timing-function:linear}
+36%{transform:translate(31px,18.5px)}
+44%,50%{transform:translate(31px,29px)}
+53%{transform:translate(31px,27.8px)}
+56%,64%{transform:translate(31px,29px)}
+67%{transform:translate(31px,31.5px);animation-timing-function:cubic-bezier(.3,0,.2,1)}
+70%{transform:translate(31px,22.5px);animation-timing-function:linear}
+77%{transform:translate(48px,6px);animation-timing-function:linear}
+86%,100%{transform:translate(86px,-10px)}}
+@keyframes spark{0%{opacity:0}36%{opacity:1}39.5%,100%{opacity:0}}
+@keyframes lids{
+0%,6%,68%,74%,88.5%,92.5%,100%{transform:scaleY(1)}
+10%,34%{transform:scaleY(.6)}
+36.5%,40%{transform:scaleY(1.1)}
+46%,64%{transform:scaleY(.5)}
+90.5%{transform:scaleY(.08)}}
+@keyframes lookL{
+0%,4%,86%,100%{transform:translate(0,0)}
+7%{transform:translate(-3.2px,.4px)}
+20%{transform:translate(1.2px,.6px)}
+23%{transform:translate(-3.2px,-.6px)}
+35%,38%{transform:translate(.6px,-2.6px)}
+44%,65%{transform:translate(-.1px,-2.7px)}
+71%{transform:translate(.4px,-2.6px)}
+79%{transform:translate(1.2px,-1.8px)}}
+@keyframes lookR{
+0%,4%,86%,100%{transform:translate(0,0)}
+7%{transform:translate(-3.2px,.4px)}
+20%{transform:translate(1.2px,.6px)}
+23%{transform:translate(-3.2px,-.6px)}
+35%,38%{transform:translate(-2.6px,-2.4px)}
+44%,65%{transform:translate(-2.45px,-2.4px)}
+71%{transform:translate(-1.2px,-2.6px)}
+79%{transform:translate(1.2px,-1.8px)}}
+@keyframes browL{
+0%,6%,82%,100%{transform:translateY(0)}
+10%,34%{transform:translateY(1px)}
+36.5%,41%{transform:translateY(-1.5px)}
+47%,64%{transform:translateY(.8px)}
+70%,74%{transform:translateY(-1.5px)}}
+@keyframes browR{
+0%,6%,82%,100%{transform:translateY(0)}
+10%,34%{transform:translateY(1px)}
+36.5%,41%{transform:translateY(-1.5px)}
+46%{transform:translateY(0)}
+50%,64%{transform:translateY(-2.6px)}
+70%,74%{transform:translateY(-1.5px)}}
+@keyframes d1{0%,2%{transform:translateX(-8px)}40%,100%{transform:translateX(100px)}}
+@keyframes d2{0%,8%{transform:translateX(-8px)}52%,100%{transform:translateX(100px)}}
+@keyframes d3{0%,20%{transform:translateX(-8px)}56%,100%{transform:translateX(100px)}}
+@keyframes d4{0%,34%{transform:translateX(-8px)}68%,100%{transform:translateX(100px)}}
+@keyframes d5{0%,48%{transform:translateX(-8px)}82%,100%{transform:translateX(100px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<!-- Squares that pass behind him. -->
+<rect class="d d1" x="0" y="50" width="3" height="3" fill="#b893ff"/>
+<rect class="d d4" x="0" y="71" width="2.5" height="2.5" fill="#b893ff"/>
+<g class="gizmo"><g transform="translate(16 0)">
+<!-- Body stops short on the inner arm; the tip piece overlaps it so the arm can stretch and retract. -->
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V50" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="tip" d="M31 56 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round"/>
+<rect class="catch" x="-1.5" y="-1.5" width="3" height="3" fill="#ffcc66"/>
+<g class="spark" fill="#ffcc66"><rect x="25" y="14" width="1.5" height="1.5"/><rect x="35.5" y="13" width="1.5" height="1.5"/><rect x="36.5" y="20" width="1.5" height="1.5"/></g>
+<path class="brow-l" d="M22 33 l7 -3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<path class="brow-r" d="M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<circle class="pupil-l" cx="28" cy="41.5" r="2" fill="#07090d"/><circle class="pupil-r" cx="40" cy="41.5" r="2" fill="#07090d"/></g>
+</g></g>
+<!-- Squares that pass in front. -->
+<rect class="d d2" x="0" y="9" width="2.5" height="2.5" fill="#ff6f9f"/>
+<rect class="d d3" x="0" y="64" width="3" height="3" fill="#e9f1fb"/>
+<rect class="d d5" x="0" y="3" width="3" height="3" fill="#ff6f9f"/>
+</svg>

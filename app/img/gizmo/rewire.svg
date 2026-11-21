@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 92" width="416" height="368" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Rewire</title>
+<desc id="desc">A small bending rig slides in beside Gizmo. He is pulled thin into a straight wire that tips over and feeds into the rig. The rig rattles and he hops out bent into a star, confused. It pulls him back in and he comes out as a treble clef, unimpressed. It pulls him in a third time and he comes out as a paperclip. He checks himself over and the rig backs out. Nine second loop on a transparent background.</desc>
+<style>
+.live{transform-origin:32px 44px;animation:live 9s ease-in-out infinite,livev 9s steps(1,end) infinite}
+.wire{opacity:0;transform-origin:32px 43px;animation:wire 9s ease-in-out infinite,wirev 9s steps(1,end) infinite}
+.star{opacity:0;transform-origin:32px 44px;animation:star 9s ease-in-out infinite,starv 9s steps(1,end) infinite}@keyframes star{0%,33%{transform:translate(50px,16px) scale(.15,.15);animation-timing-function:cubic-bezier(.2,.7,.4,1)}34.8%{transform:translate(22px,-6px) scale(.7,.7);animation-timing-function:cubic-bezier(.5,0,.8,.6)}36.5%{transform:translate(0,0) scale(1.08,.9)}38%{transform:translate(0,0) scale(1,1)}44.5%{transform:translate(0,0) scale(1,1);animation-timing-function:cubic-bezier(.6,0,1,.6)}47.5%,100%{transform:translate(50px,16px) scale(.15,.15)}}@keyframes starv{0%{opacity:0}33%{opacity:1}47.5%,100%{opacity:0}}
+.clef{opacity:0;transform-origin:32px 44px;animation:clef 9s ease-in-out infinite,clefv 9s steps(1,end) infinite}@keyframes clef{0%,56.5%{transform:translate(50px,16px) scale(.15,.15);animation-timing-function:cubic-bezier(.2,.7,.4,1)}58.3%{transform:translate(22px,-6px) scale(.7,.7);animation-timing-function:cubic-bezier(.5,0,.8,.6)}60.0%{transform:translate(0,0) scale(1.08,.9)}61.5%{transform:translate(0,0) scale(1,1)}68.5%{transform:translate(0,0) scale(1,1);animation-timing-function:cubic-bezier(.6,0,1,.6)}71.5%,100%{transform:translate(50px,16px) scale(.15,.15)}}@keyframes clefv{0%{opacity:0}56.5%{opacity:1}71.5%,100%{opacity:0}}
+.rig{transform:translateX(44px);animation:rig 9s ease-in-out infinite}
+.shake{animation:shake 9s steps(1,end) infinite}
+.run,.ding{opacity:0;animation:9s steps(1,end) infinite}
+.run{animation-name:run}.ding{animation-name:ding}
+.blink{animation:blink .2s steps(1,end) infinite}
+.blink2{animation:blink2 .2s steps(1,end) infinite}
+.eyes{transform-origin:33px 41px;animation:lids 9s linear infinite}
+.pupils{animation:look 9s ease-in-out infinite}
+.brows{animation:brows 9s ease-in-out infinite}
+.feyes{transform-origin:33px 41px;animation:flids 9s linear infinite}
+.fpupils{animation:flook 9s ease-in-out infinite}
+.fbrows{animation:fbrows 9s ease-in-out infinite}
+@keyframes live{
+0%,12%,84.5%,100%{transform:translate(0,0) scale(1,1)}
+14%{transform:translate(0,0) scale(1.05,.95);animation-timing-function:cubic-bezier(.5,0,1,.7)}
+17%{transform:translate(0,0) scale(.1,1.22)}
+17.1%,79.5%{transform:translate(50px,16px) scale(.15,.15);animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+81.3%{transform:translate(22px,-6px) scale(.7,.7);animation-timing-function:cubic-bezier(.5,0,.8,.6)}
+83%{transform:translate(0,0) scale(1.08,.9)}}
+@keyframes livev{0%{opacity:1}17%{opacity:0}79.5%,100%{opacity:1}}
+@keyframes wire{
+0%,17.5%{transform:translate(0,0) rotate(0)}
+21.5%{transform:translate(0,18px) rotate(90deg);animation-timing-function:cubic-bezier(.5,0,1,.7)}
+26%,100%{transform:translate(82px,18px) rotate(90deg)}}
+@keyframes wirev{0%{opacity:0}17%{opacity:1}26%,100%{opacity:0}}
+@keyframes rig{0%,3%,95%,100%{transform:translateX(44px)}8%,90%{transform:translateX(0)}}
+@keyframes shake{0%{transform:translateX(0)}26.111%{transform:translateX(0.6px)}26.667%{transform:translateX(-0.6px)}27.222%{transform:translateX(0.6px)}27.778%{transform:translateX(-0.6px)}28.333%{transform:translateX(0.6px)}28.889%{transform:translateX(-0.6px)}29.444%{transform:translateX(0.6px)}30.000%{transform:translateX(-0.6px)}30.556%{transform:translateX(0.6px)}31.111%{transform:translateX(-0.6px)}31.667%{transform:translateX(0.6px)}32.222%{transform:translateX(-0.6px)}32.778%{transform:translateX(0.6px)}33.333%{transform:translateX(0)}48.333%{transform:translateX(0.6px)}48.889%{transform:translateX(-0.6px)}49.444%{transform:translateX(0.6px)}50.000%{transform:translateX(-0.6px)}50.556%{transform:translateX(0.6px)}51.111%{transform:translateX(-0.6px)}51.667%{transform:translateX(0.6px)}52.222%{transform:translateX(-0.6px)}52.778%{transform:translateX(0.6px)}53.333%{transform:translateX(-0.6px)}53.889%{transform:translateX(0.6px)}54.444%{transform:translateX(-0.6px)}55.000%{transform:translateX(0.6px)}55.556%{transform:translateX(-0.6px)}56.111%{transform:translateX(0.6px)}56.667%{transform:translateX(0)}72.222%{transform:translateX(0.6px)}72.778%{transform:translateX(-0.6px)}73.333%{transform:translateX(0.6px)}73.889%{transform:translateX(-0.6px)}74.444%{transform:translateX(0.6px)}75.000%{transform:translateX(-0.6px)}75.556%{transform:translateX(0.6px)}76.111%{transform:translateX(-0.6px)}76.667%{transform:translateX(0.6px)}77.222%{transform:translateX(-0.6px)}77.778%{transform:translateX(0.6px)}78.333%{transform:translateX(-0.6px)}78.889%{transform:translateX(0.6px)}79.444%{transform:translateX(-0.6px)}80.000%{transform:translateX(0)}100%{transform:translateX(0)}}
+@keyframes run{0%{opacity:0}26%{opacity:1}33%{opacity:0}48%{opacity:1}56.5%{opacity:0}72%{opacity:1}79.5%{opacity:0}100%{opacity:0}}
+@keyframes ding{0%{opacity:0}33%{opacity:1}36.5%{opacity:0}56.5%{opacity:1}60.0%{opacity:0}79.5%{opacity:1}83.0%{opacity:0}100%{opacity:0}}
+@keyframes blink{0%{opacity:1}50%,100%{opacity:0}}
+@keyframes blink2{0%{opacity:0}50%,100%{opacity:1}}
+@keyframes lids{
+0%,4%,11%,84.5%,96%,98.5%,100%{transform:scale(1,1)}
+6%,10%{transform:scale(1,.8)}
+12.5%,17%{transform:scale(1.2,1.2)}
+83%{transform:scale(1.15,1.15)}
+97.2%{transform:scale(1,.08)}}
+@keyframes look{
+0%,3%,96%,100%{transform:translate(0,0)}
+5.5%,17%{transform:translate(1.4px,.3px)}
+83%,86%{transform:translate(-.6px,1.8px)}
+87%,88.5%{transform:translate(-3.1px,.9px)}
+89.5%,91%{transform:translate(1.3px,.8px)}
+92.5%,95%{transform:translate(-1px,-.3px)}}
+@keyframes brows{
+0%,3%,96%,100%{transform:translateY(0)}
+5.5%,11%{transform:translateY(1px)}
+12.5%,17%{transform:translateY(-3px)}
+83%,91%{transform:translateY(-1px)}
+92.5%,95%{transform:translateY(-1.5px)}}
+@keyframes flids{
+0%,36%,41.5%,44%,60%,64%,100%{transform:scale(1,1)}
+37%,41%{transform:scale(1.15,1.15)}
+44.5%,47.5%{transform:scale(1.2,1.2)}
+64.5%,68%{transform:scale(1,.5)}
+68.5%,71.5%{transform:scale(1.2,1.2)}}
+@keyframes flook{
+0%,37.5%,57%,61%,100%{transform:translate(0,0)}
+38.5%,41%{transform:translate(-.6px,1.8px)}
+42%,44%{transform:translate(-1px,-.3px)}
+44.6%,48%{transform:translate(1.4px,0)}
+62%,64%{transform:translate(-.6px,1.8px)}
+65%,68%{transform:translate(-1px,-.3px)}
+68.6%,72%{transform:translate(1.4px,0)}}
+@keyframes fbrows{
+0%,37%,57%,64%,100%{transform:translateY(0)}
+38.5%,47.5%{transform:translateY(-2.2px)}
+65%,68%{transform:translateY(2px)}
+68.6%,72%{transform:translateY(-2.5px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<g transform="translate(8 6)">
+<g class="live">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g>
+<!-- Pulled straight: one line with his eyes still on it. -->
+<g class="wire">
+<path d="M32 8 V78" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round"/>
+<g transform="translate(32 26) scale(.7) translate(-33 -41)"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="28.4" cy="41.5" r="2" fill="#07090d"/><circle cx="40.4" cy="41.5" r="2" fill="#07090d"/></g>
+</g>
+<!-- Wrong shapes, same wire. -->
+<g class="star"><path d="M32.00 21.00 L38.17 36.51 L54.83 37.58 L41.99 48.24 L46.11 64.42 L32.00 55.50 L17.89 64.42 L22.01 48.24 L9.17 37.58 L25.83 36.51 Z" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linejoin="round"/><path class="fbrows" d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/><g class="feyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><g class="fpupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g></g>
+<g class="clef"><path d="M27 72 a4.5 4.5 0 1 0 8 3 L31 18 C30 6 42 6 40 18 C38 28 20 34 20 46 C20 58 42 60 42 48 C42 40 30 38 29 47" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path class="fbrows" d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/><g class="feyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><g class="fpupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g></g>
+<!-- Bending rig, in front so things vanish into its slot. -->
+<g class="rig"><g class="shake">
+<rect x="66" y="44" width="31" height="40" fill="#6b7c93" stroke="#07090d" stroke-width=".6"/>
+<rect x="66" y="56" width="3" height="11" fill="#07090d"/>
+<circle cx="78" cy="58" r="5.5" fill="#07090d"/><circle cx="88" cy="71" r="5.5" fill="#07090d"/>
+<path d="M78 53.5 V62.5 M88 66.5 V75.5" stroke="#6b7c93" stroke-width="1.4"/>
+<g class="run"><g class="blink"><path d="M73.5 58 H82.5 M83.5 71 H92.5" stroke="#e9f1fb" stroke-width="1.4"/></g><g class="blink2"><path d="M74.8 54.8 L81.2 61.2 M84.8 67.8 L91.2 74.2" stroke="#e9f1fb" stroke-width="1.4"/></g></g>
+<rect x="90" y="47" width="3.5" height="3.5" fill="#07090d"/>
+<g class="run"><rect class="blink" x="90" y="47" width="3.5" height="3.5" fill="#ff3b4e"/></g>
+<rect class="ding" x="90" y="47" width="3.5" height="3.5" fill="#a6ff4d"/>
+</g></g>
+</g>
+</svg>

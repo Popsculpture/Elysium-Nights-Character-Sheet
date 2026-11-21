@@ -15,7 +15,14 @@ window.EN = window.EN || {};
   var G = { box: null, fig: null, bubble: null, txt: null, timer: null, seen: {}, hidden: false, last: 0 };
 
   function on() { return store(KEY) !== "0"; }
-  function setOn(v) { store(KEY, v ? "1" : "0"); G.hidden = false; paint(); }
+  /* sent away: his getaway plays first (js/w98_gizmo_act.js), then he goes; with no getaway to play he goes at once */
+  function leaving(then) { var a = EN.w98.gizmo && EN.w98.gizmo.act; if (a && a.leave) a.leave(then); else then(); }
+  function setOn(v) {
+    if (!v && on() && !G.hidden) { leaving(function () { store(KEY, "0"); G.hidden = false; paint(); }); return; }
+    var was = on() && !G.hidden;
+    store(KEY, v ? "1" : "0"); G.hidden = false; paint();
+    if (v && !was && EN.w98.gizmo && EN.w98.gizmo.act) EN.w98.gizmo.act.boot();   // switched on: he boots up
+  }
 
   /* what he says about a program the first time it is opened: a sentence each, all of it true of that program */
   var HINT = {
@@ -144,7 +151,7 @@ window.EN = window.EN || {};
       { label: "Tell me a &tip", icon: K.pix("bulb", 16), go: function () { var t = EN.w98.extras && EN.w98.extras.nextTip && EN.w98.extras.nextTip(); say(t || "Press Ctrl+K to find a rule, your gear or someone you know."); } },
       { label: "What is &this?", go: function () { say(HINT[live] || "That is the open window. Its menu bar has File, View and Help.") } },
       { sep: true },
-      { label: "&Hide me for now", go: function () { G.hidden = true; paint(); } },
+      { label: "&Hide me for now", go: function () { leaving(function () { G.hidden = true; paint(); }); } },
       { label: "Turn Gizmo &off", go: function () { setOn(false); } },
       { label: "Gizmo &options...", go: function () { EN.w98.openControlPanel("extras"); } }
     ], r.left, r.top, { owner: null });
@@ -164,7 +171,8 @@ window.EN = window.EN || {};
   });
 
   EN.w98.say = say;
-  EN.w98.gizmo = { on: on, setOn: setOn, say: say, hush: hush, menu: menu, hint: function (k) { return HINT[k]; }, present: function () { return !!(G.box && document.documentElement.contains(G.box)); } };
+  EN.w98.gizmo = { on: on, setOn: setOn, say: say, hush: hush, menu: menu, hint: function (k) { return HINT[k]; }, present: function () { return !!(G.box && document.documentElement.contains(G.box)); },
+    fig: function () { return G.fig; }, stage: function () { return G.box; }, hidden: function () { return G.hidden; } };
   // Control Panel > Desktop Extras
   X.cplExtras.push(function () {
     var box = el("input.w98-chk", { type: "checkbox", checked: on(), onchange: function () { setOn(box.checked); } });

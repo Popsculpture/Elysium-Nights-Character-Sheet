@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 96" width="400" height="384" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Core Envy</title>
+<desc id="desc">The Gremlin charges in from the left and knocks Gizmo halfway out of the frame, then stands in his spot. Gizmo charges back and knocks it out the other side. They trade the center four more times, each hit harder, until Gizmo is shoved clean out of frame and has to edge back in. The Gremlin stands tall in the middle, blinks slowly, and looks at the viewer as if it lives there. Gizmo runs his lower tip along the floor, hooks it, and flings it spinning off the top of the frame. He slides back to the center. Eight second loop on a transparent background.</desc>
+<style>
+.gflick{animation:gflick 1.3s steps(1,end) infinite}.ge{transform-origin:33px 43px}@keyframes gflick{0%{opacity:1;transform:translateX(0)}90%{opacity:0}93.5%{opacity:1;transform:translateX(1px)}97%,100%{opacity:1;transform:translateX(0)}}
+
+.gslide{animation:gslide 8s ease-in-out infinite}
+.gizmo{transform-origin:32px 78px;animation:pose 8s ease-in-out infinite}
+.arm{stroke-dasharray:100 300;stroke-dashoffset:103;transform-origin:19px 76px;animation:hook 8s linear infinite,fling 8s ease-in-out infinite}
+.gpos{transform:translate(-46px,40px);animation:gpos 8s ease-in-out infinite}
+.gspin{transform-origin:20px 26px;animation:gspin 8s ease-in-out infinite}
+.gown{transform-origin:20px 48px;animation:gown 8s ease-in-out infinite}
+.gcack{transform-origin:20px 48px;animation:gcack 8s steps(1,end) infinite}
+.ge{animation:ge 8s steps(1,end) infinite}
+.gp{animation:gp 8s steps(1,end) infinite}
+.eyes{transform-origin:33px 41px;animation:lids 8s linear infinite}
+.pupils{animation:look 8s ease-in-out infinite}
+.brow-l{transform-origin:25.5px 31.5px;animation:browL 8s ease-in-out infinite}
+.brow-r{animation:browR 8s ease-in-out infinite}
+@keyframes gslide{0%,8%{transform:translateX(0px);animation-timing-function:cubic-bezier(.2,.7,.4,1)}11.5%{transform:translateX(48px)}13.5%,17%{transform:translateX(46px)}18.5%{transform:translateX(50px);animation-timing-function:cubic-bezier(.5,0,.3,1)}21%{transform:translateX(-24px)}25%,28.2%{transform:translateX(0px);animation-timing-function:cubic-bezier(.2,.7,.4,1)}30.5%{transform:translateX(62px)}33.5%{transform:translateX(60px)}35%{transform:translateX(64px);animation-timing-function:cubic-bezier(.5,0,.3,1)}38.5%{transform:translateX(-30px)}42%,45.8%{transform:translateX(0px);animation-timing-function:cubic-bezier(.2,.7,.4,1)}47.5%{transform:translateX(72px)}49.5%{transform:translateX(72px)}52.5%,80%{transform:translateX(46px)}88%,100%{transform:translateX(0px)}}
+@keyframes pose{0%,8%,14%,23%,28.2%,33%,40%,45.8%,52%,69%,77%,100%{transform:rotate(0deg)}11.5%{transform:rotate(12deg)}18.5%{transform:rotate(6deg)}20.5%{transform:rotate(-10deg)}30.5%{transform:rotate(14deg)}35%{transform:rotate(8deg)}37.5%{transform:rotate(-12deg)}47.5%{transform:rotate(16deg)}70.5%{transform:rotate(-5deg)}72.5%{transform:rotate(6deg)}}
+@keyframes hook{0%{stroke-dashoffset:103}64%{stroke-dashoffset:103;animation-timing-function:cubic-bezier(.2,.7,.3,1)}69%,76%{stroke-dashoffset:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}82%,100%{stroke-dashoffset:103}}
+@keyframes fling{0%,70%{transform:rotate(0);animation-timing-function:cubic-bezier(.6,0,.4,1)}72.5%{transform:rotate(40deg)}73.5%{transform:rotate(36deg)}77%,100%{transform:rotate(0)}}
+@keyframes gpos{0%,5%{transform:translate(-46px,40px);animation-timing-function:cubic-bezier(.5,0,.3,1)}8%{transform:translate(4px,40px)}11%,19.3%{transform:translate(30px,40px);animation-timing-function:cubic-bezier(.2,.7,.4,1)}21%{transform:translate(-22px,40px)}22.5%,27%{transform:translate(-26px,40px);animation-timing-function:cubic-bezier(.5,0,.3,1)}28.2%{transform:translate(4px,40px)}31%,37%{transform:translate(30px,40px);animation-timing-function:cubic-bezier(.2,.7,.4,1)}38.5%{transform:translate(-34px,40px)}40%,44%{transform:translate(-38px,40px);animation-timing-function:cubic-bezier(.5,0,.3,1)}47%,70.5%{transform:translate(30px,40px);animation-timing-function:cubic-bezier(.1,.5,.4,1)}77%,100%{transform:translate(40px,-96px)}}
+@keyframes gspin{0%,19.3%,24%,37%,41%,70.5%{transform:rotate(0)}21%{transform:rotate(-25deg)}38.5%{transform:rotate(-35deg)}77%,100%{transform:rotate(540deg)}}
+@keyframes gown{0%,49%,64%{transform:scale(1,1)}51%,62.5%{transform:scale(1,1.08)}66%,100%{transform:scale(1,1)}}
+@keyframes gcack{0%{transform:rotate(0)}12.500%{transform:rotate(7deg)}13.125%{transform:rotate(-7deg)}13.750%{transform:rotate(7deg)}14.375%{transform:rotate(-7deg)}15.000%{transform:rotate(7deg)}15.625%{transform:rotate(-7deg)}16.250%{transform:rotate(0)}31.875%{transform:rotate(7deg)}32.500%{transform:rotate(-7deg)}33.125%{transform:rotate(7deg)}33.750%{transform:rotate(-7deg)}34.375%{transform:rotate(7deg)}35.000%{transform:rotate(0)}48.125%{transform:rotate(7deg)}48.750%{transform:rotate(-7deg)}49.375%{transform:rotate(7deg)}50.000%{transform:rotate(0)}100%{transform:rotate(0)}}
+@keyframes ge{0%{transform:scale(1,1)}12%{transform:scale(1,.35)}16%{transform:scale(1,1)}31.5%{transform:scale(1,.35)}34.5%{transform:scale(1,1)}48%{transform:scale(1,.35)}50%{transform:scale(1,1)}53.5%{transform:scale(1,.1)}55.5%{transform:scale(1,1)}66%{transform:scale(1.3,1.3)}100%{transform:scale(1,1)}}
+@keyframes gp{0%{transform:translate(1.3px,.5px)}50%{transform:translate(0,0)}65%{transform:translate(0,1.8px)}100%{transform:translate(1.3px,.5px)}}
+@keyframes lids{0%,8%,88%,94%,97%,100%{transform:scale(1,1)}8.6%,10.5%{transform:scale(1.25,1.25)}12.5%,28.5%{transform:scale(1,.6)}29%,31%{transform:scale(1.25,1.25)}33%,46%{transform:scale(1,.6)}46.5%,48.5%{transform:scale(1.25,1.25)}52.5%,63%{transform:scale(1,.45)}64.5%,71%{transform:scale(1,.7)}73%,86%{transform:scale(1.1,1.1)}95.5%{transform:scale(1,.08)}}
+@keyframes look{0%,4%,90%,100%{transform:translate(0,0)}5.5%,59%{transform:translate(-3.3px,0)}60.5%,69.5%{transform:translate(-2.6px,1.6px)}70.5%,72%{transform:translate(-3px,-1px)}73.5%,86%{transform:translate(-1px,-2.4px)}}
+@keyframes browL{0%,8%,90%,100%{transform:translateY(0px) rotate(0deg)}8.6%,10.5%{transform:translateY(-3px) rotate(0deg)}12.5%,71%{transform:translateY(1.6px) rotate(44deg)}73.5%,86%{transform:translateY(-1.5px) rotate(0deg)}}
+@keyframes browR{0%,8%,90%,100%{transform:translateY(0)}8.6%,10.5%{transform:translateY(-3px)}12.5%,71%{transform:translateY(1.6px)}73.5%,86%{transform:translateY(-1.5px)}}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<g class="gpos"><g class="gspin"><g class="gown"><g class="gcack"><g class="gflick"><g transform="scale(.62)"><path d="M19 76 V52 l-5 -8 l5 -8 V22 a13 13 0 0 1 26 0 V38 l5 7 l-5 7 V62 a7 7 0 0 1 -14 0 V36" fill="none" stroke="#e2622b" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="miter"/><path d="M19 31 l5 3 l4 -4 l5 4 l4 -4 l5 4 l4 -3" fill="none" stroke="#e2622b" stroke-width="2.4" stroke-linejoin="miter"/><g class="ge"><circle cx="26" cy="43" r="5.8" fill="#ffe9a8"/><circle cx="40.5" cy="44" r="3.3" fill="#ffe9a8"/><g class="gp"><circle cx="26.5" cy="43.5" r="2.1" fill="#07090d"/><circle cx="40.8" cy="44.3" r="1.5" fill="#07090d"/></g></g></g></g></g></g></g></g>
+<g transform="translate(18 10)"><g class="gslide"><g class="gizmo">
+<!-- Lower tip runs left under the Gremlin and hooks up on its far side. -->
+<path class="arm" pathLength="100" d="M19 76 V79 a6 6 0 0 1 -6 6 H-27 a5 5 0 0 1 -5 -5 V74" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="brow-l" d="M22 33 l7 -3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/><path class="brow-r" d="M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/><g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g></g>
+</svg>

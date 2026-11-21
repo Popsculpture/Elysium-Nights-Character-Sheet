@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 96" width="288" height="384" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Dead Drop</title>
+<desc id="desc">Gizmo crouches and throws a thin line of his own wire up over the top edge of the frame. He tests it, then lowers himself in three drops until he sinks out of view below the frame, leaving only the taut wire. The wire twangs twice. He hauls himself back up in two pulls with a glowing file wedged in his lower curve, shakes loose pixels off, checks both ways, tucks the file behind his body, and unhooks. Eight second loop on a transparent background.</desc>
+<style>
+.rappel{animation:rappel 8s ease-in-out infinite}
+.pose{transform-origin:32px 78px;animation:pose 8s ease-in-out infinite}
+.shk{transform-origin:32px 78px;animation:shk 8s steps(1,end) infinite}
+.wire,.hook,.file,.tug,.bt{opacity:0}
+.wire,.hook{animation:wire 8s steps(1,end) infinite}
+.file{transform-origin:38px 57px;animation:tuck 8s ease-in-out infinite,filev 8s steps(1,end) infinite}
+.tug{animation:tug 8s steps(1,end) infinite}
+.glint{animation:glint .4s steps(1,end) infinite}
+.bt0{transform:translate(46px,50px);animation:bt0 8s linear infinite,btv0 8s steps(1,end) infinite}@keyframes bt0{0%{transform:translate(46px,50px)}68%{transform:translate(46px,50px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}71.5%{transform:translate(54px,44px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}75%,100%{transform:translate(60px,62px)}}@keyframes btv0{0%{opacity:0}68%{opacity:1}75%,100%{opacity:0}}.bt1{transform:translate(18px,46px);animation:bt1 8s linear infinite,btv1 8s steps(1,end) infinite}@keyframes bt1{0%{transform:translate(18px,46px)}68.6%{transform:translate(18px,46px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}72.3%{transform:translate(10px,40px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}76%,100%{transform:translate(4px,58px)}}@keyframes btv1{0%{opacity:0}68.6%{opacity:1}76%,100%{opacity:0}}.bt2{transform:translate(46px,30px);animation:bt2 8s linear infinite,btv2 8s steps(1,end) infinite}@keyframes bt2{0%{transform:translate(46px,30px)}69.3%{transform:translate(46px,30px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}72.9%{transform:translate(55px,22px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}76.5%,100%{transform:translate(62px,40px)}}@keyframes btv2{0%{opacity:0}69.3%{opacity:1}76.5%,100%{opacity:0}}.bt3{transform:translate(18px,28px);animation:bt3 8s linear infinite,btv3 8s steps(1,end) infinite}@keyframes bt3{0%{transform:translate(18px,28px)}69.9%{transform:translate(18px,28px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}73.45%{transform:translate(9px,22px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}77%,100%{transform:translate(2px,38px)}}@keyframes btv3{0%{opacity:0}69.9%{opacity:1}77%,100%{opacity:0}}.bt4{transform:translate(40px,68px);animation:bt4 8s linear infinite,btv4 8s steps(1,end) infinite}@keyframes bt4{0%{transform:translate(40px,68px)}70.5%{transform:translate(40px,68px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}74.0%{transform:translate(50px,66px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}77.5%,100%{transform:translate(56px,80px)}}@keyframes btv4{0%{opacity:0}70.5%{opacity:1}77.5%,100%{opacity:0}}.bt5{transform:translate(20px,66px);animation:bt5 8s linear infinite,btv5 8s steps(1,end) infinite}@keyframes bt5{0%{transform:translate(20px,66px)}71.1%{transform:translate(20px,66px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}74.55%{transform:translate(12px,62px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}78%,100%{transform:translate(6px,78px)}}@keyframes btv5{0%{opacity:0}71.1%{opacity:1}78%,100%{opacity:0}}
+.eyes{transform-origin:33px 41px;animation:lids 8s linear infinite}
+.pupils{animation:look 8s ease-in-out infinite}
+.brows{animation:brows 8s ease-in-out infinite}
+@keyframes rappel{
+0%,8%,12.5%{transform:translate(0,0)}
+9.5%{transform:translate(0,-2px)}
+11%{transform:translate(0,1.5px)}
+14%{transform:translate(0,0)}
+18%,20.5%{transform:translate(0,22px)}
+24.5%,27%{transform:translate(0,58px)}
+31%{transform:translate(0,104px)}
+44.3%{transform:translate(0,104px);animation-timing-function:steps(1,end)}
+44.4%{transform:translate(1.5px,107px);animation-timing-function:steps(1,end)}
+45%{transform:translate(-1.2px,106px);animation-timing-function:steps(1,end)}
+45.6%{transform:translate(.6px,104px);animation-timing-function:steps(1,end)}
+46.3%{transform:translate(0,104px);animation-timing-function:steps(1,end)}
+48.1%{transform:translate(1.5px,107px);animation-timing-function:steps(1,end)}
+48.7%{transform:translate(-1.2px,106px);animation-timing-function:steps(1,end)}
+49.4%{transform:translate(.6px,104px);animation-timing-function:steps(1,end)}
+50%,52%{transform:translate(0,104px);animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+58%,60%{transform:translate(0,50px);animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+67%,100%{transform:translate(0,0)}}
+@keyframes pose{
+0%,4.5%,90%,100%{transform:scale(1,1)}
+7%{transform:scale(1.06,.9)}
+8.5%,86%{transform:scale(.98,1.03)}
+87.5%{transform:scale(1.05,.93)}}
+@keyframes shk{
+0%,67.9%{transform:rotate(0)}
+68%{transform:rotate(5deg)}68.6%{transform:rotate(-5deg)}69.3%{transform:rotate(4deg)}69.9%{transform:rotate(-4deg)}
+70.5%{transform:rotate(3deg)}71.1%{transform:rotate(-2deg)}71.8%,100%{transform:rotate(0)}}
+@keyframes wire{0%{opacity:0}8%{opacity:1}86%,100%{opacity:0}}
+@keyframes filev{0%{opacity:0}31%{opacity:1}84%,100%{opacity:0}}
+@keyframes tuck{
+0%,76.5%{transform:translateX(0) scaleX(1)}
+84%,100%{transform:translateX(-17px) scaleX(.15)}}
+@keyframes tug{0%{opacity:0}44.4%{opacity:1}45.6%{opacity:0}48.1%{opacity:1}49.4%,100%{opacity:0}}
+@keyframes glint{0%{opacity:1}50%,100%{opacity:0}}
+@keyframes lids{
+0%,13%,60%,67.5%,73%,75.5%,86%,95.5%,98.5%,100%{transform:scale(1,1)}
+15%,31%{transform:scale(1,.85)}
+68%,72%{transform:scale(1,.1)}
+77%,84%{transform:scale(1,.75)}
+97%{transform:scale(1,.08)}}
+@keyframes look{
+0%,3%,95%,100%{transform:translate(0,0)}
+5%,13%{transform:translate(-1px,-2.4px)}
+15%,52%{transform:translate(-.5px,1.9px)}
+58%,75%{transform:translate(.2px,1.8px)}
+76.5%,78.5%{transform:translate(-3.3px,0)}
+79.5%,81.5%{transform:translate(1.4px,0)}
+82.5%,84.5%{transform:translate(-1px,1.5px)}
+86%,88.5%{transform:translate(-1px,-2.4px)}
+90.5%,93.5%{transform:translate(-1px,-.3px)}}
+@keyframes brows{
+0%,3%,91%,100%{transform:translateY(0)}
+5%,13%{transform:translateY(-1.5px)}
+15%,52%{transform:translateY(.8px)}
+60%,75%{transform:translateY(-1px)}
+76.5%,84.5%{transform:translateY(1px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<!-- Hook over the top edge of the frame. -->
+<path class="hook" d="M36 3 V.8 H40.5 V4.5" fill="none" stroke="#2ee6a0" stroke-width="1.5"/>
+<g class="tug" fill="#e9f1fb"><rect x="31" y="91" width="2" height="1.5"/><rect x="39.5" y="91" width="2" height="1.5"/></g>
+<g transform="translate(4 10)">
+<g class="rappel"><g class="shk"><g class="pose">
+<!-- His own wire, thin, running up out of frame. -->
+<path class="wire" d="M32 8 V-150" stroke="#2ee6a0" stroke-width="1.5"/>
+<!-- The file rides in his lower curve, behind the wire of his body. -->
+<g class="file">
+<rect x="33.6" y="51.5" width="8.8" height="11" fill="#3ce0ff" stroke="#07090d" stroke-width=".4"/>
+<path d="M39.6 51.5 L42.4 54.3 H39.6 Z" fill="#07090d"/>
+<path d="M35.2 55.5 h3.5 M35.2 57.7 h5.5 M35.2 59.9 h4" stroke="#07090d" stroke-width=".7"/>
+<rect class="glint" x="42.8" y="49.5" width="1.5" height="1.5" fill="#e9f1fb"/>
+</g>
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g></g>
+<rect class="bt bt0" x="-1.0" y="-1.0" width="2" height="2" fill="#3ce0ff"/><rect class="bt bt1" x="-1.0" y="-1.0" width="2" height="2" fill="#3ce0ff"/><rect class="bt bt2" x="-0.75" y="-0.75" width="1.5" height="1.5" fill="#e9f1fb"/><rect class="bt bt3" x="-0.75" y="-0.75" width="1.5" height="1.5" fill="#3ce0ff"/><rect class="bt bt4" x="-1.0" y="-1.0" width="2" height="2" fill="#e9f1fb"/><rect class="bt bt5" x="-0.75" y="-0.75" width="1.5" height="1.5" fill="#3ce0ff"/>
+</g>
+</svg>

@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 86 96" width="344" height="384" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Sleep Mode</title>
+<desc id="desc">A purple nightcap with a white brim and pom-pom drops onto Gizmo's head. He glances up at it, his eyelids sink shut in stages, and his green outline dims in two steps while staying clearly visible. He breathes slowly and nods as small z, medium Z, and large Z letters appear above him one after another, twice. Then he jolts awake at full brightness, the cap flies off, and he returns to neutral. Eight second loop on a transparent background.</desc>
+<style>
+.gizmo{transform-origin:40px 92px;animation:pose 8s ease-in-out infinite}
+.cap{transform:translateY(-44px);animation:cap 8s ease-in-out infinite}
+.tail{transform-origin:40px 5px;animation:tail 8s ease-in-out infinite}
+.dim1,.dim2,.z1,.z2,.z3{opacity:0;animation:8s steps(1,end) infinite}
+.dim1{animation-name:dim1}.dim2{animation-name:dim2}
+.z1{animation-name:z1}.z2{animation-name:z2}.z3{animation-name:z3}
+.eyes{transform-origin:33px 41px;animation:lids 8s ease-in-out infinite}
+.pupils{animation:look 8s ease-in-out infinite}
+.brows{animation:brows 8s ease-in-out infinite}
+@keyframes pose{
+0%,7.9%,10.5%,85%,100%{transform:rotate(0) scale(1,1)}
+8%{transform:rotate(0) scale(1.04,.95)}
+27%{transform:rotate(3deg) scale(1,.98)}
+30%{transform:rotate(3deg) scale(1,.97)}
+42.5%{transform:rotate(4deg) scale(1,1)}
+55%{transform:rotate(6deg) scale(1,.97)}
+57%{transform:rotate(3deg) scale(1,.99)}
+67.5%{transform:rotate(4deg) scale(1,1)}
+80%{transform:rotate(5.5deg) scale(1,.97)}
+81.9%{transform:rotate(5.5deg) scale(1,.97);animation-timing-function:steps(1,end)}
+82%{transform:rotate(0) scale(1,1.04)}}
+@keyframes cap{
+0%,3%{transform:translateY(-44px);animation-timing-function:cubic-bezier(.5,0,1,.7)}
+8%{transform:translateY(0)}
+9.5%{transform:translateY(-1.5px)}
+11%,83%{transform:translateY(0);animation-timing-function:cubic-bezier(.3,0,.8,.4)}
+88%,100%{transform:translateY(-44px)}}
+@keyframes tail{
+0%,7%{transform:rotate(-20deg)}
+10%{transform:rotate(9deg)}
+12.5%{transform:rotate(-4deg)}
+15%,27%{transform:rotate(0)}
+30%,55%,80%{transform:rotate(3deg)}
+42.5%,67.5%{transform:rotate(-1deg)}
+57%{transform:rotate(-6deg)}
+83%{transform:rotate(-12deg)}
+88%,100%{transform:rotate(-20deg)}}
+@keyframes dim1{0%{opacity:0}22%{opacity:1}82%,100%{opacity:0}}
+@keyframes dim2{0%{opacity:0}28%{opacity:1}82%,100%{opacity:0}}
+@keyframes z1{0%{opacity:0}32%{opacity:1}49%{opacity:0}54%{opacity:1}71%{opacity:0}75%{opacity:1}82%,100%{opacity:0}}
+@keyframes z2{0%{opacity:0}37%{opacity:1}49%{opacity:0}59%{opacity:1}71%{opacity:0}79%{opacity:1}82%,100%{opacity:0}}
+@keyframes z3{0%{opacity:0}42%{opacity:1}49%{opacity:0}64%{opacity:1}71%,100%{opacity:0}}
+@keyframes lids{
+0%,13%,85%,92%,95%,100%{transform:scale(1,1)}
+16%{transform:scale(1,.7)}
+19%{transform:scale(1,.8)}
+22%{transform:scale(1,.4)}
+24%{transform:scale(1,.5)}
+27%{transform:scale(1,.1)}
+81.9%{transform:scale(1,.1);animation-timing-function:steps(1,end)}
+82%{transform:scale(1.2,1.2)}
+93.5%{transform:scale(1,.08)}}
+@keyframes look{
+0%,7%,93%,100%{transform:translate(0,0)}
+9.5%,13%{transform:translate(-1px,-2.4px)}
+16%{transform:translate(0,.8px)}
+81.9%{transform:translate(0,.8px);animation-timing-function:steps(1,end)}
+82%,84%{transform:translate(-1px,-.3px)}
+86%,89%{transform:translate(-1px,-2.4px)}}
+@keyframes brows{
+0%,7%,93%,100%{transform:translateY(0)}
+9.5%,13%{transform:translateY(-1.2px)}
+17%{transform:translateY(1.3px)}
+81.9%{transform:translateY(1.3px);animation-timing-function:steps(1,end)}
+82%{transform:translateY(-3px)}
+87%{transform:translateY(-1px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<g class="gizmo"><g transform="translate(8 14)">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="dim1" d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#29cf90" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="dim2" d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#24b881" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows">
+<path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+<path class="dim1" d="M22 33 l7 -3 M44 30 l-7 3" stroke="#29cf90" stroke-width="2.2" stroke-linecap="round"/>
+<path class="dim2" d="M22 33 l7 -3 M44 30 l-7 3" stroke="#24b881" stroke-width="2.2" stroke-linecap="round"/>
+</g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+<!-- Nightcap: dome over his upper curve, floppy tail with a pom-pom, white brim. -->
+<g class="cap">
+<g class="tail">
+<path d="M34 1.5 C45 -1 56 7 55.5 21 L51.5 21 C51.5 13 47 9.5 41 11 Z" fill="#b893ff"/>
+<circle cx="53.5" cy="23" r="3.2" fill="#e9f1fb"/>
+</g>
+<path d="M17.5 15 A14.5 14.5 0 0 1 46.5 15 Z" fill="#b893ff"/>
+<path d="M17 15 H47" stroke="#e9f1fb" stroke-width="3.2" stroke-linecap="round"/>
+</g>
+</g></g>
+<!-- Sleep letters step up and to the right, small to large. -->
+<g fill="none" stroke="#b893ff" stroke-linecap="square" stroke-linejoin="miter">
+<path class="z1" d="M70 28 h3 l-3 3 h3" stroke-width="1"/>
+<path class="z2" d="M74 18 h4.5 l-4.5 4.5 h4.5" stroke-width="1.2"/>
+<path class="z3" d="M78 5 h6 l-6 6 h6" stroke-width="1.5"/>
+</g>
+</svg>

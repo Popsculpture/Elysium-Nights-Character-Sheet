@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 100" width="384" height="400" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: ICE Encounter</title>
+<desc id="desc">A small red security grid rises beside Gizmo. He leans into it, gets a tiny spark, and recoils. He flips a miniature welding visor down over his eyes, leans away, and slowly stretches his lower tip along the floor to poke the grid again. It sparks a second time and he hops in fright as the tip snaps back. He lifts the visor, eyes the grid warily, and it switches off band by band. Six second loop on a transparent background.</desc>
+<style>
+.gizmo{transform-origin:42px 86px;animation:pose 6s ease-in-out infinite}
+.arm{stroke-dasharray:100 300;stroke-dashoffset:103;animation:poke 6s ease-in-out infinite}
+.visor{transform-origin:33px 33px;transform:scaleY(0);animation:visor 6s ease-in-out infinite}
+.veyes{animation:veyes 6s ease-in-out infinite,vblink 6s steps(1,end) infinite}
+.band,.spark1,.spark2{opacity:0;animation:6s steps(1,end) infinite}
+.b0{animation-name:b0}@keyframes b0{0%{opacity:0}4.0%{opacity:1}89.2%,100%{opacity:0}}.b1{animation-name:b1}@keyframes b1{0%{opacity:0}5.0%{opacity:1}88.3%,100%{opacity:0}}.b2{animation-name:b2}@keyframes b2{0%{opacity:0}6.0%{opacity:1}87.4%,100%{opacity:0}}.b3{animation-name:b3}@keyframes b3{0%{opacity:0}7.0%{opacity:1}86.5%,100%{opacity:0}}.b4{animation-name:b4}@keyframes b4{0%{opacity:0}8.0%{opacity:1}85.6%,100%{opacity:0}}.b5{animation-name:b5}@keyframes b5{0%{opacity:0}9.0%{opacity:1}84.7%,100%{opacity:0}}.b6{animation-name:b6}@keyframes b6{0%{opacity:0}10.0%{opacity:1}83.8%,100%{opacity:0}}.b7{animation-name:b7}@keyframes b7{0%{opacity:0}11.0%{opacity:1}82.9%,100%{opacity:0}}.b8{animation-name:b8}@keyframes b8{0%{opacity:0}12.0%{opacity:1}82.0%,100%{opacity:0}}
+.spark1{animation-name:spark1}.spark2{animation-name:spark2}
+.eyes{transform-origin:33px 41px;animation:lids 6s linear infinite}
+.pupils{animation:look 6s ease-in-out infinite}
+.brows{animation:brows 6s ease-in-out infinite}
+@keyframes pose{
+0%,6%,92%,100%{transform:translateY(0) rotate(0) scale(1,1)}
+8%,13%{transform:translateY(0) rotate(2deg) scale(1,1)}
+21.5%{transform:translateY(0) rotate(13deg) scale(1,1)}
+22%{transform:translateY(0) rotate(13deg) scale(1,1);animation-timing-function:cubic-bezier(.1,.7,.3,1)}
+24.5%{transform:translateY(0) rotate(-9deg) scale(1,1.03)}
+27%,31%{transform:translateY(0) rotate(-7deg) scale(1,1)}
+35%,38%{transform:translateY(0) rotate(0) scale(1,1)}
+40%{transform:translateY(.8px) rotate(0) scale(1.01,.97)}
+42%{transform:translateY(0) rotate(0) scale(1,1)}
+47%,62.5%{transform:translateY(0) rotate(-4deg) scale(1,1)}
+65.5%{transform:translateY(-7px) rotate(-6deg) scale(.97,1.05)}
+68.5%{transform:translateY(0) rotate(-3deg) scale(1,1)}
+69.5%{transform:translateY(0) rotate(-2deg) scale(1.05,.93)}
+72%,88%{transform:translateY(0) rotate(-2deg) scale(1,1)}}
+@keyframes poke{
+0%,46%{stroke-dashoffset:103}
+58%{stroke-dashoffset:18}
+60%,61.5%{stroke-dashoffset:27}
+62.5%,63%{stroke-dashoffset:0}
+67%,100%{stroke-dashoffset:103}}
+@keyframes visor{
+0%,35%{transform:scaleY(0)}
+37.5%{transform:scaleY(.6)}
+39.5%{transform:scaleY(1.12)}
+41%,74%{transform:scaleY(1)}
+75.5%{transform:scaleY(1.08)}
+78%,100%{transform:scaleY(0)}}
+@keyframes veyes{
+0%,43%,64%,100%{transform:translateX(0)}
+46%,62.5%{transform:translateX(3.2px)}}
+@keyframes vblink{0%{opacity:1}63.4%{opacity:0}65%{opacity:1}68%{opacity:0}69.6%,100%{opacity:1}}
+@keyframes spark1{0%{opacity:0}22%{opacity:1}25.5%,100%{opacity:0}}
+@keyframes spark2{0%{opacity:0}62.5%{opacity:1}66.5%,100%{opacity:0}}
+@keyframes lids{
+0%,5%,35%,92%,94%,97%,100%{transform:scale(1,1)}
+8%,21.5%{transform:scale(1,.75)}
+22.5%{transform:scale(1.3,1.3)}
+27%,32%{transform:scale(1.15,1.15)}
+77%,88%{transform:scale(1,.7)}
+95.5%{transform:scale(1,.08)}}
+@keyframes look{
+0%,5%,92%,100%{transform:translate(0,0)}
+7%,21.5%{transform:translate(1.4px,0)}
+24%,33%{transform:translate(1.4px,-.2px)}
+36%,74%{transform:translate(-1px,-2.4px)}
+77%,88%{transform:translate(1.4px,.2px)}}
+@keyframes brows{
+0%,5%,35%,44%,92%,100%{transform:translateY(0)}
+8%,21.5%{transform:translateY(1px)}
+22.5%{transform:translateY(-3px)}
+27%,32%{transform:translateY(-2px)}
+47%,62.4%{transform:translateY(-1px)}
+63%,68%{transform:translateY(-3.5px)}
+72%,76%{transform:translateY(-1px)}
+79%,88%{transform:translateY(.8px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<!-- Security grid: red lattice built from nine bands. -->
+<g fill="none" stroke="#ff3b4e" stroke-width="1.2">
+<path class="band b0" d="M70 96V88M74 96V88M78 96V88M82 96V88M69.4 88H82.6M69.4 92H82.6M69.4 96H82.6"/>
+<path class="band b1" d="M70 88V80M74 88V80M78 88V80M82 88V80M69.4 80H82.6M69.4 84H82.6"/>
+<path class="band b2" d="M70 80V72M74 80V72M78 80V72M82 80V72M69.4 72H82.6M69.4 76H82.6"/>
+<path class="band b3" d="M70 72V64M74 72V64M78 72V64M82 72V64M69.4 64H82.6M69.4 68H82.6"/>
+<path class="band b4" d="M70 64V56M74 64V56M78 64V56M82 64V56M69.4 56H82.6M69.4 60H82.6"/>
+<path class="band b5" d="M70 56V48M74 56V48M78 56V48M82 56V48M69.4 48H82.6M69.4 52H82.6"/>
+<path class="band b6" d="M70 48V40M74 48V40M78 48V40M82 48V40M69.4 40H82.6M69.4 44H82.6"/>
+<path class="band b7" d="M70 40V32M74 40V32M78 40V32M82 40V32M69.4 32H82.6M69.4 36H82.6"/>
+<path class="band b8" d="M70 32V24M74 32V24M78 32V24M82 32V24M69.4 24H82.6M69.4 28H82.6"/>
+</g>
+<g class="gizmo"><g transform="translate(10 8)">
+<!-- Lower tip creeps along the floor to the grid. -->
+<path class="arm" pathLength="100" d="M19 76 V79 a6 6 0 0 0 6 6 H58" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+<!-- Welding visor flips down from a hinge line above his eyes. -->
+<g class="visor">
+<rect x="20" y="33" width="26" height="14.5" rx="1.5" fill="#07090d" stroke="#6b7c93" stroke-width=".9"/>
+<rect x="23.5" y="37.5" width="19" height="5" fill="#1c5744"/>
+<g class="veyes" fill="#2ee6a0"><rect x="27.5" y="38.8" width="2.4" height="2.4"/><rect x="35.5" y="38.8" width="2.4" height="2.4"/></g>
+</g>
+</g></g>
+<g class="spark1"><rect x="66" y="27" width="2" height="2" fill="#ffcc66"/><rect x="70" y="24" width="2" height="2" fill="#e9f1fb"/><rect x="65" y="33" width="2" height="2" fill="#ffcc66"/></g>
+<g class="spark2"><rect x="65" y="84" width="2" height="2" fill="#ffcc66"/><rect x="68" y="79" width="2" height="2" fill="#e9f1fb"/><rect x="63" y="89" width="2" height="2" fill="#ffcc66"/><rect x="72" y="83" width="2" height="2" fill="#ffcc66"/><rect x="66" y="96" width="2" height="2" fill="#e9f1fb"/></g>
+</svg>

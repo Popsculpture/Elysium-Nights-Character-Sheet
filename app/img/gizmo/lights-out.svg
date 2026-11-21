@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 104" width="512" height="416" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Lights Out</title>
+<desc id="desc">A moth flutters in and lands on Gizmo's glowing head. He fails to shake it off, gives a flat look, and switches his own neon off. The confused moth leaves. Gizmo flickers back on and looks smug. Ten second loop on a transparent background.</desc>
+<style>
+.gizmo{transform-origin:64px 96px;animation:pose 10s ease-in-out infinite}
+.neon{animation:power 10s steps(1,end) infinite}
+.eyes{transform-origin:33px 41px;animation:lids 10s linear infinite}
+.pupils{animation:look 10s ease-in-out infinite}
+.brows{animation:brows 10s ease-in-out infinite}
+.moth-vis{animation:mothvis 10s steps(1,end) infinite}
+.moth{transform:translate(140px,2px);animation:flight 10s ease-in-out infinite}
+.wing-up{animation:flapA .2s steps(1,end) infinite}
+.wing-down{opacity:0;animation:flapB .2s steps(1,end) infinite}
+.click{opacity:0;animation:click 10s steps(1,end) infinite}
+.huh{opacity:0;animation:huh 10s steps(1,end) infinite}
+@keyframes pose{
+0%,29%{transform:translateY(0) rotate(0) scaleY(1)}
+30%{transform:translateY(0) rotate(0) scaleY(.975)}
+32%,35%{transform:translateY(0) rotate(0) scaleY(1)}
+36.2%{transform:translateY(0) rotate(-5deg) scaleY(1)}
+37.6%{transform:translateY(0) rotate(5deg) scaleY(1)}
+39%{transform:translateY(0) rotate(-3deg) scaleY(1)}
+40.5%,47.4%{transform:translateY(0) rotate(0) scaleY(1)}
+48.2%{transform:translateY(0) rotate(0) scaleY(.95)}
+50%,72%{transform:translateY(0) rotate(0) scaleY(1)}
+73%{transform:translateY(0) rotate(0) scaleY(1.04)}
+75.5%{transform:translateY(0) rotate(0) scaleY(1)}
+79%,87%{transform:translateY(-1.5px) rotate(2.5deg) scaleY(1.03)}
+93%,100%{transform:translateY(0) rotate(0) scaleY(1)}}
+@keyframes power{0%{opacity:1}48%{opacity:0}72%{opacity:1}72.8%{opacity:0}73.6%{opacity:1}74.2%{opacity:0}74.8%,100%{opacity:1}}
+@keyframes lids{
+0%,3.4%,4.6%,43.5%,49.2%,61%,62.2%,76%,91%,100%{transform:scaleY(1)}
+4%,61.6%{transform:scaleY(.08)}
+45%,47.6%{transform:scaleY(.5)}
+79%,87%{transform:scaleY(.6)}}
+@keyframes look{
+0%,8%,93%,100%{transform:translate(0,0)}
+11%{transform:translate(1.4px,-1.2px)}
+13%{transform:translate(1.4px,-.6px)}
+17%{transform:translate(1.2px,-1.6px)}
+21%{transform:translate(1.5px,-.4px)}
+25%{transform:translate(.6px,-2.2px)}
+29%,43%{transform:translate(-1px,-2.8px)}
+44.5%,51%{transform:translate(-1px,-.5px)}
+53%,62%{transform:translate(-1px,-2.8px)}
+65%{transform:translate(-2.6px,-2px)}
+68%,71%{transform:translate(-3.4px,-1px)}
+73%,76%{transform:translate(-1px,-.5px)}
+79%,87%{transform:translate(-3px,-.3px)}}
+@keyframes brows{
+0%,29%,93%,100%{transform:translateY(0)}
+31%,43%{transform:translateY(1.5px)}
+45%,47.6%{transform:translateY(2.2px)}
+50%,71%{transform:translateY(1px)}
+73%,76%{transform:translateY(-1.5px)}
+79%{transform:translateY(-2.2px)}
+81%{transform:translateY(-.6px)}
+83%,87%{transform:translateY(-2.2px)}}
+@keyframes flight{
+0%,8%{transform:translate(140px,2px)}
+13%{transform:translate(112px,32px)}
+17%{transform:translate(98px,18px)}
+21%{transform:translate(88px,46px)}
+25%{transform:translate(80px,14px)}
+29.5%,36%{transform:translate(64px,21px)}
+37.6%{transform:translate(64px,11px)}
+40%,50.5%{transform:translate(64px,21px)}
+53%{transform:translate(64px,12px)}
+56%{transform:translate(59px,15px)}
+59%{transform:translate(68px,12px)}
+62%{transform:translate(64px,14px)}
+70%,100%{transform:translate(-14px,38px)}}
+@keyframes mothvis{0%{opacity:1}71%,100%{opacity:0}}
+@keyframes flapA{0%{opacity:1}50%,100%{opacity:0}}
+@keyframes flapB{0%{opacity:0}50%,100%{opacity:1}}
+@keyframes click{0%{opacity:0}48%{opacity:1}50.5%,100%{opacity:0}}
+@keyframes huh{0%{opacity:0}54%{opacity:1}62.5%,100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<g class="gizmo"><g transform="translate(32 18)">
+<!-- Unlit tube sits under the neon so the switch-off is a hard cut, not a fade. -->
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#1c5744" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="neon" d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows">
+<path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#1c5744" stroke-width="2.2" stroke-linecap="round"/>
+<path class="neon" d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/>
+</g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g>
+<g class="click" fill="#ffcc66"><rect x="40" y="50" width="3" height="3"/><rect x="35" y="56" width="3" height="3"/><rect x="85" y="50" width="3" height="3"/><rect x="90" y="56" width="3" height="3"/></g>
+<g class="huh" fill="#ffcc66"><rect x="75" y="2" width="4.5" height="1.5"/><rect x="78" y="3.5" width="1.5" height="1.5"/><rect x="76.5" y="5" width="1.5" height="1.5"/><rect x="76.5" y="8" width="1.5" height="1.5"/></g>
+<g class="moth-vis"><g class="moth" stroke="#07090d" stroke-width=".6" stroke-linejoin="miter">
+<g class="wing-up" fill="#f4e8c6"><rect x="-5.25" y="-4.5" width="4.5" height="4.5"/><rect x=".75" y="-4.5" width="4.5" height="4.5"/><rect x="-3.75" y="0" width="3" height="3"/><rect x=".75" y="0" width="3" height="3"/></g>
+<g class="wing-down" fill="#f4e8c6"><rect x="-5.25" y="-1.5" width="4.5" height="3"/><rect x=".75" y="-1.5" width="4.5" height="3"/><rect x="-3.75" y="1.5" width="3" height="1.5"/><rect x=".75" y="1.5" width="3" height="1.5"/></g>
+<rect x="-.75" y="-3" width="1.5" height="6" fill="#8a6f4a"/>
+</g></g>
+</svg>

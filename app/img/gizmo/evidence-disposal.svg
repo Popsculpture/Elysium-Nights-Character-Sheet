@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 100" width="432" height="400" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Evidence Disposal</title>
+<desc id="desc">A miniature shredder pops into view beside Gizmo. He checks over his shoulder, stretches his lower tip round and up, and produces a glowing data slip above the slot. The curled tip pushes the slip in, the shredder rattles, and small square scraps fly out of its side, scatter, and blink away. The shredder pops out of sight and he looks up and away innocently while two tiny musical notes appear and vanish. Six second loop on a transparent background.</desc>
+<style>
+.gizmo{transform-origin:40px 84px;animation:pose 6s ease-in-out infinite}
+.arm{stroke-dasharray:100 300;stroke-dashoffset:103;transform-origin:19px 76px;animation:reach 6s linear infinite,push 6s ease-in-out infinite}
+.shred{transform-origin:75px 92px;transform:scale(0);animation:shred 6s ease-out infinite}
+.shake{animation:shake 6s steps(1,end) infinite}
+.slip{opacity:0;animation:slip 6s linear infinite,slipvis 6s steps(1,end) infinite}
+.run,.n1,.n2,.sc{opacity:0}
+.run{animation:run 6s steps(1,end) infinite}
+.blink{animation:blink .2s steps(1,end) infinite}
+.n1{animation:n1 6s steps(1,end) infinite}
+.n2{animation:n2 6s steps(1,end) infinite}
+.sc0{transform:translate(85.5px,86.5px);animation:sc0 6s linear infinite,scv0 6s steps(1,end) infinite}@keyframes sc0{0%{transform:translate(85.5px,86.5px)}46%{transform:translate(85.5px,86.5px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}50.5%{transform:translate(90px,78px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}55%,100%{transform:translate(96px,84px)}}@keyframes scv0{0%{opacity:0}46%{opacity:1}53.3%{opacity:0}54.15%{opacity:1}55%,100%{opacity:0}}.sc1{transform:translate(85.5px,86.5px);animation:sc1 6s linear infinite,scv1 6s steps(1,end) infinite}@keyframes sc1{0%{transform:translate(85.5px,86.5px)}47.5%{transform:translate(85.5px,86.5px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}52.25%{transform:translate(92px,70px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}57%,100%{transform:translate(100px,74px)}}@keyframes scv1{0%{opacity:0}47.5%{opacity:1}55.3%{opacity:0}56.15%{opacity:1}57%,100%{opacity:0}}.sc2{transform:translate(85.5px,86.5px);animation:sc2 6s linear infinite,scv2 6s steps(1,end) infinite}@keyframes sc2{0%{transform:translate(85.5px,86.5px)}49%{transform:translate(85.5px,86.5px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}53.5%{transform:translate(89px,82px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}58%,100%{transform:translate(94px,92px)}}@keyframes scv2{0%{opacity:0}49%{opacity:1}56.3%{opacity:0}57.15%{opacity:1}58%,100%{opacity:0}}.sc3{transform:translate(85.5px,86.5px);animation:sc3 6s linear infinite,scv3 6s steps(1,end) infinite}@keyframes sc3{0%{transform:translate(85.5px,86.5px)}50.5%{transform:translate(85.5px,86.5px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}55.5%{transform:translate(94px,74px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}60.5%,100%{transform:translate(103px,82px)}}@keyframes scv3{0%{opacity:0}50.5%{opacity:1}58.8%{opacity:0}59.65%{opacity:1}60.5%,100%{opacity:0}}.sc4{transform:translate(85.5px,86.5px);animation:sc4 6s linear infinite,scv4 6s steps(1,end) infinite}@keyframes sc4{0%{transform:translate(85.5px,86.5px)}52%{transform:translate(85.5px,86.5px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}56.5%{transform:translate(90px,68px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}61%,100%{transform:translate(95px,62px)}}@keyframes scv4{0%{opacity:0}52%{opacity:1}59.3%{opacity:0}60.15%{opacity:1}61%,100%{opacity:0}}.sc5{transform:translate(85.5px,86.5px);animation:sc5 6s linear infinite,scv5 6s steps(1,end) infinite}@keyframes sc5{0%{transform:translate(85.5px,86.5px)}53.5%{transform:translate(85.5px,86.5px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}58.25%{transform:translate(93px,80px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}63%,100%{transform:translate(101px,90px)}}@keyframes scv5{0%{opacity:0}53.5%{opacity:1}61.3%{opacity:0}62.15%{opacity:1}63%,100%{opacity:0}}.sc6{transform:translate(85.5px,86.5px);animation:sc6 6s linear infinite,scv6 6s steps(1,end) infinite}@keyframes sc6{0%{transform:translate(85.5px,86.5px)}55%{transform:translate(85.5px,86.5px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}59.5%{transform:translate(91px,72px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}64%,100%{transform:translate(98px,68px)}}@keyframes scv6{0%{opacity:0}55%{opacity:1}62.3%{opacity:0}63.15%{opacity:1}64%,100%{opacity:0}}.sc7{transform:translate(85.5px,86.5px);animation:sc7 6s linear infinite,scv7 6s steps(1,end) infinite}@keyframes sc7{0%{transform:translate(85.5px,86.5px)}56.5%{transform:translate(85.5px,86.5px);animation-timing-function:cubic-bezier(.1,.6,.4,1)}61.25%{transform:translate(92px,84px);animation-timing-function:cubic-bezier(.5,0,.9,.6)}66%,100%{transform:translate(104px,94px)}}@keyframes scv7{0%{opacity:0}56.5%{opacity:1}64.3%{opacity:0}65.15%{opacity:1}66%,100%{opacity:0}}
+.eyes{transform-origin:33px 41px;animation:lids 6s linear infinite}
+.pupils{animation:look 6s ease-in-out infinite}
+.brows{animation:brows 6s ease-in-out infinite}
+@keyframes shake{0%{transform:translateX(0)}43.33%{transform:translateX(0.6px)}44.17%{transform:translateX(-0.6px)}45.00%{transform:translateX(0.6px)}45.83%{transform:translateX(-0.6px)}46.67%{transform:translateX(0.6px)}47.50%{transform:translateX(-0.6px)}48.33%{transform:translateX(0.6px)}49.17%{transform:translateX(-0.6px)}50.00%{transform:translateX(0.6px)}50.83%{transform:translateX(-0.6px)}51.67%{transform:translateX(0.6px)}52.50%{transform:translateX(-0.6px)}53.33%{transform:translateX(0.6px)}54.17%{transform:translateX(-0.6px)}55.00%{transform:translateX(0.6px)}55.83%{transform:translateX(-0.6px)}56.67%{transform:translateX(0.6px)}57.50%{transform:translateX(-0.6px)}58.33%{transform:translateX(0.6px)}59.17%{transform:translateX(-0.6px)}60.00%{transform:translateX(0.6px)}60.83%{transform:translateX(-0.6px)}61.67%,100%{transform:translateX(0)}}
+@keyframes pose{
+0%,7%,21%,42%,46%,66%,92%,100%{transform:rotate(0) scale(1,1)}
+11%,18%{transform:rotate(-3deg) scale(.93,1)}
+43.5%{transform:rotate(0) scale(1.02,.97)}
+70%{transform:rotate(0) scale(.97,1.05)}
+74%{transform:rotate(-1.5deg) scale(1,1.03)}
+80%{transform:rotate(1.5deg) scale(1,1.03)}
+86%{transform:rotate(-1deg) scale(1,1.02)}}
+@keyframes reach{
+0%{stroke-dashoffset:103}
+22%{stroke-dashoffset:103;animation-timing-function:cubic-bezier(.2,.7,.3,1)}
+32%{stroke-dashoffset:0}
+48%{stroke-dashoffset:0;animation-timing-function:cubic-bezier(.6,0,.9,.5)}
+56%,100%{stroke-dashoffset:103}}
+@keyframes push{
+0%,40%,46.5%,100%{transform:rotate(0)}
+43%{transform:rotate(7deg)}}
+@keyframes shred{
+0%,3%{transform:scale(0)}
+5%{transform:scale(1.15)}
+7%,66%{transform:scale(1)}
+67.5%{transform:scale(1.1)}
+69.5%,100%{transform:scale(0)}}
+@keyframes slip{
+0%,40%{transform:translate(0,0)}
+43%{transform:translate(1.5px,6px)}
+58%,100%{transform:translate(1.5px,23px)}}
+@keyframes slipvis{0%{opacity:0}34%{opacity:1}58%,100%{opacity:0}}
+@keyframes run{0%{opacity:0}43%{opacity:1}61.5%,100%{opacity:0}}
+@keyframes blink{0%{opacity:1}50%,100%{opacity:0}}
+@keyframes n1{0%{opacity:0;transform:translate(0,0)}73%{opacity:1;transform:translate(0,0)}77%{opacity:1;transform:translate(1px,-2px)}81%{opacity:1;transform:translate(0,-4px)}84.5%,100%{opacity:0;transform:translate(0,-4px)}}
+@keyframes n2{0%{opacity:0;transform:translate(0,0)}76.5%{opacity:1;transform:translate(0,0)}80.5%{opacity:1;transform:translate(-1px,-2px)}84.5%{opacity:1;transform:translate(0,-4px)}88%,100%{opacity:0;transform:translate(0,-4px)}}
+@keyframes lids{
+0%,8%,91%,92%,95%,100%{transform:scale(1,1)}
+10%,18%{transform:scale(1,.8)}
+21%,46%{transform:scale(1,.75)}
+50%,55%{transform:scale(1,.8)}
+58%,66%{transform:scale(1,.75)}
+70%{transform:scale(1.2,1.2)}
+73%,88%{transform:scale(1.12,1.12)}
+93.5%{transform:scale(1,.08)}}
+@keyframes look{
+0%,8%,92%,100%{transform:translate(0,0)}
+10.5%,18%{transform:translate(-3.3px,0)}
+21%,47%{transform:translate(1.2px,.9px)}
+50%,55%{transform:translate(-3.3px,0)}
+58%,66%{transform:translate(1.2px,.9px)}
+70%,88%{transform:translate(-2.4px,-2.4px)}}
+@keyframes brows{
+0%,8%,92%,100%{transform:translateY(0)}
+10.5%,18%{transform:translateY(.8px)}
+21%,66%{transform:translateY(1.2px)}
+70%{transform:translateY(-3.2px)}
+73%,88%{transform:translateY(-2.8px)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<!-- Data slip sits behind the shredder so it vanishes into the slot as it drops. -->
+<g class="slip">
+<rect x="68.5" y="59" width="8" height="11" fill="#3ce0ff" stroke="#07090d" stroke-width=".4"/>
+<path d="M70 61.5h5M70 63.5h3.5M70 65.5h5M70 67.5h2.5" stroke="#07090d" stroke-width=".7"/>
+<rect class="blink" x="77.5" y="57" width="1.5" height="1.5" fill="#e9f1fb"/>
+</g>
+<g class="shred"><g class="shake">
+<rect x="84" y="84" width="2" height="5" fill="#07090d"/>
+<rect x="66" y="72" width="18" height="20" fill="#6b7c93" stroke="#07090d" stroke-width=".6"/>
+<rect x="67.5" y="72" width="12" height="1.8" fill="#07090d"/>
+<path d="M69 79h9M69 82h6" stroke="#07090d" stroke-width="1"/>
+<rect x="79.5" y="76" width="2" height="2" fill="#07090d"/>
+<g class="run"><rect class="blink" x="79.5" y="76" width="2" height="2" fill="#2ee6a0"/></g>
+</g></g>
+<g class="gizmo"><g transform="translate(8 6)">
+<!-- Lower tip runs under him, up beside the shredder, and curls over to hold the slip. -->
+<path class="arm" pathLength="100" d="M19 76 V79 a6 6 0 0 0 6 6 H49 a5 5 0 0 0 5 -5 V62 a4 4 0 0 1 4 -4 H58.5" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+</g></g>
+<rect class="sc sc0" x="-1.0" y="-1.0" width="2" height="2" fill="#3ce0ff"/><rect class="sc sc1" x="-0.75" y="-0.75" width="1.5" height="1.5" fill="#e9f1fb"/><rect class="sc sc2" x="-1.0" y="-1.0" width="2" height="2" fill="#3ce0ff"/><rect class="sc sc3" x="-1.0" y="-1.0" width="2" height="2" fill="#3ce0ff"/><rect class="sc sc4" x="-0.75" y="-0.75" width="1.5" height="1.5" fill="#e9f1fb"/><rect class="sc sc5" x="-1.0" y="-1.0" width="2" height="2" fill="#3ce0ff"/><rect class="sc sc6" x="-0.75" y="-0.75" width="1.5" height="1.5" fill="#3ce0ff"/><rect class="sc sc7" x="-1.0" y="-1.0" width="2" height="2" fill="#e9f1fb"/>
+<g class="n1" fill="#ffcc66"><g transform="translate(62 12)"><rect x="2" y="0" width="1" height="5"/><rect x="0" y="4" width="2" height="2"/><rect x="3" y="0" width="2" height="1.2"/></g></g>
+<g class="n2" fill="#ffcc66"><g transform="translate(70 19)"><rect x="2" y="0" width="1" height="5"/><rect x="0" y="4" width="2" height="2"/><rect x="3" y="0" width="2" height="1.2"/></g></g>
+</svg>
