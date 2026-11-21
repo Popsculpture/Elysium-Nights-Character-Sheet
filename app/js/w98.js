@@ -1152,6 +1152,7 @@ EN.w98 = (function () {
         var list = el("div.w98-list", { role: "listbox", "aria-label": "Results" });
         function go() {
           var q = inp.value.trim(), res = [];
+          if (q && EN.w98.moment) EN.w98.moment("find");   // Gizmo: a search in progress (js/w98_gizmo_events.js)
           try { res = EN.deck && EN.deck.find && q ? EN.deck.find.results(q) : []; } catch (e) { res = []; }
           EN.ui.clear(list);
           list.appendChild(el("div.w98-lh", null, [el("span", { text: "Name" }), el("span", { text: "In Folder" })]));

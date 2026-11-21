@@ -1375,15 +1375,19 @@ EN.pdfExport = (function () {
     if (!ch) { toast("No #PRINT on file."); return; }
     // a locked Freelancer would print wrong numbers: its pack is not loaded here (js/store.js)
     if (ch.meta && EN.store.isLocked && EN.store.isLocked(ch.meta.id)) { toast("Print and PDF are off for this Freelancer until the Freelancer's Companion loads."); return; }
+    var jobDone = EN.w98 && EN.w98.job ? EN.w98.job() : null;   // Gizmo: a job past two seconds makes him hot (js/w98_gizmo_events.js)
     try {
       var bytes = await build(ch);
+      if (jobDone) jobDone();
       var blob = new Blob([bytes], { type: "application/pdf" });
       var a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = (ch.name || "freelancer").replace(/[^\w]+/g, "_") + "_fillable.pdf";
       a.click();
+      if (EN.w98 && EN.w98.moment) EN.w98.moment("file", { dir: "out" });
       toast("Fillable PDF generated.");
     } catch (e) {
+      if (jobDone) jobDone();
       toast("Fillable PDF failed to generate.");
     }
   }

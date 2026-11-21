@@ -1200,7 +1200,7 @@ EN.gmView = (function () {
     var counts = syncAny(rep.added), added = counts || !!rep.fight, kept = syncAny(rep.kept), out = [];
     // a plan with nobody on it yet is still something that came: its name, its clock, its round
     var list = counts ? gm.countText(rep.added) + (rep.fight ? ", with the fight's round, clock and name" : "") : "the plan on the Table, with its round, clock and name";
-    if (rep.why === "offline") return "SYNC needs the link. Nothing was saved or added.";
+    if (rep.why === "offline") { if (EN.w98 && EN.w98.moment) EN.w98.moment("refused"); return "SYNC needs the link. Nothing was saved or added."; }
     if (rep.ok) {
       out.push(added ? "Synced. Added: " + list + "." : (rep.others ? "Synced. Nothing new to add." : "Synced. Nobody else has saved a desktop for " + name + " yet."));
     } else {

@@ -2023,6 +2023,7 @@ EN.gmPayroll = (function () {
           // by what's in memory now: news from another tab may still be waiting to be drawn
           if (owes(pd)) { toast("Not deleted: this payday is paid, or its UNDO hasn't been answered yet."); EN.app.render(); return; }
           gm.drop("ledger", pd.id, { silent: true });
+          if (EN.w98 && EN.w98.moment) EN.w98.moment("delete");
           // the open form is now saved nowhere, so replacing it asks first (F18)
           if (_p.paydayId === pd.id) { _p.paydayId = null; _base = null; }
           EN.app.render();

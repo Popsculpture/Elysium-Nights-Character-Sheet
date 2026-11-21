@@ -4022,6 +4022,7 @@ EN.builder = (function () {
     a.href = URL.createObjectURL(blob);
     a.download = (ch.name || "freelancer").replace(/[^\w]+/g, "_") + ".json";
     a.click();
+    if (EN.w98 && EN.w98.moment) EN.w98.moment("file", { dir: "out" });
     toast("#PRINT record exported.");
   }
 
@@ -4564,6 +4565,7 @@ EN.builder = (function () {
     a.href = URL.createObjectURL(blob);
     a.download = "elysium_records_" + payload.length + ".json";
     a.click();
+    if (EN.w98 && EN.w98.moment) EN.w98.moment("file", { dir: "out" });
     toast(payload.length + " records exported.");
   }
   /* Rename writes firstName and lastName, never ch.name. migrate() recomposes the display name
@@ -4733,6 +4735,7 @@ EN.builder = (function () {
           if (!list.length) { toast("That file holds no records."); return; }
           list.forEach(function (o) { store.importCharacter(o); });
           _intake = false; _step = 0; EN.app.render();
+          if (EN.w98 && EN.w98.moment) EN.w98.moment("file", { dir: "in" });
           toast(list.length === 1 ? "Imported." : "Imported " + list.length + " records.");
         } catch (err) { toast("Invalid file."); }
       };

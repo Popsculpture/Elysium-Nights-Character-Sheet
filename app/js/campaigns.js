@@ -341,7 +341,11 @@ EN.campaigns = (function () {
   function rpc(name, args) {
     var c = client();
     if (!c) return Promise.reject(new Error("No cloud link."));
-    return c.rpc(name, args).then(check);
+    return c.rpc(name, args).then(check).catch(function (e) {
+      // the server said no: Gizmo's Ice Encounter (js/w98_gizmo_events.js)
+      if (e && (e.code === "42501" || /permission denied|not allowed|forbidden|row-level security/i.test(String(e.message || "")))) { if (EN.w98 && EN.w98.moment) EN.w98.moment("refused"); }
+      throw e;
+    });
   }
 
   /* ---- the functions ----------------------------------------------------------
@@ -362,7 +366,7 @@ EN.campaigns = (function () {
   function setRole(id, user, role) { return rpc("set_role", { p_campaign: id, p_user: user, p_role: role }).then(afterRoster); }
   function transfer(id, user) { return rpc("transfer_leadership", { p_campaign: id, p_user: user }).then(afterRoster); }
   function rename(id, name) { return rpc("rename_campaign", { p_campaign: id, p_name: name }).then(afterRoster); }
-  function remove(id) { return rpc("delete_campaign", { p_campaign: id }).then(afterRoster); }
+  function remove(id) { return rpc("delete_campaign", { p_campaign: id }).then(function (v) { if (EN.w98 && EN.w98.moment) EN.w98.moment("delete"); return afterRoster(v); }); }
   /* Sets the campaign's Advancement Type and sends every character the letter in the same step (the
      database does both or neither). Answers how many letters went: 0 when it was already that type. The
      cache follows at once, then the list is read again. */

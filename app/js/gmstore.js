@@ -1174,7 +1174,7 @@ EN.gmStore = (function () {
     });
     return out.sort(function (a, b) { return (b.savedAt || stampOf(b)) - (a.savedAt || stampOf(a)); });
   }
-  function removeThreat(id) { drop("threats", id); }
+  function removeThreat(id) { drop("threats", id); if (EN.w98 && EN.w98.moment) EN.w98.moment("delete"); }
 
   /* ---- GM writes to player records -----------------------------------------
      The ONLY route from the GM side into a Freelancer's record (author ruling,

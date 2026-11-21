@@ -873,6 +873,7 @@ EN.app = (function () {
       a.href = URL.createObjectURL(blob);
       a.download = String(r.name || "record").replace(/[^\w]+/g, "_") + "_raw.json";
       document.body.appendChild(a); a.click(); a.parentNode.removeChild(a);
+      if (EN.w98 && EN.w98.moment) EN.w98.moment("file", { dir: "out" });
     }
     function row(r, kind) {
       var msg = el("p.help", { style: { margin: "4px 0 0", color: "var(--danger)" } });

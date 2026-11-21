@@ -125,6 +125,7 @@ window.EN = window.EN || {};
     var txt = el("p.w98-tip-t", { text: TIPS[ix] });
     var chk = el("input.w98-chk", { type: "checkbox", id: "w98-tip-chk", checked: on(TIPS_KEY, true), onchange: function () { store(TIPS_KEY, chk.checked ? "1" : "0"); } });
     function advance() { ix = (ix + 1) % TIPS.length; store(TIPIX_KEY, String(ix)); }
+    if (EN.w98.moment) EN.w98.moment("tip");
     K.dialog({ id: "tip", title: "Tip of the Day", width: 430, sound: false, body: [
       el("div.w98-tip", null, [
         el("span.w98-tip-ic", { html: K.pix("bulb", 32) }),

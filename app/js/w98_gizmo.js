@@ -148,7 +148,7 @@ window.EN = window.EN || {};
     var r = G.fig.getBoundingClientRect();
     var live = EN.app.activeTab();
     K.openMenu([
-      { label: "Tell me a &tip", icon: K.pix("bulb", 16), go: function () { var t = EN.w98.extras && EN.w98.extras.nextTip && EN.w98.extras.nextTip(); say(t || "Press Ctrl+K to find a rule, your gear or someone you know."); } },
+      { label: "Tell me a &tip", icon: K.pix("bulb", 16), go: function () { var t = EN.w98.extras && EN.w98.extras.nextTip && EN.w98.extras.nextTip(); say(t || "Press Ctrl+K to find a rule, your gear or someone you know."); if (EN.w98.moment) EN.w98.moment("tip"); } },
       { label: "What is &this?", go: function () { say(HINT[live] || "That is the open window. Its menu bar has File, View and Help.") } },
       { sep: true },
       { label: "&Hide me for now", go: function () { leaving(function () { G.hidden = true; paint(); }); } },

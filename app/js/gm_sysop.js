@@ -35,6 +35,7 @@ EN.gmSysop = (function () {
     a.href = URL.createObjectURL(blob);
     a.download = "elysium-gm-" + (stem ? stem + "-" : "") + stamp() + ".json";
     a.click();
+    if (EN.w98 && EN.w98.moment) EN.w98.moment("file", { dir: "out" });
   }
   function lbl(t, top) { return el("label.fl", { style: top ? { marginTop: "12px" } : null, text: t }); }
   function help(t, extra) { return el("p.help", { style: Object.assign({ margin: "0 0 8px" }, extra || {}), text: t }); }
@@ -91,7 +92,7 @@ EN.gmSysop = (function () {
         r.onerror = function () { toast("Could not read that file."); };
         r.onload = function () {
           var text = String(r.result || "");
-          try { _import = { name: f.name, text: text, counts: G.inspectDoc(text), desk: here ? here.id : "" }; }
+          try { _import = { name: f.name, text: text, counts: G.inspectDoc(text), desk: here ? here.id : "" }; if (EN.w98 && EN.w98.moment) EN.w98.moment("file", { dir: "in" }); }
           catch (err) { _import = null; toast((err && err.message) || "That file is not GM data."); }
           if (EN.ui.disarm) EN.ui.disarm();
           repaint();

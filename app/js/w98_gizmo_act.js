@@ -83,7 +83,7 @@ window.EN = window.EN || {};
     var img = el("img.w98-gz-stage", { src: "img/gizmo/" + name + ".svg", alt: "", "aria-hidden": "true", draggable: "false" });
     img.style.width = w + "px"; img.style.height = h + "px";
     f.appendChild(img); f.classList.add("acting");
-    GZ.hush();
+    if (!o.keep) GZ.hush();   // a scene that goes with what he is saying (a tip) leaves his bubble up
     var box = GZ.stage(); if (box) box.style.setProperty("--gz-lift", Math.max(0, h - f.getBoundingClientRect().height) + "px");
     keepOn(img);
     var c = { name: name, prio: prio, img: img, done: o.done, kind: o.kind };
@@ -147,6 +147,7 @@ window.EN = window.EN || {};
     if (can) {
       var o = top.o; o.kind = o.kind || "fn"; o.prio = top.rank;
       if (play(top.name, o)) { Q.pend = l[1] || null; return; }
+      setTimeout(kick, 400);   // the desktop may be mid-redraw (a record just deleted): look again shortly
     }
     Q.pend = top;
   }
@@ -245,7 +246,7 @@ window.EN = window.EN || {};
   function fumble() { return fire(pickFumble(), { rank: RANK.success, wait: true }); }
   EN.w98.moment = function (kind, d) { try { var f = MOMENT[kind]; return f ? f(d || {}) : false; } catch (e) { return false; } };
 
-  GZ.act = { fire: fire, hold: hold, rank: RANK, victory: victory, fumble: fumble, pickFumble: pickFumble, fumblePool: FUMBLE_POOL.slice(), pool: POOL.map(function (p) { return p.slice(); }),
+  GZ.act = { moments: MOMENT, fire: fire, hold: hold, rank: RANK, victory: victory, fumble: fumble, pickFumble: pickFumble, fumblePool: FUMBLE_POOL.slice(), pool: POOL.map(function (p) { return p.slice(); }),
     pending: function () { return Q.pend ? Q.pend.name : null; }, holding: holding, play: play, stop: stop, freq: freq, setFreq: setFreq, effective: eff, boot: boot, leave: leave, spectacle: spectacle, hello: hello,
     now: function () { return A.cur ? A.cur.name : null; }, asleep: function () { return A.asleep; }, protectedNow: protectedNow,
     story: STORY.slice(), idleSet: IDLE.slice(), nextFidget: nextFidget, files: Object.keys(M),

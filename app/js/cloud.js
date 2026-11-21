@@ -972,7 +972,7 @@ EN.cloud = (function () {
     if (k === "error") return "Jacked in as " + displayName() + ", but your account cannot be reached. Characters are still saved on this device, and upload when the link is back.";
     return "Jacked in as " + displayName() + ". Your characters are saved to your account.";
   }
-  function setStatus(s) { status = s; paint(); }
+  function setStatus(s) { var was = status; status = s; paint(); if (EN.w98 && EN.w98.moment) EN.w98.moment("link", { from: was, to: s }); }   // Gizmo reacts (js/w98_gizmo_events.js)
   function paint() {
     var k = linkState(), tip = linkTip();
     var span = document.getElementById("link-state");
@@ -1051,7 +1051,7 @@ EN.cloud = (function () {
         if (u) {
           noteToken(session);
           if (offline && user && user.id === u.id) backOnline(u);
-          else if (u.id !== (user && user.id)) { offline = false; setUser(u); }
+          else if (u.id !== (user && user.id)) { offline = false; if (event === "SIGNED_IN") { if (EN.w98 && EN.w98.moment) EN.w98.moment("signin"); } setUser(u); }
           else { user = u; paint(); if (roleToken) refreshPacks(); }   // jacked in again: check the role again
           return;
         }
