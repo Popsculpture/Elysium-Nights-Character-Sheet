@@ -408,3 +408,48 @@ html.skin-98 #set-ov .set-hint{ font-size:11px; }
   html.skin-98 :is(input[type=text], input[type=number], input[type=search], input[type=password], input[type=email], input[type=url], textarea, select){ font-size:16px; }
   html.skin-98 .w98-win.w98-max{ padding:0; }
 }
+
+/* ===========================================================================
+   PHASE 4: THE PLAYFUL EXTRAS (js/w98_extras.js): the screen saver, the Tip of the Day, the visitor counter, the fumble error's
+   details, and Breach. Original work: the colours and glyphs here are this game's own.
+   =========================================================================== */
+html.skin-98 .w98-mi.w98-bold{ font-weight:700; }
+html.skin-98 .w98-saver{ position:fixed; inset:0; z-index:300000; background:#000; cursor:none; overflow:hidden; }
+html.skin-98 .w98-saver-logo{ position:absolute; left:0; top:0; display:flex; align-items:center; gap:12px; white-space:nowrap; color:#fff; will-change:transform;
+  font-family:"Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif; font-size:34px; }
+html.skin-98 .w98-saver-logo svg{ display:block; }
+html.skin-98 .w98-saver-logo b{ font-weight:700; }
+
+/* a tick box, drawn the way the era drew one: a sunken white square and a black tick */
+html.skin-98 input.w98-chk[type]{ appearance:none; -webkit-appearance:none; flex:none; width:13px; height:13px; margin:0; padding:0; border:0; border-radius:0; position:relative;
+  background:#fff; box-shadow:var(--w-sunken); min-height:0; }
+html.skin-98 input.w98-chk[type]:checked::after{ content:""; position:absolute; left:4px; top:1px; width:3px; height:7px; border:solid #000; border-width:0 2px 2px 0; transform:rotate(45deg); }
+html.skin-98 input.w98-chk[type]:focus-visible + span{ outline:1px dotted #000; }
+html.skin-98 .w98-tip{ display:flex; align-items:flex-start; gap:14px; }
+html.skin-98 .w98-tip-ic svg{ display:block; }
+html.skin-98 .w98-tip-h{ font-size:13px; font-weight:700; margin-bottom:6px; }
+html.skin-98 .w98-tip-t{ margin:0; line-height:1.45; }
+html.skin-98 .w98-tip-c{ display:flex; align-items:center; gap:8px; margin-top:14px; }
+html.skin-98 .w98-code{ margin:10px 0 0; padding:6px 8px; background:#fff; box-shadow:var(--w-sunken); font:11px/1.4 "Courier New", monospace; white-space:pre; overflow:auto; user-select:text; }
+html.skin-98 .w98-vis{ display:flex; align-items:center; gap:10px; margin-top:6px; }
+html.skin-98 .w98-vis-d{ display:inline-flex; gap:1px; padding:2px; background:#000; box-shadow:var(--w-sunken); }
+html.skin-98 .w98-vis-d i{ font-style:normal; min-width:13px; padding:1px 2px; text-align:center; font:14px/1.2 "Courier New", monospace; color:#33ff66; background:#0b0b0b; }
+
+/* Breach */
+html.skin-98 .w98-client.w98-bclient{ background:var(--w-face); }
+html.skin-98 .w98-b{ display:flex; flex-direction:column; align-items:center; gap:10px; padding:10px; }
+html.skin-98 .w98-brow{ display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px; }
+html.skin-98 .w98-bstat{ gap:18px; font-weight:700; }
+html.skin-98 .w98-bn{ display:inline-block; min-width:30px; padding:1px 6px; background:#0b0b0b; color:#33ff66; font:700 13px "Courier New", monospace; text-align:center; }
+html.skin-98 .w98-bwrap{ max-width:100%; overflow:auto; }
+html.skin-98 .w98-bgrid{ display:grid; gap:0; width:max-content; padding:2px; background:var(--w-sh); box-shadow:var(--w-sunken); }
+html.skin-98 .w98-bc{ width:26px; height:26px; padding:0; border:0; border-radius:0; display:flex; align-items:center; justify-content:center; cursor:default;
+  background:var(--w-face); box-shadow:var(--w-button); font:700 14px var(--w-font); color:#000; }
+html.skin-98 .w98-bc:active:not(.on){ box-shadow:var(--w-pressed); }
+html.skin-98 .w98-bc:focus-visible{ outline:1px dotted #000; outline-offset:-4px; }
+html.skin-98 .w98-bc.on, html.skin-98 .w98-bc.ice, html.skin-98 .w98-bc.wrong{ background:#d4d4d4; box-shadow:inset 1px 1px 0 var(--w-sh); }
+html.skin-98 .w98-bc.hit{ background:#e04040; }
+html.skin-98 .w98-bc.n1{ color:#0044cc; } html.skin-98 .w98-bc.n2{ color:#2a7a2a; } html.skin-98 .w98-bc.n3{ color:#c02020; } html.skin-98 .w98-bc.n4{ color:#5a2a9a; }
+html.skin-98 .w98-bc.n5{ color:#8a4a00; } html.skin-98 .w98-bc.n6{ color:#007a8a; } html.skin-98 .w98-bc.n7{ color:#222; } html.skin-98 .w98-bc.n8{ color:#666; }
+html.skin-98 .w98-bmsg{ min-height:16px; text-align:center; }
+html.skin-98 .btn.w98-mark-on{ background:var(--w-check); box-shadow:var(--c-pressed); }

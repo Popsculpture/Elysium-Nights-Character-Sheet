@@ -288,6 +288,8 @@ EN.combatView = (function () {
       // itself (rather than some outside counter) means it naturally survives
       // re-renders triggered by anything else while this result is on screen.
       if ((crit || fumble) && !anim && !roll._fxShown) { roll._fxShown = true; shouldPlayFx = true; }
+      // #GRIDOS '98 turns the fumble into an error box (js/w98_extras.js); a no-op on every other skin
+      if (shouldPlayFx && fumble && EN.w98 && EN.w98.fumble) { try { EN.w98.fumble(ctx, roll); } catch (e) {} }
       diceEls = roll.dice.map(function (v, i) {
         var kept = i === roll.keptIndex;
         return EN.ui.d20Face(v, { size: 62, animating: anim,

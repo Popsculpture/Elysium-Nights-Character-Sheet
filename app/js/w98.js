@@ -179,7 +179,7 @@ EN.w98 = (function () {
       var off = (_cascade++ % 6) * 26, lx = leftClear();
       w.x = lx + off; w.y = 10 + off; w.w = Math.min(1180, dw - lx - 24 - off); w.h = dh - 10 - 14 - off;
     } else {
-      var size = { "a:find": [560, 420], "a:deck": [520, 360], "a:docs": [560, 380] }[id] || [480, 340];
+      var size = (APPS[key] && APPS[key].size) || { "a:find": [560, 420], "a:deck": [520, 360], "a:docs": [560, 380] }[id] || [480, 340];
       w.w = Math.min(size[0], dw - 40); w.h = Math.min(size[1], dh - 40);
       w.x = Math.max(8, Math.round((dw - w.w) / 2) + (_cascade % 4) * 20); w.y = Math.max(8, Math.round((dh - w.h) / 3) + (_cascade++ % 4) * 20);
     }
@@ -249,6 +249,10 @@ EN.w98 = (function () {
     delete homes[node.id || node.className];
     if (h.next && h.next.parentNode === h.parent) h.parent.insertBefore(node, h.next); else if (h.parent) h.parent.appendChild(node);
   }
+  /* EXTENSIONS (js/w98_extras.js): the screen saver, tips, the fumble error and the Breach game add to these lists, so this file stays the
+     desktop and nothing else. Each list holds functions that answer with menu items (or, for `about`, an element). */
+  var X = { settings: [], programs: [], desktop: [], about: [], boot: [], runNames: {} };
+
   function mount() {
     var os = document.getElementById("os");
     if (!os) return false;
@@ -264,11 +268,44 @@ EN.w98 = (function () {
     D.bar = el("div.w98-bar", { role: "toolbar", "aria-label": "Taskbar" }, [
       D.start, el("span.w98-grip"), el("div.w98-quick"), el("span.w98-grip"), D.tasks, D.band, D.tray
     ]);
-    D.root = el("div#w98", { onpointerdown: function (e) { if (e.target === D.root || e.target === D.icons) { closeMenus(); selectIcon(null); } } },
+    D.root = el("div#w98", { onpointerdown: function (e) { if (e.target === D.root || e.target === D.icons) { closeMenus(); selectIcon(null); } },
+      oncontextmenu: ctxMenu },
       [D.icons, D.wins, D.park, D.bar]);
     os.appendChild(D.root);
     window.addEventListener("resize", onResize);
     return true;
+  }
+  /* THE DESKTOP'S RIGHT-CLICK MENU: on the desktop itself, and on an icon (Open, in bold, the way a default action was shown).
+     Inside a window the browser's own menu stays, since a field's copy and paste are worth more than a joke. */
+  var ARR_KEY = "en_w98_arrange_v1";
+  function arrangeMode() { return store(ARR_KEY) === "name" ? "name" : "default"; }
+  function setArrange(m) { store(ARR_KEY, m); if (D) { D.iconSig = ""; paintIcons(); } }
+  function ctxMenu(e) {
+    if (!D || (e.target.closest && e.target.closest(".w98-win"))) return;
+    e.preventDefault();
+    closeMenus();
+    var icon = e.target.closest && e.target.closest(".w98-di"), items;
+    if (icon) {
+      selectIcon(icon);
+      items = [{ label: "&Open", bold: true, go: function () { if (icon._open) icon._open(); } }];
+    } else {
+      selectIcon(null);
+      items = [
+        { label: "Arrange &Icons", sub: [
+          { label: "by &Name", check: arrangeMode() === "name", radio: true, go: function () { setArrange("name"); } },
+          { label: "&Default order", check: arrangeMode() === "default", radio: true, go: function () { setArrange("default"); } }
+        ] },
+        { label: "&Line Up Icons", go: function () { D.iconSig = ""; paintIcons(); } },
+        { sep: true },
+        { label: "&Refresh", go: function () { EN.app.render(); } },
+        { sep: true }
+      ];
+      if (portal() === "freelancer") items.push({ label: "Ne&w", sub: [{ label: "&Freelancer", icon: pix("page", 16), go: newRecord }] });
+      X.desktop.forEach(function (fn) { try { items = items.concat(fn()); } catch (x) {} });
+      items.push({ sep: true });
+      items.push({ label: "P&roperties", go: openSettings });
+    }
+    openMenu(items, e.clientX, e.clientY, {});
   }
   function unmount() {
     if (!D) return;
@@ -624,7 +661,7 @@ EN.w98 = (function () {
   function rowFor(it, level, big) {
     if (it.sep) return el("div.w98-msep", { role: "separator" });
     var hasSub = !!it.sub;
-    var row = el("button.w98-mi" + (big ? ".w98-mi-big" : "") + (it.disabled ? ".w98-dis" : ""), {
+    var row = el("button.w98-mi" + (big ? ".w98-mi-big" : "") + (it.disabled ? ".w98-dis" : "") + (it.bold ? ".w98-bold" : ""), {
       type: "button", role: "menuitem", disabled: !!it.disabled, "aria-haspopup": hasSub ? "menu" : null,
       dataset: { k: accel(it.label || "") },
       onpointerenter: function () { hover(row, it, level); },
@@ -708,6 +745,9 @@ EN.w98 = (function () {
   }
   function programItems() {
     var list = programs().map(function (p) { return { label: p.label, icon: glyph16(p), go: function () { launch(p.key); } }; });
+    var more = [];
+    X.programs.forEach(function (fn) { try { more = more.concat(fn()); } catch (e) {} });
+    if (more.length) { list.push({ sep: true }); list = list.concat(more); }
     list.push({ sep: true });
     list.push({ label: "My Smartdeck", icon: pix("deck", 16), go: function () { openApp("deck"); } });
     if (portal() === "freelancer") list.push({ label: "My Freelancers", icon: pix("docs", 16), go: function () { openApp("docs"); } });
@@ -718,6 +758,9 @@ EN.w98 = (function () {
     if (EN.app.hasAdmin()) out.push(portal() === "admin"
       ? { label: "&Freelancer desktop", icon: glyph16(program("combat"), "#000080"), go: function () { EN.app.setPortal("freelancer"); } }
       : { label: "&Admin desktop", icon: mark(16, "#806000"), go: function () { EN.app.enterAdmin(); } });
+    var more = [];
+    X.settings.forEach(function (fn) { try { more = more.concat(fn()); } catch (e) {} });
+    if (more.length) { out.push({ sep: true }); out = out.concat(more); }
     return out;
   }
   function startItems() {
@@ -804,6 +847,7 @@ EN.w98 = (function () {
     var out = [{ id: "deck", label: "My Smartdeck", art: pix("deck", 32), go: function (r) { openApp("deck", r); } }];
     if (portal() === "freelancer") out.push({ id: "docs", label: "My Freelancers", art: pix("docs", 32), go: function (r) { openApp("docs", r); } });
     programs().forEach(function (p) { out.push({ id: "p:" + p.key, label: p.label, art: tile32(p), go: function (r) { launch(p.key, r); } }); });
+    if (arrangeMode() === "name") out.sort(function (a, b) { return a.label.replace(/^#/, "").localeCompare(b.label.replace(/^#/, ""), undefined, { sensitivity: "base" }); });
     return out;
   }
   function paintIcons() {
@@ -825,6 +869,7 @@ EN.w98 = (function () {
         var r = b.querySelector(".w98-ic").getBoundingClientRect(), o = D.root.getBoundingClientRect();
         it.go({ x: r.left - o.left, y: r.top - o.top, w: r.width });
       }
+      b._open = open;
       D.icons.appendChild(b);
     });
   }
@@ -941,7 +986,7 @@ EN.w98 = (function () {
           el("div", { style: { paddingLeft: "12px" }, text: n || "An unregistered Freelancer" }),
           el("div.w98-hr"),
           el("div", { text: "Memory available to #GRIDOS: 640K. It will be enough." })
-        ])
+        ].concat(X.about.map(function (fn) { try { return fn(); } catch (e) { return null; } })))
       ])
     ] });
   }
@@ -981,6 +1026,7 @@ EN.w98 = (function () {
     if (named[low]) { openApp(named[low]); return; }
     if (low === "control" || low === "control panel" || low === "settings") { openSettings(); return; }
     if (low === "winver" || low === "about") { aboutDialog(); return; }
+    if (X.runNames[low]) { X.runNames[low](); return; }
     dialog({ id: "runerr", title: t, icon: "error", body: "#GRIDOS cannot find '" + t + "'. Check the name and try again, or type a roll like 2d6+3.",
       buttons: [{ label: "OK", def: true, cancel: true, go: runDialog }] });
   }
@@ -1168,6 +1214,7 @@ EN.w98 = (function () {
   // app.js calls this as the desktop is revealed: the start-up chord, if the browser lets a page make a sound yet
   function booted() {
     if (!is98()) return;
+    X.boot.forEach(function (fn) { try { fn(); } catch (e) {} });
     try { if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return; } catch (e) {}
     sound("start");
   }
@@ -1181,6 +1228,12 @@ EN.w98 = (function () {
     focus: function (id) { if (W[id]) focusWin(W[id]); }, taskClick: taskClick, showDesktop: showDesktop,
     state: function () {
       return { live: LIVE, top: topId(), order: ORDER.slice(), wins: Object.keys(W).map(function (id) { var w = W[id]; return { id: id, open: w.open, min: w.min, max: maxed(w), x: w.x, y: w.y, w: w.w, h: w.h }; }) };
+    },
+    ext: X,
+    kit: {
+      el: el, label: label, dialog: dialog, msg: msg, openMenu: openMenu, closeMenus: closeMenus, pix: pix, PIX: PIX, mark: mark, sound: sound, soundOn: soundOn,
+      store: store, APPS: APPS, openApp: openApp, launch: launch, programs: programs, portal: portal, reduced: reduced, is98: is98,
+      active: function () { return !!D && is98(); }, openSettings: openSettings, recordName: recordName, deskSize: function () { return { w: deskW(), h: deskH() }; }
     },
     sound: sound, soundOn: soundOn, aboutDialog: aboutDialog, runDialog: runDialog, shutDownDialog: shutDownDialog, logOffDialog: logOffDialog, closeDialogs: closeDialogs
   };
