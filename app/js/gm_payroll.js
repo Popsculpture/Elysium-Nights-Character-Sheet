@@ -1789,6 +1789,7 @@ EN.gmPayroll = (function () {
     r.jobPrev = jobPrev;
     gm.put("ledger", r, { silent: true });
     settle();
+    if (EN.w98 && EN.w98.moment) EN.w98.moment("payday");
     var xpN = paid.filter(function (x) { return x.useXp; }).length, msN = paid.length - xpN;
     var bits = [];
     if (!m.noPay) bits.push(fmtG(m.eachG) + " each");

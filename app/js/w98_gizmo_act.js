@@ -128,7 +128,7 @@ window.EN = window.EN || {};
      one more waits its turn, the rest are dropped. A roll starts a quiet window of about three seconds; what arrives in it plays after. */
   function fire(name, o) {
     o = o || {};
-    if (!M[name] || !ready() || hardProtected()) return false;
+    if (!M[name] || !ready() || (hardProtected() && !o.wait)) return false;
     Q.list.push({ name: name, rank: o.rank || RANK[o.kind] || RANK.success, o: o, t: Date.now(), n: Q.list.length });
     if (!Q.flushT) Q.flushT = setTimeout(flush, 0);
     return true;
@@ -138,8 +138,10 @@ window.EN = window.EN || {};
     var now = Date.now(), l = Q.list.concat(Q.pend ? [Q.pend] : []);
     Q.list = []; Q.pend = null;
     l = l.filter(function (e) { return now - e.t < WAIT_MS; });
-    if (!l.length || !ready() || hardProtected()) return;
+    if (!l.length || !ready()) return;
     l.sort(function (a, b) { return b.rank - a.rank || a.t - b.t || a.n - b.n; });
+    /* under a dialog or the tour nothing plays; an event that asked to wait (a roll, a game result) is kept for when it lifts */
+    if (hardProtected()) { Q.pend = l.filter(function (e) { return e.o.wait; })[0] || null; return; }
     var top = l[0], cur = A.cur;
     var can = !holding() && !rolling() && (!cur || (cur.prio <= 1 && top.rank > cur.prio));
     if (can) {
@@ -163,7 +165,7 @@ window.EN = window.EN || {};
   function gapMs() { var g = GAP[eff()]; return g ? g * 60000 : 0; }
   function step() {
     var now = Date.now();
-    if (hardProtected()) { Q.pend = null; if (A.cur && A.cur.kind !== "fn") stop("protected"); return; }
+    if (hardProtected()) { if (Q.pend && !Q.pend.o.wait) Q.pend = null; if (A.cur && A.cur.kind !== "fn") stop("protected"); return; }
     if (protectedNow()) return;
     if (!ready() || document.hidden) return;
     kick();
@@ -228,8 +230,22 @@ window.EN = window.EN || {};
       el("p.set-hint", { style: { margin: "3px 0 0 0" }, text: "Quiet: he only reacts. Normal: a little show when you have been away about every ten minutes. Lively: about every four. Reduced motion on your device forces Quiet." })])];
   });
 
-  GZ.act = { fire: fire, hold: hold, rank: RANK, victory: function () { return fire("street-victory", { rank: RANK.success }); },
-    fumble: function () { return fire(pickFumble(), { rank: RANK.success }); }, pickFumble: pickFumble, fumblePool: FUMBLE_POOL.slice(), pool: POOL.map(function (p) { return p.slice(); }),
+  /* ---- moments the app reports (EN.w98.moment): a roll, a Margin roll, a filed record, a Breach result, a payday.
+     Each waits out a dialog and the roll hold. A critical, a Flawless Margin success, a filed #PRINT, a Breach win and a payday are
+     Street Victory, every time; a fumble draws from the fumble pool; a tripped Breach is Ice Encounter. */
+  var MOMENT = {
+    roll: function (d) { if (d.crit) return victory(); if (d.fumble) return fumble(); return false; },
+    margin: function (d) { hold(); return d.margin >= 3 ? victory() : false; },
+    filed: function () { return victory(); },
+    "breach-win": function () { return victory(); },
+    "breach-lose": function () { return fire("ice-encounter", { rank: RANK.error, wait: true }); },
+    payday: function () { return victory(); }
+  };
+  function victory() { return fire("street-victory", { rank: RANK.success, wait: true }); }
+  function fumble() { return fire(pickFumble(), { rank: RANK.success, wait: true }); }
+  EN.w98.moment = function (kind, d) { try { var f = MOMENT[kind]; return f ? f(d || {}) : false; } catch (e) { return false; } };
+
+  GZ.act = { fire: fire, hold: hold, rank: RANK, victory: victory, fumble: fumble, pickFumble: pickFumble, fumblePool: FUMBLE_POOL.slice(), pool: POOL.map(function (p) { return p.slice(); }),
     pending: function () { return Q.pend ? Q.pend.name : null; }, holding: holding, play: play, stop: stop, freq: freq, setFreq: setFreq, effective: eff, boot: boot, leave: leave, spectacle: spectacle, hello: hello,
     now: function () { return A.cur ? A.cur.name : null; }, asleep: function () { return A.asleep; }, protectedNow: protectedNow,
     story: STORY.slice(), idleSet: IDLE.slice(), nextFidget: nextFidget, files: Object.keys(M),

@@ -336,6 +336,7 @@ window.EN = window.EN || {};
         });
         G.cells[hit].b.classList.add("hit");
         msg.textContent = "ICE tripped. The run is over.";
+        if (EN.w98.moment) EN.w98.moment("breach-lose");
         K.dialog({ id: "breach-lose", title: "Breach", icon: "error", width: 340, body: "You opened a node that was ICE. It had been waiting for you.",
           buttons: [{ label: "OK", def: true, cancel: true, go: function () { if (EN.w98.say) EN.w98.say("That one was ICE. It usually is."); } }, { label: "&New Game", go: fresh }] });
       }
@@ -351,6 +352,7 @@ window.EN = window.EN || {};
           body: "Grid breached in " + G.secs + " seconds." + (better ? " That is a new best for this size." : ""),
           buttons: [{ label: "OK", def: true, cancel: true, go: function () { if (EN.w98.say) EN.w98.say("Grid breached. I knew you had it."); } }, { label: "&New Game", go: fresh }] });
         K.sound("ding");
+        if (EN.w98.moment) EN.w98.moment("breach-win");
       }
       fresh();
     }

@@ -4050,7 +4050,7 @@ EN.builder = (function () {
        reload; harmless, since an example is registered regardless. */
     store.update(function (c) { c.meta.filedAt = Date.now(); });
     var name = (ch.name || "UNNAMED FREELANCER").toUpperCase();
-    if (EN.ui.playFiled) EN.ui.playFiled({ name: name, ref: recordRef(ch), quick: !firstFiling, onDone:function () { EN.app.gotoTab("combat"); } });
+    if (EN.ui.playFiled) EN.ui.playFiled({ name: name, ref: recordRef(ch), quick: !firstFiling, onDone:function () { EN.app.gotoTab("combat"); if (EN.w98 && EN.w98.moment) EN.w98.moment("filed"); } });
     else EN.app.gotoTab("combat");
   }
 

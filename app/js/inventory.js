@@ -3705,6 +3705,7 @@ EN.inventoryView = (function () {
             var sRes = EN.engine.rollDicePool(snagPool);
             var margin = eRes.total - sRes.total;
             rs.result = { edge: eRes, snag: sRes, margin: margin, outcome: CRAFT().marginToOutcomeKey(margin) };
+            if (EN.w98 && EN.w98.moment) EN.w98.moment("margin", { margin: margin });
             rs.animating = true;
             rs.animToken = (rs.animToken || 0) + 1;
             EN.app.render();

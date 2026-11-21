@@ -428,7 +428,9 @@ EN.gridView = (function () {
             + " (the Complexity " + cy.cx + (info.untrained ? " + 2 untrained in Systems" : "") + ")" }),
           el("button.btn.sm.relay-roll", { type: "button", onclick: function () {
             var er = eng.rollDicePool(ep), sr = eng.rollDicePool(sp);
-            _relay.pool = { edge: er.total, snag: sr.total }; _relay.margin = String(er.total - sr.total); EN.app.render(); } }, "ROLL POOL"),
+            _relay.pool = { edge: er.total, snag: sr.total }; _relay.margin = String(er.total - sr.total);
+            if (EN.w98 && EN.w98.moment) EN.w98.moment("margin", { margin: er.total - sr.total });
+            EN.app.render(); } }, "ROLL POOL"),
           el("input.relay-margin", { type: "number", value: _relay.margin, placeholder: "Margin", "aria-label": "Dice Pool Margin rolled at the table",
             style: { width: "84px" }, onchange: function (ev) { var v = parseInt(ev.target.value, 10); _relay.margin = isNaN(v) ? "" : String(v); _relay.pool = null; EN.app.render(); } })
         ]));
@@ -1056,6 +1058,7 @@ EN.gridView = (function () {
           var eRes = eng.rollDicePool(eng.buildEdgePool(edge.points));
           var sRes = eng.rollDicePool(snagPool);
           _deep.result = { edge: eRes, snag: sRes, margin: eRes.total - sRes.total };
+          if (EN.w98 && EN.w98.moment) EN.w98.moment("margin", { margin: eRes.total - sRes.total });
           _deep.animating = true;
           _deep.animToken = (_deep.animToken || 0) + 1;
           EN.app.render();

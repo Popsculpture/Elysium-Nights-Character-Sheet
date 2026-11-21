@@ -290,6 +290,8 @@ EN.combatView = (function () {
       if ((crit || fumble) && !anim && !roll._fxShown) { roll._fxShown = true; shouldPlayFx = true; }
       // #GRIDOS '98 turns the fumble into an error box (js/w98_extras.js); a no-op on every other skin
       if (shouldPlayFx && fumble && EN.w98 && EN.w98.fumble) { try { EN.w98.fumble(ctx, roll); } catch (e) {} }
+      // Gizmo's reaction to a critical or a fumble (js/w98_gizmo_act.js); a no-op on every other skin
+      if (shouldPlayFx && EN.w98 && EN.w98.moment) EN.w98.moment("roll", { crit: crit, fumble: fumble });
       diceEls = roll.dice.map(function (v, i) {
         var kept = i === roll.keptIndex;
         return EN.ui.d20Face(v, { size: 62, animating: anim,
