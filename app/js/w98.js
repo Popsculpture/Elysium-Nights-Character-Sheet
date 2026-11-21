@@ -25,7 +25,7 @@ window.EN = window.EN || {};
 EN.w98 = (function () {
   var el = EN.ui.el;
   var STATE_KEY = "en_w98_win_v1", SOUND_KEY = "en_w98_sound_v1", RUN_KEY = "en_w98_run_v1";
-  var TASK_H = 28, MIN_W = 260, MIN_H = 150, ICON_W = 76, ICON_H = 75;
+  var MIN_W = 260, MIN_H = 150, ICON_W = 76, ICON_H = 75;
   var D = null;          // the mounted desk: { root, icons, wins, bar, tasks, tray, ghosts, portal, iconSig }
   var W = {};            // the windows of this desktop, by id ("t:combat", "a:find")
   var ORDER = [];        // window ids, back to front
@@ -39,8 +39,19 @@ EN.w98 = (function () {
   function liveKey() { return landing() ? "landing" : EN.app.activeTab(); }
   function reduced() { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
   function deskW() { return Math.max(320, document.documentElement.clientWidth || window.innerWidth || 1024); }
-  function deskH() { return Math.max(240, (document.documentElement.clientHeight || window.innerHeight || 768) - TASK_H); }
+  /* TOUCH. A phone, or any screen whose main pointer is a finger, gets bigger targets (css/w98.css, the same media query) and a
+     taller taskbar. Narrow (under 760 px) is the one that also fills every window to the screen, since a window that size is
+     a page; a tablet is touch but has the room for windows. */
+  var TOUCH_Q = "(max-width: 759px), (pointer: coarse)";
+  function touch() { try { return window.matchMedia(TOUCH_Q).matches; } catch (e) { return narrow(); } }
+  function taskH() { return touch() ? 46 : 28; }   // css/w98.css --w-task-h
+  function deskH() { return Math.max(240, (document.documentElement.clientHeight || window.innerHeight || 768) - taskH()); }
   function narrow() { return deskW() < 760; }
+  // how far from the left the desktop's icon columns reach: a new window opens beside them, not on them
+  function leftClear() {
+    var per = Math.max(1, Math.floor((deskH() - 6) / ICON_H)), cols = Math.ceil(iconList().length / per);
+    return 4 + cols * ICON_W + 16;
+  }
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
   function svg(markup) { return el("span.w98-ic", { html: markup, "aria-hidden": "true" }); }
 
@@ -165,8 +176,8 @@ EN.w98 = (function () {
     var w = { id: id, kind: kind, key: key, open: false, min: false, max: false, x: 96, y: 10, w: 0, h: 0, frame: null, client: null, snap: null, scroll: 0 };
     if (s && typeof s.x === "number") { w.x = s.x; w.y = s.y; w.w = s.w; w.h = s.h; w.max = !!s.max; }
     else if (kind === "tab") {
-      var off = (_cascade++ % 6) * 26;
-      w.x = 96 + off; w.y = 10 + off; w.w = Math.min(1180, dw - 96 - 24 - off); w.h = dh - 10 - 14 - off;
+      var off = (_cascade++ % 6) * 26, lx = leftClear();
+      w.x = lx + off; w.y = 10 + off; w.w = Math.min(1180, dw - lx - 24 - off); w.h = dh - 10 - 14 - off;
     } else {
       var size = { "a:find": [560, 420], "a:deck": [520, 360], "a:docs": [560, 380] }[id] || [480, 340];
       w.w = Math.min(size[0], dw - 40); w.h = Math.min(size[1], dh - 40);
@@ -665,7 +676,7 @@ EN.w98 = (function () {
     document.body.appendChild(node);
     var vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
     var r = node.getBoundingClientRect();
-    if (opts.start) { x = 2; y = vh - TASK_H - r.height + 2; }
+    if (opts.start) { x = 2; y = vh - taskH() - r.height + 2; }
     else {
       if (x + r.width > vw) x = Math.max(0, (opts.side != null ? opts.side - r.width + 3 : vw - r.width));
       if (y + r.height > vh) y = Math.max(0, (opts.below != null ? opts.below - r.height : vh - r.height));
@@ -848,6 +859,12 @@ EN.w98 = (function () {
       b.setAttribute("aria-pressed", id === top ? "true" : "false");
     });
     Object.keys(have).forEach(function (id) { if (have[id].parentNode) have[id].parentNode.removeChild(have[id]); });
+    // a strip that scrolls (a phone with many programs open) keeps the front window's button in view
+    var cur = top && D.tasks.querySelector('[data-task="' + top + '"]');
+    if (cur && D.tasks.scrollWidth > D.tasks.clientWidth + 1) {
+      if (cur.offsetLeft < D.tasks.scrollLeft) D.tasks.scrollLeft = cur.offsetLeft;
+      else if (cur.offsetLeft + cur.offsetWidth > D.tasks.scrollLeft + D.tasks.clientWidth) D.tasks.scrollLeft = cur.offsetLeft + cur.offsetWidth - D.tasks.clientWidth;
+    }
   }
   var _opened = 0;
   function paintSpeaker() {
