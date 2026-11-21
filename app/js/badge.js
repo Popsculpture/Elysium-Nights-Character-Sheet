@@ -6,7 +6,7 @@
    the name, the class (Calling) and subclass (Profession), size, species, lineage and Caliber are read from the
    record and the engine's derive(), and the barcode is made from the record's id, so it is the same bars for the
    same Freelancer and a different set for another.
-   Today it lives in the Record drawer that Classic's status rail opens (js/deck_record.js).
+   Today it lives in the Record drawer that Classic's status rail opens (js/rail_record.js).
 
    THE HEADSHOT is ch.identity.portrait: a data URL of a JPEG, centre-cropped to the frame's 4:5 and shrunk to
    240 x 300 in the browser before it is stored (a few tens of KB), so it travels with the record to the cloud,

@@ -1,6 +1,6 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · CLASSIC'S STATUS RAIL, its Record drawer and its search: their look.
-   Loaded after theme.css. Every rule is under html.st-rail, which js/deck_shell.js puts on while the rail is drawn (the
+   Loaded after theme.css. Every rule is under html.st-rail, which js/rail_shell.js puts on while the rail is drawn (the
    Freelancer desktop on Classic, a filed record open), so nothing here reaches #GRIDroid, '98 or the Admin desktop.
    The rail began as the status bar of #GRIDeck, a fourth OS skin removed on 20 Nov 2026 (the author's call); its nodes keep
    that skin's `.dk` root and `dk-` classes, and the --dk-* tokens are set from Classic's palette (THE RAIL WEARS CLASSIC).
@@ -247,7 +247,7 @@ html.st-rail .dk .dk-segb .dk-ic{ font-size:15px; }
    On the Freelancer desktop Classic carries a rail of its own, #os-rail, between the top bar and the tab rail, on every tab:
    the level, the name over the class and subclass, Vitality, Wounds and the class resource on the left; the wallet and the
    rest button (Short rest, Long rest and Downtime inside it) on the right. It is this skin's status bar, drawn lean
-   (js/deck_hud.js: no conditions, no search, no level-up chip; js/deck_shell.js chrome() mounts it and puts html.st-rail on).
+   (js/rail_hud.js: no conditions, no search, no level-up chip; js/rail_shell.js chrome() mounts it and puts html.st-rail on).
    The rail is pinned under the top bar, so the tab rail and every sticky sub-header (--sticky-top) move down by its height.
    On a phone it scrolls away and they stay where they were. Not on #GRIDroid, '98 or the Admin desktop. */
 html.st-rail{ --st-rail-h:60px; --sticky-top:calc(92px + var(--st-rail-h)); }
@@ -259,10 +259,10 @@ html.st-rail #dk-hud .dk-idn:hover{ background:var(--bg2); }
 /* on this rail the name opens the Record drawer (the end of this file) */
 /* the Flow visualizer's window (theme.css, .fv-win) opens under the pinned chrome, which is taller by the rail */
 html.st-rail .fv-win:not(.fv-sheet){ --fv-maxh:calc(100vh - 110px - var(--st-rail-h)); }
-/* ---- THE SEARCH BOX IN CLASSIC'S TOP BAR (15 Nov 2026, the author's call; js/deck_shell.js paintFindBox) ----
+/* ---- THE SEARCH BOX IN CLASSIC'S TOP BAR (15 Nov 2026, the author's call; js/rail_shell.js paintFindBox) ----
    The record's name is on the rail, so the name in the top bar's right corner is put away (the EDIT FREELY flag beside it
    stays) and a search box takes its place: a Classic field to look at, a button to press, Ctrl K to the same end. The
-   search it opens (js/deck_find.js) is a Classic panel there. */
+   search it opens (js/rail_find.js) is a Classic panel there. */
 html.st-rail #active-name .an-name{ display:none; }
 html.st-rail #os-find{ flex:none; display:inline-flex; align-items:center; gap:8px; height:28px; padding:0 8px 0 10px; border:1px solid var(--accent-dim); border-radius:0; background:var(--bg2);
   color:var(--text3); font:400 11px var(--mono); letter-spacing:.1em; text-transform:uppercase; cursor:pointer; }
@@ -284,7 +284,7 @@ html.st-rail .dk .dk-palg::before{ content:"// "; color:var(--flow); letter-spac
 html.st-rail #dk-find .dk-opt{ font:500 14.5px var(--body); letter-spacing:.02em; text-transform:none; color:var(--text); }
 html.st-rail #dk-find .dk-opt small{ font:400 10.5px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--text3); }
 html.st-rail #dk-find .dk-empty{ font:400 13px var(--body); color:var(--text3); }
-/* ---- THE RECORD DRAWER ON CLASSIC (16 Nov 2026, the author's call; js/deck_record.js) ----
+/* ---- THE RECORD DRAWER ON CLASSIC (16 Nov 2026, the author's call; js/rail_record.js) ----
    The name on the rail slides a panel in from the right: the level and name, five pages (#PRINT, Level up, Edit record,
    Characters, Notes) as small Classic buttons, and the #PRINT badge (js/badge.js), which is SVG and takes the width it is
    given. Classic's surface, as the rail has it: the palette's colours and faces, a hairline in the accent, cut corners. */
@@ -357,7 +357,7 @@ html.st-rail #dk-hud .dk-track{ height:8px; border-radius:0; background:var(--bg
 html.st-rail #dk-hud .dk-fill{ border-radius:0; }
 /* green and amber come through the tokens; Wounds have a red of their own on Classic */
 html.st-rail #dk-hud .dk-wd .dk-fill{ background:var(--wound); }
-/* RAIL PARITY (js/deck_hud.js): Vigor's lattice over the Vitality fill, its figure a thing to press, and Critical Condition in the danger colour */
+/* RAIL PARITY (js/rail_hud.js): Vigor's lattice over the Vitality fill, its figure a thing to press, and Critical Condition in the danger colour */
 html.st-rail #dk-hud .dk-track{ position:relative; }
 html.st-rail #dk-hud .dk-shield{ position:absolute; left:0; top:0; height:100%; overflow:hidden; }
 html.st-rail #dk-hud .dk-vg{ cursor:pointer; }

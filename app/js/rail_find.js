@@ -2,7 +2,7 @@
    ELYSIUM NIGHTS · SEARCH (15 Nov 2026, the author's call; it began as #GRIDeck's, and that skin was removed on 20 Nov 2026).
    One box for "where is that": the rules (the Codex's own search), the gear on the record, the people the Freelancer can
    reach, and the handful of things a player goes looking for a button to do. With Classic's status rail up, a search box
-   stands in the top bar where the record's name was (js/deck_shell.js, paintFindBox), and Ctrl K (Cmd K on a Mac) opens it
+   stands in the top bar where the record's name was (js/rail_shell.js, paintFindBox), and Ctrl K (Cmd K on a Mac) opens it
    over whatever tab is open; Escape puts it away. A find goes to Classic's own places: a rule opens in the peek drawer, a
    piece of gear opens the Stash's Gear page on its shelf, a person opens Contacts, and a "do" row opens #PRINT or a tab.
 

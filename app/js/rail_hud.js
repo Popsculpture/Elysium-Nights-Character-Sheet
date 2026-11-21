@@ -1,10 +1,10 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · CLASSIC'S STATUS RAIL: the bar on it (15 Nov 2026, the author's call; it began as #GRIDeck's status bar,
    and that skin was removed on 20 Nov 2026). What he listed and no more: the level, the name over the class and subclass,
-   Vitality, Wounds, the class resource, the wallet and the rest button. The name opens the Record drawer (js/deck_record.js).
+   Vitality, Wounds, the class resource, the wallet and the rest button. The name opens the Record drawer (js/rail_record.js).
    A Body Save that is waiting shows, since a Wound taken from this bar on another tab would otherwise ask for a roll nobody
-   sees. It wears Classic's look (css/deck.css, THE RAIL WEARS CLASSIC): the palette's own colours and fonts, cut corners,
-   square bars. js/deck_shell.js mounts it in #os-rail.
+   sees. It wears Classic's look (css/rail.css, THE RAIL WEARS CLASSIC): the palette's own colours and fonts, cut corners,
+   square bars. js/rail_shell.js mounts it in #os-rail.
 
    THE SKELETON IS BUILT ONCE AND PATCHED: js/app.js re-renders on every store change, a cloud sync included, and a bar
    rebuilt each time would drop the amount being typed into it. paint() only writes text, widths and classes into nodes it

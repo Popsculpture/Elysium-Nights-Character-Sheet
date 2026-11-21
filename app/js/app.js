@@ -675,7 +675,7 @@ EN.app = (function () {
     if (portal === "freelancer" && tab.key !== "print" && EN.builder && EN.builder.managerOpen && EN.builder.managerOpen())
       view.appendChild(EN.builder.managerPanel());
     lockedSheet(view, portal === "freelancer" ? tab.key : null);
-    /* Classic's status rail (js/deck_shell.js), or its removal where it is not wanted (the Admin desktop, another skin).
+    /* Classic's status rail (js/rail_shell.js), or its removal where it is not wanted (the Admin desktop, another skin).
        Its own try: a record the rail cannot read costs the rail, not the app. */
     if (EN.deck && EN.deck.shell) { try { EN.deck.shell.chrome(portal); } catch (e) { console.error("The status rail could not be drawn", e); } }
     if (_lastTab === viewKey()) {                          // same view → stay put

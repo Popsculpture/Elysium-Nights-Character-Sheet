@@ -1,9 +1,9 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · CLASSIC'S STATUS RAIL: where it is mounted (15 Nov 2026, the author's call).
    Classic's Freelancer desktop carries a status bar on a rail of its own, #os-rail, between the top bar and the tab rail, on
-   every tab, for a filed record (an example and a viewed sheet count, as they do for the tabs). The bar is js/deck_hud.js;
-   the name on it opens the Record drawer (js/deck_record.js); the search box that takes the name's place in the top bar, and
-   Ctrl K, open the search (js/deck_find.js). html.st-rail turns their look on (css/deck.css) and moves the pinned chrome
+   every tab, for a filed record (an example and a viewed sheet count, as they do for the tabs). The bar is js/rail_hud.js;
+   the name on it opens the Record drawer (js/rail_record.js); the search box that takes the name's place in the top bar, and
+   Ctrl K, open the search (js/rail_find.js). html.st-rail turns their look on (css/rail.css) and moves the pinned chrome
    down. Not on #GRIDroid or '98, which lay their chrome out their own way, and not on the Admin desktop.
 
    These files began as #GRIDeck, a fourth OS skin, which was removed on 20 Nov 2026 (the author's call: it gave good ideas
@@ -48,8 +48,8 @@ EN.deck.shell = (function () {
     EN.deck.hud.paint(rail, c);
   }
   /* THE SEARCH BOX IN CLASSIC'S TOP BAR (15 Nov 2026, the author's call). With the rail up the record's name is on the rail,
-     so the name in the top bar's right corner is put away (css/deck.css) and its place holds a search box: a press, or
-     Ctrl K, opens the search (js/deck_find.js), which sends a find to Classic's own tabs. */
+     so the name in the top bar's right corner is put away (css/rail.css) and its place holds a search box: a press, or
+     Ctrl K, opens the search (js/rail_find.js), which sends a find to Classic's own tabs. */
   function paintFindBox(top) {
     if (!top || document.getElementById("os-find")) return;
     top.appendChild(el("button#os-find", { type: "button", title: "Search rules, your gear and people (Ctrl K)", "aria-label": "Search", "aria-haspopup": "dialog",

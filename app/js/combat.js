@@ -1652,7 +1652,7 @@ EN.combatView = (function () {
   /* The book's Short or Long Rest (Vitality & Recovery > Recovery) as a rest popover prints it: its name (a link to the rule),
      its duration and its list, read from EN.recovery; for a Short Rest, the line after it is what TAKE SHORT REST itself does
      here. Without the data, the short summary each popover had (the Long Rest's with the book's minimum of 1 Wound restored).
-     One builder, for the Freelancer tab's own popovers and for Classic's status rail (js/deck_hud.js, RAIL PARITY). */
+     One builder, for the Freelancer tab's own popovers and for Classic's status rail (js/rail_hud.js, RAIL PARITY). */
   function restBookFor(kind, d) {
     var R = rcRest(kind), P = { margin: 0, fontSize: "12px", lineHeight: "1.5", color: "var(--text2)" };
     if (kind === "short") {
@@ -5000,9 +5000,9 @@ EN.combatView = (function () {
       ], { corners: true })]));
     }
 
-    /* THE STATUS RAIL HAS THEM (15 Nov 2026, the author's call). Where Classic's status rail is up (js/deck_shell.js, railOn),
+    /* THE STATUS RAIL HAS THEM (15 Nov 2026, the author's call). Where Classic's status rail is up (js/rail_shell.js, railOn),
        Vitality, Wounds and the three rests are on it, on every tab, so this tab does not draw them a second time: no rest
-       buttons in the header and no Vitality panel. What the panel did rides on the rail (js/deck_hud.js, RAIL PARITY): Vigor,
+       buttons in the header and no Vitality panel. What the panel did rides on the rail (js/rail_hud.js, RAIL PARITY): Vigor,
        the damage order, the Critical colour, Death Saves and Stabilize, the rule links and the book's tooltips. The Wound
        damage Body Save prompt, which sat under the panel's Wounds bar, goes up with the banners; the rail shows a chip for it
        from any tab. #GRIDroid and '98 have no rail, so there both stay exactly as they were. */
@@ -7617,7 +7617,7 @@ EN.combatView = (function () {
              restInfo: rcRest, feralBonus: feralMetabolismBonus,
              shortBegan: function (rec) { return (_shortBegin && _shortBegin.rec === rec) ? _shortBegin.rd : null; },
              /* RAIL PARITY (15 Nov 2026): what the Vitality panel and the rest popovers said and linked, for Classic's status
-                rail, which stands in for them (js/deck_hud.js): the book's Wound save and Stabilize wording, a "Rules:" line,
+                rail, which stands in for them (js/rail_hud.js): the book's Wound save and Stabilize wording, a "Rules:" line,
                 and the book's own Short and Long Rest lists. */
              woundSaveRule: rcWoundSave, stabilizeTitle: rcStabilizeTitle, rulesLine: cxRulesLine, restBook: restBookFor, pips: pips,
              icons: { shortRest: ICON_SHORT_REST, longRest: ICON_LONG_REST, downtime: ICON_DOWNTIME },

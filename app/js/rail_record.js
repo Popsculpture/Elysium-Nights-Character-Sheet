@@ -8,7 +8,7 @@
      NOTES        the freeform notes, the same field as the Freelancer tab's and the #PRINT Identity step's
    Anything that asks for a page this drawer does not have ("dossier", say) opens the first one.
    It is an overlay of its own, outside #view, like the Codex peek: opening it leaves the page behind exactly where it was.
-   js/deck_shell.js calls sync() on every render, so it always shows the record that is open, and closes with the rail.
+   js/rail_shell.js calls sync() on every render, so it always shows the record that is open, and closes with the rail.
 
    Everything it does is a function another screen already had: EN.builder (goStep, openAdvance, newRecord, importPrompt,
    exportChar, openManager), EN.store (setActive, setExample), EN.printSheet, EN.pdfExport, EN.badge.
