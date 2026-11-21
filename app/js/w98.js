@@ -53,7 +53,7 @@ EN.w98 = (function () {
     return 4 + cols * ICON_W + 16;
   }
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
-  function svg(markup) { return el("span.w98-ic", { html: markup, "aria-hidden": "true" }); }
+  function svg(markup) { return el("span.w98-ic" + (/^<img/.test(markup) ? ".w98-icpx" : ""), { html: markup, "aria-hidden": "true" }); }
 
   /* ======================================================================== ICONS
      The author's tab icons, paths and rules unchanged, inside an original 32px pixel frame (desktop, folders) or alone at
@@ -74,7 +74,12 @@ EN.w98 = (function () {
     '<rect x="3" y="28" width="27" height="1" fill="#808080"/><rect x="4" y="5" width="24" height="5" fill="#000080"/><rect x="10" y="5" width="6" height="5" fill="#0842a8"/>' +
     '<rect x="16" y="5" width="12" height="5" fill="#1084d0"/><rect x="24" y="6" width="3" height="3" fill="#c0c0c0"/><rect x="4" y="11" width="24" height="16" fill="#808080"/>' +
     '<rect x="5" y="12" width="23" height="15" fill="#fff"/></g>';
+  /* the redrawn program icons (21 Nov 2026): 32 px pixel art, one SVG a program, shown whole (no frame, no tint, no recolor).
+     Only whole multiples of 32 stay sharp, and image-rendering:pixelated keeps the browser from smoothing them. 16 px places
+     (title bars, taskbar, menus) keep glyph16: there is no 16 px set of these. */
+  var PROG32 = { combat: 1, post: 1, face: 1, grid: 1, flow: 1, gear: 1, codex: 1, print: 1, sysop: 1, table: 1, scenes: 1, gmpost: 1, jobs: 1, encounters: 1, threats: 1, people: 1, downtime: 1, gmcodex: 1 };
   function tile32(p) {
+    if (PROG32[p.key]) return '<img class="w98-px" src="img/programs-32/' + p.key + '-32.svg" width="32" height="32" alt="" draggable="false">';
     var ink = INK[p.key] || "#000080", g = parts(p.icon);
     var inside = g
       ? '<svg x="7" y="13" width="19" height="13" viewBox="' + g.vb + '" preserveAspectRatio="xMidYMid meet" fill="' + ink + '"' + g.keep + '>' + g.inner + '</svg>'
