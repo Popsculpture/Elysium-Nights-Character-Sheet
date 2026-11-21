@@ -453,3 +453,46 @@ html.skin-98 .w98-bc.n1{ color:#0044cc; } html.skin-98 .w98-bc.n2{ color:#2a7a2a
 html.skin-98 .w98-bc.n5{ color:#8a4a00; } html.skin-98 .w98-bc.n6{ color:#007a8a; } html.skin-98 .w98-bc.n7{ color:#222; } html.skin-98 .w98-bc.n8{ color:#666; }
 html.skin-98 .w98-bmsg{ min-height:16px; text-align:center; }
 html.skin-98 .btn.w98-mark-on{ background:var(--w-check); box-shadow:var(--c-pressed); }
+
+/* ===========================================================================
+   PHASE 4, CONTINUED: Gizmo on the desktop (js/w98_gizmo.js), the desktop's visitor counter, and the Control Panel's property sheets
+   (js/w98_cpanel.js).
+   =========================================================================== */
+html.skin-98 .w98-gizmo{ position:absolute; z-index:600; display:flex; flex-direction:column; align-items:flex-end; gap:8px; pointer-events:none; }
+html.skin-98 .w98-gz-fig{ pointer-events:auto; padding:0; border:0; background:none; cursor:grab; touch-action:none; filter:drop-shadow(1px 2px 0 rgba(0,0,0,.35)); }
+html.skin-98 .w98-gz-fig:active{ cursor:grabbing; }
+html.skin-98 .w98-gz-fig:focus-visible{ outline:1px dotted #fff; outline-offset:2px; }
+html.skin-98 .w98-gz-svg{ display:block; width:40px; height:52px; transform-origin:50% 90%; animation:w98-gz-bob 2.6s ease-in-out infinite; }
+@keyframes w98-gz-bob{ 0%,100%{ transform:rotate(-4deg); } 50%{ transform:rotate(5deg); } }
+html.skin-98 .w98-gz-bubble{ display:none; pointer-events:auto; position:relative; max-width:230px; padding:6px 9px; background:#ffffe1; color:#000; border:1px solid #000;
+  box-shadow:2px 2px 0 rgba(0,0,0,.35); font:12px/1.35 var(--w-font); cursor:default; user-select:none; }
+html.skin-98 .w98-gz-bubble.on{ display:block; }
+html.skin-98 .w98-gz-bubble::after{ content:""; position:absolute; right:18px; bottom:-6px; width:9px; height:9px; background:#ffffe1; border:solid #000; border-width:0 1px 1px 0; transform:rotate(45deg); }
+html.skin-98 .w98-gz-bubble.w98-gz-in{ animation:w98-gz-pop .2s steps(5) both; }
+@keyframes w98-gz-pop{ from{ transform:scale(.6); opacity:0; } to{ transform:none; opacity:1; } }
+@media (prefers-reduced-motion: reduce){ html.skin-98 :is(.w98-gz-svg, .w98-gz-bubble.w98-gz-in){ animation:none; } }
+
+html.skin-98 .w98-hits{ position:absolute; right:10px; bottom:calc(var(--w-task-h) + 8px); z-index:1; display:flex; align-items:center; gap:8px; padding:3px 6px;
+  font-size:11px; color:#fff; text-shadow:1px 1px 0 #000; pointer-events:none; user-select:none; }
+
+/* the Control Panel's property sheets: a window with tabs, a page, and a Close button */
+html.skin-98 .w98-client.w98-psclient{ background:var(--w-face); padding:0; overflow:hidden; user-select:none; }
+html.skin-98 .w98-ps{ display:flex; flex-direction:column; height:100%; padding:8px; box-sizing:border-box; }
+html.skin-98 .w98-ps .w98-tabs{ flex:none; flex-wrap:wrap; }
+html.skin-98 button.w98-tab{ border:0; font:inherit; color:inherit; cursor:default; }
+html.skin-98 button.w98-tab:focus-visible{ outline:1px dotted #000; outline-offset:-4px; }
+html.skin-98 .w98-pspane{ flex:1; min-height:0; overflow:auto; padding:12px; background:var(--w-face); color:var(--text); user-select:text; }
+html.skin-98 .w98-ps-foot{ flex:none; display:flex; justify-content:flex-end; padding-top:8px; }
+html.skin-98 .w98-ps-btns{ display:flex; flex-wrap:wrap; gap:6px; }
+html.skin-98 .w98-ps-row{ margin:6px 0; }
+html.skin-98 .w98-ps-field{ display:flex; align-items:center; gap:10px; margin:6px 0; }
+html.skin-98 .w98-ps-field > span{ min-width:96px; }
+html.skin-98 fieldset.w98-grp{ margin:0 0 12px; padding:8px 10px 10px; min-inline-size:0; border:1px solid var(--w-sh); box-shadow:1px 1px 0 var(--w-hi), inset 1px 1px 0 var(--w-hi); }
+html.skin-98 fieldset.w98-grp > legend{ padding:0 4px; font-size:12px; }
+html.skin-98 .w98-monitor{ width:170px; margin:4px auto 14px; padding:10px 10px 16px; background:var(--w-face); box-shadow:var(--w-raised); }
+html.skin-98 .w98-monitor-s{ height:96px; display:flex; align-items:center; justify-content:center; background:#000; color:#fff; box-shadow:var(--w-sunken); }
+html.skin-98 .w98-pspane{ --disp:var(--w-font); --mono:var(--w-font); --body:var(--w-font); font-family:var(--w-font); font-size:12px; }
+html.skin-98 .w98-pspane *{ letter-spacing:normal !important; }
+html.skin-98 .w98-pspane :is(.btn, .chip, .set-label, .set-sw-name, .set-sw-mini){ text-transform:none; }
+html.skin-98 .w98-pspane .set-label{ font-family:var(--w-font); font-size:12px; font-weight:700; }
+html.skin-98 .w98-pspane .set-hint{ font-size:11px; }

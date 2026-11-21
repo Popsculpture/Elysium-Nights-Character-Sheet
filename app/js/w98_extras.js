@@ -1,7 +1,7 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · #GRIDOS '98, THE PLAYFUL EXTRAS (phase 4 of the redesign, 21 Nov 2026).
-   A screen saver you can turn on, a Tip of the Day, an error box for a natural 1, the visitor counter in About, and Breach, a small
-   game of its own. All of it hangs on js/w98.js through EN.w98.ext (menu lists) and EN.w98.kit (its dialogs, menus and sounds), so
+   A screen saver you can turn on, a Tip of the Day, an error box for a natural 1, the visitor counter (on the desktop and in About), and
+   Breach, a small game of its own; Gizmo (js/w98_gizmo.js) and the Control Panel (js/w98_cpanel.js) are their own files. All of it hangs on js/w98.js through EN.w98.ext (menu lists) and EN.w98.kit (its dialogs, menus and sounds), so
    the desktop stays the desktop; none of it runs on another skin.
 
    Original work only. Breach is a sweeper-genre game (find the hidden ICE from the counts around it) in its own dress: its own name,
@@ -85,6 +85,21 @@ window.EN = window.EN || {};
     ] }];
   });
   X.runNames["screensaver"] = X.runNames["screen saver"] = ssStart;
+  function group(legend, kids) { return el("fieldset.w98-grp", null, [el("legend", { text: legend })].concat(kids)); }
+  function field(text, control) { return el("label.w98-ps-field", null, [el("span", null, K.label(text)), control]); }
+  // Display Properties, Screen Saver tab (js/w98_cpanel.js asks X.display for tabs)
+  X.display.push({ name: "Screen Saver", build: function () {
+    var m = ssMins();
+    var which = el("select", { "aria-label": "Screen Saver" }, [el("option", { value: "none", selected: !m, text: "(None)" }), el("option", { value: "mark", selected: !!m, text: "#GRIDOS Mark" })]);
+    var wait = el("select", { "aria-label": "Wait", disabled: !m }, [1, 5, 10].map(function (n) { return el("option", { value: String(n), selected: (m || 5) === n, text: n + (n === 1 ? " minute" : " minutes") }); }));
+    which.onchange = function () { var on = which.value === "mark"; wait.disabled = !on; ssSet(on ? parseInt(wait.value, 10) : 0); };
+    wait.onchange = function () { ssSet(parseInt(wait.value, 10)); };
+    return [
+      el("div.w98-monitor", { "aria-hidden": "true" }, [el("div.w98-monitor-s", null, [el("span", { html: K.mark(26, "currentColor") })])]),
+      group("Screen saver", [field("&Screen Saver:", which), field("&Wait:", wait), el("div.w98-ps-btns", null, [el("button.btn.sm", { type: "button", onclick: ssStart }, "Preview")])]),
+      el("p.set-hint", { text: "The screen saver comes up after the wait without a key, a click or a touch. Any of them wakes it." })
+    ];
+  } });
 
   /* ======================================================================== TIP OF THE DAY
      Every sentence is true of this desktop. Shown once a session at start-up, until the box under it is unticked. */
@@ -121,6 +136,11 @@ window.EN = window.EN || {};
       { label: "Close", def: true, cancel: true, go: advance }
     ] });
   }
+  function nextTip() {
+    var ix = (parseInt(store(TIPIX_KEY) || "0", 10) || 0) % TIPS.length;
+    store(TIPIX_KEY, String((ix + 1) % TIPS.length));
+    return TIPS[ix];
+  }
   X.boot.push(function () {
     if (!on(TIPS_KEY, true)) return;
     try { if (sessionStorage.getItem("en_w98_tip_shown")) return; sessionStorage.setItem("en_w98_tip_shown", "1"); } catch (e) {}
@@ -130,6 +150,13 @@ window.EN = window.EN || {};
     return [{ label: "&Tips at start-up", check: on(TIPS_KEY, true), go: function () { store(TIPS_KEY, on(TIPS_KEY, true) ? "0" : "1"); } }];
   });
   X.runNames["tip"] = X.runNames["tip of the day"] = X.runNames["tips"] = showTip;
+  function checkRow(text, get, set, hint) {
+    var box = el("input.w98-chk", { type: "checkbox", checked: !!get(), onchange: function () { set(box.checked); } });
+    return el("div.w98-ps-row", null, [el("label.w98-tip-c", { style: { marginTop: "0" } }, [box, el("span", null, K.label(text))]), hint ? el("p.set-hint", { style: { margin: "3px 0 0 21px" }, text: hint }) : null]);
+  }
+  X.cplExtras.push(function () {
+    return [checkRow("Show &tips at start-up", function () { return on(TIPS_KEY, true); }, function (v) { store(TIPS_KEY, v ? "1" : "0"); }, "One Tip of the Day when the desktop starts, once a session.")];
+  });
 
   /* ======================================================================== THE FUMBLE ERROR
      combat.js calls EN.w98.fumble when a roll settles on a natural 1. On '98, with the joke left on, the die crashes. Not on any
@@ -143,7 +170,7 @@ window.EN = window.EN || {};
       el("p", { style: { marginTop: "8px" }, text: "A natural 1 was found. Close this box, or ignore the error and hope." }),
       det
     ], buttons: [
-      { label: "Close", def: true, cancel: true },
+      { label: "Close", def: true, cancel: true, go: function () { if (EN.w98.say) EN.w98.say("A natural 1. The die did that. I saw nothing."); } },
       { label: "&Details >>", keep: function () { det.style.display = det.style.display === "none" ? "block" : "none"; return false; } }
     ] });
   }
@@ -155,6 +182,9 @@ window.EN = window.EN || {};
   X.settings.push(function () {
     return [{ label: "&Fumble errors", check: on(FUM_KEY, true), go: function () { store(FUM_KEY, on(FUM_KEY, true) ? "0" : "1"); } }];
   });
+  X.cplExtras.push(function () {
+    return [checkRow("Show an &error box for a natural 1", function () { return on(FUM_KEY, true); }, function (v) { store(FUM_KEY, v ? "1" : "0"); }, "The die crashes, with details. A joke, and only on this desktop.")];
+  });
 
   /* ======================================================================== THE VISITOR COUNTER, in About
      The same count as ever: times this app has been opened on this device (js/app.js countVisit). Real, not a joke number. */
@@ -165,6 +195,33 @@ window.EN = window.EN || {};
       el("span", { text: "You are visitor number" }),
       el("span.w98-vis-d", null, s.split("").map(function (d) { return el("i", { text: d }); }))
     ]);
+  });
+
+  /* THE COUNTER ON THE DESKTOP, bottom right, under the windows: the same real count, in the odometer cells the hit counters of the
+     era had. A right-click on the desktop, or the Control Panel, puts it away. */
+  var CNT_KEY = "en_w98_counter_v1";
+  function visitDigits() {
+    var n = (parseInt(store("en_visits_v1") || "1", 10) || 1) % 1000000, s = String(n);
+    while (s.length < 6) s = "0" + s;
+    return s;
+  }
+  function counterPaint() {
+    var root = document.getElementById("w98");
+    if (!root || !K.active()) return;
+    var w = root.querySelector(".w98-hits");
+    if (!on(CNT_KEY, true)) { if (w) w.parentNode.removeChild(w); return; }
+    var d = visitDigits();
+    if (!w) {
+      w = el("div.w98-hits", { title: "Times this Smartdeck has been opened on this device" }, [el("span", { text: "visitors since 1998" }), el("span.w98-vis-d")]);
+      root.insertBefore(w, root.querySelector(".w98-wins"));
+    }
+    var cell = w.querySelector(".w98-vis-d");
+    if (cell.getAttribute("data-n") !== d) { EN.ui.clear(cell); d.split("").forEach(function (c) { cell.appendChild(el("i", { text: c })); }); cell.setAttribute("data-n", d); }
+  }
+  X.paint.push(counterPaint);
+  X.desktop.push(function () { return [{ sep: true }, { label: "Visitor &Counter", check: on(CNT_KEY, true), go: function () { store(CNT_KEY, on(CNT_KEY, true) ? "0" : "1"); counterPaint(); } }]; });
+  X.cplExtras.push(function () {
+    return [checkRow("Show the &visitor counter on the desktop", function () { return on(CNT_KEY, true); }, function (v) { store(CNT_KEY, v ? "1" : "0"); counterPaint(); }, "How many times this Smartdeck has been opened on this device. A real count.")];
   });
 
   /* ======================================================================== BREACH
@@ -280,7 +337,7 @@ window.EN = window.EN || {};
         G.cells[hit].b.classList.add("hit");
         msg.textContent = "ICE tripped. The run is over.";
         K.dialog({ id: "breach-lose", title: "Breach", icon: "error", width: 340, body: "You opened a node that was ICE. It had been waiting for you.",
-          buttons: [{ label: "OK", def: true, cancel: true }, { label: "&New Game", go: fresh }] });
+          buttons: [{ label: "OK", def: true, cancel: true, go: function () { if (EN.w98.say) EN.w98.say("That one was ICE. It usually is."); } }, { label: "&New Game", go: fresh }] });
       }
       function win() {
         end();
@@ -292,7 +349,7 @@ window.EN = window.EN || {};
         paintHead();
         K.dialog({ id: "breach-win", title: "Breach", icon: "info", width: 340, sound: false,
           body: "Grid breached in " + G.secs + " seconds." + (better ? " That is a new best for this size." : ""),
-          buttons: [{ label: "OK", def: true, cancel: true }, { label: "&New Game", go: fresh }] });
+          buttons: [{ label: "OK", def: true, cancel: true, go: function () { if (EN.w98.say) EN.w98.say("Grid breached. I knew you had it."); } }, { label: "&New Game", go: fresh }] });
         K.sound("ding");
       }
       fresh();
@@ -304,5 +361,5 @@ window.EN = window.EN || {};
   });
   X.runNames["breach"] = function () { K.openApp("breach"); };
 
-  EN.w98.extras = { showTip: showTip, ssStart: ssStart, ssWake: ssWake, ssActive: function () { return !!SS.el; }, tips: TIPS.length };
+  EN.w98.extras = { showTip: showTip, nextTip: nextTip, ssStart: ssStart, ssWake: ssWake, ssActive: function () { return !!SS.el; }, tips: TIPS.length };
 })();

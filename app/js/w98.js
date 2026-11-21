@@ -251,7 +251,7 @@ EN.w98 = (function () {
   }
   /* EXTENSIONS (js/w98_extras.js): the screen saver, tips, the fumble error and the Breach game add to these lists, so this file stays the
      desktop and nothing else. Each list holds functions that answer with menu items (or, for `about`, an element). */
-  var X = { settings: [], programs: [], desktop: [], about: [], boot: [], runNames: {} };
+  var X = { settings: [], programs: [], desktop: [], about: [], boot: [], runNames: {}, open: [], paint: [], cpl: [], cplExtras: [], display: [], controlPanel: null };
 
   function mount() {
     var os = document.getElementById("os");
@@ -303,7 +303,7 @@ EN.w98 = (function () {
       if (portal() === "freelancer") items.push({ label: "Ne&w", sub: [{ label: "&Freelancer", icon: pix("page", 16), go: newRecord }] });
       X.desktop.forEach(function (fn) { try { items = items.concat(fn()); } catch (x) {} });
       items.push({ sep: true });
-      items.push({ label: "P&roperties", go: openSettings });
+      items.push({ label: "P&roperties", go: function () { closeMenus(); if (X.controlPanel && EN.w98.openControlPanel) EN.w98.openControlPanel("display"); else openSettings(); } });
     }
     openMenu(items, e.clientX, e.clientY, {});
   }
@@ -400,6 +400,7 @@ EN.w98 = (function () {
       // a program opened (from a link, the Start menu, an icon): its window opens or comes back, in front
       var wasShut = !w.open;
       if (!w.open || w.min) { if (wasShut) w.opened = ++_opened; w.open = true; w.min = false; zoomIn(w, wasShut); }
+      X.open.forEach(function (fn) { try { fn(k); } catch (e) {} });
       raise(w.id);
     }
     // a program the record no longer has (Flow, #GRID, #POST come and go) loses its window
@@ -425,6 +426,7 @@ EN.w98 = (function () {
     Object.keys(W).forEach(function (id) { if (W[id].kind === "app" && W[id].open && APPS[W[id].key].refresh) APPS[W[id].key].refresh(W[id]); });
     layout();
     _from = null;
+    X.paint.forEach(function (fn) { try { fn(); } catch (e) {} });
   }
   function dropWin(w) {
     if (w.frame && w.frame.parentNode) w.frame.parentNode.removeChild(w.frame);
@@ -1082,7 +1084,7 @@ EN.w98 = (function () {
   }
 
   /* ---- things the Start menu opens */
-  function openSettings() { closeMenus(); if (EN.settings && EN.settings.open) EN.settings.open(); }
+  function openSettings() { closeMenus(); if (X.controlPanel) X.controlPanel(); else if (EN.settings && EN.settings.open) EN.settings.open({ overlay: true }); }
   function newRecord() { if (EN.builder && EN.builder.newRecord) { EN.builder.newRecord(); EN.app.gotoTab("print"); } }
   function afterOpen() { EN.app.gotoTab(EN.app.registered() ? "combat" : "print"); }
   function openRecord(id) { EN.store.setActive(id); afterOpen(); }
@@ -1233,6 +1235,7 @@ EN.w98 = (function () {
     kit: {
       el: el, label: label, dialog: dialog, msg: msg, openMenu: openMenu, closeMenus: closeMenus, pix: pix, PIX: PIX, mark: mark, sound: sound, soundOn: soundOn,
       store: store, APPS: APPS, openApp: openApp, launch: launch, programs: programs, portal: portal, reduced: reduced, is98: is98,
+      tile32: tile32, glyph16: glyph16, closeApp: function (k) { if (W["a:" + k]) closeWin(W["a:" + k]); }, winOf: function (id) { return W[id] || null; },
       active: function () { return !!D && is98(); }, openSettings: openSettings, recordName: recordName, deskSize: function () { return { w: deskW(), h: deskH() }; }
     },
     sound: sound, soundOn: soundOn, aboutDialog: aboutDialog, runDialog: runDialog, shutDownDialog: shutDownDialog, logOffDialog: logOffDialog, closeDialogs: closeDialogs

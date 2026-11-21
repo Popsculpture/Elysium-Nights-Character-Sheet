@@ -1378,17 +1378,16 @@ EN.settings = (function () {
   // tab is active) take priority at the top; general settings sit below,
   // led by CHARACTERS and DICE on the Freelancer desktop (31 Oct 2026).
   // New general sections get appended after that split.
-  function rebuild() {
-    var ov = document.getElementById("set-ov");
-    if (!ov) return;
-    var body = ov.querySelector(".set-body");
-    clear(body);
+  /* THE SECTIONS, built fresh on every call: the tray draws them (rebuild below) and so does '98's Control Panel (js/w98_cpanel.js),
+     which hosts the same sections in property sheets. `all` includes the ones tied to a tab (Panel Customization, Flow, #GRID) whatever
+     tab is open, which a folder of icons wants and the tray, which shows what is in front of you, does not. */
+  function buildSections(all) {
     var sections = [];
     // the cloud link first, on both desktops: Jack in with Discord, or who is jacked in (js/cloud.js)
     if (EN.cloud && EN.cloud.settingsSection) sections.push(EN.cloud.settingsSection());
-    if (EN.app.activeTab() === "combat" && EN.combatView) sections.push(freelancerLayoutSection());
-    if (EN.app.activeTab() === "flow" && EN.flowView && EN.flowView.isImmersive) sections.push(flowSection());
-    if (EN.app.activeTab() === "grid" && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
+    if ((all || EN.app.activeTab() === "combat") && EN.combatView) sections.push(freelancerLayoutSection());
+    if ((all || EN.app.activeTab() === "flow") && EN.flowView && EN.flowView.isImmersive) sections.push(flowSection());
+    if ((all || EN.app.activeTab() === "grid") && EN.gridView && EN.gridView.isDamage) sections.push(gridSection());
     // the roster, on the Freelancer desktop, first among the general sections
     if (!EN.theme.inAdmin() && EN.builder && EN.builder.openManager) sections.push(charactersSection());
     // dice mode on every Freelancer tab (31 Oct 2026), not only the Freelancer tab
@@ -1405,6 +1404,30 @@ EN.settings = (function () {
     // skin and palette are one section under one title: skinSection carries
     // the title, themeSection continues it, so the two are pushed as one
     sections.push(skinSection().concat(wallSection(), themeSection()));
+    return sections;
+  }
+  // the three parts of Appearance, apart, for Display Properties: the skin picker (its title left off), the wallpaper, the palette
+  function appearance() {
+    return { skin: skinSection().filter(function (n) { return n && !(n.classList && n.classList.contains("set-sectitle")); }), wall: wallSection(), theme: themeSection() };
+  }
+  function sectionsList(all) {
+    injectCss();
+    return buildSections(!!all).map(function (kids) {
+      kids = kids.filter(function (n) { return n; });
+      var head = kids[0];
+      return { title: head && head.classList && head.classList.contains("set-sectitle") ? head.textContent : "", kids: kids };
+    });
+  }
+  var _subs = [];
+  function subscribe(fn) { _subs.push(fn); }
+
+  function rebuild() {
+    _subs.forEach(function (fn) { try { fn(); } catch (e) { console.error(e); } });
+    var ov = document.getElementById("set-ov");
+    if (!ov) return;
+    var body = ov.querySelector(".set-body");
+    clear(body);
+    var sections = buildSections(false);
     sections.forEach(function (kids, i) {
       kids = kids.filter(function (n) { return n; });
       if (i > 0) Object.assign(kids[0].style, { marginTop: "22px", paddingTop: "18px", borderTop: "1px solid var(--border)" });
@@ -1437,7 +1460,9 @@ EN.settings = (function () {
   function foldShut(key) { var m = folds(); return Object.prototype.hasOwnProperty.call(m, key) ? !!m[key] : !!FOLD_DEFAULT[key]; }
   function setFold(key, shut) { var m = folds(); m[key] = !!shut; try { localStorage.setItem(FOLD_KEY, JSON.stringify(m)); } catch (e) {} }
 
-  function open() {
+  function open(opts) {
+    // #GRIDOS '98 has a Control Panel of its own (js/w98_cpanel.js) that hosts these same sections
+    if (document.documentElement.classList.contains("skin-98") && EN.w98 && EN.w98.openControlPanel && !(opts && opts.overlay)) { EN.w98.openControlPanel(); return; }
     injectCss();
     if (document.getElementById("set-ov")) return;
     // #GRIDroid reaches Settings from its unfolded app list; the tray covers everything, so the
@@ -1490,7 +1515,7 @@ EN.settings = (function () {
   }
 
   // refresh: js/cloud.js redraws the open tray when the cloud link changes (rebuild is inert when it is shut)
-  return { open: open, close: close, gearTab: gearTab, refresh: rebuild };
+  return { open: open, close: close, gearTab: gearTab, refresh: rebuild, sections: sectionsList, appearance: appearance, subscribe: subscribe };
 })();
 
 EN.theme.init();
