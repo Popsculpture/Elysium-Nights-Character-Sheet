@@ -27,7 +27,8 @@ html.skin-98 .os-topbar, html.skin-98 #os-tabs, html.skin-98 .win-counter{ displ
 
 /* ---------------------------------------------------------------- the desk */
 html.skin-98 #w98{ position:fixed; inset:0; font-family:var(--w-font); font-size:11px; line-height:1.25; color:#000; user-select:none; cursor:default; }
-html.skin-98 #w98 button, html.skin-98 .w98-menu button, html.skin-98 .w98-modal button{ font:inherit; color:inherit; margin:0; cursor:default; border-radius:0; }
+/* zero specificity (:where), so the app's own buttons inside the windows (.btn and the rest) are never reset by it */
+html.skin-98 :where(#w98 button, .w98-menu button, .w98-modal button){ font:inherit; color:inherit; margin:0; cursor:default; border-radius:0; }
 html.skin-98 .w98-ic, html.skin-98 .w98-ic svg{ display:block; flex:none; }
 html.skin-98 .w98-icons{ position:absolute; inset:0 0 28px 0; }
 html.skin-98 .w98-di{ position:absolute; width:76px; padding:2px 0; border:0; background:none; display:flex; flex-direction:column; align-items:center; gap:4px; color:#fff; }
@@ -244,3 +245,118 @@ html.skin-98 .w98-boot-band{ position:absolute; left:0; right:0; bottom:0; heigh
   background-size:240px 100%; animation:w98-band 1.5s linear infinite; }
 @keyframes w98-band{ to{ background-position:240px 0; } }
 @media (prefers-reduced-motion: reduce){ html.skin-98 :is(.w98-boot-grid, .w98-boot-band){ animation:none; } }
+
+
+/* ===========================================================================
+   PHASE 2: INSIDE THE WINDOWS. The window is the frame (above); what sits in its client area is dressed here. The palette
+   still colours the content (a dark palette gives a dark client area in a grey frame, #GRIDOS '98's own grey gives the
+   authentic one), but the shapes are the era's: group boxes with a legend, raised buttons in the system font, sunken
+   white fields, and no window drawn inside a window.
+   =========================================================================== */
+html.skin-98{
+  /* what a field, a well and a button face are, by palette: the grey scheme gets white fields and a face-grey button */
+  --w-field:var(--bg); --w-sunk:var(--bg1); --w-btn:var(--bg3);
+  --c-hi2:color-mix(in srgb, var(--bev-hi) 55%, var(--bg2));
+  --c-raised:inset -1px -1px var(--bev-lo), inset 1px 1px var(--bev-hi), inset -2px -2px var(--bev-mid), inset 2px 2px var(--c-hi2);
+  --c-pressed:inset -1px -1px var(--bev-hi), inset 1px 1px var(--bev-lo), inset -2px -2px var(--c-hi2), inset 2px 2px var(--bev-mid);
+  --c-sunken:inset -1px -1px var(--bev-hi), inset 1px 1px var(--bev-mid), inset -2px -2px var(--c-hi2), inset 2px 2px var(--bev-lo);
+}
+html.skin-98.pal-light{ --w-field:#fff; --w-sunk:#fff; --w-btn:var(--bg2); }
+
+/* the client area: the palette's panel ground, the system font, no letter-spaced labels */
+html.skin-98 .w98-client:not(.w98-appc){
+  --w-ground:var(--bg2); --disp:var(--w-font); --mono:var(--w-font); --body:var(--w-font);
+  background:var(--w-ground); font-family:var(--w-font); font-size:12px;
+}
+html.skin-98 .w98-client:not(.w98-appc) *{ letter-spacing:normal !important; }
+html.skin-98 .w98-client:not(.w98-appc) :is(.btn, .chip, .badge, .tag, .section-title, label.fl, .stat .k, .panel-h h3, .tier-pill){ text-transform:none; }
+html.skin-98 .w98-client > #view.os-main{ color:var(--text); }
+
+/* ---- a panel is a group box: an etched frame with its title as the legend ---- */
+html.skin-98 .panel:not(:is(.inv-sub, .post-sub, .contact-sub) .panel){
+  position:relative; margin-top:9px; background:none; border:1px solid var(--bev-mid); box-shadow:1px 1px 0 var(--bev-hi), inset 1px 1px 0 var(--bev-hi);
+}
+html.skin-98 .panel.glow:not(:is(.inv-sub, .post-sub, .contact-sub) .panel){ border-color:var(--accent); }
+html.skin-98 .panel:not(:is(.inv-sub, .post-sub, .contact-sub) .panel) > .panel-h{
+  position:absolute; top:-8px; left:8px; z-index:1; min-height:0; margin:0; padding:0 4px; gap:6px; border:0; box-shadow:none;
+  background:var(--w-ground, var(--bg2)); align-items:center;
+}
+html.skin-98 .panel:not(:is(.inv-sub, .post-sub, .contact-sub) .panel) > .panel-h h3{
+  margin:0; font-family:var(--w-font); font-size:12px; font-weight:400; text-transform:none; letter-spacing:normal; color:var(--text); text-shadow:none;
+}
+html.skin-98 .panel:not(:is(.inv-sub, .post-sub, .contact-sub) .panel) > .panel-h .tag{ font-family:var(--w-font); font-size:11px; text-transform:none; color:var(--text3); }
+html.skin-98 .panel:not(:is(.inv-sub, .post-sub, .contact-sub) .panel) > .panel-h.clickable:hover h3{ text-decoration:underline; }
+html.skin-98 .panel:not(:is(.inv-sub, .post-sub, .contact-sub) .panel) > .panel-h::before,
+html.skin-98 .panel:not(:is(.inv-sub, .post-sub, .contact-sub) .panel) > .panel-h::after{ display:none; }
+html.skin-98 .panel:not(:is(.inv-sub, .post-sub, .contact-sub) .panel) > .panel-b{ padding:14px 10px 10px; }
+/* the controls that sat in a panel's title bar: a plain row at the top of the box, to the right */
+html.skin-98 .win-tools{ display:flex; align-items:center; justify-content:flex-end; padding:12px 10px 0; gap:6px; }
+html.skin-98 .win-tools .panel-hr{ margin-left:0 !important; justify-content:flex-end !important; flex:0 1 auto; }
+html.skin-98 .win-tools + .panel-b{ padding-top:8px; }
+
+/* ---- sunken wells: the stats, the attributes, a scrolling list ---- */
+html.skin-98 :is(.stat, .attr-cell, .roll-slot, .roll-group, .muted-box, .gate-term, .feature-scroll, .actions-scroll){
+  border:0; background:var(--w-sunk); box-shadow:var(--c-sunken);
+}
+html.skin-98 .stat .k, html.skin-98 label.fl, html.skin-98 .section-title{ font-family:var(--w-font); font-size:11px; }
+
+/* ---- buttons: raised, face colour, the system font, never bold ---- */
+html.skin-98 .btn{
+  min-height:23px; padding:3px 12px; font-family:var(--w-font); font-size:12px; font-weight:400; text-transform:none; letter-spacing:normal;
+  color:var(--text); background:var(--w-btn); border:0; box-shadow:var(--c-raised);
+}
+html.skin-98 .btn:hover{ background:var(--w-btn); color:var(--text); border:0; box-shadow:var(--c-raised); }
+html.skin-98 .btn:active{ border:0; box-shadow:var(--c-pressed); transform:none; padding:4px 11px 2px 13px; }
+html.skin-98 .btn.primary{ background:var(--accent); color:var(--accent-ink); box-shadow:var(--c-raised); }
+html.skin-98 .btn.primary:hover{ background:var(--accent); filter:none; }
+html.skin-98 .btn.sm{ min-height:20px; padding:2px 8px; font-size:11px; }
+html.skin-98 .btn.sm:active{ padding:3px 7px 1px 9px; }
+html.skin-98 .btn.ghost{ background:transparent; box-shadow:none; }
+html.skin-98 .btn.ghost:hover{ box-shadow:var(--c-raised); }
+html.skin-98 .btn:disabled{ color:var(--text3); text-shadow:1px 1px 0 var(--bev-hi); background:var(--w-btn); box-shadow:var(--c-raised); }
+html.skin-98 .btn.lit:disabled{ color:var(--accent-ink); text-shadow:none; background:var(--accent); box-shadow:var(--c-pressed); }
+html.skin-98 .btn.danger:hover{ background:var(--w-btn); color:var(--danger); box-shadow:var(--c-raised); }
+html.skin-98 .stepper button{ background:var(--w-btn); border:0; box-shadow:var(--c-raised); color:var(--text); }
+html.skin-98 .stepper button:active{ box-shadow:var(--c-pressed); }
+
+/* ---- fields: sunken, white on the grey scheme, 21px tall ---- */
+html.skin-98 :is(input[type=text], input[type=number], input[type=search], input[type=password], input[type=email], input[type=url], textarea, select){
+  min-height:21px; padding:3px 5px; font-family:var(--w-font); font-size:12px; color:var(--text); background:var(--w-field); border:0; box-shadow:var(--c-sunken);
+}
+html.skin-98 :is(input[type=text], input[type=number], input[type=search], input[type=password], input[type=email], input[type=url], textarea, select):focus{
+  border:0; box-shadow:var(--c-sunken); outline:none;
+}
+/* the drop-down's own button: raised, a black arrow, drawn as one image */
+html.skin-98 select:not([multiple]):not([size]){
+  appearance:none; -webkit-appearance:none; padding-right:22px; cursor:default;
+  background:var(--w-field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='17' viewBox='0 0 16 17' shape-rendering='crispEdges'%3E%3Crect width='16' height='17' fill='%23c0c0c0'/%3E%3Crect x='0' y='0' width='15' height='1' fill='%23dfdfdf'/%3E%3Crect x='0' y='0' width='1' height='16' fill='%23dfdfdf'/%3E%3Crect x='1' y='1' width='13' height='1' fill='%23fff'/%3E%3Crect x='1' y='1' width='1' height='14' fill='%23fff'/%3E%3Crect x='15' y='0' width='1' height='17' fill='%230a0a0a'/%3E%3Crect x='0' y='16' width='16' height='1' fill='%230a0a0a'/%3E%3Crect x='14' y='1' width='1' height='15' fill='%23808080'/%3E%3Crect x='1' y='15' width='14' height='1' fill='%23808080'/%3E%3Cpath d='M4 6h7L7.5 10z' fill='%23000'/%3E%3C/svg%3E") right 2px center / 16px 17px no-repeat;
+}
+html.skin-98 select:focus-visible{ outline:1px dotted var(--text); outline-offset:-4px; }
+html.skin-98 select option{ background:var(--w-field); color:var(--text); }
+
+/* chips and badges lose the soft bevel for a flat etched edge */
+html.skin-98 .chip{ border:0; background:var(--w-btn); box-shadow:var(--c-raised); padding:1px 8px; }
+html.skin-98 .chip.on{ background:var(--accent); color:var(--accent-ink); box-shadow:var(--c-pressed); }
+html.skin-98 :is(.badge, .tier-pill){ border:0; box-shadow:var(--c-sunken); }
+
+/* ---- a list item (the cards of the Stash, the Codex and the rest): the window's ground with an etched edge and its coloured left bar */
+html.skin-98 .feature{ background:var(--w-ground, var(--bg2)); border:1px solid var(--bev-mid); border-left:4px solid var(--accent); }
+html.skin-98 .feature.flow{ border-left-color:var(--flow); }
+html.skin-98 .feature.species{ border-left-color:var(--ember); }
+html.skin-98 .feature.lineage{ border-left-color:var(--gold); }
+/* the Stash's sub-tab bar: the window's face, flush with the window's sides (the module sizes it for the page's own padding) */
+html.skin-98 .inv-bar{
+  background:var(--w-ground, var(--bg2)) !important; backdrop-filter:none !important; border-top:0 !important; border-bottom:1px solid var(--bev-mid) !important;
+  padding:8px 14px !important; margin-left:-14px !important; margin-right:-14px !important; box-shadow:0 1px 0 var(--bev-hi);
+}
+
+/* ---- the Control Panel (Settings): the same system font and a ruled heading per section ---- */
+html.skin-98 #set-ov .set-card{ --disp:var(--w-font); --mono:var(--w-font); --body:var(--w-font); font-family:var(--w-font); font-size:12px; }
+html.skin-98 #set-ov .set-card *{ letter-spacing:normal !important; }
+html.skin-98 #set-ov .set-card :is(.btn, .chip, .set-label, .set-kick){ text-transform:none; }
+html.skin-98 #set-ov .set-sectitle{
+  font-family:var(--w-font); font-size:12px; font-weight:700; color:var(--text); padding-bottom:3px; margin-bottom:10px;
+  border-bottom:1px solid var(--bev-mid); box-shadow:0 1px 0 var(--bev-hi);
+}
+html.skin-98 #set-ov .set-label{ font-family:var(--w-font); font-size:12px; font-weight:700; }
+html.skin-98 #set-ov .set-hint{ font-size:11px; }

@@ -882,56 +882,6 @@ html.skin-98{
   --bev-lo: #000;
   --bev-mid: var(--border);
   --sticky-top: 0px;          /* the view scrolls inside its window (css/w98.css), so a sticky sub-header sticks to the window's top */
-  /* The three caption buttons (minimize, maximize, close), 56x14 in all. The bevel is nine
-     linear-gradient layers in the skin's own tokens, three per button: a lo square behind, a hi
-     square up and left of it, and the 12x10 face inset. Win98's 16x14 buttons, the first two
-     nearly touching and the close set apart, positioned from the RIGHT edge and the vertical
-     centre so one value sits on a 14px panel pseudo and centres on a 26px title bar.
-
-     The glyphs were five more gradient layers faking a bar, a box and two diagonals. They are now
-     the author's own window icons, drawn as one sprite over the three faces in the ink token.
-     Those icons are each a filled button square with the symbol knocked out, so the symbol had to
-     be lifted back out as a positive shape: for minimize and close that is the file's second
-     subpath (the bar, the X), and for maximize it is the whole icon kept as an evenodd knockout
-     and scaled down to glyph size, because that file's hole is the window's interior and filling
-     it would give a solid block rather than a frame. Each is placed by its measured bounding box,
-     scaled uniformly so nothing is stretched, and centred on its face; the minimize bar rides low
-     rather than centred, which is where Win98 put it.
-
-     Only the glyph colour is baked, because a data URI cannot resolve a custom property. The
-     bevel and the face are still gradients in tokens, which is why the face shows through
-     maximize's window and follows the palette for free.
-
-     So the sprite is painted TWICE and the pair is switched by a class. The note that stood here
-     named the wrong danger: it warned about --text moving, but the glyph does not have to equal
-     --text (Pastel Smasher moves --text to #f2e9e1 and reads fine). What breaks it is the FACE
-     going light, since the face is --bg3 and the glyph is fixed. Measured across the ten built-in
-     palettes, #e9f1fb on the face runs 6.6:1 to 15:1 on the eight dark ones and falls to 2.45:1
-     on #GRIDOS '98 and 1.09:1 on Daybreak, where the buttons read as three blank squares.
-     settings.js measures the face it just derived and sets html.face-light when the pale glyph
-     stops carrying. That is a truer gate than pal-light, which reads the PANEL ground: a palette
-     can pair a dark panel with a light border and still mix a light face out of the two.
-     Only the fill token differs between the copies; the geometry is one export, written twice. */
-  --wb-hi:var(--bev-hi); --wb-lo:var(--bev-lo); --wb-face:var(--bg3);
-  --wb-glyph:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 14' fill='%23e9f1fb'%3E%3Cg transform='translate(3.0674,1.7337) scale(0.080284)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M20.602,78.674h81.675c1.52,0,2.756,1.115,2.756,2.479l0.002,18.713c0,1.36-1.24,2.477-2.758,2.477l-81.675-0.003 c-1.52,0-2.758-1.111-2.758-2.474V81.149C17.844,79.787,19.083,78.676,20.602,78.674L20.602,78.674z'/%3E%3C/g%3E%3Cg transform='translate(22.0000,3.0000) scale(0.065104)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.996,0h96.887c7.148,0,12.997,5.849,12.997,12.997v96.887 c0,7.147-5.849,12.996-12.997,12.996H12.996C5.849,122.88,0,117.031,0,109.884V12.997C0,5.849,5.849,0,12.996,0L12.996,0z M110.555,27.728H12.325v72.436c0,5.717,4.674,10.391,10.391,10.391h77.448c5.717,0,10.391-4.674,10.391-10.391V27.728 L110.555,27.728z'/%3E%3C/g%3E%3Cg transform='translate(43.0812,2.0812) scale(0.080059)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.801,91.163C11.036,92.928 11.036,95.823 12.801,97.588L25.292,110.079C27.057,111.844 29.952,111.844 31.717,110.079L61.44,80.356L91.163,110.079C92.928,111.844 95.823,111.844 97.588,110.079L110.079,97.588C111.844,95.823 111.844,92.928 110.079,91.163L80.356,61.44L110.079,31.717C111.844,29.952 111.844,27.057 110.079,25.292L97.588,12.801C95.823,11.036 92.928,11.036 91.163,12.801L61.44,42.524L31.717,12.801C29.952,11.036 27.057,11.036 25.292,12.801L12.801,25.292C11.036,27.057 11.036,29.952 12.801,31.717L42.524,61.44L12.801,91.163Z'/%3E%3C/g%3E%3C/svg%3E") right center / 56px 14px no-repeat;
-  --win-btns:
-    var(--wb-glyph),
-    linear-gradient(var(--wb-face),var(--wb-face)) right 2px center / 12px 10px no-repeat,
-    linear-gradient(var(--wb-hi),var(--wb-hi)) right 2px top calc(50% - 1px) / 14px 12px no-repeat,
-    linear-gradient(var(--wb-lo),var(--wb-lo)) right 0 center / 16px 14px no-repeat,
-    linear-gradient(var(--wb-face),var(--wb-face)) right 24px center / 12px 10px no-repeat,
-    linear-gradient(var(--wb-hi),var(--wb-hi)) right 24px top calc(50% - 1px) / 14px 12px no-repeat,
-    linear-gradient(var(--wb-lo),var(--wb-lo)) right 22px center / 16px 14px no-repeat,
-    linear-gradient(var(--wb-face),var(--wb-face)) right 42px center / 12px 10px no-repeat,
-    linear-gradient(var(--wb-hi),var(--wb-hi)) right 42px top calc(50% - 1px) / 14px 12px no-repeat,
-    linear-gradient(var(--wb-lo),var(--wb-lo)) right 40px center / 16px 14px no-repeat;
-}
-/* The same three icons in black, for a light button face. Black on a pale face is what Windows
-   actually drew, so this is less a fallback than the other half of the original. */
-html.face-light{
-  --wb-glyph:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 14' fill='%23000000'%3E%3Cg transform='translate(3.0674,1.7337) scale(0.080284)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M20.602,78.674h81.675c1.52,0,2.756,1.115,2.756,2.479l0.002,18.713c0,1.36-1.24,2.477-2.758,2.477l-81.675-0.003 c-1.52,0-2.758-1.111-2.758-2.474V81.149C17.844,79.787,19.083,78.676,20.602,78.674L20.602,78.674z'/%3E%3C/g%3E%3Cg transform='translate(22.0000,3.0000) scale(0.065104)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.996,0h96.887c7.148,0,12.997,5.849,12.997,12.997v96.887 c0,7.147-5.849,12.996-12.997,12.996H12.996C5.849,122.88,0,117.031,0,109.884V12.997C0,5.849,5.849,0,12.996,0L12.996,0z M110.555,27.728H12.325v72.436c0,5.717,4.674,10.391,10.391,10.391h77.448c5.717,0,10.391-4.674,10.391-10.391V27.728 L110.555,27.728z'/%3E%3C/g%3E%3Cg transform='translate(43.0812,2.0812) scale(0.080059)'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M12.801,91.163C11.036,92.928 11.036,95.823 12.801,97.588L25.292,110.079C27.057,111.844 29.952,111.844 31.717,110.079L61.44,80.356L91.163,110.079C92.928,111.844 95.823,111.844 97.588,110.079L110.079,97.588C111.844,95.823 111.844,92.928 110.079,91.163L80.356,61.44L110.079,31.717C111.844,29.952 111.844,27.057 110.079,25.292L97.588,12.801C95.823,11.036 92.928,11.036 91.163,12.801L61.44,42.524L31.717,12.801C29.952,11.036 27.057,11.036 25.292,12.801L12.801,25.292C11.036,27.057 11.036,29.952 12.801,31.717L42.524,61.44L12.801,91.163Z'/%3E%3C/g%3E%3C/svg%3E") right center / 56px 14px no-repeat;
 }
 html.skin-98 body{ background:#008080; }                 /* the desktop (css/w98.css), teal where no wallpaper is set */
 html.skin-98 body::after{ display:none; }                 /* no scanline veil */
@@ -1040,18 +990,6 @@ html.skin-98 :is(.btn, .chip, .os-tab, .set-swatch, .set-sw-mini, button):focus-
   outline:1px dotted var(--text); outline-offset:-4px; box-shadow:none;
 }
 
-/* ---- 3. THE RESIZE GRIP. The diagonal hatch in a window's bottom-right corner.
-   Cosmetic here, since these panels do not resize, but its absence is one of those
-   things the eye notices without being able to name. Only on boxes that scroll,
-   which is where Windows put it. */
-html.skin-98 :is(.feature-scroll, .actions-scroll, .set-body){ position:relative; }
-html.skin-98 :is(.feature-scroll, .actions-scroll, .set-body)::after{
-  content:""; position:absolute; right:2px; bottom:2px; width:12px; height:12px; pointer-events:none;
-  background-image:linear-gradient(135deg, transparent 42%, var(--bev-hi) 42%, var(--bev-hi) 58%, transparent 58%),
-                   linear-gradient(135deg, transparent 67%, var(--bev-hi) 67%, var(--bev-hi) 83%, transparent 83%);
-  opacity:.85;
-}
-
 /* ---- 4. LINKS THE WAY THE WEB SHIPPED THEM. Blue, underlined, purple once
    visited. The paper sub-views already declared --link and --link-hot for exactly
    this; the rest of the skin never used them. */
@@ -1059,62 +997,9 @@ html.skin-98 .os-main a{ color:var(--link, #0000ee); text-decoration:underline; 
 html.skin-98 .os-main a:visited{ color:var(--link-hot, #551a8b); }
 html.skin-98 .os-main a:active{ color:var(--danger); }
 
-/* ---- 5. THE MENU BAR AND THE STATUS BAR. Built for every panel in EN.ui.panel
-   and shown ONLY here: a Windows 98 window has a menu under its title and a sunken
-   status bar along its foot, and their absence was most of what still read as
-   "modern app wearing a costume" rather than as a window.
-
-   pointer-events:none is the honest part. Neither is wired to anything, so neither
-   highlights under the cursor: a menu that lit up and then did nothing would be a
-   worse lie than one that never invites the click. The status cells carry no text
-   because the app does not know what "20 object(s)" would mean here, and Windows
-   left them empty often enough that empty IS the authentic state. */
+/* ---- 5. A PANEL IS A GROUP BOX NOW (css/w98.css). The window it sits in has the real menu bar, status bar and title bar, so the
+   fake ones EN.ui.panel builds on every panel stay hidden on every skin. ---- */
 .win-menu, .win-status{ display:none; }
-html.skin-98 .win-menu{
-  display:flex; gap:14px; align-items:center; padding:2px 8px;
-  background:var(--bg2); border-bottom:1px solid var(--bev-mid);
-  font-family:var(--disp); font-size:11px; line-height:1.5; color:var(--text);
-  pointer-events:none; user-select:none;
-}
-html.skin-98 .win-menu u{ text-decoration:underline; text-underline-offset:1px; }
-html.skin-98 .win-status{
-  display:flex; gap:2px; align-items:stretch; padding:2px; min-height:20px;
-  background:var(--bg2); border-top:1px solid var(--bev-hi);
-  pointer-events:none; user-select:none;
-}
-html.skin-98 .win-status .ws-cell{
-  border:1px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo);
-  background:var(--bg2); flex:0 0 58px;
-}
-html.skin-98 .win-status .ws-wide{ flex:1 1 auto; min-width:0; }
-
-/* ---- 7. THE TOOLBAR. On '98 the header controls come out of the title bar (see EN.ui.panel)
-   and land here, in a raised strip under the menu, which is where Windows kept a toolbar. The
-   inline marginLeft:auto and flex-end that right-align them inside a title bar are overridden
-   rather than removed from the JS, since every other skin still wants them. */
-html.skin-98 .win-tools{
-  display:flex; align-items:center; padding:3px 6px; gap:6px;
-  background:var(--bg2); border-bottom:1px solid var(--bev-mid);
-}
-html.skin-98 .win-tools .panel-hr{ margin-left:0 !important; justify-content:flex-start !important; flex:1 1 auto; }
-
-/* ---- 8. INACTIVE WINDOWS. Windows greyed the title bar of every window that did not have
-   focus, and a screen full of identically-lit bars is one of the louder tells that this is not
-   really a window manager. There is no focus model here, so the pointer stands in for one: the
-   panel under the cursor, or holding focus inside it, wears the active gradient and every other
-   panel wears the inactive grey. Reads as the desktop tracking your attention, which is what the
-   real thing did. The title text dims with it, since Windows drew inactive captions in a lighter
-   ink than active ones. */
-html.skin-98 .os-main:has(.panel:hover, .panel:focus-within) .panel:not(:hover):not(:focus-within) > .panel-h{
-  background:linear-gradient(90deg, var(--bev-mid) 0%, var(--bev-mid) 22%, var(--bg1) 100%);
-}
-html.skin-98 .os-main:has(.panel:hover, .panel:focus-within) .panel:not(:hover):not(:focus-within) > .panel-h :is(h3, .tag){ color:var(--bg2); }
-/* The :has() gate is the whole point and was learned by looking at it. Greying every unhovered
-   panel outright meant that with the pointer anywhere else, EVERY bar was grey at once, which is
-   a state Windows never showed: there was always exactly one active window. So the dimming only
-   engages while some panel actually has the pointer or focus. At rest every bar is lit, which is
-   wrong by one window and right by the palette; mid-interaction exactly one is lit, which is the
-   effect worth having. */
 
 /* ---- 10. THE HIT COUNTER. Bottom of the page, odometer digits, exactly where a 1997 site put
    it. Each digit is its own sunken cell because the GIFs of the era were per-digit images and
@@ -1156,19 +1041,10 @@ html.skin-98 input[type=text], html.skin-98 input[type=number], html.skin-98 tex
 html.skin-98 [style*="border-radius"]{ border-radius:0 !important; }
 
 /* ---- bevel primitives ---- */
-html.skin-98 .panel, html.skin-98 .set-card, html.skin-98 .gate-card, html.skin-98 .opt-card, html.skin-98 .device-card{
+html.skin-98 .set-card, html.skin-98 .gate-card, html.skin-98 .opt-card, html.skin-98 .device-card{
   border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
   background:var(--bg2); box-shadow:1px 1px 0 var(--bev-lo);
 }
-html.skin-98 .panel.glow{ box-shadow:1px 1px 0 var(--bev-lo), 0 0 0 1px var(--accent); }
-html.skin-98 .stat, html.skin-98 .attr-cell, html.skin-98 .roll-slot, html.skin-98 .roll-group, html.skin-98 .muted-box,
-html.skin-98 .gate-term, html.skin-98 .feature-scroll, html.skin-98 .actions-scroll{
-  border:2px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); background:var(--bg1); box-shadow:none;
-}
-html.skin-98 .feature{ border:1px solid var(--bev-mid); border-left:4px solid var(--accent); background:var(--bg1); }
-html.skin-98 .feature.flow{ border-left-color:var(--flow); }
-html.skin-98 .feature.species{ border-left-color:var(--ember); }
-html.skin-98 .feature.lineage{ border-left-color:var(--gold); }
 
 /* ---- windows: the panel header is a title bar ---- */
 /* The title bar runs colour to LIGHTER COLOUR, the way Windows 98's own does (#000080 into
@@ -1184,20 +1060,13 @@ html.skin-98 .feature.lineage{ border-left-color:var(--gold); }
    is why the author's own Windows scheme had a light grey accent and unreadable numbers.
    The ink on these bars is --accent-ink, chosen per palette by luminance, the way Windows 98's
    own Appearance tab let a scheme set its title bar colour and its font colour separately. */
-html.skin-98 .panel-h, html.skin-98 .set-head{
+html.skin-98 .set-head{
   padding:4px 6px 4px 8px; min-height:26px; align-items:center; border-bottom:2px solid var(--bev-lo);
   background:linear-gradient(90deg, var(--accent) 0%, var(--accent) 22%, var(--accent-hi) 100%);
 }
-html.skin-98 .panel-h h3, html.skin-98 .set-title{
-  font-family:var(--mono); font-weight:400; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent-ink); text-shadow:none;
+html.skin-98 .set-title{
+  font-family:var(--mono); font-weight:400; font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--accent-ink); text-shadow:none;
 }
-html.skin-98 .set-title{ font-size:13px; }
-html.skin-98 .panel-h .tag{ color:var(--accent-ink-2); }
-html.skin-98 .panel-h::after{
-  content:""; margin-left:auto; width:56px; height:14px; flex:0 0 56px;
-  background:var(--win-btns);
-}
-html.skin-98 .panel-h.clickable:hover h3{ color:var(--accent-ink); text-decoration:underline; }
 html.skin-98 .set-close{
   width:auto; height:auto; padding:1px 7px 2px; font-family:var(--mono); font-size:13px; color:var(--text); background:var(--bg3);
   border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi);
@@ -1206,33 +1075,7 @@ html.skin-98 .set-close{
 /* ---- no corner marks: a Win98 window has a frame, not brackets. Classic keeps its own. ---- */
 html.skin-98 .corner{ display:none; }
 
-/* ---- controls ---- */
-html.skin-98 .btn{
-  font-family:var(--disp); font-weight:700; font-size:12px; letter-spacing:.06em; color:var(--text); background:var(--bg3);
-  border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); box-shadow:1px 1px 0 var(--bev-lo); padding:6px 14px;
-}
-html.skin-98 .btn:hover{ color:var(--text); border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); box-shadow:1px 1px 0 var(--bev-lo); background:var(--bg4); }
-html.skin-98 .btn:active{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); box-shadow:none; transform:translate(1px,1px); }
-html.skin-98 .btn.primary{ background:var(--accent); color:var(--accent-ink); }
-html.skin-98 .btn.primary:hover{ background:var(--accent); filter:brightness(1.1); }
-html.skin-98 .btn.flow{ background:var(--flow); color:#000; }
-html.skin-98 .btn.ghost{ border-color:transparent; box-shadow:none; background:transparent; }
-html.skin-98 .btn.danger:hover{ background:var(--danger); color:#000; box-shadow:1px 1px 0 var(--bev-lo); border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); }
-html.skin-98 .btn.sm{ padding:3px 9px; font-size:11px; }
-html.skin-98 .btn:disabled{ color:var(--text3); text-shadow:1px 1px 0 var(--bev-hi); background:var(--bg3); box-shadow:none; }
-/* pressed in, the way a '98 toolbar shows the mode that is on */
-html.skin-98 .btn.lit:disabled{ color:var(--accent-ink); text-shadow:none; background:var(--accent); border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); }
-html.skin-98 .stepper button{ background:var(--bg3); border:2px solid; border-color:var(--bev-hi) var(--bev-lo) var(--bev-lo) var(--bev-hi); color:var(--text); }
-html.skin-98 .stepper button:active{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); }
-
-html.skin-98 input[type=text], html.skin-98 input[type=number], html.skin-98 textarea, html.skin-98 select{
-  background:var(--bg); border:2px solid; border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); box-shadow:none; padding:7px 10px;
-}
-html.skin-98 input:focus, html.skin-98 textarea:focus, html.skin-98 select:focus{ border-color:var(--bev-lo) var(--bev-hi) var(--bev-hi) var(--bev-lo); box-shadow:none; outline:1px dotted var(--accent); outline-offset:-4px; }
-
-html.skin-98 .chip{ border:1px solid var(--bev-mid); background:var(--bg1); box-shadow:inset 1px 1px 0 var(--bev-hi); padding:2px 8px; }
-html.skin-98 .chip.on{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); box-shadow:none; }
-html.skin-98 .badge, html.skin-98 .tier-pill{ border:1px solid var(--bev-mid); box-shadow:inset 1px 1px 0 var(--bev-hi); }
+/* ---- controls: buttons, fields, chips and badges are css/w98.css's phase 2 section ---- */
 
 html.skin-98 .stat .k{ font-family:var(--mono); letter-spacing:.12em; }
 html.skin-98 .stat .v{ text-shadow:none; }
@@ -1282,22 +1125,14 @@ html.skin-98 :is(.inv-sub, .post-sub, .contact-sub){
   --body:"Times New Roman", Times, serif;
   --link:#0000ee; --link-hot:#551a8b;
   display:flex; flex-direction:column; position:relative;
-  margin-top:10px; padding:0 12px 12px;
+  margin-top:0; padding:0 12px 12px;
   background:#fff; color:var(--text); font-family:var(--body);
-  border:2px solid; border-color:#dfdfdf #404040 #404040 #dfdfdf; outline:1px solid #000;
+  border:0; box-shadow:inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
 }
 /* title bar: the window's name left, the _ [] x buttons drawn as an SVG at the right */
 /* Contacts shares the document and controls above but has no window chrome of its own (no title
    or menu bar), so the page needs its own top edge. */
 html.skin-98 .contact-sub{ padding-top:12px; }
-html.skin-98 .inv-sub::before{
-  content:"#GRID Explorer"; order:-2; flex:none; margin:0 -12px;
-  height:26px; line-height:26px; padding:0 8px;
-  font-family:var(--chrome-font); font-size:14px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--accent-ink);
-  background:var(--win-btns),
-             linear-gradient(90deg, var(--chrome-a) 0%, var(--chrome-a) 22%, var(--chrome-b) 100%);
-  border-right:6px solid var(--chrome-b);   /* the buttons' inset from the frame, in the gradient's end color so the bar reads as one piece */
-}
 /* menu bar + address bar: two lines of one pseudo, the white address field painted as a background layer */
 html.skin-98 .inv-sub::after{
   content:"File   Edit   View   Favorites   Tools   Help\A Address        grid://www.gridmart.net/" attr(data-sub) "/index.cgi";
@@ -1375,14 +1210,6 @@ html.skin-98 .mkt-controls .mono{ font-family:Arial, Helvetica, sans-serif !impo
    column headings, the open message as a preview pane, and a status bar. The real compose button
    is lifted out of the document into the toolbar's first slot, which the toolbar text leaves
    empty for it; the other toolbar words are just words, as most of a 1998 toolbar was. */
-html.skin-98 .post-sub::before{
-  content:"Inbox - #POST Express"; order:-2; flex:none; margin:0 -12px;
-  height:26px; line-height:26px; padding:0 8px;
-  font-family:var(--chrome-font); font-size:14px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--accent-ink);
-  background:var(--win-btns),
-             linear-gradient(90deg, var(--chrome-a) 0%, var(--chrome-a) 22%, var(--chrome-b) 100%);
-  border-right:6px solid var(--chrome-b);
-}
 html.skin-98 .post-sub::after{
   content:"File   Edit   View   Tools   Message   Help\A                                            Reply      Reply All      Forward         Print      Delete         Send/Recv      Addresses      Find";
   order:-1; flex:none; margin:0 -12px 12px; padding:0 8px 3px; overflow:hidden;

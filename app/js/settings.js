@@ -6,8 +6,8 @@
    palette that sets its own accent plus a tinted-dark panel/frame/background
    set, so the whole sheet recolors, not just the accent. Most palettes are dark
    with light text; two are not (Daybreak, and #GRIDOS '98, which is the actual
-   Windows scheme in black on grey), and applyVars flags those with pal-light and
-   face-light so the fixed inks can be re-tuned. More panes can nest under the
+   Windows scheme in black on grey), and applyVars flags those with pal-light so
+   the fixed inks can be re-tuned. More panes can nest under the
    body as they are added; just append another section in rebuild().
    =========================================================================== */
 window.EN = window.EN || {};
@@ -266,14 +266,6 @@ EN.theme = (function () {
     if (t.link) s.setProperty("--codex-link", t.link); else s.removeProperty("--codex-link");
     var ground = t.bg2 || t.bg;
     root.classList.toggle("pal-light", !!ground && relLum(ground) > 0.45);
-    /* A second, narrower question, asked of a different surface: is the FACE of the '98 caption
-       buttons too light for the pale glyphs baked into their sprite? The face is --bg3, mixed
-       below out of bg2 and border, so a palette can be dark by the test above and still mix a
-       light face. Measured rather than guessed; theme.css swaps in the black-glyph copy.
-       Computed before the #GRID early return, which clears the managed vars: #GRID then falls
-       back to the stylesheet's own --bg3, the same near-black this mix produces for it. */
-    var face = mix(t.bg2 || t.bg, t.border || t.bg2 || t.bg, 0.5);
-    root.classList.toggle("face-light", contrast("#e9f1fb", face) < 3);
     if (t.key === "grid") { MANAGED.forEach(function (v) { s.removeProperty(v); }); return; }
     s.setProperty("--accent", t.accent);
     s.setProperty("--accent-dim", t.dim || t.accent);
