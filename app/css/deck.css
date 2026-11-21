@@ -1,26 +1,12 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS · #GRIDeck (P1 14 Nov 2026, P2 to P6 15 Nov 2026): the fourth OS skin's own look.
-   Loaded after theme.css. Every rule here is under html.skin-deck, which settings.js puts on the Freelancer
-   desktop alone, so none of it can reach Classic, #GRIDroid, '98 or the Admin desktop. The one exception is
-   Classic's status rail (html.st-rail, the end of this file), which borrows this skin's status bar and the
-   rules that draw it.
-
-   WHAT THIS FILE MAY STYLE.
-   1. What this skin draws itself (js/deck_shell.js, deck_hud.js, deck_record.js, deck_find.js, deck_sheet.js, deck_gear.js, deck_post.js, deck_standing.js): nodes under a `.dk` root, with
-      `dk-` classes. Colours come from the --dk-* tokens below, never from the palette's own variables, so the
-      shell looks the same on every palette. Its accent, --dk-accent, is the open Freelancer's class colour
-      (js/deck_shell.js sets it on #os), or the palette's accent when there is no class.
-   2. The page chrome it shares with the other skins (the top bar it lives in, the rail it hides).
-   It does NOT restyle the views it hosts: those keep the Classic rules (theme.css,
-   html:not(.skin-98):not(.skin-droid) ...), which match this skin too, so a hosted screen looks exactly as
-   tested. Where a rule here has to beat one of those, it repeats the two :not()s to outrank it.
-   No inline border-radius anywhere in this skin's DOM: theme.css squares any element that carries one.
+   ELYSIUM NIGHTS · CLASSIC'S STATUS RAIL, its Record drawer and its search: their look.
+   Loaded after theme.css. Every rule is under html.st-rail, which js/deck_shell.js puts on while the rail is drawn (the
+   Freelancer desktop on Classic, a filed record open), so nothing here reaches #GRIDroid, '98 or the Admin desktop.
+   The rail began as the status bar of #GRIDeck, a fourth OS skin removed on 20 Nov 2026 (the author's call); its nodes keep
+   that skin's `.dk` root and `dk-` classes, and the --dk-* tokens are set from Classic's palette (THE RAIL WEARS CLASSIC).
    No em or en dashes anywhere in this file (house style).
    =========================================================================== */
-/* The tokens, and every rule below that starts html:is(.skin-deck, .st-rail), also serve THE STATUS RAIL ON CLASSIC (the end
-   of this file): the same status bar (js/deck_hud.js) on a rail of its own. html.st-rail is on only while that rail is drawn,
-   never together with html.skin-deck, and the only `.dk` node on the page then is the bar. */
-html:is(.skin-deck, .st-rail){
+html.st-rail{
   --dk-ink:#08070d; --dk-s1:#13111d; --dk-s2:#1a1727; --dk-s3:#262238;
   --dk-line:rgba(255,255,255,.08); --dk-line2:rgba(255,255,255,.16);
   --dk-text:#eef0f6; --dk-t2:#a7adc2; --dk-t3:#6d7390;
@@ -31,701 +17,232 @@ html:is(.skin-deck, .st-rail){
   --dk-body:'Manrope','Segoe UI',system-ui,sans-serif;
   --dk-mono:'JetBrains Mono','Share Tech Mono',ui-monospace,Consolas,monospace;
 }
-html.skin-deck{
-  --sticky-top:calc(var(--dk-hud) + 6px);   /* the rail is gone, so a sticky sub-header clears the status bar alone */
-}
-
-/* ---- shared chrome ---- */
-/* The rail is still built (its gear and tray are what other code looks for) and put away while the dock stands in
-   for it. With no dock (no record, or one still being built) the rail stays, so its gear is still the way to Settings. */
-html.skin-deck #os:has(#dk-dock) #os-tabs{ display:none; }
-html.skin-deck #os:has(#dk-dock){ padding-left:var(--dk-dock); }
-html.skin-deck:not(.skin-98):not(.skin-droid) .os-topbar{
-  height:var(--dk-hud); padding:0 22px; gap:20px; background:rgba(8,7,13,.95); border-bottom:1px solid var(--dk-line); }
-html.skin-deck .os-topbar:has(#dk-hud) > .os-logo,
-html.skin-deck .os-topbar:has(#dk-hud) > .os-spacer,
-html.skin-deck .os-topbar:has(#dk-hud) > #active-name{ display:none; }
-html.skin-deck:not(.skin-98):not(.skin-droid) .os-topbar > .os-status:not(#active-name){ order:2; flex:none; width:auto; gap:12px; font-size:10px; }
-
-/* ---- everything this skin draws ---- */
-html:is(.skin-deck, .st-rail) .dk{ font-family:var(--dk-body); color:var(--dk-text); letter-spacing:0; }
-html:is(.skin-deck, .st-rail) .dk button{ font:inherit; color:inherit; background:none; border:0; padding:0; margin:0; cursor:pointer; text-align:left; }
-html:is(.skin-deck, .st-rail) .dk button:focus-visible{ outline:2px solid var(--dk-accent); outline-offset:2px; }
-html:is(.skin-deck, .st-rail) .dk .dk-ic{ display:inline-flex; line-height:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-ic svg{ width:1em; height:1em; display:block; }
-html:is(.skin-deck, .st-rail) .dk [hidden]{ display:none !important; }
-
-/* ---- the dock ---- */
-html.skin-deck #dk-dock{ position:fixed; left:0; top:0; bottom:0; width:var(--dk-dock); z-index:101; display:flex; flex-direction:column;
-  align-items:center; gap:6px; padding:14px 0 12px; background:var(--dk-ink); border-right:1px solid var(--dk-line); }
-html.skin-deck #dk-dock .dk-mark{ font:700 26px/1 var(--dk-disp); color:var(--dk-accent); margin-bottom:10px; }
-html.skin-deck #dk-dock .dk-grow{ flex:1; }
-html.skin-deck #dk-dock .dk-app{ position:relative; width:60px; height:58px; border-radius:16px; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:5px; color:var(--dk-t3); transition:background .15s, color .15s; }
-html.skin-deck #dk-dock .dk-app .dk-ic{ font-size:22px; }
-html.skin-deck #dk-dock .dk-app .dk-lb{ font-size:10.5px; font-weight:600; }
-html.skin-deck #dk-dock .dk-app:hover{ color:var(--dk-text); background:rgba(255,255,255,.05); }
-html.skin-deck #dk-dock .dk-app.on{ color:var(--dk-accent); background:color-mix(in srgb, var(--dk-accent) 13%, transparent); }
-html.skin-deck #dk-dock .dk-app.on::before{ content:""; position:absolute; left:-8px; top:16px; bottom:16px; width:3px; border-radius:3px; background:var(--dk-accent); }
-html.skin-deck #dk-dock .dk-app[data-dk="codex"], html.skin-deck #dk-dock .dk-app[data-dk="settings"]{ height:48px; }
-html.skin-deck #dk-dock .dk-app[data-dk="codex"] .dk-ic, html.skin-deck #dk-dock .dk-app[data-dk="settings"] .dk-ic{ font-size:19px; }
-html.skin-deck #dk-dock .dk-badge{ position:absolute; top:6px; right:8px; min-width:17px; height:17px; padding:0 4px; border-radius:9px;
-  background:var(--dk-bad); color:#fff; font:700 10.5px/17px var(--dk-body); text-align:center; }
-
-/* ---- the status bar ---- */
-html:is(.skin-deck, .st-rail) #dk-hud{ order:1; flex:1 1 0; min-width:0; display:flex; align-items:center; gap:22px; }
-html:is(.skin-deck, .st-rail) #dk-hud > *{ flex:none; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-idn{ display:flex; align-items:center; gap:12px; padding:4px 12px 4px 4px; border-radius:999px; transition:background .15s; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-idn:hover{ background:rgba(255,255,255,.06); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-ring{ position:relative; width:46px; height:46px; flex:none; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-ring svg{ width:46px; height:46px; transform:rotate(-90deg); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-ring circle{ fill:none; stroke-width:3.5; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-rt{ stroke:rgba(255,255,255,.1); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-rp{ stroke:var(--dk-accent); stroke-linecap:round; transition:stroke-dashoffset .5s; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-ring b{ position:absolute; inset:0; display:grid; place-items:center; font:700 19px var(--dk-disp); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-idt b{ display:block; font:700 19px/1.1 var(--dk-disp); letter-spacing:.02em; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-idt span{ font-size:12px; color:var(--dk-t2); white-space:nowrap; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-meter{ display:block; width:188px; padding:5px 8px; margin:-5px -8px; border-radius:12px; box-sizing:content-box; transition:background .15s; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-meter:not([disabled]):hover, html:is(.skin-deck, .st-rail) #dk-hud .dk-meter[aria-expanded="true"]{ background:rgba(255,255,255,.06); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-meter[disabled]{ cursor:default; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-meter.dk-wd{ width:138px; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-ml{ display:flex; align-items:baseline; justify-content:space-between; gap:6px; margin-bottom:5px; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-ml i, html:is(.skin-deck, .st-rail) #dk-hud .dk-res i, html:is(.skin-deck, .st-rail) #dk-hud .dk-wal i{
+html.st-rail .dk{ font-family:var(--dk-body); color:var(--dk-text); letter-spacing:0; }
+html.st-rail .dk button{ font:inherit; color:inherit; background:none; border:0; padding:0; margin:0; cursor:pointer; text-align:left; }
+html.st-rail .dk button:focus-visible{ outline:2px solid var(--dk-accent); outline-offset:2px; }
+html.st-rail .dk .dk-ic{ display:inline-flex; line-height:0; }
+html.st-rail .dk .dk-ic svg{ width:1em; height:1em; display:block; }
+html.st-rail .dk [hidden]{ display:none !important; }
+html.st-rail #dk-hud{ order:1; flex:1 1 0; min-width:0; display:flex; align-items:center; gap:22px; }
+html.st-rail #dk-hud > *{ flex:none; }
+html.st-rail #dk-hud .dk-idn{ display:flex; align-items:center; gap:12px; padding:4px 12px 4px 4px; border-radius:999px; transition:background .15s; }
+html.st-rail #dk-hud .dk-idn:hover{ background:rgba(255,255,255,.06); }
+html.st-rail #dk-hud .dk-ring{ position:relative; width:46px; height:46px; flex:none; }
+html.st-rail #dk-hud .dk-ring svg{ width:46px; height:46px; transform:rotate(-90deg); }
+html.st-rail #dk-hud .dk-ring circle{ fill:none; stroke-width:3.5; }
+html.st-rail #dk-hud .dk-rt{ stroke:rgba(255,255,255,.1); }
+html.st-rail #dk-hud .dk-rp{ stroke:var(--dk-accent); stroke-linecap:round; transition:stroke-dashoffset .5s; }
+html.st-rail #dk-hud .dk-ring b{ position:absolute; inset:0; display:grid; place-items:center; font:700 19px var(--dk-disp); }
+html.st-rail #dk-hud .dk-idt b{ display:block; font:700 19px/1.1 var(--dk-disp); letter-spacing:.02em; white-space:nowrap; }
+html.st-rail #dk-hud .dk-idt span{ font-size:12px; color:var(--dk-t2); white-space:nowrap; }
+html.st-rail #dk-hud .dk-meter{ display:block; width:188px; padding:5px 8px; margin:-5px -8px; border-radius:12px; box-sizing:content-box; transition:background .15s; }
+html.st-rail #dk-hud .dk-meter:not([disabled]):hover, html.st-rail #dk-hud .dk-meter[aria-expanded="true"]{ background:rgba(255,255,255,.06); }
+html.st-rail #dk-hud .dk-meter[disabled]{ cursor:default; }
+html.st-rail #dk-hud .dk-meter.dk-wd{ width:138px; }
+html.st-rail #dk-hud .dk-ml{ display:flex; align-items:baseline; justify-content:space-between; gap:6px; margin-bottom:5px; white-space:nowrap; }
+html.st-rail #dk-hud .dk-ml i, html.st-rail #dk-hud .dk-res i, html.st-rail #dk-hud .dk-wal i{
   font:500 10px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-ml b{ font:600 20px/1 var(--dk-disp); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-ml em{ font-style:normal; color:var(--dk-t3); font-size:14px; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-vg{ color:var(--dk-gold); font-size:13px; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-track{ display:block; height:7px; border-radius:5px; background:rgba(255,255,255,.09); overflow:hidden; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-fill{ display:block; height:100%; border-radius:5px; background:var(--dk-ok); transition:width .45s cubic-bezier(.2,.8,.2,1); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-fill.dk-low{ background:var(--dk-warn); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-wd .dk-fill{ background:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-res i{ display:block; margin-bottom:6px; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-pips{ display:flex; align-items:center; gap:8px; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-pipset{ display:flex; gap:4px; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-pip{ width:14px; height:14px; border-radius:5px; background:rgba(255,255,255,.1); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-pipset.dk-many{ gap:3px; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-many .dk-pip{ width:9px; border-radius:4px; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-pip.on{ background:var(--dk-accent); box-shadow:0 0 10px color-mix(in srgb, var(--dk-accent) 55%, transparent); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-pips b{ font:600 15px var(--dk-disp); color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) #dk-hud > .dk-condw{ flex:1 1 0; min-width:0; display:flex; align-items:center; gap:8px; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-conds{ flex:1 1 0; min-width:0; display:flex; gap:6px; overflow:hidden;
+html.st-rail #dk-hud .dk-ml b{ font:600 20px/1 var(--dk-disp); }
+html.st-rail #dk-hud .dk-ml em{ font-style:normal; color:var(--dk-t3); font-size:14px; }
+html.st-rail #dk-hud .dk-vg{ color:var(--dk-gold); font-size:13px; }
+html.st-rail #dk-hud .dk-track{ display:block; height:7px; border-radius:5px; background:rgba(255,255,255,.09); overflow:hidden; }
+html.st-rail #dk-hud .dk-fill{ display:block; height:100%; border-radius:5px; background:var(--dk-ok); transition:width .45s cubic-bezier(.2,.8,.2,1); }
+html.st-rail #dk-hud .dk-fill.dk-low{ background:var(--dk-warn); }
+html.st-rail #dk-hud .dk-wd .dk-fill{ background:var(--dk-bad); }
+html.st-rail #dk-hud .dk-res i{ display:block; margin-bottom:6px; white-space:nowrap; }
+html.st-rail #dk-hud .dk-pips{ display:flex; align-items:center; gap:8px; }
+html.st-rail #dk-hud .dk-pipset{ display:flex; gap:4px; }
+html.st-rail #dk-hud .dk-pip{ width:14px; height:14px; border-radius:5px; background:rgba(255,255,255,.1); }
+html.st-rail #dk-hud .dk-pipset.dk-many{ gap:3px; }
+html.st-rail #dk-hud .dk-many .dk-pip{ width:9px; border-radius:4px; }
+html.st-rail #dk-hud .dk-pip.on{ background:var(--dk-accent); box-shadow:0 0 10px color-mix(in srgb, var(--dk-accent) 55%, transparent); }
+html.st-rail #dk-hud .dk-pips b{ font:600 15px var(--dk-disp); color:var(--dk-t2); }
+html.st-rail #dk-hud > .dk-condw{ flex:1 1 0; min-width:0; display:flex; align-items:center; gap:8px; }
+html.st-rail #dk-hud .dk-conds{ flex:1 1 0; min-width:0; display:flex; gap:6px; overflow:hidden;
   -webkit-mask-image:linear-gradient(90deg,#000 88%,transparent); mask-image:linear-gradient(90deg,#000 88%,transparent); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-add{ flex:none; width:24px; height:24px; border-radius:8px; border:1px dashed var(--dk-line2); color:var(--dk-t3); display:grid; place-items:center;
-  font-size:15px; line-height:1; text-align:center; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-add:hover, html:is(.skin-deck, .st-rail) #dk-hud .dk-add[aria-expanded="true"]{ color:var(--dk-text); border-color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-lvl{ height:26px; padding:0 11px; margin-left:-10px; border-radius:999px; background:var(--dk-accent); color:#0a0911; font:700 11.5px var(--dk-body);
-  white-space:nowrap; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-hb{ width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:var(--dk-t2); background:rgba(255,255,255,.05); font-size:18px; }
-html.skin-deck #dk-hud .dk-hb-l{ display:none; }   /* the button's name is for Classic's rail */
-html:is(.skin-deck, .st-rail) #dk-hud .dk-hb:hover, html:is(.skin-deck, .st-rail) #dk-hud .dk-hb[aria-expanded="true"]{ color:var(--dk-text); background:rgba(255,255,255,.1); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-find{ display:flex; align-items:center; gap:9px; height:38px; padding:0 12px; border-radius:12px; background:rgba(255,255,255,.05); color:var(--dk-t3);
+html.st-rail #dk-hud .dk-hb{ width:38px; height:38px; border-radius:12px; display:grid; place-items:center; color:var(--dk-t2); background:rgba(255,255,255,.05); font-size:18px; }
+html.st-rail #dk-hud .dk-hb:hover, html.st-rail #dk-hud .dk-hb[aria-expanded="true"]{ color:var(--dk-text); background:rgba(255,255,255,.1); }
+html.st-rail #dk-hud .dk-find{ display:flex; align-items:center; gap:9px; height:38px; padding:0 12px; border-radius:12px; background:rgba(255,255,255,.05); color:var(--dk-t3);
   font-size:13px; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-find:hover{ background:rgba(255,255,255,.09); color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-find .dk-ic{ font-size:16px; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-find kbd{ font:500 10.5px var(--dk-mono); border:1px solid var(--dk-line2); border-radius:6px; padding:1px 6px; }
-html:is(.skin-deck, .st-rail) .dk .dk-chip{ display:inline-flex; align-items:center; height:22px; padding:0 9px; border-radius:999px; background:rgba(255,255,255,.07);
+html.st-rail #dk-hud .dk-find:hover{ background:rgba(255,255,255,.09); color:var(--dk-t2); }
+html.st-rail #dk-hud .dk-find .dk-ic{ font-size:16px; }
+html.st-rail #dk-hud .dk-find kbd{ font:500 10.5px var(--dk-mono); border:1px solid var(--dk-line2); border-radius:6px; padding:1px 6px; }
+html.st-rail .dk .dk-chip{ display:inline-flex; align-items:center; height:22px; padding:0 9px; border-radius:999px; background:rgba(255,255,255,.07);
   color:var(--dk-t2); font:500 11px var(--dk-mono); white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.warn{ background:color-mix(in srgb, var(--dk-warn) 16%, transparent); color:var(--dk-warn); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.bad{ background:color-mix(in srgb, var(--dk-bad) 17%, transparent); color:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.ok{ background:color-mix(in srgb, var(--dk-ok) 15%, transparent); color:var(--dk-ok); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.acc{ background:color-mix(in srgb, var(--dk-accent) 15%, transparent); color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.act{ background:var(--dk-bad); color:#fff; font-weight:700; }
-html:is(.skin-deck, .st-rail) .dk button.dk-chip{ flex:none; transition:filter .15s; }
-html:is(.skin-deck, .st-rail) .dk button.dk-chip:hover, html:is(.skin-deck, .st-rail) .dk button.dk-chip[aria-expanded="true"]{ filter:brightness(1.3); }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-wal{ text-align:right; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-wal i{ display:block; }
-html:is(.skin-deck, .st-rail) #dk-hud .dk-wal b{ font:600 20px/1.1 var(--dk-disp); color:var(--dk-gold); }
-
-/* ---- popovers on the status bar (js/deck_hud.js): one at a time, hung from the control that opened it ---- */
-html:is(.skin-deck, .st-rail) .dk .dk-has-pop{ position:relative; }
-html:is(.skin-deck, .st-rail) .dk .dk-pop{ position:absolute; top:calc(100% + 12px); left:0; z-index:40; width:304px; padding:14px; border-radius:14px; background:var(--dk-s2);
+html.st-rail .dk .dk-chip.warn{ background:color-mix(in srgb, var(--dk-warn) 16%, transparent); color:var(--dk-warn); }
+html.st-rail .dk .dk-chip.bad{ background:color-mix(in srgb, var(--dk-bad) 17%, transparent); color:var(--dk-bad); }
+html.st-rail .dk .dk-chip.ok{ background:color-mix(in srgb, var(--dk-ok) 15%, transparent); color:var(--dk-ok); }
+html.st-rail .dk .dk-chip.acc{ background:color-mix(in srgb, var(--dk-accent) 15%, transparent); color:var(--dk-accent); }
+html.st-rail .dk .dk-chip.act{ background:var(--dk-bad); color:#fff; font-weight:700; }
+html.st-rail .dk button.dk-chip{ flex:none; transition:filter .15s; }
+html.st-rail .dk button.dk-chip:hover, html.st-rail .dk button.dk-chip[aria-expanded="true"]{ filter:brightness(1.3); }
+html.st-rail #dk-hud .dk-wal{ text-align:right; }
+html.st-rail #dk-hud .dk-wal i{ display:block; }
+html.st-rail #dk-hud .dk-wal b{ font:600 20px/1.1 var(--dk-disp); color:var(--dk-gold); }
+html.st-rail .dk .dk-has-pop{ position:relative; }
+html.st-rail .dk .dk-pop{ position:absolute; top:calc(100% + 12px); left:0; z-index:40; width:304px; padding:14px; border-radius:14px; background:var(--dk-s2);
   border:1px solid var(--dk-line2); box-shadow:0 24px 60px rgba(0,0,0,.55); text-align:left; animation:dkPop .14s ease-out; cursor:default; }
-html:is(.skin-deck, .st-rail) .dk .dk-pop-r > .dk-pop{ left:auto; right:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-pop[data-dk-pop="cond"]{ width:330px; }
-/* The entrances move and never fade: an animation that has not started yet (a busy page, a background tab) must not leave
-   a popover or the drawer invisible. Only the scrim fades, and a scrim that is late costs nothing. */
+html.st-rail .dk .dk-pop-r > .dk-pop{ left:auto; right:0; }
+html.st-rail .dk .dk-pop[data-dk-pop="cond"]{ width:330px; }
 @keyframes dkPop{ from{ transform:translateY(-6px); } to{ transform:none; } }
-html:is(.skin-deck, .st-rail) .dk h5{ margin:0 0 10px; font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk h6{ margin:14px 0 8px; padding-top:12px; border-top:1px solid var(--dk-line); font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase;
+html.st-rail .dk h5{ margin:0 0 10px; font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); }
+html.st-rail .dk h6{ margin:14px 0 8px; padding-top:12px; border-top:1px solid var(--dk-line); font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase;
   color:var(--dk-gold); display:flex; align-items:center; gap:8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-note{ margin:10px 0 0; font-size:12px; line-height:1.5; color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) .dk h5 + .dk-note{ margin-top:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-note.dk-dim{ color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-note.dk-warnt{ color:var(--dk-warn); }
-html:is(.skin-deck, .st-rail) .dk .dk-note.dk-acct{ color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-link{ font-size:12px; color:var(--dk-accent); text-decoration:underline; text-underline-offset:2px; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-link:hover{ filter:brightness(1.2); }
-html:is(.skin-deck, .st-rail) .dk .dk-back{ display:block; margin:-2px 0 8px; color:var(--dk-t2); text-decoration:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px; }
-html:is(.skin-deck, .st-rail) .dk .dk-step{ display:flex; align-items:center; gap:8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-step > b{ min-width:26px; text-align:center; font:600 20px var(--dk-disp); }
-html:is(.skin-deck, .st-rail) .dk .dk-sq{ flex:none; width:34px; height:34px; border-radius:10px; background:rgba(255,255,255,.07); display:grid; place-items:center; font-size:17px; font-weight:600;
+html.st-rail .dk .dk-note{ margin:10px 0 0; font-size:12px; line-height:1.5; color:var(--dk-t2); }
+html.st-rail .dk h5 + .dk-note{ margin-top:0; }
+html.st-rail .dk .dk-note.dk-dim{ color:var(--dk-t3); }
+html.st-rail .dk .dk-note.dk-warnt{ color:var(--dk-warn); }
+html.st-rail .dk .dk-note.dk-acct{ color:var(--dk-accent); }
+html.st-rail .dk .dk-link{ font-size:12px; color:var(--dk-accent); text-decoration:underline; text-underline-offset:2px; white-space:nowrap; }
+html.st-rail .dk .dk-link:hover{ filter:brightness(1.2); }
+html.st-rail .dk .dk-back{ display:block; margin:-2px 0 8px; color:var(--dk-t2); text-decoration:none; }
+html.st-rail .dk .dk-row{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:10px; }
+html.st-rail .dk .dk-step{ display:flex; align-items:center; gap:8px; }
+html.st-rail .dk .dk-step > b{ min-width:26px; text-align:center; font:600 20px var(--dk-disp); }
+html.st-rail .dk .dk-sq{ flex:none; width:34px; height:34px; border-radius:10px; background:rgba(255,255,255,.07); display:grid; place-items:center; font-size:17px; font-weight:600;
   text-align:center; }
-html:is(.skin-deck, .st-rail) .dk .dk-sq:hover{ background:rgba(255,255,255,.13); }
-html:is(.skin-deck, .st-rail) .dk .dk-sq[disabled]{ opacity:.35; cursor:not-allowed; }
-html:is(.skin-deck, .st-rail) .dk .dk-in{ width:100%; height:36px; padding:0 10px; border-radius:10px; border:1px solid var(--dk-line2); background:var(--dk-s1); color:var(--dk-text);
+html.st-rail .dk .dk-sq:hover{ background:rgba(255,255,255,.13); }
+html.st-rail .dk .dk-sq[disabled]{ opacity:.35; cursor:not-allowed; }
+html.st-rail .dk .dk-in{ width:100%; height:36px; padding:0 10px; border-radius:10px; border:1px solid var(--dk-line2); background:var(--dk-s1); color:var(--dk-text);
   font:500 14px var(--dk-body); letter-spacing:0; box-shadow:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-in:focus{ outline:none; border-color:var(--dk-accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--dk-accent) 22%, transparent); }
-html:is(.skin-deck, .st-rail) .dk .dk-in::placeholder{ color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-num{ flex:1 1 0; min-width:0; text-align:center; font:600 20px var(--dk-disp); }
-html:is(.skin-deck, .st-rail) .dk .dk-row > .dk-step{ flex:1 1 120px; }
-html:is(.skin-deck, .st-rail) .dk .dk-btn{ display:inline-flex; align-items:center; justify-content:center; gap:7px; height:34px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,.07);
+html.st-rail .dk .dk-in:focus{ outline:none; border-color:var(--dk-accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--dk-accent) 22%, transparent); }
+html.st-rail .dk .dk-in::placeholder{ color:var(--dk-t3); }
+html.st-rail .dk .dk-num{ flex:1 1 0; min-width:0; text-align:center; font:600 20px var(--dk-disp); }
+html.st-rail .dk .dk-row > .dk-step{ flex:1 1 120px; }
+html.st-rail .dk .dk-btn{ display:inline-flex; align-items:center; justify-content:center; gap:7px; height:34px; padding:0 14px; border-radius:10px; background:rgba(255,255,255,.07);
   border:1px solid var(--dk-line); font-weight:600; font-size:13px; white-space:nowrap; text-align:center; transition:background .15s, filter .15s; }
-html:is(.skin-deck, .st-rail) .dk .dk-btn:hover{ background:rgba(255,255,255,.12); }
-html:is(.skin-deck, .st-rail) .dk .dk-btn.pri{ background:var(--dk-accent); color:#0a0911; border-color:transparent; }
-html:is(.skin-deck, .st-rail) .dk .dk-btn.pri:hover{ filter:brightness(1.1); }
-html:is(.skin-deck, .st-rail) .dk .dk-btn.bad{ color:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) .dk .dk-btn.ok{ color:var(--dk-ok); }
-html:is(.skin-deck, .st-rail) .dk .dk-btn.gold{ color:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-btn.ghost{ background:none; color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) .dk .dk-btn.ghost:hover{ background:rgba(255,255,255,.07); color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-btn.sm{ height:28px; padding:0 10px; font-size:12px; border-radius:8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-btn[disabled]{ opacity:.4; cursor:not-allowed; }
-html:is(.skin-deck, .st-rail) .dk .dk-pop .dk-row > .dk-btn{ flex:1 1 0; }
-html:is(.skin-deck, .st-rail) .dk .dk-pop > .dk-btn, html:is(.skin-deck, .st-rail) .dk .dk-restb > .dk-btn{ width:100%; margin-top:10px; }
-html:is(.skin-deck, .st-rail) .dk .dk-opts{ max-height:min(330px, 50vh); overflow:auto; margin:8px -6px -6px; overscroll-behavior:contain; }
-html:is(.skin-deck, .st-rail) .dk .dk-opt{ display:flex; align-items:center; gap:10px; width:100%; min-height:36px; padding:7px 10px; border-radius:10px; font-size:13.5px; }
-html:is(.skin-deck, .st-rail) .dk .dk-opt:hover, html:is(.skin-deck, .st-rail) .dk .dk-opt.dk-sel{ background:rgba(255,255,255,.07); }
-html:is(.skin-deck, .st-rail) .dk .dk-opt b{ font-weight:600; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-opt small{ margin-left:auto; min-width:0; color:var(--dk-t3); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-opt[disabled]{ opacity:.45; cursor:default; }
-html:is(.skin-deck, .st-rail) .dk .dk-opt-ic .dk-ic{ font-size:17px; color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) .dk .dk-lv{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; }
-html:is(.skin-deck, .st-rail) .dk .dk-lv i{ white-space:nowrap; font:500 10px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; }
-html:is(.skin-deck, .st-rail) .dk .dk-dice{ font:500 12px var(--dk-mono); color:var(--dk-accent); text-align:right; }
-html:is(.skin-deck, .st-rail) .dk .dk-check{ display:flex; align-items:flex-start; gap:8px; margin:12px 0 0; font-size:12px; line-height:1.45; color:var(--dk-t2); cursor:pointer; }
-html:is(.skin-deck, .st-rail) .dk .dk-check input{ flex:none; margin:2px 0 0; accent-color:var(--dk-accent); }
-
-/* ---- overlays: the Record drawer (js/deck_record.js) and search (js/deck_find.js). Under the Codex peek (3000),
-   so a rule opened from either one lands on top of it. ---- */
-html.skin-deck .toast{ z-index:2700; }   /* a toast raised from the drawer or from search (Exported, a rest's report) shows over them */
-html.skin-deck #dk-rec, html.skin-deck #dk-find{ position:fixed; inset:0; z-index:2500; }
-html.skin-deck #dk-find{ z-index:2600; }
-html:is(.skin-deck, .st-rail) .dk .dk-scrim{ position:absolute; inset:0; background:rgba(5,4,10,.62); animation:dkFade .15s; }
+html.st-rail .dk .dk-btn:hover{ background:rgba(255,255,255,.12); }
+html.st-rail .dk .dk-btn.pri{ background:var(--dk-accent); color:#0a0911; border-color:transparent; }
+html.st-rail .dk .dk-btn.pri:hover{ filter:brightness(1.1); }
+html.st-rail .dk .dk-btn.bad{ color:var(--dk-bad); }
+html.st-rail .dk .dk-btn.ok{ color:var(--dk-ok); }
+html.st-rail .dk .dk-btn.gold{ color:var(--dk-gold); }
+html.st-rail .dk .dk-btn.ghost{ background:none; color:var(--dk-t2); }
+html.st-rail .dk .dk-btn.ghost:hover{ background:rgba(255,255,255,.07); color:var(--dk-text); }
+html.st-rail .dk .dk-btn.sm{ height:28px; padding:0 10px; font-size:12px; border-radius:8px; }
+html.st-rail .dk .dk-btn[disabled]{ opacity:.4; cursor:not-allowed; }
+html.st-rail .dk .dk-pop .dk-row > .dk-btn{ flex:1 1 0; }
+html.st-rail .dk .dk-pop > .dk-btn, html.st-rail .dk .dk-restb > .dk-btn{ width:100%; margin-top:10px; }
+html.st-rail .dk .dk-opt{ display:flex; align-items:center; gap:10px; width:100%; min-height:36px; padding:7px 10px; border-radius:10px; font-size:13.5px; }
+html.st-rail .dk .dk-opt:hover, html.st-rail .dk .dk-opt.dk-sel{ background:rgba(255,255,255,.07); }
+html.st-rail .dk .dk-opt b{ font-weight:600; white-space:nowrap; }
+html.st-rail .dk .dk-opt small{ margin-left:auto; min-width:0; color:var(--dk-t3); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+html.st-rail .dk .dk-opt[disabled]{ opacity:.45; cursor:default; }
+html.st-rail .dk .dk-opt-ic .dk-ic{ font-size:17px; color:var(--dk-t2); }
+html.st-rail .dk .dk-lv{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; }
+html.st-rail .dk .dk-lv i{ white-space:nowrap; font:500 10px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; }
+html.st-rail .dk .dk-dice{ font:500 12px var(--dk-mono); color:var(--dk-accent); text-align:right; }
+html.st-rail .dk .dk-check{ display:flex; align-items:flex-start; gap:8px; margin:12px 0 0; font-size:12px; line-height:1.45; color:var(--dk-t2); cursor:pointer; }
+html.st-rail .dk .dk-check input{ flex:none; margin:2px 0 0; accent-color:var(--dk-accent); }
+html.st-rail .dk .dk-scrim{ position:absolute; inset:0; background:rgba(5,4,10,.62); animation:dkFade .15s; }
 @keyframes dkFade{ from{ opacity:0; } to{ opacity:1; } }
 @keyframes dkSlide{ from{ transform:translateX(36px); } to{ transform:none; } }
-html:is(.skin-deck, .st-rail) .dk .dk-drawer{ position:absolute; top:0; right:0; bottom:0; width:min(560px, 100%); background:var(--dk-s1); border-left:1px solid var(--dk-line2);
+html.st-rail .dk .dk-drawer{ position:absolute; top:0; right:0; bottom:0; width:min(560px, 100%); background:var(--dk-s1); border-left:1px solid var(--dk-line2);
   box-shadow:-30px 0 80px rgba(0,0,0,.5); display:flex; flex-direction:column; animation:dkSlide .2s cubic-bezier(.2,.8,.2,1); }
-html:is(.skin-deck, .st-rail) .dk .dk-x{ position:absolute; top:14px; right:14px; width:32px; height:32px; border-radius:10px; display:grid; place-items:center; color:var(--dk-t2); font-size:15px;
+html.st-rail .dk .dk-x{ position:absolute; top:14px; right:14px; width:32px; height:32px; border-radius:10px; display:grid; place-items:center; color:var(--dk-t2); font-size:15px;
   text-align:center; z-index:2; }
-html:is(.skin-deck, .st-rail) .dk .dk-x:hover{ background:rgba(255,255,255,.08); color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-drh{ flex:none; padding:20px 22px 14px; border-bottom:1px solid var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-drb{ flex:1; min-height:0; overflow:auto; padding:18px 22px 26px; overscroll-behavior:contain; }
-html:is(.skin-deck, .st-rail) .dk .dk-recid{ display:flex; gap:14px; align-items:center; margin:0 40px 14px 0; }
-html:is(.skin-deck, .st-rail) .dk .dk-recid h2{ margin:0; font:700 28px/1.05 var(--dk-disp); letter-spacing:.01em; color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-recid p{ margin:3px 0 0; color:var(--dk-t2); font-size:13px; }
-html:is(.skin-deck, .st-rail) .dk .dk-lvbig{ flex:none; width:64px; height:64px; border-radius:50%; display:grid; place-items:center; font:700 28px var(--dk-disp);
-  box-shadow:inset 0 0 0 4px var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-drh .dk-seg{ display:flex; }
-html:is(.skin-deck, .st-rail) .dk .dk-drh .dk-segb{ flex:1 1 0; justify-content:center; padding:0 8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-dot{ width:7px; height:7px; border-radius:50%; background:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-h{ margin:22px 0 8px; font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); display:flex; align-items:baseline;
+html.st-rail .dk .dk-x:hover{ background:rgba(255,255,255,.08); color:var(--dk-text); }
+html.st-rail .dk .dk-drh{ flex:none; padding:20px 22px 14px; border-bottom:1px solid var(--dk-line); }
+html.st-rail .dk .dk-drb{ flex:1; min-height:0; overflow:auto; padding:18px 22px 26px; overscroll-behavior:contain; }
+html.st-rail .dk .dk-recid{ display:flex; gap:14px; align-items:center; margin:0 40px 14px 0; }
+html.st-rail .dk .dk-recid h2{ margin:0; font:700 28px/1.05 var(--dk-disp); letter-spacing:.01em; color:var(--dk-text); }
+html.st-rail .dk .dk-recid p{ margin:3px 0 0; color:var(--dk-t2); font-size:13px; }
+html.st-rail .dk .dk-drh .dk-seg{ display:flex; }
+html.st-rail .dk .dk-drh .dk-segb{ flex:1 1 0; justify-content:center; padding:0 8px; }
+html.st-rail .dk .dk-dot{ width:7px; height:7px; border-radius:50%; background:var(--dk-accent); }
+html.st-rail .dk .dk-h{ margin:22px 0 8px; font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); display:flex; align-items:baseline;
   gap:10px; line-height:1.4; }
-html:is(.skin-deck, .st-rail) .dk .dk-drb > .dk-h:first-child{ margin-top:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-h small{ font:400 12px var(--dk-body); letter-spacing:0; text-transform:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-empty{ margin:0 0 10px; color:var(--dk-t3); font-size:13px; line-height:1.5; }
-html:is(.skin-deck, .st-rail) .dk .dk-ft{ border-top:1px solid var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-h + .dk-ft, html:is(.skin-deck, .st-rail) .dk .dk-empty + .dk-ft{ border-top:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-fth{ display:flex; align-items:center; gap:10px; width:100%; padding:9px 0; }
-html:is(.skin-deck, .st-rail) .dk .dk-fth b, html:is(.skin-deck, .st-rail) .dk .dk-line b{ font-size:14px; font-weight:600; }
-html:is(.skin-deck, .st-rail) .dk .dk-fth small, html:is(.skin-deck, .st-rail) .dk .dk-line small{ color:var(--dk-t3); font-size:12px; }
-html:is(.skin-deck, .st-rail) .dk .dk-fth small{ margin-left:auto; text-align:right; }
-html:is(.skin-deck, .st-rail) .dk .dk-fth:hover b{ color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-caret{ flex:none; width:12px; color:var(--dk-t3); font-size:11px; }
-html:is(.skin-deck, .st-rail) .dk .dk-ftx{ padding:0 0 12px; font-size:13px; line-height:1.55; color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) .dk .dk-ftx p{ margin:0 0 8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-ftx ul{ margin:0 0 8px; padding-left:18px; }
-html:is(.skin-deck, .st-rail) .dk .dk-line{ display:flex; align-items:center; gap:10px; padding:9px 0; }
-html:is(.skin-deck, .st-rail) .dk .dk-line.on b{ color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-two{ display:flex; flex-direction:column; gap:1px; min-width:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-grow{ flex:1; }
-html:is(.skin-deck, .st-rail) .dk .dk-prow{ display:grid; grid-template-columns:86px 1fr; column-gap:10px; align-items:start; margin-bottom:8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-prow i{ font:500 10px/22px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; }
-html:is(.skin-deck, .st-rail) .dk .dk-chips{ display:flex; flex-wrap:wrap; gap:6px; }
-html:is(.skin-deck, .st-rail) .dk .dk-srow{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:7px 0; border-top:1px solid var(--dk-line); font-size:13.5px; }
-html:is(.skin-deck, .st-rail) .dk .dk-h + .dk-srow{ border-top:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-srow b{ font:600 17px var(--dk-disp); color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-srow.dk-sub{ border-top:0; padding-top:0; justify-content:flex-end; font-size:12px; color:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-notes{ height:auto; min-height:150px; padding:10px; line-height:1.55; font-size:13px; resize:vertical; }
-html:is(.skin-deck, .st-rail) .dk .dk-card{ padding:14px 16px; margin-bottom:12px; border-radius:14px; background:var(--dk-s2); border:1px solid var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-card h4{ margin:0 0 4px; font:600 14.5px var(--dk-body); letter-spacing:0; color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-card p{ margin:0; color:var(--dk-t2); font-size:13px; line-height:1.5; }
-html:is(.skin-deck, .st-rail) .dk .dk-card ul{ margin:6px 0 12px; padding-left:18px; color:var(--dk-t2); font-size:13px; line-height:1.6; }
-html:is(.skin-deck, .st-rail) .dk .dk-card .dk-track{ display:block; height:7px; margin-top:10px; border-radius:5px; background:rgba(255,255,255,.09); overflow:hidden; }
-html:is(.skin-deck, .st-rail) .dk .dk-card .dk-fill{ display:block; height:100%; border-radius:5px; background:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-card.dk-lu{ border-color:color-mix(in srgb, var(--dk-accent) 45%, transparent); }
-html:is(.skin-deck, .st-rail) .dk .dk-pal{ position:absolute; top:9%; left:0; right:0; margin:0 auto; width:min(620px, calc(100% - 28px)); background:var(--dk-s2);
+html.st-rail .dk .dk-drb > .dk-h:first-child{ margin-top:0; }
+html.st-rail .dk .dk-h small{ font:400 12px var(--dk-body); letter-spacing:0; text-transform:none; }
+html.st-rail .dk .dk-empty{ margin:0 0 10px; color:var(--dk-t3); font-size:13px; line-height:1.5; }
+html.st-rail .dk .dk-ft{ border-top:1px solid var(--dk-line); }
+html.st-rail .dk .dk-h + .dk-ft, html.st-rail .dk .dk-empty + .dk-ft{ border-top:0; }
+html.st-rail .dk .dk-line b{ font-size:14px; font-weight:600; }
+html.st-rail .dk .dk-line small{ color:var(--dk-t3); font-size:12px; }
+html.st-rail .dk .dk-line{ display:flex; align-items:center; gap:10px; padding:9px 0; }
+html.st-rail .dk .dk-line.on b{ color:var(--dk-accent); }
+html.st-rail .dk .dk-two{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+html.st-rail .dk .dk-grow{ flex:1; }
+html.st-rail .dk .dk-notes{ height:auto; min-height:150px; padding:10px; line-height:1.55; font-size:13px; resize:vertical; }
+html.st-rail .dk .dk-card{ padding:14px 16px; margin-bottom:12px; border-radius:14px; background:var(--dk-s2); border:1px solid var(--dk-line); }
+html.st-rail .dk .dk-card h4{ margin:0 0 4px; font:600 14.5px var(--dk-body); letter-spacing:0; color:var(--dk-text); }
+html.st-rail .dk .dk-card p{ margin:0; color:var(--dk-t2); font-size:13px; line-height:1.5; }
+html.st-rail .dk .dk-card ul{ margin:6px 0 12px; padding-left:18px; color:var(--dk-t2); font-size:13px; line-height:1.6; }
+html.st-rail .dk .dk-card .dk-track{ display:block; height:7px; margin-top:10px; border-radius:5px; background:rgba(255,255,255,.09); overflow:hidden; }
+html.st-rail .dk .dk-card .dk-fill{ display:block; height:100%; border-radius:5px; background:var(--dk-accent); }
+html.st-rail .dk .dk-card.dk-lu{ border-color:color-mix(in srgb, var(--dk-accent) 45%, transparent); }
+html.st-rail .dk .dk-pal{ position:absolute; top:9%; left:0; right:0; margin:0 auto; width:min(620px, calc(100% - 28px)); background:var(--dk-s2);
   border:1px solid var(--dk-line2); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,.6); overflow:hidden; animation:dkPop .15s ease-out; }
-html:is(.skin-deck, .st-rail) .dk .dk-palq{ height:56px; padding:0 20px; border:0; border-bottom:1px solid var(--dk-line); border-radius:0; background:none; font-size:17px; }
-html:is(.skin-deck, .st-rail) .dk .dk-palq:focus{ box-shadow:none; border-color:var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-pall{ max-height:min(420px, 56vh); overflow:auto; padding:8px; overscroll-behavior:contain; }
-html:is(.skin-deck, .st-rail) .dk .dk-palg{ font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); margin:8px 10px 4px; }
-html:is(.skin-deck, .st-rail) .dk .dk-pall .dk-empty{ margin:8px 10px; }
-
-/* ---- the Sheet (js/deck_sheet.js): three columns that stay put. It carries its own dark ground, so it reads the same on
-   every palette, light ones included. ---- */
-html.skin-deck .dk-sheet{ display:grid; grid-template-columns:292px minmax(0,1fr) 326px; grid-template-areas:"seg seg seg" "al al al" "chk act def";
-  gap:14px 18px; align-items:start; padding:16px; border-radius:20px; background:rgba(8,7,13,.78); box-shadow:inset 0 0 0 1px var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-seg.dk-colseg{ grid-area:seg; display:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-alerts{ grid-area:al; display:grid; gap:10px; }
-html:is(.skin-deck, .st-rail) .dk .dk-c-checks{ grid-area:chk; }
-html:is(.skin-deck, .st-rail) .dk .dk-c-actions{ grid-area:act; min-width:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-c-defense{ grid-area:def; min-width:0; }
-html.skin-deck .dk-sheet .dk-card{ background:var(--dk-s1); }
-html:is(.skin-deck, .st-rail) .dk .dk-sec{ margin:18px 0 9px; font:500 10.5px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); display:flex; align-items:center;
-  gap:8px; line-height:1.4; }
-html:is(.skin-deck, .st-rail) .dk .dk-col > .dk-sec:first-child{ margin-top:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-dim{ color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-warnt{ color:var(--dk-warn); }
-html:is(.skin-deck, .st-rail) .dk .dk-badt{ color:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) .dk .dk-lab{ font:500 10px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.gold{ background:color-mix(in srgb, var(--dk-gold) 15%, transparent); color:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dim{ color:var(--dk-t3); }
-/* alerts: what cannot wait, across all three columns */
-html:is(.skin-deck, .st-rail) .dk .dk-alert{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; padding:12px 16px; border-radius:14px; background:var(--dk-s2);
-  border:1px solid var(--dk-line2); border-left:4px solid var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-alert > div:first-child{ flex:1 1 320px; min-width:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-alert .dk-row{ margin-top:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-alert b{ font-size:14px; }
-html:is(.skin-deck, .st-rail) .dk .dk-alert p{ margin:3px 0 0; font-size:13px; line-height:1.5; color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) .dk .dk-alert.bad{ border-left-color:var(--dk-bad); background:color-mix(in srgb, var(--dk-bad) 9%, var(--dk-s2)); }
-html:is(.skin-deck, .st-rail) .dk .dk-alert.warn{ border-left-color:var(--dk-warn); }
-html:is(.skin-deck, .st-rail) .dk .dk-alert.ok{ border-left-color:var(--dk-ok); }
-/* checks */
-html:is(.skin-deck, .st-rail) .dk .dk-att{ padding:12px 12px 8px; margin-bottom:10px; }
-html:is(.skin-deck, .st-rail) .dk .dk-att header{ display:flex; align-items:center; gap:11px; margin-bottom:6px; }
-html:is(.skin-deck, .st-rail) .dk .dk-mod{ font:700 30px/1 var(--dk-disp); min-width:44px; }
-html:is(.skin-deck, .st-rail) .dk .dk-nm b{ display:block; font-size:14.5px; font-weight:700; }
-html:is(.skin-deck, .st-rail) .dk .dk-nm span{ font:500 10.5px var(--dk-mono); color:var(--dk-t3); letter-spacing:.06em; }
-html:is(.skin-deck, .st-rail) .dk .dk-save{ height:28px; padding:0 10px; border-radius:9px; background:rgba(255,255,255,.06); font-size:12px; color:var(--dk-t2); font-weight:600;
-  display:inline-flex; gap:6px; align-items:center; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-save b{ font-size:15px; color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-save:not([disabled]):hover{ background:color-mix(in srgb, var(--dk-accent) 22%, transparent); color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-save.dk-foc{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--dk-accent) 55%, transparent); }
-html:is(.skin-deck, .st-rail) .dk .dk-save.dk-off{ color:var(--dk-bad); cursor:not-allowed; opacity:.7; }
-html:is(.skin-deck, .st-rail) .dk .dk-save .dk-chip, html:is(.skin-deck, .st-rail) .dk .dk-sk .dk-chip{ height:18px; font-size:10px; padding:0 7px; }
-html:is(.skin-deck, .st-rail) .dk .dk-sk{ display:flex; align-items:center; gap:9px; width:100%; height:31px; padding:0 8px; border-radius:9px; font-size:13.5px; }
-html:is(.skin-deck, .st-rail) .dk .dk-sk:hover{ background:rgba(255,255,255,.06); }
-html:is(.skin-deck, .st-rail) .dk .dk-sk em{ margin-left:auto; font:600 16px var(--dk-disp); font-style:normal; }
-html:is(.skin-deck, .st-rail) .dk .dk-sk .dk-chip + em{ margin-left:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-sk .dk-chip{ margin-left:auto; }
-html:is(.skin-deck, .st-rail) .dk .dk-sk.dk-un{ color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) .dk .dk-pf{ width:8px; height:8px; border-radius:50%; border:1.5px solid var(--dk-t3); flex:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-pf.dk-t-proficient{ background:var(--dk-accent); border-color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-pf.dk-t-expertise{ background:var(--dk-ok); border-color:var(--dk-ok); }
-html:is(.skin-deck, .st-rail) .dk .dk-pf.dk-t-mastery{ background:var(--dk-gold); border-color:var(--dk-gold); box-shadow:0 0 8px var(--dk-gold); }
-/* the slot strip, and the list a slot opens */
-html:is(.skin-deck, .st-rail) .dk .dk-slots{ display:grid; grid-template-columns:repeat(auto-fit, minmax(118px, 1fr)); gap:10px; margin-bottom:12px; }
-html:is(.skin-deck, .st-rail) .dk .dk-slot{ display:block; width:100%; min-width:0; padding:11px 13px; border-radius:14px; background:var(--dk-s1); border:1px solid var(--dk-line);
-  transition:border-color .15s, background .15s; }
-html:is(.skin-deck, .st-rail) .dk .dk-slot:hover, html:is(.skin-deck, .st-rail) .dk .dk-slot.on{ border-color:var(--dk-line2); background:var(--dk-s2); }
-html:is(.skin-deck, .st-rail) .dk .dk-slot.on{ border-color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-slot i{ display:block; font:500 10px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; margin-bottom:4px; }
-html:is(.skin-deck, .st-rail) .dk .dk-slot b{ display:block; font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-html:is(.skin-deck, .st-rail) .dk .dk-slot span{ display:block; font-size:12px; color:var(--dk-t2); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-html:is(.skin-deck, .st-rail) .dk .dk-slot.dk-empty-slot b{ color:var(--dk-t3); font-weight:500; }
-html:is(.skin-deck, .st-rail) .dk .dk-swap{ padding:12px; border-color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-swap .dk-opt.dk-on b{ color:var(--dk-accent); }
-/* the class resource */
-html:is(.skin-deck, .st-rail) .dk .dk-res-card{ padding:14px 16px; }
-html:is(.skin-deck, .st-rail) .dk .dk-gauge{ display:flex; align-items:center; gap:14px; }
-html:is(.skin-deck, .st-rail) .dk .dk-big{ font:700 44px/1 var(--dk-disp); color:var(--dk-accent); white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-big em{ font-style:normal; font-size:20px; color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-big.dk-over{ color:var(--dk-gold); text-shadow:0 0 14px color-mix(in srgb, var(--dk-gold) 60%, transparent); }
-html:is(.skin-deck, .st-rail) .dk .dk-two b{ font-size:14.5px; font-weight:700; }
-html:is(.skin-deck, .st-rail) .dk .dk-two small{ color:var(--dk-t3); font-size:12px; }
-html:is(.skin-deck, .st-rail) .dk .dk-pipset.dk-press{ display:inline-flex; gap:4px; }
-html:is(.skin-deck, .st-rail) .dk .dk-press .dk-pip{ width:16px; height:16px; border-radius:5px; background:rgba(255,255,255,.1); }
-html:is(.skin-deck, .st-rail) .dk .dk-press .dk-pip:hover{ background:rgba(255,255,255,.22); }
-html:is(.skin-deck, .st-rail) .dk .dk-press .dk-pip.on{ background:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-press.ok .dk-pip.on{ background:var(--dk-ok); }
-html:is(.skin-deck, .st-rail) .dk .dk-press.bad .dk-pip.on{ background:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) .dk .dk-press.warn .dk-pip.on{ background:var(--dk-warn); }
-/* attacks */
-html:is(.skin-deck, .st-rail) .dk .dk-atk{ padding:11px 12px 11px 15px; margin-bottom:8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-atk-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-atk-i{ flex:1 1 150px; min-width:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-atk-i b{ display:block; font-size:15px; font-weight:700; }
-html:is(.skin-deck, .st-rail) .dk .dk-atk-i > span{ display:block; font-size:12.5px; line-height:1.45; color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) .dk .dk-atk-i .dk-chips{ display:flex; margin-top:5px; }
-html:is(.skin-deck, .st-rail) .dk .dk-atk-i .dk-chips:empty{ display:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-rolls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-rb{ display:inline-flex; flex-direction:column; align-items:center; justify-content:center; min-width:74px; height:46px; padding:0 12px; border-radius:11px;
-  background:rgba(255,255,255,.06); text-align:center; transition:transform .1s, background .15s; }
-html:is(.skin-deck, .st-rail) .dk .dk-rb i{ font:500 9.5px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; }
-html:is(.skin-deck, .st-rail) .dk .dk-rb b{ font:700 19px/1.05 var(--dk-disp); white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk button.dk-rb:hover{ background:rgba(255,255,255,.12); }
-html:is(.skin-deck, .st-rail) .dk button.dk-rb:active{ transform:scale(.96); }
-html:is(.skin-deck, .st-rail) .dk .dk-rb.dk-hit{ background:color-mix(in srgb, var(--dk-accent) 20%, transparent); }
-html:is(.skin-deck, .st-rail) .dk .dk-rb.dk-hit b{ color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk button.dk-rb.dk-hit:hover{ background:color-mix(in srgb, var(--dk-accent) 32%, transparent); }
-html:is(.skin-deck, .st-rail) .dk .dk-btn.warn{ color:var(--dk-warn); }
-html:is(.skin-deck, .st-rail) .dk .dk-ammo-row{ margin-top:9px; }
-html:is(.skin-deck, .st-rail) .dk .dk-ammo{ display:inline-flex; align-items:center; gap:3px; }
-html:is(.skin-deck, .st-rail) .dk .dk-ammo u{ width:6px; height:13px; border-radius:2px; background:rgba(255,255,255,.12); text-decoration:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-ammo u.on{ background:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-ammo small{ margin-left:6px; font:500 12px var(--dk-mono); color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) .dk .dk-ammo.dk-dry small{ color:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) .dk select.dk-sel{ width:auto; max-width:190px; height:28px; padding:0 26px 0 9px; font-size:12px; border:1px solid var(--dk-line2) !important;
+html.st-rail .dk .dk-palq{ height:56px; padding:0 20px; border:0; border-bottom:1px solid var(--dk-line); border-radius:0; background:none; font-size:17px; }
+html.st-rail .dk .dk-palq:focus{ box-shadow:none; border-color:var(--dk-line); }
+html.st-rail .dk .dk-pall{ max-height:min(420px, 56vh); overflow:auto; padding:8px; overscroll-behavior:contain; }
+html.st-rail .dk .dk-palg{ font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); margin:8px 10px 4px; }
+html.st-rail .dk .dk-pall .dk-empty{ margin:8px 10px; }
+html.st-rail .dk .dk-dim{ color:var(--dk-t3); }
+html.st-rail .dk .dk-warnt{ color:var(--dk-warn); }
+html.st-rail .dk .dk-badt{ color:var(--dk-bad); }
+html.st-rail .dk .dk-lab{ font:500 10px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); white-space:nowrap; }
+html.st-rail .dk .dk-chip.gold{ background:color-mix(in srgb, var(--dk-gold) 15%, transparent); color:var(--dk-gold); }
+html.st-rail .dk .dk-chip.dim{ color:var(--dk-t3); }
+html.st-rail .dk .dk-two b{ font-size:14.5px; font-weight:700; }
+html.st-rail .dk .dk-two small{ color:var(--dk-t3); font-size:12px; }
+html.st-rail .dk .dk-btn.warn{ color:var(--dk-warn); }
+html.st-rail .dk select.dk-sel{ width:auto; max-width:190px; height:28px; padding:0 26px 0 9px; font-size:12px; border:1px solid var(--dk-line2) !important;
   border-radius:8px !important; background-color:var(--dk-s2); color:var(--dk-text); box-shadow:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-tog{ box-shadow:inset 0 0 0 1px var(--dk-line2); color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-ftrow{ display:flex; align-items:center; gap:6px; }
-html:is(.skin-deck, .st-rail) .dk .dk-ftrow .dk-fth{ flex:1 1 0; min-width:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-star{ flex:none; width:30px; height:30px; border-radius:9px; color:var(--dk-t3); font-size:16px; display:grid; place-items:center; text-align:center; }
-html:is(.skin-deck, .st-rail) .dk .dk-star:hover{ background:rgba(255,255,255,.07); }
-html:is(.skin-deck, .st-rail) .dk .dk-star.on{ color:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-traits{ margin-top:9px; padding-top:9px; border-top:1px solid var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-atk .dk-note{ margin-top:8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-atk.dk-stowed{ border-style:dashed; }
-/* abilities and Active Defenses share one row shape */
-html:is(.skin-deck, .st-rail) .dk .dk-abl{ padding:10px 12px 10px 15px; margin-bottom:8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-abl-top{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-abl-n{ display:inline-flex; align-items:center; gap:7px; min-width:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-abl-n b{ font-size:14.5px; font-weight:700; }
-html:is(.skin-deck, .st-rail) .dk .dk-abl-n:hover b{ color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-abl .dk-note{ margin-top:6px; }
-html:is(.skin-deck, .st-rail) .dk .dk-abl .dk-ftx{ padding:8px 0 0; }
-html:is(.skin-deck, .st-rail) .dk .dk-abl .dk-row{ margin-top:8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-abl.dk-dead{ opacity:.5; }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-act-swift{ color:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-act-impulse{ color:#c58bff; }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-act-free{ color:var(--dk-ok); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-act-complex{ color:#ff8a4c; }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-act-action, html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-act-active{ color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-boxes{ font:500 13px var(--dk-mono); color:var(--dk-t2); letter-spacing:.08em; }
-/* defense */
-html:is(.skin-deck, .st-rail) .dk .dk-tiles{ display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:7px; margin-bottom:10px; }
-html:is(.skin-deck, .st-rail) .dk .dk-tile{ display:block; width:100%; min-width:0; padding:10px 4px 8px; text-align:center; border-radius:12px; background:var(--dk-s1); border:1px solid var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-tile i{ display:block; font:500 9.5px var(--dk-mono); letter-spacing:.14em; color:var(--dk-t3); font-style:normal; text-transform:uppercase; }
-html:is(.skin-deck, .st-rail) .dk .dk-tile b{ display:block; font:700 24px/1.15 var(--dk-disp); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-html:is(.skin-deck, .st-rail) .dk .dk-tile[data-dk-stat="SIZE"] b{ font-size:14px; line-height:28px; letter-spacing:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-tile:hover{ border-color:var(--dk-line2); background:var(--dk-s2); }
-html:is(.skin-deck, .st-rail) .dk .dk-tile.on{ border-color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-tile.dk-zero b{ color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-tile.dk-down b{ color:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) .dk .dk-bd{ border-color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-bd-h{ margin-top:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-bd-h b{ font:600 12px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-bd-h .dk-bd-t{ font:700 22px var(--dk-disp); letter-spacing:0; color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-bd .dk-seg{ display:flex; margin:10px 0 4px; }
-html:is(.skin-deck, .st-rail) .dk .dk-bd .dk-segb{ flex:1 1 0; justify-content:center; padding:0 6px; font-size:12px; }
-html:is(.skin-deck, .st-rail) .dk .dk-bd .dk-srow{ font-size:12.5px; }
-html:is(.skin-deck, .st-rail) .dk .dk-bd .dk-srow b{ font-size:15px; color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-loadout{ margin:10px 0 0; }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-gear{ height:auto; min-height:24px; padding:3px 10px; white-space:normal; text-align:left; gap:7px; font-family:var(--dk-body); font-size:12px;
-  font-weight:600; color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-gear i{ font:500 9px var(--dk-mono); letter-spacing:.12em; font-style:normal; color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-gear.bad i{ color:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-gear.warn i{ color:var(--dk-warn); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-gear.ok i{ color:var(--dk-ok); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-gear.gold i{ color:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-chip.dk-gear.dim i{ color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-fx .dk-note:first-child{ margin-top:0; }
-/* the Freelancer tab's trays are drawn in a host of their own under the Sheet */
-html.skin-deck .dk-trays:empty{ display:none; }
-
-/* ---- Gear (js/deck_gear.js): a list of what there is, grouped by where it is, and the piece that is picked. Its own dark
-   ground, like the Sheet. ---- */
-html.skin-deck .dk-gear{ padding:16px; border-radius:20px; background:rgba(8,7,13,.78); box-shadow:inset 0 0 0 1px var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-gbar{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
-html:is(.skin-deck, .st-rail) .dk .dk-load{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-load i{ font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; }
-html:is(.skin-deck, .st-rail) .dk .dk-load b{ font:700 22px/1 var(--dk-disp); }
-html:is(.skin-deck, .st-rail) .dk .dk-purse{ display:flex; align-items:baseline; gap:12px; }
-html:is(.skin-deck, .st-rail) .dk .dk-purse b{ font:700 22px/1 var(--dk-disp); }
-html:is(.skin-deck, .st-rail) .dk .dk-gold{ color:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-g2c{ display:grid; grid-template-columns:minmax(280px, 380px) minmax(0, 1fr); gap:18px; align-items:start; }
-html:is(.skin-deck, .st-rail) .dk .dk-glist > .dk-in{ margin-bottom:9px; }
-html:is(.skin-deck, .st-rail) .dk .dk-gf{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
-html:is(.skin-deck, .st-rail) .dk .dk-fc{ height:26px; padding:0 11px; border-radius:999px; background:rgba(255,255,255,.06); color:var(--dk-t2); font-size:12px; font-weight:600; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-fc:hover{ color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-fc.on{ background:color-mix(in srgb, var(--dk-accent) 20%, transparent); color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-fronts{ display:flex; margin-bottom:9px; }
-html:is(.skin-deck, .st-rail) .dk .dk-fronts .dk-segb{ flex:1 1 0; justify-content:center; padding:0 6px; font-size:12px; }
-html:is(.skin-deck, .st-rail) .dk .dk-gg{ display:flex; align-items:center; gap:8px; margin:14px 4px 5px; font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-gg span{ padding:0 6px; border-radius:999px; background:rgba(255,255,255,.07); letter-spacing:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-gr{ display:flex; align-items:center; gap:10px; width:100%; padding:8px 11px; border-radius:11px; }
-html:is(.skin-deck, .st-rail) .dk .dk-gr:hover{ background:rgba(255,255,255,.05); }
-html:is(.skin-deck, .st-rail) .dk .dk-gr.on{ background:color-mix(in srgb, var(--dk-accent) 14%, transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--dk-accent) 45%, transparent); }
-html:is(.skin-deck, .st-rail) .dk .dk-gr .dk-two{ flex:1 1 0; }
-html:is(.skin-deck, .st-rail) .dk .dk-gr b{ font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-gr small{ color:var(--dk-t3); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-gr em{ flex:none; font:600 14px var(--dk-disp); font-style:normal; color:var(--dk-gold); white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-gdet{ padding:20px 22px; margin:0; background:var(--dk-s1); position:sticky; top:calc(var(--dk-hud) + 14px); max-height:calc(100vh - var(--dk-hud) - 28px); overflow:auto;
-  overscroll-behavior:contain; }
-html:is(.skin-deck, .st-rail) .dk .dk-gdet h2{ margin:0 0 10px; font:700 28px/1.1 var(--dk-disp); letter-spacing:.01em; color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-gdet > .dk-chips{ margin-bottom:4px; }
-html:is(.skin-deck, .st-rail) .dk .dk-gsec{ margin-top:18px; padding-top:14px; border-top:1px solid var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-gsec > .dk-sec{ margin:0 0 8px; font:500 10.5px var(--dk-mono); letter-spacing:.14em; color:var(--dk-t3); }
-/* a field inside #view sits under Classic's own field rules, which carry the view's id: these have to win */
-html.skin-deck #view .dk input.dk-in, html.skin-deck #view .dk select.dk-in{ border:1px solid var(--dk-line2) !important; border-radius:10px !important; background-color:var(--dk-s1) !important;
-  color:var(--dk-text) !important; box-shadow:none !important; font-family:var(--dk-body) !important; }
-html.skin-deck #view .dk input.dk-in:focus{ border-color:var(--dk-accent) !important; box-shadow:0 0 0 3px color-mix(in srgb, var(--dk-accent) 22%, transparent) !important; }
-html.skin-deck #view .dk select.dk-sel{ border-radius:8px !important; background-color:var(--dk-s2) !important; }
-html:is(.skin-deck, .st-rail) .dk .dk-gsec > .dk-row:first-of-type, html:is(.skin-deck, .st-rail) .dk .dk-gsec > .dk-note:first-of-type{ margin-top:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-gline{ margin:0 0 8px; font-size:13px; line-height:1.55; color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) .dk .dk-gline b{ color:var(--dk-text); font-weight:600; }
-html:is(.skin-deck, .st-rail) .dk .dk-tgl{ height:34px; padding:0 14px; border-radius:10px; border:1px solid var(--dk-line2); font-weight:600; font-size:13px; white-space:nowrap; text-align:center; }
-html:is(.skin-deck, .st-rail) .dk .dk-tgl:hover{ background:rgba(255,255,255,.07); }
-html:is(.skin-deck, .st-rail) .dk .dk-tgl.on{ background:color-mix(in srgb, var(--dk-accent) 18%, transparent); border-color:var(--dk-accent); color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-price{ margin:12px 0 2px; font:700 30px/1.1 var(--dk-disp); color:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-price + .dk-note{ margin-top:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-cond{ font:700 20px var(--dk-disp); }
-html:is(.skin-deck, .st-rail) .dk .dk-dropped{ padding:10px 12px; margin-bottom:10px; background:var(--dk-s1); border-style:dashed; }
-html:is(.skin-deck, .st-rail) .dk .dk-dropped h5{ margin-bottom:4px; }
-html:is(.skin-deck, .st-rail) .dk .dk-dropped .dk-line{ padding:4px 0; }
-html:is(.skin-deck, .st-rail) .dk .dk-gback{ display:none; }
-
-/* ---- #POST as a messenger (js/deck_post.js): who wrote, their letters with a place to answer, their card ---- */
-html.skin-deck .dk-post{ display:grid; grid-template-columns:300px minmax(0,1fr) 280px; gap:0; height:calc(100vh - var(--dk-hud) - 108px); min-height:420px; border-radius:20px;
-  background:rgba(8,7,13,.78); box-shadow:inset 0 0 0 1px var(--dk-line); overflow:hidden; }
-html:is(.skin-deck, .st-rail) .dk .dk-pl{ padding:14px 10px; border-right:1px solid var(--dk-line); overflow:auto; }
-html:is(.skin-deck, .st-rail) .dk .dk-ph{ display:flex; align-items:center; gap:8px; margin:0 6px 8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-ph .dk-sec{ margin:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-ph-foot{ margin:14px 8px 0; font-size:11.5px; }
-html:is(.skin-deck, .st-rail) .dk .dk-th{ display:flex; align-items:center; gap:11px; width:100%; padding:9px 10px; border-radius:12px; }
-html:is(.skin-deck, .st-rail) .dk .dk-th:hover{ background:rgba(255,255,255,.05); }
-html:is(.skin-deck, .st-rail) .dk .dk-th.on{ background:color-mix(in srgb, var(--dk-accent) 14%, transparent); }
-html:is(.skin-deck, .st-rail) .dk .dk-av{ flex:none; width:38px; height:38px; border-radius:50%; display:grid; place-items:center; background:var(--dk-s3); color:var(--dk-text); font:700 14px var(--dk-disp);
-  line-height:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-av svg{ width:18px; height:18px; }
-html:is(.skin-deck, .st-rail) .dk .dk-av.dk-sys{ background:color-mix(in srgb, var(--dk-accent) 20%, transparent); color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-av.dk-big-av{ width:72px; height:72px; font-size:26px; margin:0 auto 10px; }
-html:is(.skin-deck, .st-rail) .dk .dk-av.dk-big-av svg{ width:30px; height:30px; }
-html:is(.skin-deck, .st-rail) .dk .dk-th-t{ flex:1 1 0; min-width:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-th-t b{ display:flex; align-items:baseline; gap:8px; font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; }
-html:is(.skin-deck, .st-rail) .dk .dk-th-t b small{ margin-left:auto; font:400 11px var(--dk-body); color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-th-t > span{ display:block; font-size:12.5px; color:var(--dk-t3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-html:is(.skin-deck, .st-rail) .dk .dk-th.dk-un .dk-th-t > span{ color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-ud{ flex:none; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--dk-accent); color:#0a0911; font:700 11px/18px var(--dk-body); font-style:normal; text-align:center; }
-html:is(.skin-deck, .st-rail) .dk .dk-pkg-i{ flex:none; font-size:15px; color:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-pt{ display:flex; flex-direction:column; min-width:0; min-height:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-pt-none{ margin:auto; }
-html:is(.skin-deck, .st-rail) .dk .dk-pt-h{ flex:none; display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-pt-h b{ font-size:15px; font-weight:700; }
-html:is(.skin-deck, .st-rail) .dk .dk-pback{ display:none; font-size:20px; margin:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-msgs{ flex:1 1 0; min-height:0; overflow:auto; padding:16px; display:flex; flex-direction:column; gap:10px; overscroll-behavior:contain; }
-html:is(.skin-deck, .st-rail) .dk .dk-m{ align-self:flex-start; max-width:min(560px, 86%); padding:10px 13px 8px; border-radius:16px 16px 16px 5px; background:var(--dk-s2); border:1px solid var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-m.dk-m-new{ border-color:color-mix(in srgb, var(--dk-accent) 55%, transparent); }
-html:is(.skin-deck, .st-rail) .dk .dk-m.dk-me{ align-self:flex-end; border-radius:16px 16px 5px 16px; background:color-mix(in srgb, var(--dk-accent) 16%, var(--dk-s2)); }
-html:is(.skin-deck, .st-rail) .dk .dk-m.dk-m-edit{ align-self:stretch; max-width:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-m-s{ display:block; font-size:14px; font-weight:700; margin-bottom:3px; }
-html:is(.skin-deck, .st-rail) .dk .dk-m-b{ margin:0; font-size:13.5px; line-height:1.5; color:var(--dk-t2); white-space:pre-wrap; overflow-wrap:anywhere; }
-html:is(.skin-deck, .st-rail) .dk .dk-m-f{ display:flex; align-items:center; gap:12px; margin-top:6px; }
-html:is(.skin-deck, .st-rail) .dk .dk-m-f small{ color:var(--dk-t3); font-size:11px; }
-html:is(.skin-deck, .st-rail) .dk .dk-m-f .dk-link{ font-size:11px; color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-m-f .dk-link:hover{ color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-m-f .dk-link.dk-badt:hover{ color:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) .dk .dk-m-div{ align-self:center; font:500 10px var(--dk-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--dk-t3); margin:6px 0 0; }
-html:is(.skin-deck, .st-rail) .dk .dk-pkg{ display:flex; align-items:center; gap:10px; margin-top:8px; padding:9px 11px; border-radius:12px; background:rgba(255,255,255,.05); }
-html:is(.skin-deck, .st-rail) .dk .dk-pkg > .dk-ic{ font-size:22px; color:var(--dk-gold); }
-html:is(.skin-deck, .st-rail) .dk .dk-pkg b{ font-size:13px; }
-html:is(.skin-deck, .st-rail) .dk .dk-pkg small{ font-size:12px; color:var(--dk-t2); }
-html:is(.skin-deck, .st-rail) .dk .dk-g3{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin-bottom:8px; }
-html:is(.skin-deck, .st-rail) .dk .dk-fld span{ display:block; font:500 10px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); margin-bottom:4px; }
-html:is(.skin-deck, .st-rail) .dk .dk-pnote{ flex:none; padding:12px 16px; border-top:1px solid var(--dk-line); color:var(--dk-t3); font-size:12.5px; }
-html:is(.skin-deck, .st-rail) .dk .dk-pnote:empty{ display:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-cmp{ flex:none; display:grid; gap:8px; padding:12px 16px; border-top:1px solid var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-cmp-row{ display:flex; align-items:flex-end; gap:8px; }
-html.skin-deck #view .dk .dk-cmp textarea.dk-in{ flex:1 1 0; min-height:44px; height:64px; padding:9px 12px; resize:vertical; border:1px solid var(--dk-line2) !important; border-radius:14px !important;
-  background:var(--dk-s1) !important; color:var(--dk-text) !important; font:500 14px/1.45 var(--dk-body) !important; box-shadow:none !important; }
-html.skin-deck #view .dk textarea.dk-notes{ border:1px solid var(--dk-line2) !important; border-radius:10px !important; background:var(--dk-s1) !important; color:var(--dk-text) !important;
-  font:500 13px/1.55 var(--dk-body) !important; box-shadow:none !important; }
-html:is(.skin-deck, .st-rail) .dk .dk-cmp .dk-btn{ height:44px; border-radius:22px; padding:0 20px; }
-html:is(.skin-deck, .st-rail) .dk .dk-pc{ padding:22px 18px; border-left:1px solid var(--dk-line); overflow:auto; text-align:center; }
-html:is(.skin-deck, .st-rail) .dk .dk-pc h3{ margin:0 0 8px; font:700 20px var(--dk-disp); color:var(--dk-text); letter-spacing:.01em; }
-html:is(.skin-deck, .st-rail) .dk .dk-pc .dk-chips{ justify-content:center; margin-bottom:12px; }
-html:is(.skin-deck, .st-rail) .dk .dk-pc .dk-btn{ margin-top:12px; }
-html:is(.skin-deck, .st-rail) .dk .dk-kv{ text-align:left; }
-html:is(.skin-deck, .st-rail) .dk .dk-kv i{ display:block; margin-top:12px; font:500 10px var(--dk-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--dk-t3); font-style:normal; }
-html:is(.skin-deck, .st-rail) .dk .dk-kv p{ margin:3px 0 0; font-size:13px; line-height:1.5; color:var(--dk-t2); overflow-wrap:anywhere; }
-
-/* ---- Standing (js/deck_standing.js): the ledger as cards to press ---- */
-html.skin-deck .dk-stand{ padding:16px; border-radius:20px; background:rgba(8,7,13,.78); box-shadow:inset 0 0 0 1px var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-sgrid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; }
-html:is(.skin-deck, .st-rail) .dk .dk-st{ margin:0; padding:16px 18px; background:var(--dk-s1); }
-html:is(.skin-deck, .st-rail) .dk .dk-st.dk-full{ grid-column:1 / -1; }
-html:is(.skin-deck, .st-rail) .dk .dk-st > .dk-h{ margin:0 0 10px; font:500 10px var(--dk-mono); letter-spacing:.14em; color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-st > .dk-btn{ margin-top:10px; }
-html:is(.skin-deck, .st-rail) .dk .dk-fr, html:is(.skin-deck, .st-rail) .dk .dk-pr, html:is(.skin-deck, .st-rail) .dk .dk-tr{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:7px 0; border-top:1px solid var(--dk-line); }
-html:is(.skin-deck, .st-rail) .dk .dk-h + .dk-fr, html:is(.skin-deck, .st-rail) .dk .dk-h + .dk-pr, html:is(.skin-deck, .st-rail) .dk .dk-h + .dk-tr{ border-top:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-fr > .dk-in{ flex:1 1 180px; width:auto; }
-html:is(.skin-deck, .st-rail) .dk .dk-pr > .dk-in{ flex:1 1 130px; width:auto; }
-html:is(.skin-deck, .st-rail) .dk .dk-pr > .dk-in.dk-wide{ flex:2 1 220px; }
-html:is(.skin-deck, .st-rail) .dk .dk-tr > .dk-in{ flex:1 1 140px; width:auto; }
-html:is(.skin-deck, .st-rail) .dk .dk-tr > .dk-track{ flex:1 1 90px; display:block; height:7px; border-radius:5px; background:rgba(255,255,255,.09); overflow:hidden; }
-html:is(.skin-deck, .st-rail) .dk .dk-tr .dk-fill{ display:block; height:100%; border-radius:5px; transition:width .3s; }
-html:is(.skin-deck, .st-rail) .dk .dk-fill.dk-f-ok{ background:var(--dk-ok); }
-html:is(.skin-deck, .st-rail) .dk .dk-fill.dk-f-bad{ background:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) .dk .dk-tr em{ min-width:22px; text-align:center; font:700 20px var(--dk-disp); font-style:normal; }
-html:is(.skin-deck, .st-rail) .dk .dk-sq.dk-rm{ width:28px; height:28px; font-size:12px; color:var(--dk-t3); background:none; }
-html:is(.skin-deck, .st-rail) .dk .dk-sq.dk-rm:hover{ color:var(--dk-bad); background:rgba(255,255,255,.07); }
-html:is(.skin-deck, .st-rail) .dk .dk-scale{ display:inline-flex; padding:3px; border-radius:11px; background:rgba(255,255,255,.06); }
-html:is(.skin-deck, .st-rail) .dk .dk-scale button{ height:28px; padding:0 10px; border-radius:8px; color:var(--dk-t3); font-size:12px; font-weight:600; white-space:nowrap; text-align:center; }
-html:is(.skin-deck, .st-rail) .dk .dk-scale button:hover{ color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-scale button.on{ background:var(--dk-s3); color:var(--dk-text); box-shadow:inset 0 0 0 1px var(--dk-line2); }
-html:is(.skin-deck, .st-rail) .dk .dk-scale button.on.dk-s-ok{ color:var(--dk-ok); }
-html:is(.skin-deck, .st-rail) .dk .dk-scale button.on.dk-s-bad{ color:var(--dk-bad); }
-html:is(.skin-deck, .st-rail) .dk .dk-scale button.on.dk-s-warn{ color:var(--dk-warn); }
-html:is(.skin-deck, .st-rail) .dk .dk-scale button.on.dk-s-acc{ color:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-st-foot{ margin:14px 4px 0; }
-
-/* ---- creation (js/deck_shell.js createBar): #PRINT takes the whole screen. The dock is put away (it stays in the page, so the
-   rail it stands in for stays hidden too) and the status bar is not drawn; one bar says whose record, which step, and the way back. ---- */
-html.skin-deck #os.dk-creating:has(#dk-dock){ padding-left:0; padding-bottom:0; }
-html.skin-deck #os.dk-creating #dk-dock{ display:none; }
-html.skin-deck .dk-crt{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin:0 0 16px; padding:14px 18px; border-radius:16px; }
-/* The bar stays on screen while the builder scrolls (15 Nov 2026): sticky under whatever is pinned above it. js/deck_shell.js
-   pinCreate() measures that into --dk-crt-top, and sets --sticky-top on the stage so the builder's own step rail (z-index 60)
-   sticks under the bar and not behind it. The bar is two layers under its words: a square that reaches up over the gap above
-   it and blurs what scrolls through that gap and past the round corners (as the step rail blurs what passes under it), and
-   on that the card itself, with its fill and its line. */
-/* A read-only record (css/theme.css, #view.en-ro: nothing in the view takes the pointer). What only changes what is showing
-   is marked data-ro-keep where it is drawn (js/deck_shell.js, segBar). This skin's own scroll wells take the wheel, as
-   Classic's do: a thread of letters, the list of people, a contact's card, the piece that is picked. */
-html.skin-deck #view.en-ro .dk .dk-msgs, html.skin-deck #view.en-ro .dk .dk-pl, html.skin-deck #view.en-ro .dk .dk-pc,
-html.skin-deck #view.en-ro .dk .dk-gdet{ pointer-events:auto; }
-/* What would change the record does nothing there, so it does not look as if it would (15 Nov 2026, the author's call): a
-   button that is only a verb is dimmed, and of a set that shows a state (where a piece is, a posture, in hand) the one that
-   is on stays lit. What is there to be read stays as it is: a skill, a save, an attack's figures, pips, chips. */
-html.skin-deck #view.en-ro .dk :is(.dk-btn, .dk-sq, .dk-opt, .dk-link, .dk-tgl, .dk-segb, .dk-scale button):not([data-ro-keep], .on, .dk-on){ opacity:.4; }
-html.skin-deck .dk-crt{ position:sticky; top:var(--dk-crt-top, calc(var(--dk-hud) + 8px)); z-index:61; }
-html.skin-deck .dk-crt::before{ content:""; position:absolute; inset:-8px 0 0 0; z-index:-2; pointer-events:none; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
-html.skin-deck .dk-crt::after{ content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; border-radius:inherit; background:var(--dk-s1);
-  box-shadow:inset 0 0 0 1px var(--dk-line); }
-/* With no dock (a record not filed yet, or no record) the rail is on screen, holding the gear. It sticks under this skin's
-   taller top bar, not 50px down where Classic's ends, which left it half behind the top bar and over the step rail. */
-html.skin-deck:not(.skin-98):not(.skin-droid) #os:not(:has(#dk-dock)) #os-tabs{ top:var(--dk-hud); }
-html:is(.skin-deck, .st-rail) .dk .dk-crt-t{ flex:1 1 220px; min-width:0; }
-html:is(.skin-deck, .st-rail) .dk .dk-crt-t b{ display:block; font:700 22px/1.15 var(--dk-disp); letter-spacing:.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-crt-t span{ font:500 11px var(--dk-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--dk-t3); }
-html:is(.skin-deck, .st-rail) .dk .dk-crt-p{ flex:1 1 180px; display:flex; gap:5px; max-width:340px; }
-html:is(.skin-deck, .st-rail) .dk .dk-crt-p i{ flex:1 1 0; height:6px; border-radius:3px; background:rgba(255,255,255,.1); }
-html:is(.skin-deck, .st-rail) .dk .dk-crt-p i.done{ background:color-mix(in srgb, var(--dk-accent) 45%, transparent); }
-html:is(.skin-deck, .st-rail) .dk .dk-crt-p i.on{ background:var(--dk-accent); }
-html:is(.skin-deck, .st-rail) .dk .dk-crt-n{ font-size:12.5px; color:var(--dk-t3); }
-
-/* ---- the stage: a bar of its own where an app has more than one face, then the view it hosts ---- */
-html.skin-deck .dk-bar{ margin:0 0 16px; }
-html:is(.skin-deck, .st-rail) .dk .dk-seg{ display:inline-flex; padding:3px; border-radius:12px; background:rgba(255,255,255,.07); }
-html:is(.skin-deck, .st-rail) .dk .dk-segb{ height:32px; padding:0 14px; border-radius:9px; color:var(--dk-t2); font-weight:600; font-size:13px; display:inline-flex;
+html.st-rail .dk .dk-seg{ display:inline-flex; padding:3px; border-radius:12px; background:rgba(255,255,255,.07); }
+html.st-rail .dk .dk-segb{ height:32px; padding:0 14px; border-radius:9px; color:var(--dk-t2); font-weight:600; font-size:13px; display:inline-flex;
   align-items:center; gap:7px; white-space:nowrap; }
-html:is(.skin-deck, .st-rail) .dk .dk-segb:hover{ color:var(--dk-text); }
-html:is(.skin-deck, .st-rail) .dk .dk-segb.on{ background:var(--dk-s3); color:var(--dk-text); box-shadow:inset 0 0 0 1px var(--dk-line2); }
-html:is(.skin-deck, .st-rail) .dk .dk-segb .dk-ic{ font-size:15px; }
-/* the bar sits on the palette's own ground, which may be a light one: its strip carries its own dark fill */
-html.skin-deck .dk-bar .dk-seg{ background:var(--dk-s1); box-shadow:inset 0 0 0 1px var(--dk-line); }
-
-/* The Social tab draws its own three-way switch (LEDGER, CONTACTS, #POST). Under this skin the dock and the
-   stage's bar are that switch, so the hosted one is put away. */
-html.skin-deck .dk-host .face-bar{ display:none; }
-
-/* ---- narrower windows ---- */
+html.st-rail .dk .dk-segb:hover{ color:var(--dk-text); }
+html.st-rail .dk .dk-segb.on{ background:var(--dk-s3); color:var(--dk-text); box-shadow:inset 0 0 0 1px var(--dk-line2); }
+html.st-rail .dk .dk-segb .dk-ic{ font-size:15px; }
 @media (max-width:1560px){
-  html:is(.skin-deck, .st-rail) #dk-hud{ gap:18px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-meter{ width:156px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-meter.dk-wd{ width:118px; }
-  html.skin-deck .os-topbar:has(#dk-hud) #link-state{ display:none; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-find{ width:38px; padding:0; justify-content:center; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-find span:not(.dk-ic), html:is(.skin-deck, .st-rail) #dk-hud .dk-find kbd{ display:none; }
-}
-@media (max-width:1319px){
-  html.skin-deck .dk-post{ grid-template-columns:270px minmax(0,1fr); }
-  html:is(.skin-deck, .st-rail) .dk .dk-pc{ display:none; }
-  html.skin-deck .dk-sheet{ grid-template-columns:270px minmax(0,1fr); grid-template-areas:"seg seg" "al al" "chk act" "chk def"; }
+  html.st-rail #dk-hud{ gap:18px; }
+  html.st-rail #dk-hud .dk-meter{ width:156px; }
+  html.st-rail #dk-hud .dk-meter.dk-wd{ width:118px; }
+  html.st-rail #dk-hud .dk-find{ width:38px; padding:0; justify-content:center; }
+  html.st-rail #dk-hud .dk-find span:not(.dk-ic), html.st-rail #dk-hud .dk-find kbd{ display:none; }
 }
 @media (max-width:1239px){
-  html:is(.skin-deck, .st-rail) #dk-hud{ gap:16px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-wal i{ display:none; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-meter{ width:140px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-meter.dk-wd{ width:108px; }
+  html.st-rail #dk-hud{ gap:16px; }
+  html.st-rail #dk-hud .dk-wal i{ display:none; }
+  html.st-rail #dk-hud .dk-meter{ width:140px; }
+  html.st-rail #dk-hud .dk-meter.dk-wd{ width:108px; }
 }
 @media (max-width:1040px){
-  html:is(.skin-deck, .st-rail) #dk-hud{ gap:12px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-idt span, html:is(.skin-deck, .st-rail) #dk-hud .dk-wal, html:is(.skin-deck, .st-rail) #dk-hud .dk-lvl{ display:none; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-meter{ width:112px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-meter.dk-wd{ width:92px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-pip{ width:9px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-pipset{ gap:3px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-many .dk-pip{ width:6px; }
-}
-/* A phone, for now: the dock goes to the bottom edge and the bar wraps. #GRIDroid is the phone skin; this
-   skin's own phone layout is a later phase, and this much keeps it usable until then. */
-@media (max-width:900px){
-  /* #POST: the people or the letters, one at a time; Standing: one column */
-  html.skin-deck .dk-post{ grid-template-columns:minmax(0,1fr); height:calc(100vh - 310px); }
-  html.skin-deck .dk-post[data-dk-pane="list"] .dk-pt, html.skin-deck .dk-post[data-dk-pane="thread"] .dk-pl{ display:none; }
-  html:is(.skin-deck, .st-rail) .dk .dk-pl{ border-right:0; }
-  html:is(.skin-deck, .st-rail) .dk .dk-pback{ display:block; }
-  html:is(.skin-deck, .st-rail) .dk .dk-sgrid{ grid-template-columns:minmax(0,1fr); }
-  html.skin-deck .dk-stand{ padding:12px; }
-  html:is(.skin-deck, .st-rail) .dk .dk-g3{ grid-template-columns:minmax(0,1fr); }
-  /* Gear: the list or the piece, one at a time */
-  html:is(.skin-deck, .st-rail) .dk .dk-g2c{ grid-template-columns:minmax(0,1fr); }
-  html.skin-deck .dk-gear{ padding:12px; }
-  html.skin-deck .dk-gear[data-dk-pane="list"] .dk-gdet, html.skin-deck .dk-gear[data-dk-pane="detail"] .dk-glist{ display:none; }
-  html:is(.skin-deck, .st-rail) .dk .dk-gdet{ position:static; max-height:none; padding:16px; }
-  html:is(.skin-deck, .st-rail) .dk .dk-gback{ display:block; margin:0 0 10px; }
-  /* one column at a time, picked on the switch across the top */
-  html.skin-deck .dk-sheet{ grid-template-columns:minmax(0,1fr); grid-template-areas:"seg" "al" "col"; padding:12px; }
-  html:is(.skin-deck, .st-rail) .dk .dk-seg.dk-colseg{ display:flex; }
-  html:is(.skin-deck, .st-rail) .dk .dk-colseg .dk-segb{ flex:1 1 0; justify-content:center; }
-  html.skin-deck .dk-sheet .dk-col{ grid-area:col; display:none; }
-  html.skin-deck .dk-sheet[data-dk-col="checks"] .dk-c-checks, html.skin-deck .dk-sheet[data-dk-col="actions"] .dk-c-actions,
-  html.skin-deck .dk-sheet[data-dk-col="defense"] .dk-c-defense{ display:block; }
+  html.st-rail #dk-hud{ gap:12px; }
+  html.st-rail #dk-hud .dk-idt span, html.st-rail #dk-hud .dk-wal{ display:none; }
+  html.st-rail #dk-hud .dk-meter{ width:112px; }
+  html.st-rail #dk-hud .dk-meter.dk-wd{ width:92px; }
+  html.st-rail #dk-hud .dk-pip{ width:9px; }
+  html.st-rail #dk-hud .dk-pipset{ gap:3px; }
+  html.st-rail #dk-hud .dk-many .dk-pip{ width:6px; }
 }
 @media (max-width:760px){
-  html.skin-deck{ --dk-hud:auto; --sticky-top:8px; }
-  html.skin-deck #os:has(#dk-dock){ padding-left:0; padding-bottom:calc(62px + env(safe-area-inset-bottom, 0px)); }
-  html.skin-deck #dk-dock{ top:auto; right:0; width:auto; height:auto; flex-direction:row; justify-content:space-around; gap:0;
-    padding:6px 6px calc(6px + env(safe-area-inset-bottom, 0px)); border-right:0; border-top:1px solid var(--dk-line); }
-  html.skin-deck #dk-dock .dk-mark, html.skin-deck #dk-dock .dk-grow{ display:none; }
-  html.skin-deck #dk-dock .dk-app, html.skin-deck #dk-dock .dk-app[data-dk="codex"], html.skin-deck #dk-dock .dk-app[data-dk="settings"]{ width:54px; height:50px; }
-  html.skin-deck #dk-dock .dk-app.on::before{ left:14px; right:14px; top:-7px; bottom:auto; width:auto; height:3px; }
-  html.skin-deck:not(.skin-98):not(.skin-droid) .os-topbar{ position:static; height:auto; padding:9px 12px; }
-  html:is(.skin-deck, .st-rail) #dk-hud{ flex-wrap:wrap; gap:9px 12px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-idn{ padding:2px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-ring, html:is(.skin-deck, .st-rail) #dk-hud .dk-ring svg{ width:38px; height:38px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-ring b{ font-size:16px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-idt span{ display:block; font-size:11px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-has-pop:has(> .dk-meter){ flex:1 1 96px; min-width:0; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-meter, html:is(.skin-deck, .st-rail) #dk-hud .dk-meter.dk-wd{ width:auto; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-pipset, html:is(.skin-deck, .st-rail) #dk-hud .dk-wal{ display:none; }   /* the count stands for the pips here */
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-res i{ margin-bottom:3px; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-pips b{ font-size:20px; line-height:1; color:var(--dk-accent); }
-  html:is(.skin-deck, .st-rail) #dk-hud > .dk-condw{ flex:1 1 100%; order:9; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-idn{ flex:1 1 calc(100% - 110px); min-width:0; order:-2; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-idt{ min-width:0; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-idt b{ overflow:hidden; text-overflow:ellipsis; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-pop-r, html:is(.skin-deck, .st-rail) #dk-hud .dk-find{ order:-1; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-res{ flex:none; }
-  /* a popover spans the bar and hangs under it, whichever control opened it */
-  html:is(.skin-deck, .st-rail) #dk-hud{ position:relative; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-has-pop{ position:static; }
-  html:is(.skin-deck, .st-rail) #dk-hud .dk-pop, html:is(.skin-deck, .st-rail) #dk-hud .dk-pop[data-dk-pop="cond"]{ left:0 !important; right:0; top:calc(100% + 8px); width:auto; }
-  html:is(.skin-deck, .st-rail) .dk .dk-pal{ top:10px; }
-  html:is(.skin-deck, .st-rail) .dk .dk-x{ top:10px; right:10px; width:40px; height:40px; }   /* a thumb's width, not a pointer's */
-  /* creation: the top bar scrolls away here, so the rail (when there is one) and the creation bar pin at the top edge. The bar
-     is one line, the name beside the way back; its progress strip is put away, since the step rail pinned under it shows the
-     steps. A record not filed yet has nothing to press on the bar, so there it scrolls away and leaves the phone its room. */
-  html.skin-deck:not(.skin-98):not(.skin-droid) #os:not(:has(#dk-dock)) #os-tabs{ top:0; }
-  html.skin-deck .dk-crt{ top:var(--dk-crt-top, 8px); gap:6px 12px; margin:0 0 12px; padding:8px 12px; border-radius:14px; }
-  html.skin-deck .dk-crt[data-dk-create="new"]{ position:relative; top:auto; }
-  html:is(.skin-deck, .st-rail) .dk .dk-crt-t{ flex:1 1 0; }
-  html:is(.skin-deck, .st-rail) .dk .dk-crt-t b{ font-size:17px; }
-  html:is(.skin-deck, .st-rail) .dk .dk-crt-t span{ font-size:10px; }
-  html:is(.skin-deck, .st-rail) .dk .dk-crt-p{ display:none; }
-  html:is(.skin-deck, .st-rail) .dk .dk-crt > .dk-btn{ flex:none; padding:0 12px; font-size:12.5px; }
-  html:is(.skin-deck, .st-rail) .dk .dk-crt-n{ flex:1 1 100%; }
-  html.skin-deck .toast{ bottom:calc(78px + env(safe-area-inset-bottom, 0px)); }   /* clear of the dock along the bottom edge */
-  /* the guided tour's card is a sheet along the bottom edge on a phone (js/tour.js): it stands on the dock, not over it */
-  html.skin-deck body:has(#os:not(.dk-creating) > #dk-dock) #tour-card.tour-sheet:not(.tour-sheet-top){ bottom:calc(74px + env(safe-area-inset-bottom, 0px)); }
-  html.skin-deck .os-topbar:has(#dk-hud) > .os-status:not(#active-name){ display:none; }
+  html.st-rail #dk-hud{ flex-wrap:wrap; gap:9px 12px; }
+  html.st-rail #dk-hud .dk-idn{ padding:2px; }
+  html.st-rail #dk-hud .dk-ring, html.st-rail #dk-hud .dk-ring svg{ width:38px; height:38px; }
+  html.st-rail #dk-hud .dk-ring b{ font-size:16px; }
+  html.st-rail #dk-hud .dk-idt span{ display:block; font-size:11px; }
+  html.st-rail #dk-hud .dk-has-pop:has(> .dk-meter){ flex:1 1 96px; min-width:0; }
+  html.st-rail #dk-hud .dk-meter, html.st-rail #dk-hud .dk-meter.dk-wd{ width:auto; }
+  html.st-rail #dk-hud .dk-pipset, html.st-rail #dk-hud .dk-wal{ display:none; }
+  html.st-rail #dk-hud .dk-res i{ margin-bottom:3px; }
+  html.st-rail #dk-hud .dk-pips b{ font-size:20px; line-height:1; color:var(--dk-accent); }
+  html.st-rail #dk-hud > .dk-condw{ flex:1 1 100%; order:9; }
+  html.st-rail #dk-hud .dk-idn{ flex:1 1 calc(100% - 110px); min-width:0; order:-2; }
+  html.st-rail #dk-hud .dk-idt{ min-width:0; }
+  html.st-rail #dk-hud .dk-idt b{ overflow:hidden; text-overflow:ellipsis; }
+  html.st-rail #dk-hud .dk-pop-r, html.st-rail #dk-hud .dk-find{ order:-1; }
+  html.st-rail #dk-hud .dk-res{ flex:none; }
+  html.st-rail #dk-hud{ position:relative; }
+  html.st-rail #dk-hud .dk-has-pop{ position:static; }
+  html.st-rail #dk-hud .dk-pop, html.st-rail #dk-hud .dk-pop[data-dk-pop="cond"]{ left:0 !important; right:0; top:calc(100% + 8px); width:auto; }
+  html.st-rail .dk .dk-pal{ top:10px; }
+  html.st-rail .dk .dk-x{ top:10px; right:10px; width:40px; height:40px; }
 }
 @media (prefers-reduced-motion:reduce){
-  html:is(.skin-deck, .st-rail) .dk *, html:is(.skin-deck, .st-rail) .dk{ transition:none !important; }
+  html.st-rail .dk *, html.st-rail .dk{ transition:none !important; }
 }
-
 /* ---- THE STATUS RAIL ON CLASSIC (15 Nov 2026, the author's call) ----
    On the Freelancer desktop Classic carries a rail of its own, #os-rail, between the top bar and the tab rail, on every tab:
    the level, the name over the class and subclass, Vitality, Wounds and the class resource on the left; the wallet and the
@@ -736,11 +253,12 @@ html.skin-deck .dk-host .face-bar{ display:none; }
 html.st-rail{ --st-rail-h:60px; --sticky-top:calc(92px + var(--st-rail-h)); }
 html.st-rail #os-rail{ position:sticky; top:50px; z-index:99; display:flex; align-items:center; height:var(--st-rail-h); padding:0 16px;
   border-bottom:1px solid var(--border); }
-html.st-rail #os-tabs{ top:calc(50px + var(--st-rail-h)); z-index:98; }   /* under the rail, whose popovers hang over it */
-html.st-rail #dk-hud .dk-idn:hover{ background:var(--bg2); }   /* on this rail the name opens the Record drawer (the end of this file) */
+html.st-rail #os-tabs{ top:calc(50px + var(--st-rail-h)); z-index:98; }
+/* under the rail, whose popovers hang over it */
+html.st-rail #dk-hud .dk-idn:hover{ background:var(--bg2); }
+/* on this rail the name opens the Record drawer (the end of this file) */
 /* the Flow visualizer's window (theme.css, .fv-win) opens under the pinned chrome, which is taller by the rail */
 html.st-rail .fv-win:not(.fv-sheet){ --fv-maxh:calc(100vh - 110px - var(--st-rail-h)); }
-
 /* ---- THE SEARCH BOX IN CLASSIC'S TOP BAR (15 Nov 2026, the author's call; js/deck_shell.js paintFindBox) ----
    The record's name is on the rail, so the name in the top bar's right corner is put away (the EDIT FREELY flag beside it
    stays) and a search box takes its place: a Classic field to look at, a button to press, Ctrl K to the same end. The
@@ -766,7 +284,6 @@ html.st-rail .dk .dk-palg::before{ content:"// "; color:var(--flow); letter-spac
 html.st-rail #dk-find .dk-opt{ font:500 14.5px var(--body); letter-spacing:.02em; text-transform:none; color:var(--text); }
 html.st-rail #dk-find .dk-opt small{ font:400 10.5px var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--text3); }
 html.st-rail #dk-find .dk-empty{ font:400 13px var(--body); color:var(--text3); }
-
 /* ---- THE RECORD DRAWER ON CLASSIC (16 Nov 2026, the author's call; js/deck_record.js) ----
    The name on the rail slides a panel in from the right: the level and name, five pages (#PRINT, Level up, Edit record,
    Characters, Notes) as small Classic buttons, and the #PRINT badge (js/badge.js), which is SVG and takes the width it is
@@ -802,7 +319,6 @@ html.st-rail .dk .dk-empty b{ color:var(--text2); font-weight:600; }
 html.st-rail .dk .dk-badge{ margin:0 0 14px; filter:drop-shadow(0 10px 22px rgba(0,0,0,.55)); }
 html.st-rail .dk .dk-badge svg{ display:block; width:100%; height:auto; overflow:visible; }
 html.st-rail .dk .dk-badge [data-bd="photo-hit"]:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
-
 /* ---- THE RAIL WEARS CLASSIC (15 Nov 2026, the author's call: "match the elements' style to the classic skin") ----
    Same bar, Classic's surface (theme.css, "Classic takes #GRIDroid's surface"): the palette's own colours and fonts through
    the --dk tokens, a hairline in the accent, flat grounds, square everything, and the cut corner on the boxes and buttons.
@@ -838,7 +354,8 @@ html.st-rail #dk-hud .dk-ml b{ font:700 17px/1 var(--mono); color:var(--text); }
 html.st-rail #dk-hud .dk-ml em{ font-size:13px; color:var(--text3); }
 html.st-rail #dk-hud .dk-vg{ color:var(--shield); }
 html.st-rail #dk-hud .dk-track{ height:8px; border-radius:0; background:var(--bg1); border:1px solid var(--border); }
-html.st-rail #dk-hud .dk-fill{ border-radius:0; }   /* green and amber come through the tokens; Wounds have a red of their own on Classic */
+html.st-rail #dk-hud .dk-fill{ border-radius:0; }
+/* green and amber come through the tokens; Wounds have a red of their own on Classic */
 html.st-rail #dk-hud .dk-wd .dk-fill{ background:var(--wound); }
 /* RAIL PARITY (js/deck_hud.js): Vigor's lattice over the Vitality fill, its figure a thing to press, and Critical Condition in the danger colour */
 html.st-rail #dk-hud .dk-track{ position:relative; }
@@ -908,6 +425,8 @@ html.st-rail .dk button.dk-chip.act:hover{ filter:none; background:var(--bg2); c
   html.st-rail .fv-win:not(.fv-sheet){ --fv-maxh:calc(100vh - 110px); }
   /* #GRIDeck puts the wallet away on a phone; this rail has no search button, so the wallet takes that place beside the rest button */
   html.st-rail #dk-hud .dk-wal{ display:block; order:-1; }
-  html.st-rail #dk-hud .dk-idn{ flex:1 1 calc(100% - 170px); }   /* room on the name's line for the wallet and a rest button that says its name */
-  html.st-rail #dk-hud .dk-idt span{ overflow:hidden; text-overflow:ellipsis; }   /* the class line is cut, as the name is, not run under the wallet */
+  html.st-rail #dk-hud .dk-idn{ flex:1 1 calc(100% - 170px); }
+  /* room on the name's line for the wallet and a rest button that says its name */
+  html.st-rail #dk-hud .dk-idt span{ overflow:hidden; text-overflow:ellipsis; }
+  /* the class line is cut, as the name is, not run under the wallet */
 }

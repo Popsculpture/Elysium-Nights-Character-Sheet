@@ -823,10 +823,10 @@ EN.ui = (function () {
 
   /* Scroll a node in #view so its top sits just under whatever is pinned at the top of the
      screen: the Classic top bar and rail, '98's title bar, and a view's own sticky bar (the
-     Inventory sub-tab bar, the #PRINT step rail, #GRIDeck's creation bar). Only sticky or fixed
+     Inventory sub-tab bar, the #PRINT step rail). Only sticky or fixed
      chrome near the top counts, so '98's bottom taskbar and #GRIDroid's bottom dock are left out
      on their own. */
-  var PINNED = [".os-topbar", "#os-tabs", "#view .inv-bar", "#view .wizard-rail", "#view .dk-crt"];
+  var PINNED = [".os-topbar", "#os-tabs", "#view .inv-bar", "#view .wizard-rail"];
   function scrollUnderChrome(node, onlyIfHidden) {
     if (!node || !node.getBoundingClientRect) return;
     var pin = 0;

@@ -4747,8 +4747,6 @@ EN.builder = (function () {
   function stepKey() { return (STEPS[_step] || {}).key || null; }
 
   return { render: render, openAdvance: openAdvance, goStep: goStep, stepKey: stepKey, switcherSelect: switcherSelect,
-           // the wizard's steps, in order, for a shell that says where the player is in it (#GRIDeck P6)
-           steps: function () { return STEPS.map(function (s) { return { key: s.key, n: s.n, t: s.t }; }); },
            // the settings tray's CHARACTERS section (31 Oct 2026) and app.js's off-#PRINT manager mount
            openManager: openManager, managerOpen: managerOpen, managerPanel: managerPanel,
            newRecord: newRecord, importPrompt: importPrompt, exportChar: exportChar,

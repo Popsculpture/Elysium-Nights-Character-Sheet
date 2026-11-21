@@ -1,44 +1,33 @@
 /* ===========================================================================
-   ELYSIUM NIGHTS · #GRIDeck: the Record drawer (P2, 15 Nov 2026).
-   The Freelancer's own record, pulled out over whatever screen is open from the name in the status bar:
-     DOSSIER      the features a Freelancer simply has (the abilities they use are on the Sheet), each with a
-                  star that pins it to the Sheet; proficiencies, senses and the freeform notes. All read from
-                  the engine and the Freelancer tab's own feature list; nothing here works a number out
-     LEVEL UP     where the level stands, and whichever choices are waiting; the choosing itself is still the
-                  Advance step of #PRINT, one press away, until this skin grows its own
+   ELYSIUM NIGHTS · THE RECORD DRAWER (16 Nov 2026, the author's call; it began as #GRIDeck's, and that skin was removed on
+   20 Nov 2026). The name on Classic's status rail pulls the Freelancer's own record out over whatever tab is open:
+     #PRINT       the Freelancer's identity tag (js/badge.js), drawn from the record, with a headshot the player uploads
+     LEVEL UP     where the level stands, and whichever choices are waiting; the choosing itself is the Advance step of #PRINT
      EDIT RECORD  each step of the #PRINT builder, opened where it lives; the hardcopy and the PDF
      CHARACTERS   every record on file and the examples: switch, new, import, export, manage
-   It is an overlay of its own, outside #view, like the Codex peek: opening it leaves the page behind exactly
-   where it was. js/deck_shell.js calls sync() on every render, so it always shows the record that is open,
-   and closes with the dock when there is none.
+     NOTES        the freeform notes, the same field as the Freelancer tab's and the #PRINT Identity step's
+   Anything that asks for a page this drawer does not have ("dossier", say) opens the first one.
+   It is an overlay of its own, outside #view, like the Codex peek: opening it leaves the page behind exactly where it was.
+   js/deck_shell.js calls sync() on every render, so it always shows the record that is open, and closes with the rail.
 
-   Everything it does is a function another screen already had: EN.builder (goStep, openAdvance, newRecord,
-   importPrompt, exportChar, openManager), EN.store (setActive, setExample), EN.printSheet, EN.pdfExport.
-   DOM rules as in js/deck_shell.js: one .dk root, dk- classes only. No em or en dashes (house style).
-
-   CLASSIC HAS IT TOO (16 Nov 2026, the author's call): the name on Classic's status rail opens this drawer, in Classic's
-   look and with its own pages: the #PRINT BADGE (js/badge.js: the Freelancer's identity tag, drawn from the record, with
-   a headshot the player uploads), LEVEL UP, EDIT RECORD, CHARACTERS and NOTES. What the Dossier lists (features,
-   proficiencies, senses) is on Classic's own Freelancer tab, so the badge takes its place there; the notes it held are
-   their own page. Anything that asks for "dossier" opens the first page of whichever set is up.
+   Everything it does is a function another screen already had: EN.builder (goStep, openAdvance, newRecord, importPrompt,
+   exportChar, openManager), EN.store (setActive, setExample), EN.printSheet, EN.pdfExport, EN.badge.
+   One .dk root, dk- classes only. No em or en dashes (house style).
    =========================================================================== */
 window.EN = window.EN || {};
 EN.deck = EN.deck || {};
 EN.deck.record = (function () {
   var el = EN.ui.el, clear = EN.ui.clear;
-  var TABS_DECK = [["dossier", "Dossier"], ["level", "Level up"], ["edit", "Edit record"], ["chars", "Characters"]];
-  var TABS_CLASSIC = [["badge", "#PRINT"], ["level", "Level up"], ["edit", "Edit record"], ["chars", "Characters"], ["notes", "Notes"]];
-  function classic() { return document.documentElement.classList.contains("st-rail"); }
-  function tabs() { return classic() ? TABS_CLASSIC : TABS_DECK; }
+  var TABS = [["badge", "#PRINT"], ["level", "Level up"], ["edit", "Edit record"], ["chars", "Characters"], ["notes", "Notes"]];
+  function tabs() { return TABS; }
   var D = null;          // the open drawer: { root, tab, head, tabs, body, from }
-  var OPENED = {};       // the features whose text is unfolded, by name
 
   function reading() { try { return EN.deck.shell.reading(); } catch (e) { return null; } }
   function isOpen() { return !!D; }
 
   /* The choices a level has handed out and nobody has made yet: a Universal Upgrade slot with nothing in
      it (levels 2, 4, 6 and 8) and the free Awakening Evolution of Level 4. The Advance step marks the same
-     slots; this is only the count the status bar and this drawer show. Unspent Training Points are listed in
+     slots; this is only the count this drawer shows. Unspent Training Points are listed in
      the drawer and do not raise the flag: banking them is a choice too. */
   function owed(c) {
     var ch = c && c.ch, out = [];
@@ -106,26 +95,13 @@ EN.deck.record = (function () {
 
   function paint(c, force) {
     var ch = c.ch, d = c.d || {}, T = tabs();
-    if (!T.some(function (t) { return t[0] === D.tab; })) D.tab = T[0][0];   // the set of pages changed under it (the skin did)
+    if (!T.some(function (t) { return t[0] === D.tab; })) D.tab = T[0][0];
     // who
     clear(D.head);
-    var bits = [];
-    if (d.speciesInfo && d.speciesInfo.name) bits.push(d.speciesInfo.name + (d.lineageInfo && d.lineageInfo.name ? " (" + d.lineageInfo.name + ")" : ""));
-    if (d.backgroundInfo && d.backgroundInfo.name) bits.push(d.backgroundInfo.name);
-    if (d.classInfo && d.classInfo.name) bits.push(d.classInfo.name + (d.subclassInfo && d.subclassInfo.name ? ", " + d.subclassInfo.name : ""));
-    if (classic()) {
-      // Classic: the level in a cut box as on the rail, the name over the class and subclass
-      var cl = [d.classInfo && d.classInfo.name, d.subclassInfo && d.subclassInfo.name].filter(Boolean).join(" \u00b7 ");
-      D.head.appendChild(el("span.dk-lvbox", { title: "Level " + (d.level || ch.level || 1) + (d.caliber ? " \u00b7 Caliber " + d.caliber : "") }, [el("i", { text: "LVL" }), el("b", { text: String(d.level || ch.level || 1) })]));
-      D.head.appendChild(el("div", null, [el("h2", { text: ch.name || "Unnamed Freelancer" }), el("p", { text: (cl || "No class yet") + (c.readOnly ? " \u00b7 read only" : "") })]));
-    } else {
-      D.head.appendChild(el("span.dk-lvbig", { text: String(d.level || ch.level || 1) }));
-      D.head.appendChild(el("div", null, [
-        el("h2", { text: ch.name || "Unnamed Freelancer" }),
-        el("p", { text: bits.join(" · ") || "No class yet" }),
-        el("p", { text: "Level " + (d.level || ch.level || 1) + (d.caliber ? " · Caliber " + d.caliber : "") + (c.readOnly ? " · read only" : "") })
-      ]));
-    }
+    // the level in a cut box as on the rail, the name over the class and subclass
+    var cl = [d.classInfo && d.classInfo.name, d.subclassInfo && d.subclassInfo.name].filter(Boolean).join(" \u00b7 ");
+    D.head.appendChild(el("span.dk-lvbox", { title: "Level " + (d.level || ch.level || 1) + (d.caliber ? " \u00b7 Caliber " + d.caliber : "") }, [el("i", { text: "LVL" }), el("b", { text: String(d.level || ch.level || 1) })]));
+    D.head.appendChild(el("div", null, [el("h2", { text: ch.name || "Unnamed Freelancer" }), el("p", { text: (cl || "No class yet") + (c.readOnly ? " \u00b7 read only" : "") })]));
     // which page
     var waiting = c.readOnly ? 0 : owed(c).length, held = D.tabs.contains(document.activeElement) ? document.activeElement.getAttribute("data-dk-rec") : null;
     clear(D.tabs);
@@ -138,95 +114,29 @@ EN.deck.record = (function () {
     // the page: left alone while something in it is being typed (a cloud sync redraws the app under the player)
     var at = document.activeElement;
     if (!force && at && D.body.contains(at) && /^(TEXTAREA|INPUT)$/.test(at.tagName)) return;
-    // a button pressed in the page is redrawn with it (Switch, a feature's fold): the one that takes its place keeps the focus
+    // a button pressed in the page is redrawn with it (Switch, say): the one that takes its place keeps the focus
     var held = null;
-    if (at && D.body.contains(at)) {
-      var row = at.closest ? at.closest("[data-dk-feat]") : null;
-      held = { act: at.getAttribute("data-dk-do"), feat: row ? row.getAttribute("data-dk-feat") : null, cls: at.className };
-    }
+    if (at && D.body.contains(at)) held = { act: at.getAttribute("data-dk-do") };
     clear(D.body);
     D.body.setAttribute("data-dk-rec-tab", D.tab);
-    (D.tab === "level" ? level : D.tab === "edit" ? edit : D.tab === "chars" ? chars : D.tab === "badge" ? badge : D.tab === "notes" ? notes : dossier)(c).forEach(function (n) { if (n) D.body.appendChild(n); });
+    (D.tab === "level" ? level : D.tab === "edit" ? edit : D.tab === "chars" ? chars : D.tab === "notes" ? notes : badge)(c).forEach(function (n) { if (n) D.body.appendChild(n); });
     if (held) {
-      // found by comparing values, never by building a selector out of a feature's name
-      var keep = Array.prototype.filter.call(D.body.querySelectorAll("button"), function (b) {
-        if (held.act) return b.getAttribute("data-dk-do") === held.act;
-        var r = b.closest("[data-dk-feat]");
-        return !!held.feat && !!r && r.getAttribute("data-dk-feat") === held.feat && b.className.split(" ")[0] === held.cls.split(" ")[0];
-      })[0];
+      // found by comparing values, never by building a selector out of a record's name
+      var keep = held.act ? Array.prototype.filter.call(D.body.querySelectorAll("button"), function (b) { return b.getAttribute("data-dk-do") === held.act; })[0] : null;
       try { (keep || D.x).focus({ preventScroll: true }); } catch (e) {}
     }
   }
 
-  function dossier(c) {
-    var ch = c.ch, d = c.d, eng = EN.engine, R = EN.rules, out = [];
-    if (!d) return [note("This record could not be read.")];
-    /* features: the ones a Freelancer simply has, as the Freelancer tab's Features list has them (its abilities are on
-       the Sheet, with their costs and uses). The star is that list's own pin: a starred feature shows on the Sheet. */
-    var K = EN.combatView && EN.combatView.core, feats = [], pins = ch.featureAnnotations || {};
-    try { feats = ch.class && K && K.feats ? K.feats(ch, d).passiveFeats : (d.features || []).map(function (f) { return { name: f.name, text: f.text, src: f.source }; }); }
-    catch (e) { feats = (d.features || []).map(function (f) { return { name: f.name, text: f.text, src: f.source }; }); }
-    out.push(h("Features", "press one to read it, star it to pin it to your Sheet"));
-    if (!feats.length) out.push(note("No features yet."));
-    feats.forEach(function (f) {
-      var on = !!OPENED[f.name], pinned = !!((pins[f.name] || {}).pinned);
-      out.push(el("div.dk-ft" + (on ? ".on" : ""), { dataset: { dkFeat: f.name } }, [
-        el("div.dk-ftrow", null, [
-          el("button.dk-fth", { type: "button", "aria-expanded": on ? "true" : "false", onclick: function () { OPENED[f.name] = !on; paint(reading() || c, true); } },
-            [el("b", { text: f.name }), el("small", { text: f.src || "" }), el("span.dk-caret", { text: on ? "▾" : "▸" })]),
-          K && K.setFeatureAnnot && !c.readOnly ? el("button.dk-star" + (pinned ? ".on" : ""), { type: "button", "aria-pressed": pinned ? "true" : "false", "aria-label": (pinned ? "Unpin " : "Pin ") + f.name,
-            title: pinned ? "Pinned to your Sheet: press to unpin" : "Pin to your Sheet", dataset: { dkDo: "pin:" + f.name }, onclick: function () { K.setFeatureAnnot(f.name, { pinned: !pinned }); } }, "\u2605") : null
-        ]),
-        on ? el("div.dk-ftx", null, [EN.ui.renderText(f.text || "", {})]) : null
-      ]));
-    });
-
-    // proficiencies: the gear this Freelancer runs clean, the languages, and the narrow training
-    var TIER = { proficient: "Proficient", expertise: "Expert", mastery: "Mastery" };
-    function gearRow(label, bucket) {
-      var chips = ((R.gear && R.gear[bucket]) || []).map(function (cat) {
-        var tier = eng.effectiveGearTier(ch, bucket, cat);
-        return tier === "untrained" ? null : chip(cat + (tier !== "proficient" ? " · " + TIER[tier] : ""), TIER[tier]);
-      }).filter(Boolean);
-      return chips.length ? el("div.dk-prow", null, [el("i", { text: label }), el("div.dk-chips", null, chips)]) : null;
-    }
-    function listRow(label, chips) { return chips.length ? el("div.dk-prow", null, [el("i", { text: label }), el("div.dk-chips", null, chips)]) : null; }
-    function parent(f) { if (f.type && f.type !== "skill") return f.parent; var sk = R.skillByKey[f.parent || f.skill]; return sk ? sk.name : (f.parent || f.skill); }
-    var prof = [gearRow("Weapons", "weapons"), gearRow("Armor", "armor"), gearRow("Tools", "tools"), gearRow("Vehicles", "vehicles"),
-      listRow("Languages", (eng.languages ? eng.languages(ch) : []).map(function (l) { return chip(l.name + (l.understandOnly ? " · understand only" : "")); })),
-      listRow("Focus", (ch.skillFocuses || []).map(function (f) { return chip(parent(f) + (f.aspect && String(f.aspect).trim() ? " (" + f.aspect + ")" : " (aspect not named)"), "Skill Focus", "acc"); })),
-      listRow("Spec", (ch.specializations || []).map(function (f) { return chip(parent(f) + (f.aspect ? " (" + f.aspect + ")" : ""), "Specialization", "acc"); }))
-    ].filter(Boolean);
-    out.push(h("Proficiencies and training"));
-    if (prof.length) prof.forEach(function (n) { out.push(n); }); else out.push(note("No gear proficiencies yet. They come from your class and background, or from Training Points."));
-
-    // senses: the passive scores, a named Focus as its own line, then what a feature grants
-    out.push(h("Senses"));
-    ["perception", "investigation", "intuition", "systems"].forEach(function (k) {
-      var s = (d.skills || []).filter(function (x) { return x.key === k; })[0];
-      if (!s) return;
-      out.push(el("div.dk-srow", { dataset: { dkPassive: k } }, [el("span", { text: "Passive " + s.name }), el("b", { text: String(s.passive) })]));
-      (s.passiveFocus || []).forEach(function (pf) { out.push(el("div.dk-srow.dk-sub", null, [el("span", { text: eng.fmtPassiveFocus(pf) })])); });
-    });
-    (eng.senseGrants ? eng.senseGrants((d.features || []).map(function (f) { return f.name; })) : []).forEach(function (g) {
-      out.push(el("div.dk-srow", { title: g.note || null }, [el("span", null, [g.sense, " ", chip(g.feature)]), el("b", { text: g.range })]));
-    });
-
-    // notes: the same field as the Sheet's NOTES and the #PRINT Identity step
-    out.push(h("Notes"));
-    out.push(notesField(c));
-    return out;
-  }
   function notesField(c) {
     var ch = c.ch;
     return el("textarea.dk-in.dk-notes", { value: (ch.identity && ch.identity.notes) || "", disabled: !!c.readOnly, dataset: { dkRec: "notes" },
       placeholder: "Freeform notes for this Freelancer: debts, leads, injuries, rulings, anything",
       oninput: function () { var v = this.value; EN.store.update(function (r) { r.identity = r.identity || {}; r.identity.notes = v; }, { silent: true }); } });
   }
-  // Classic's NOTES page: the same field on a page of its own
+  // the NOTES page
   function notes(c) { return [h("Notes", "the same field as the Sheet's Notes and the #PRINT Identity step"), notesField(c)]; }
 
-  /* THE #PRINT BADGE (Classic's first page): the Freelancer's identity tag, drawn from the record by js/badge.js, and the
+  /* THE #PRINT BADGE (the first page): the Freelancer's identity tag, drawn from the record by js/badge.js, and the
      headshot that goes on it. A picture is picked, centre-cropped and shrunk in the browser, and kept on the record
      (identity.portrait), so it goes wherever the record goes. A viewed or locked sheet cannot change it. */
   function badge(c) {
@@ -278,7 +188,7 @@ EN.deck.record = (function () {
         btn("Choose on the Advance step", "pri", "advance", function () { toPrint("advance"); })
       ]));
     } else {
-      out.push(note("Nothing to choose right now. When a level hands you a choice, the status bar says so and it is listed here."));
+      out.push(note("Nothing to choose right now. When a level hands you a choice, it is listed here."));
     }
     var tp = d.trainingPoints;
     if (tp && tp.remaining > 0) out.push(el("div.dk-card", { dataset: { dkRec: "tp" } }, [el("h4", { text: tp.remaining + (tp.remaining === 1 ? " Training Point" : " Training Points") + " unspent" }),

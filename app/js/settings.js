@@ -352,13 +352,10 @@ EN.theme = (function () {
   var SKINS = [
     { key: "classic", name: "Classic",     sub: "the look as shipped",             cls: null },
     { key: "droid",   name: "#GRIDroid",   sub: "a cyberpunk phone OS: one column at any width, the rail an app list",   cls: "skin-droid" },
-    { key: "98",      name: "#GRIDOS '98", sub: "bevels, title bars, a taskbar with START", cls: "skin-98" },
-    /* #GRIDeck (14 Nov 2026) is more than a restyle: it has its own shell (js/deck_shell.js, css/deck.css),
-       a dock of apps and a status bar on every screen. It is the Freelancer desktop's alone (`only`), so the
-       Admin desktop keeps the Classic look while it is picked; see effectiveSkin. `note` is said under the
-       picker while the skin is on. It has no SKIN_SEED on purpose: picking it writes no palette to the record. */
-    { key: "deck",    name: "#GRIDeck",    sub: "a dock of apps and a status bar that never leaves", cls: "skin-deck", only: "freelancer",
-      note: "#GRIDeck is the Freelancer desktop's: the Admin desktop keeps the Classic look. A few pages still open as Classic draws them, from the bar at the top of the Sheet, Gear and Standing." }
+    { key: "98",      name: "#GRIDOS '98", sub: "bevels, title bars, a taskbar with START", cls: "skin-98" }
+    /* #GRIDeck, a fourth skin (14 Nov 2026), was removed on 20 Nov 2026 (the author's call). A device that had it picked
+       opens on its default skin (getSkin). A skin may still name `only` (the one desktop it is for; see effectiveSkin)
+       and `note` (said under the picker while it is on). */
   ];
   function findSkin(k) { for (var i = 0; i < SKINS.length; i++) { if (SKINS[i].key === k) return SKINS[i]; } return SKINS[0]; }
   /* A PHONE OPENS IN #GRIDroid (the author, 31 Oct 2026). Only the default: a skin the player
@@ -375,9 +372,10 @@ EN.theme = (function () {
     } catch (e) { return false; }
   }
   function defaultSkin() { return isPhone() ? "droid" : "classic"; }
-  function getSkin() { try { return findSkin(localStorage.getItem(SKIN_KEY) || defaultSkin()).key; } catch (e) { return defaultSkin(); } }
-  /* THE SKIN IN FORCE, which is the picked one except where a skin belongs to one desktop: #GRIDeck is the
-     Freelancer's, so on the Admin desktop the skin in force is Classic. getSkin() still answers what was
+  // a skin that is no longer offered (#GRIDeck) falls to the default, as if none had been picked
+  function getSkin() { try { var k = localStorage.getItem(SKIN_KEY); return SKINS.some(function (s) { return s.key === k; }) ? k : defaultSkin(); } catch (e) { return defaultSkin(); } }
+  /* THE SKIN IN FORCE, which is the picked one except where a skin belongs to one desktop (`only`): on the
+     other desktop the skin in force is Classic. getSkin() still answers what was
      picked (the picker shows it either way); the root class follows this one. syncToActive asks on every
      render, which is the one place that already knows the desktop before anything is drawn. */
   var _skinOn = null;
@@ -1303,7 +1301,7 @@ EN.settings = (function () {
       pending
         ? el("p.set-hint", { style: { color: "var(--warn)", marginTop: "8px" }, text: "This skin is wired but not yet styled: it looks like Classic until its design lands." })
         : null,
-      // what a skin wants said while it is the one picked (#GRIDeck: it is the Freelancer desktop's). A plain hint, not a warning.
+      // what a skin wants said while it is the one picked (`note`). A plain hint, not a warning.
       (function () {
         var s = EN.theme.SKINS.filter(function (x) { return x.key === cur; })[0];
         return s && s.note ? el("p.set-hint", { dataset: { skinNote: s.key }, style: { marginTop: "8px" }, text: s.note }) : null;
@@ -1483,8 +1481,7 @@ EN.settings = (function () {
     if (had) ov.parentNode.removeChild(ov);
     document.removeEventListener("keydown", onKey);
     // keyboard and switch users land back on the gear (START on '98), not on <body>
-    // (#GRIDeck hides the rail, gear and all: there the focus goes back to the dock's own Settings button)
-    if (had) { var g = document.querySelector("#os-tabs .os-gear"); if (!(g && g.offsetParent)) g = document.querySelector('#dk-dock [data-dk="settings"]'); if (g && g.offsetParent) { if (!g.hasAttribute("tabindex")) g.setAttribute("tabindex", "-1"); try { g.focus({ preventScroll: true }); } catch (e) {} } }
+    if (had) { var g = document.querySelector("#os-tabs .os-gear"); if (g && g.offsetParent) { if (!g.hasAttribute("tabindex")) g.setAttribute("tabindex", "-1"); try { g.focus({ preventScroll: true }); } catch (e) {} } }
   }
 
   // the gear at the right end of the tab rail (toggles the tray)
@@ -1499,8 +1496,7 @@ EN.settings = (function () {
   }
 
   // refresh: js/cloud.js redraws the open tray when the cloud link changes (rebuild is inert when it is shut)
-  // gearIcon: the author's gear, for a shell that draws its own Settings button (js/deck_shell.js)
-  return { open: open, close: close, gearTab: gearTab, refresh: rebuild, gearIcon: ICON_SETTINGS };
+  return { open: open, close: close, gearTab: gearTab, refresh: rebuild };
 })();
 
 EN.theme.init();
