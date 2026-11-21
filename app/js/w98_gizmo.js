@@ -58,7 +58,7 @@ window.EN = window.EN || {};
     var fig = el("button.w98-gz-fig", { type: "button", title: "Gizmo. Press for his menu, drag to move him.", "aria-label": "Gizmo, your assistant. Press for his menu.", "aria-haspopup": "menu" });
     fig.innerHTML = EN.gate.gizmoSvg("gate-clipsvg w98-gz-svg");
     var txt = el("span.w98-gz-t");
-    var bubble = el("div.w98-gz-bubble", { role: "status", "aria-live": "polite", onclick: function () { hush(); } }, [txt]);
+    var bubble = el("div.w98-gz-bubble", { role: "status", "aria-live": "polite", onclick: function () { hush(); rough("dismiss"); } }, [txt]);
     var box = el("div.w98-gizmo", { dataset: { gizmo: "1" } }, [bubble, fig]);
     root.appendChild(box);
     G.box = box; G.fig = fig; G.bubble = bubble; G.txt = txt;
@@ -142,8 +142,10 @@ window.EN = window.EN || {};
   }
 
   /* ---- his menu */
+  function rough(kind) { var a = EN.w98.gizmo && EN.w98.gizmo.act; if (a && a.rough) a.rough(kind); }   // a poke or a dismissal: the Gremlin episode counts them
   function menu() {
     if (!G.fig) return;
+    rough("poke");
     hush();
     var r = G.fig.getBoundingClientRect();
     var live = EN.app.activeTab();
@@ -151,7 +153,7 @@ window.EN = window.EN || {};
       { label: "Tell me a &tip", icon: K.pix("bulb", 16), go: function () { var t = EN.w98.extras && EN.w98.extras.nextTip && EN.w98.extras.nextTip(); say(t || "Press Ctrl+K to find a rule, your gear or someone you know."); if (EN.w98.moment) EN.w98.moment("tip"); } },
       { label: "What is &this?", go: function () { say(HINT[live] || "That is the open window. Its menu bar has File, View and Help.") } },
       { sep: true },
-      { label: "&Hide me for now", go: function () { leaving(function () { G.hidden = true; paint(); }); } },
+      { label: "&Hide me for now", go: function () { rough("dismiss"); leaving(function () { G.hidden = true; paint(); }); } },
       { label: "Turn Gizmo &off", go: function () { setOn(false); } },
       { label: "Gizmo &options...", go: function () { EN.w98.openControlPanel("extras"); } }
     ], r.left, r.top, { owner: null });

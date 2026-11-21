@@ -39,6 +39,8 @@ window.EN = window.EN || {};
   var HOLD_MS = 3000, WAIT_MS = 20000;
 
   var Q = { list: [], pend: null, holdUntil: 0, flushT: null };
+  /* the Gremlin episode (js/w98_gizmo_gremlin.js) plugs in here: what is rusted, a scene's name swapped, a tick each second */
+  var HOOKS = { rusted: function () { return false; }, subst: null, tick: null, action: null, interrupted: null, cleared: null };
   var A = { cur: null, last: Date.now(), nextSpec: Date.now(), lastDbl: 0, lastHover: 0, hiddenAt: 0, asleep: false, timer: null, tick: null };
 
   /* ---- the setting */
@@ -128,6 +130,7 @@ window.EN = window.EN || {};
      one more waits its turn, the rest are dropped. A roll starts a quiet window of about three seconds; what arrives in it plays after. */
   function fire(name, o) {
     o = o || {};
+    if (HOOKS.subst) name = HOOKS.subst(name) || name;
     if (!M[name] || !ready() || (hardProtected() && !o.wait)) return false;
     Q.list.push({ name: name, rank: o.rank || RANK[o.kind] || RANK.success, o: o, t: Date.now(), n: Q.list.length });
     if (!Q.flushT) Q.flushT = setTimeout(flush, 0);
@@ -153,6 +156,7 @@ window.EN = window.EN || {};
   }
   function kick() { if (Q.pend && !Q.flushT) Q.flushT = setTimeout(flush, 0); }
   function hold(ms) {
+    if (HOOKS.action) HOOKS.action("roll");
     ms = ms || HOLD_MS;
     Q.holdUntil = Math.max(Q.holdUntil, Date.now() + ms);
     if (A.cur && A.cur.prio <= 1) stop("hold");
@@ -170,13 +174,14 @@ window.EN = window.EN || {};
     if (protectedNow()) return;
     if (!ready() || document.hidden) return;
     kick();
+    if (HOOKS.tick) HOOKS.tick(now);
     if (A.cur && A.cur.name !== "sleep-mode") return;
-    var idle = now - A.last;
+    var idle = now - A.last, rust = HOOKS.rusted();
     /* a spectacle: the gap of no input since the last input or the last spectacle (it breaks into his sleep, then he nods off again) */
     var g = gapMs();
-    if (g && now - A.nextSpec >= g && idle >= g) { A.nextSpec = now; if (A.cur) stop("spectacle"); spectacle(); return; }
+    if (g && !rust && now - A.nextSpec >= g && idle >= g) { A.nextSpec = now; if (A.cur) stop("spectacle"); spectacle(); return; }
     if (A.cur) return;
-    if (idle >= SLEEP_MIN * 60000 && !A.asleep) play("sleep-mode", { kind: "sleep", loop: true });
+    if (idle >= SLEEP_MIN * 60000 && !A.asleep && !rust) play("sleep-mode", { kind: "sleep", loop: true });
   }
   A.tick = step;
   A.timer = setInterval(step, 1000);
@@ -201,7 +206,7 @@ window.EN = window.EN || {};
   document.addEventListener("dblclick", function (e) {
     if (!e.target || !e.target.closest || !e.target.closest(".w98-gz-fig")) return;
     var now = Date.now();
-    if (now - A.lastDbl < DBL_MS || protectedNow() || !ready()) return;
+    if (now - A.lastDbl < DBL_MS || protectedNow() || !ready() || HOOKS.rusted()) return;
     K.closeMenus();
     A.lastDbl = now; poke();
     if (A.cur) stop("replaced");
@@ -213,7 +218,9 @@ window.EN = window.EN || {};
     var tries = 0;
     (function go() {
       if (!GZ.on()) return;
-      if (play("boot-up", { kind: "fn" })) return;
+      /* he closed while rusted: the next time he is up he is redeemed, once, in place of the boot-up */
+      var rusted = !!(HOOKS.interrupted && HOOKS.interrupted());
+      if (play(rusted ? "gremlin-redeemed" : "boot-up", { kind: "fn" })) { if (rusted && HOOKS.cleared) HOOKS.cleared(); return; }
       if (++tries < 20) setTimeout(go, 1000);
     })();
   }
@@ -246,7 +253,7 @@ window.EN = window.EN || {};
   function fumble() { return fire(pickFumble(), { rank: RANK.success, wait: true }); }
   EN.w98.moment = function (kind, d) { try { var f = MOMENT[kind]; return f ? f(d || {}) : false; } catch (e) { return false; } };
 
-  GZ.act = { moments: MOMENT, fire: fire, hold: hold, rank: RANK, victory: victory, fumble: fumble, pickFumble: pickFumble, fumblePool: FUMBLE_POOL.slice(), pool: POOL.map(function (p) { return p.slice(); }),
+  GZ.act = { idleMs: function () { return Date.now() - A.last; }, hooks: HOOKS, moments: MOMENT, fire: fire, hold: hold, rank: RANK, victory: victory, fumble: fumble, pickFumble: pickFumble, fumblePool: FUMBLE_POOL.slice(), pool: POOL.map(function (p) { return p.slice(); }),
     pending: function () { return Q.pend ? Q.pend.name : null; }, holding: holding, play: play, stop: stop, freq: freq, setFreq: setFreq, effective: eff, boot: boot, leave: leave, spectacle: spectacle, hello: hello,
     now: function () { return A.cur ? A.cur.name : null; }, asleep: function () { return A.asleep; }, protectedNow: protectedNow,
     story: STORY.slice(), idleSet: IDLE.slice(), nextFidget: nextFidget, files: Object.keys(M),
