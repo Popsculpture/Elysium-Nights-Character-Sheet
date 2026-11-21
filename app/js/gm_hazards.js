@@ -1446,8 +1446,7 @@ EN.gmHazards = (function () {
           var target = cards[i];
           setTimeout(function () {
             try {
-              var y = target.getBoundingClientRect().top + (window.pageYOffset || 0) - 140;
-              window.scrollTo(0, Math.max(0, y));
+              EN.ui.scrollToNode(target, 140);
             } catch (e) {}
           }, 0);
           break;

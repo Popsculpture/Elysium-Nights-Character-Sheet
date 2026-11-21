@@ -292,7 +292,7 @@ EN.tour = (function () {
       if (anchor && S.sheetFor !== S.i && !document.getElementById("bgct-ov")) {
         S.sheetFor = S.i;
         var ar = anchor.getBoundingClientRect(), ct = card.getBoundingClientRect().top;
-        if (ar.bottom > ct - 8) window.scrollBy(0, Math.min(ar.top - 90, ar.bottom - ct + 16));
+        if (ar.bottom > ct - 8) EN.ui.scrollByPage(Math.min(ar.top - 90, ar.bottom - ct + 16));
       }
       pointer(anchor); placeGizmo();
       return;

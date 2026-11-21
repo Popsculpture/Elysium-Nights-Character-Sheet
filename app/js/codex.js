@@ -828,10 +828,7 @@ EN.codexView = (function () {
     return true;
   }
   // the page scrolls so the node sits about 140px from the top, clear of the sticky bar and rail
-  function scrollToNode(node) {
-    var y = node.getBoundingClientRect().top + (window.pageYOffset || 0) - 140;
-    window.scrollTo(0, Math.max(0, y));
-  }
+  function scrollToNode(node) { EN.ui.scrollToNode(node, 140); }
 
   /* ---- peek: the drawer ----------------------------------------------------
      On document.body, outside #view: render() clears #view and would take the

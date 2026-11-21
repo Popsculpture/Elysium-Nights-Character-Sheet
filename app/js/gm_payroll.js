@@ -2232,9 +2232,9 @@ EN.gmPayroll = (function () {
     if (!_mount || !document.body.contains(_mount)) { EN.app.render(); return; }
     var a = document.activeElement, key = (a && a.getAttribute) ? a.getAttribute("data-pf") : null, s0 = null, s1 = null;
     if (key) { try { s0 = a.selectionStart; s1 = a.selectionEnd; } catch (e) { s0 = null; } }
-    var sx = window.scrollX, sy = window.scrollY;
+    var sp = EN.ui.scrollPos(), sx = sp.x, sy = sp.y;
     render(_mount, _opts);
-    window.scrollTo(sx, sy);
+    EN.ui.scrollToPos(sx, sy);
     if (key) {
       var n = _mount.querySelector('[data-pf="' + key + '"]');
       if (n) {
@@ -2292,14 +2292,14 @@ EN.gmPayroll = (function () {
     var fits = !!(live && next && live.length === next.length);
     for (var i = 0; fits && i < live.length; i++) if (live[i].nodeName !== next[i].nodeName) fits = false;
     if (!fits) { refresh(); return; }
-    var sx = window.scrollX, sy = window.scrollY;
+    var sp = EN.ui.scrollPos(), sx = sp.x, sy = sp.y;
     var lp = _mount, np = holder;
     for (var k = 0; k < live.length; k++) {
       graft(lp, np, live[k], next[k]);
       syncAttrs(live[k], next[k]);
       lp = live[k]; np = next[k];
     }
-    window.scrollTo(sx, sy);
+    EN.ui.scrollToPos(sx, sy);
     if (EN.ui.substituteCurrencyGlyphs) EN.ui.substituteCurrencyGlyphs(_mount);
   }
 

@@ -15,6 +15,8 @@
 <link rel="stylesheet" href="css/theme.css?v=20261120.5">
 <!-- Classic's status rail, its Record drawer and its search: every rule is under html.st-rail -->
 <link rel="stylesheet" href="css/rail.css?v=20261120.5">
+<!-- #GRIDOS '98's desktop: every rule is under html.skin-98 -->
+<link rel="stylesheet" href="css/w98.css?v=20261120.5">
 <link rel="stylesheet" href="css/print.css?v=20261120.5">
 </head>
 <body>
@@ -40,37 +42,6 @@
 
   <!-- tab rail -->
   <nav class="os-tabs" id="os-tabs"></nav>
-
-  <!-- The Explorer toolbar, drawn by the '98 skin alone (.win-bar in theme.css) and inert
-       everywhere else. It sits between the title bar and the page because that is where
-       Windows put a toolbar. The buttons are furniture; the address is not, and app.js
-       writes the open view into it on every render. -->
-  <div class="win-bar" aria-hidden="true">
-    <div class="wb-in">
-      <div class="wb-tools">
-        <span class="wb-b" data-ico="back">Back</span>
-        <span class="wb-b" data-ico="fwd">Forward</span>
-        <span class="wb-b" data-ico="up">Up</span>
-        <span class="wb-sep"></span>
-        <span class="wb-b" data-ico="cut"></span>
-        <span class="wb-b" data-ico="copy"></span>
-        <span class="wb-b" data-ico="paste"></span>
-        <span class="wb-b" data-ico="undo"></span>
-        <span class="wb-sep"></span>
-        <span class="wb-b" data-ico="del"></span>
-        <span class="wb-b" data-ico="props"></span>
-        <!-- the groove that survives a narrow window, since the two groups either side of it
-             are the two that stay: the navigation trio and the view switch -->
-        <span class="wb-sep wb-sep-keep"></span>
-        <span class="wb-b" data-ico="views"></span>
-      </div>
-      <div class="wb-addr">
-        <span class="wb-lab">Address</span>
-        <span class="wb-box"><span class="wb-ico"></span><span class="wb-path" id="win-addr">C:\GRIDOS</span><span class="wb-drop"></span></span>
-        <span class="wb-go">Go</span>
-      </div>
-    </div>
-  </div>
 
   <!-- main mount -->
   <main class="os-main" id="view"></main>
@@ -219,6 +190,8 @@
 <script src="js/rail_record.js?v=20261120.5"></script>
 <script src="js/rail_find.js?v=20261120.5"></script>
 <script src="js/settings.js?v=20261120.5"></script>
+<!-- #GRIDOS '98's desktop (windows, taskbar, Start menu); it draws only while that skin is on -->
+<script src="js/w98.js?v=20261120.5"></script>
 <!-- ===== guided character-creation tour (switch it off in Settings; delete this line and data/tour_creation.js's to remove) ===== -->
 <script src="js/tour.js?v=20261120.5"></script>
 

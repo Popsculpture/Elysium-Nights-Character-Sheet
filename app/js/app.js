@@ -284,11 +284,6 @@ EN.app = (function () {
     var t = tabByKey(k), list = t && t.subs;
     if (list && list.some(function (x) { return x.key === s; })) SUB[k] = s;
   }
-  function subLabel(k) {
-    var t = tabByKey(k), s = subTab(k);
-    var hit = t && t.subs ? t.subs.filter(function (x) { return x.key === s; })[0] : null;
-    return hit ? hit.label : "";
-  }
   // the key the view is drawn under: a sub-tab switch counts as a view change (scroll to the top)
   function viewKey() { return (onLanding() ? "landing" : LAST[portal]) + "/" + subTab(LAST[portal]); }
   /* THE ADMIN LANDING (18 Nov 2026, the author's call). Choosing the Admin desktop from Settings opens a page that picks or
@@ -373,21 +368,6 @@ EN.app = (function () {
   }
   function setPortal(p) { usePortal(p); render(); }
 
-  /* The '98 skin's address bar (index.html, .win-bar). Explorer's address named the folder you
-     had open, so this one names the view. The toolbar around it is furniture by choice, but a
-     bar reporting nothing at all would have been furniture too, and this is the one field in it
-     the app can fill in truthfully. Written from here because renderTabs runs on every render
-     and already knows which tab won; on every other skin the element is display:none and this
-     writes to something nobody sees, which is cheaper than asking the skin first. */
-  function paintAddr() {
-    var box = document.getElementById("win-addr");
-    if (!box) return;
-    // visibleTabs(), not TABS: the address names what is actually on the rail, so a gated
-    // tab left in LAST by an earlier session cannot be announced as the open folder
-    var t = visibleTabs().filter(function (x) { return x.key === LAST[portal]; })[0];
-    box.textContent = "C:\\GRIDOS\\" + (portal === "admin" ? "Admin" : "Freelancer")
-      + "\\" + (t ? t.label : "Desktop") + (t && subLabel(t.key) ? "\\" + subLabel(t.key) : "");
-  }
   function renderTabs() {
     var nav = document.getElementById("os-tabs");
     EN.ui.clear(nav);
@@ -455,11 +435,10 @@ EN.app = (function () {
     nav.appendChild(el("div.os-tray", null, [
       el("span.os-tray-ico", { id: "os-tray-link", text: "⇋", title: "LOCAL" }),
       el("span.os-tray-ico", { id: "os-tray-sync", text: "⬤", title: "SYNC OK" }),
-      el("span.os-tray-clock", { id: "os-tray-clock", text: clockText() })
+      el("span.os-tray-clock", { id: "os-tray-clock", text: clockText(), title: clockDate() })
     ]));
     if (_saveKind === "fail") paintSave("fail");   // a fresh tray glyph must not read as healthy
     if (EN.cloud && EN.cloud.paint) EN.cloud.paint();   // and the fresh ⇋ shows the cloud link as it is
-    paintAddr();
   }
   /* A rail wider than its scroller (a narrow window, or '98's taskbar) is rebuilt at scroll 0 on
      every render, which can leave the open tab hidden past the gear. Scroll just far enough to show
@@ -544,7 +523,7 @@ EN.app = (function () {
       var oy = getComputedStyle(p).overflowY;
       if ((oy === "auto" || oy === "scroll") && p.scrollHeight > p.clientHeight) { p.scrollTop += moved; return; }
     }
-    window.scrollBy(0, moved);
+    EN.ui.scrollByPage(moved);
   }
 
   /* A LOCKED FREELANCER (7 Nov 2026): one that uses a content pack this device has not loaded
@@ -625,10 +604,14 @@ EN.app = (function () {
     // per-character theme: repaint to whatever the active Freelancer selected (no-op if unchanged).
     // In Admin this resolves to the Admin desktop's own device theme instead (see settings.js).
     if (EN.theme && EN.theme.syncToActive) EN.theme.syncToActive();
+    /* '98's desktop (js/w98.js): when the program is changing, the window being left keeps a copy of what it showed and
+       #view moves into the window of the one being opened, before it is cleared and drawn. A no-op on the other skins. */
+    if (EN.w98) { try { EN.w98.beforeRender(); } catch (e) { console.error("The '98 desktop could not change windows", e); } }
     // re-renders empty the view, which momentarily collapses the page and lets
     // the browser clamp scroll to the top, capture and restore the position.
     // Inner scrollable wells (.feature-scroll, .actions-scroll) are rebuilt too, so save theirs as well.
-    var sy = window.scrollY, sx = window.scrollX;
+    // The page's scroll is the window's on '98, where the page holds still (EN.ui.scrollPos).
+    var spos = EN.ui.scrollPos(), sy = spos.y, sx = spos.x;
     var WELLS = "#view .feature-scroll, #view .actions-scroll, #view [data-keep-scroll]";   // the last is any inner scroller that asks (a #POST thread, say)
     var wells = Array.prototype.map.call(document.querySelectorAll(WELLS), function (w) { return w.scrollTop; });
     var view = document.getElementById("view");
@@ -675,15 +658,20 @@ EN.app = (function () {
     if (portal === "freelancer" && tab.key !== "print" && EN.builder && EN.builder.managerOpen && EN.builder.managerOpen())
       view.appendChild(EN.builder.managerPanel());
     lockedSheet(view, portal === "freelancer" ? tab.key : null);
+    /* '98's desktop (js/w98.js): the windows, the taskbar and the icons, or their removal on another skin. Its own try: a
+       desktop that cannot be drawn costs the desktop, not the app. */
+    if (EN.w98) { try { EN.w98.chrome(); } catch (e) { console.error("The '98 desktop could not be drawn", e); } }
     /* Classic's status rail (js/rail_shell.js), or its removal where it is not wanted (the Admin desktop, another skin).
        Its own try: a record the rail cannot read costs the rail, not the app. */
     if (EN.deck && EN.deck.shell) { try { EN.deck.shell.chrome(portal); } catch (e) { console.error("The status rail could not be drawn", e); } }
     if (_lastTab === viewKey()) {                          // same view → stay put
-      window.scrollTo(sx, sy);
+      EN.ui.scrollToPos(sx, sy);
       Array.prototype.forEach.call(document.querySelectorAll(WELLS), function (w, i) {
         if (wells[i]) w.scrollTop = wells[i];
       });
-    } else window.scrollTo(0, 0);                          // tab switch → start at top
+    }
+    // another program on '98 comes back to where its window was scrolled; a tab switch anywhere else starts at the top
+    else if (!(EN.w98 && EN.w98.restoreScroll())) EN.ui.scrollToPos(0, 0);
     if (_lastTab === viewKey()) focusRestore(view, keep);
     applyPin(view);
     _lastTab = viewKey();
@@ -790,16 +778,21 @@ EN.app = (function () {
     flashSave._t = setTimeout(function () { paintSave(_saveKind); }, 300);
   }
 
-  /* clock */
+  /* clock. '98's taskbar shows it the way that taskbar did, hours and minutes on a twelve-hour clock, with the date on hover. */
   function clockText() {
     var d = new Date();
+    if (document.documentElement.classList.contains("skin-98")) {
+      var h = d.getHours();
+      return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0") + " " + (h < 12 ? "AM" : "PM");
+    }
     return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0");
   }
+  function clockDate() { try { return new Date().toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" }); } catch (e) { return ""; } }
   function tickClock() {
     var t = clockText();
     // the top bar has no clock on any skin (31 Oct 2026); the '98 taskbar clock is the only one
     var tray = document.getElementById("os-tray-clock");
-    if (tray) tray.textContent = t;
+    if (tray && tray.textContent !== t) { tray.textContent = t; tray.title = clockDate(); }
   }
 
   /* boot sequence */
@@ -847,6 +840,7 @@ EN.app = (function () {
         b.classList.add("hide");
         document.getElementById("os").style.display = "flex";
         setTimeout(function () { b.style.display = "none"; }, 520);
+        if (EN.w98 && EN.w98.booted) EN.w98.booted();   // '98's start-up chord
       };
       /* After the login card: which desktop. Coming through the card answers
          "freelancer". A load that skips the card answers with no profile, so
@@ -1015,6 +1009,21 @@ EN.app = (function () {
     registered: registered,
     // whether a tab is there for this record right now (#POST, Flow and #GRID come and go)
     tabShown: function (k) { return visibleTabs().some(function (t) { return t.key === k; }); },
+    /* The tabs this desktop has right now as '98's programs (js/w98.js draws an icon and a window for each), #PRINT
+       included. An unfiled record has #PRINT alone, as the rail does. */
+    programs: function () {
+      var lone = portal === "freelancer" && !registered();
+      return visibleTabs().filter(function (t) { return !lone || t.key === "print"; }).map(function (t) {
+        return { key: t.key, label: t.label, glyph: t.glyph, icon: t.icon || "", sub: t.sub || "",
+                 subs: (t.subs || []).map(function (s) { return { key: s.key, label: s.label }; }) };
+      });
+    },
+    // open a tab the way a press on the rail does: its onSelect (#PRINT lands on Advance), then the tab
+    openProgram: function (k) {
+      var t = tabByKey(k);
+      if (t && t.onSelect && t.portal === portal) t.onSelect();
+      EN.app.gotoTab(k);
+    },
     /* Resolves the key's own portal rather than assuming the caller's, so
        every existing caller (all of which name a Freelancer tab today) stays
        correct with zero edits, and the function can never strand the app on

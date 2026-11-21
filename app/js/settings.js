@@ -392,6 +392,8 @@ EN.theme = (function () {
     _skinOn = s.key;
     // the wallpaper resolves per skin (a preset is '98-only), so a skin change re-reads it
     applyWall();
+    // '98's desktop (js/w98.js) goes up or comes down with its class, even before the next render
+    if (EN.w98 && EN.w98.chrome) { try { EN.w98.chrome(); } catch (e) { console.error("The '98 desktop could not follow the skin", e); } }
   }
   /* ---- EACH SKIN REMEMBERS ITS OWN PALETTE (author's call, 2026-09-09) ------------------
      Classic, '98 and #GRIDroid each keep the last palette they wore, so the three desktops can
@@ -1481,7 +1483,7 @@ EN.settings = (function () {
     if (had) ov.parentNode.removeChild(ov);
     document.removeEventListener("keydown", onKey);
     // keyboard and switch users land back on the gear (START on '98), not on <body>
-    if (had) { var g = document.querySelector("#os-tabs .os-gear"); if (g && g.offsetParent) { if (!g.hasAttribute("tabindex")) g.setAttribute("tabindex", "-1"); try { g.focus({ preventScroll: true }); } catch (e) {} } }
+    if (had) { var g = document.querySelector("#os-tabs .os-gear"); if (!(g && g.offsetParent)) g = document.getElementById("w98-start"); if (g && g.offsetParent) { if (!g.hasAttribute("tabindex")) g.setAttribute("tabindex", "-1"); try { g.focus({ preventScroll: true }); } catch (e) {} } }
   }
 
   // the gear at the right end of the tab rail (toggles the tray)

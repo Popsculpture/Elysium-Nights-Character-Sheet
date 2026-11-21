@@ -1,0 +1,246 @@
+/* ===========================================================================
+   #GRIDOS '98, THE DESKTOP (js/w98.js). Every rule is under html.skin-98 except the few that hide '98-only
+   markup on the other skins, which say so. The chrome here wears the fixed system colours of the era (face grey,
+   navy title bars, a teal desktop) rather than the palette: the palette still colours what is INSIDE a window.
+   Original work only: the look of a late-90s desktop, none of its artwork. No em or en dashes (house style).
+   =========================================================================== */
+
+/* '98-only markup, hidden on every other skin (not skin-scoped, like .win-menu in theme.css). app.js draws the tray
+   (link, save, clock) into the tab rail on every skin; only this taskbar shows it. */
+.w98-boot, .os-tray{ display:none; }
+
+html.skin-98{
+  --w-face:#c0c0c0; --w-hi:#fff; --w-lt:#dfdfdf; --w-sh:#808080; --w-dk:#0a0a0a;
+  --w-t1:#000080; --w-t2:#1084d0; --w-o1:#808080; --w-o2:#b5b5b5; --w-sel:#000080;
+  --w-font:"Microsoft Sans Serif", Tahoma, "MS Sans Serif", "Segoe UI", Geneva, Verdana, Arial, sans-serif;
+  --w-raised:inset -1px -1px var(--w-dk), inset 1px 1px var(--w-lt), inset -2px -2px var(--w-sh), inset 2px 2px var(--w-hi);
+  --w-button:inset -1px -1px var(--w-dk), inset 1px 1px var(--w-hi), inset -2px -2px var(--w-sh), inset 2px 2px var(--w-lt);
+  --w-pressed:inset -1px -1px var(--w-hi), inset 1px 1px var(--w-dk), inset -2px -2px var(--w-lt), inset 2px 2px var(--w-sh);
+  --w-sunken:inset -1px -1px var(--w-hi), inset 1px 1px var(--w-sh), inset -2px -2px var(--w-lt), inset 2px 2px var(--w-dk);
+  --w-well:inset -1px -1px var(--w-hi), inset 1px 1px var(--w-sh);
+  --w-check:repeating-conic-gradient(var(--w-hi) 0 25%, var(--w-face) 0 50%) 0 0 / 2px 2px;
+}
+/* the page holds still; the windows scroll */
+html.skin-98, html.skin-98 body{ height:100%; overflow:hidden; }
+html.skin-98 .os{ min-height:0; }
+html.skin-98 .os-topbar, html.skin-98 #os-tabs, html.skin-98 .win-counter{ display:none !important; }
+
+/* ---------------------------------------------------------------- the desk */
+html.skin-98 #w98{ position:fixed; inset:0; font-family:var(--w-font); font-size:11px; line-height:1.25; color:#000; user-select:none; cursor:default; }
+html.skin-98 #w98 button, html.skin-98 .w98-menu button, html.skin-98 .w98-modal button{ font:inherit; color:inherit; margin:0; cursor:default; border-radius:0; }
+html.skin-98 .w98-ic, html.skin-98 .w98-ic svg{ display:block; flex:none; }
+html.skin-98 .w98-icons{ position:absolute; inset:0 0 28px 0; }
+html.skin-98 .w98-di{ position:absolute; width:76px; padding:2px 0; border:0; background:none; display:flex; flex-direction:column; align-items:center; gap:4px; color:#fff; }
+html.skin-98 .w98-dl{ display:block; max-width:74px; padding:1px 2px; text-align:center; overflow-wrap:anywhere; }
+html.skin-98 .w98-di:focus{ outline:none; }
+html.skin-98 .w98-di.w98-sel .w98-dl{ background:var(--w-sel); outline:1px dotted #ffff80; outline-offset:0; }
+/* a selected icon takes the selection's blue through a 50% dither, the way the era tinted it */
+html.skin-98 .w98-di .w98-ic, html.skin-98 .w98-lgi .w98-ic{ position:relative; }
+html.skin-98 :is(.w98-di, .w98-lgi).w98-sel .w98-ic::after{ content:""; position:absolute; inset:0; background:repeating-conic-gradient(var(--w-sel) 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
+html.skin-98.has-wall .w98-di .w98-dl{ text-shadow:1px 1px 0 #000; }
+html.skin-98.has-wall.wall-shadow .w98-di .w98-dl{ text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px rgba(0,0,0,.85); }
+html.skin-98.has-wall.wall-glow .w98-di .w98-dl{ text-shadow:1px 1px 0 #000, 0 0 6px rgba(255,255,255,.6); }
+html.skin-98.has-wall .w98-di.w98-sel .w98-dl{ text-shadow:none; }
+
+/* ---------------------------------------------------------------- windows */
+html.skin-98 .w98-wins{ position:absolute; inset:0 0 28px 0; pointer-events:none; }
+html.skin-98 .w98-park{ display:none; }
+html.skin-98 .w98-win{ position:absolute; display:flex; flex-direction:column; padding:3px; min-width:0; background:var(--w-face); box-shadow:var(--w-raised); pointer-events:auto;
+  font-family:var(--w-font); font-size:11px; line-height:1.25; color:#000; }
+html.skin-98 .w98-win.w98-max{ padding:2px; }
+html.skin-98 .w98-win:is(.w98-gone, .w98-opening){ visibility:hidden; pointer-events:none; }
+html.skin-98 .w98-tb{ flex:none; height:18px; display:flex; align-items:center; gap:2px; padding:0 2px 0 2px; touch-action:none;
+  background:linear-gradient(90deg, var(--w-t1), var(--w-t2)); color:#fff; font-weight:700; }
+html.skin-98 .w98-win.w98-off > .w98-tb, html.skin-98 .w98-tb.w98-blink{ background:linear-gradient(90deg, var(--w-o1), var(--w-o2)); color:var(--w-face); }
+html.skin-98 .w98-tb-ic{ flex:none; width:16px; height:16px; margin-right:2px; }
+html.skin-98 .w98-tb-ic svg{ display:block; width:16px; height:16px; }
+html.skin-98 .w98-tt{ flex:1; min-width:0; padding-left:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+html.skin-98 .w98-cb{ flex:none; width:16px; height:14px; padding:0; border:0; display:flex; align-items:center; justify-content:center; background:var(--w-face); color:#000; box-shadow:var(--w-button); }
+html.skin-98 .w98-cb:active:not(:disabled){ box-shadow:var(--w-pressed); }
+html.skin-98 .w98-cb:active:not(:disabled) svg{ transform:translate(1px,1px); }
+html.skin-98 .w98-cb:disabled{ color:var(--w-sh); }
+html.skin-98 .w98-cb svg{ display:block; }
+html.skin-98 .w98-cb-x{ margin-left:2px; }
+html.skin-98 .w98-mb{ flex:none; display:flex; padding:1px 0; }
+html.skin-98 .w98-mbi{ padding:2px 6px; border:0; background:none; }
+html.skin-98 .w98-mbi:hover{ box-shadow:var(--w-well), inset -1px -1px var(--w-sh), inset 1px 1px var(--w-hi); }
+html.skin-98 .w98-mbi.w98-on{ box-shadow:inset 1px 1px var(--w-sh), inset -1px -1px var(--w-hi); }
+html.skin-98 .w98-client{ flex:1; min-height:0; overflow:auto; position:relative; padding:2px; background:var(--bg); box-shadow:var(--w-sunken); user-select:text; cursor:auto; }
+html.skin-98 .w98-appc{ background:#fff; user-select:none; cursor:default; }
+html.skin-98 .w98-sb{ flex:none; display:flex; gap:2px; padding-top:2px; position:relative; }
+html.skin-98 .w98-sb > span{ min-width:0; padding:2px 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; box-shadow:var(--w-well); }
+html.skin-98 .w98-sb-a{ flex:1; }
+html.skin-98 .w98-sb-b{ flex:none; padding-right:16px !important; }
+/* the resize grip in the status bar's corner */
+html.skin-98 .w98-win:not(.w98-max) > .w98-sb::after{ content:""; position:absolute; right:1px; bottom:1px; width:11px; height:11px; pointer-events:none;
+  background:linear-gradient(135deg, transparent 0 40%, var(--w-hi) 40% 47%, var(--w-sh) 47% 60%, transparent 60% 68%, var(--w-hi) 68% 75%, var(--w-sh) 75% 88%, transparent 88%); }
+html.skin-98 .w98-rz{ position:absolute; z-index:2; }
+html.skin-98 .w98-rz-n, html.skin-98 .w98-rz-s{ left:6px; right:6px; height:4px; cursor:ns-resize; }
+html.skin-98 .w98-rz-n{ top:-1px; } html.skin-98 .w98-rz-s{ bottom:-1px; }
+html.skin-98 .w98-rz-e, html.skin-98 .w98-rz-w{ top:6px; bottom:6px; width:4px; cursor:ew-resize; }
+html.skin-98 .w98-rz-e{ right:-1px; } html.skin-98 .w98-rz-w{ left:-1px; }
+html.skin-98 .w98-rz-ne, html.skin-98 .w98-rz-nw, html.skin-98 .w98-rz-se, html.skin-98 .w98-rz-sw{ width:12px; height:12px; }
+html.skin-98 .w98-rz-ne{ top:-1px; right:-1px; cursor:nesw-resize; } html.skin-98 .w98-rz-sw{ bottom:-1px; left:-1px; cursor:nesw-resize; }
+html.skin-98 .w98-rz-nw{ top:-1px; left:-1px; cursor:nwse-resize; } html.skin-98 .w98-rz-se{ bottom:-1px; right:-1px; cursor:nwse-resize; }
+html.skin-98 .w98-max .w98-rz{ display:none; }
+/* the view in its window: no page margins, and a sticky sub-header sticks to the top of the window */
+html.skin-98 .w98-client > #view.os-main{ max-width:none; margin:0; padding:12px 14px 24px; min-height:100%; }
+html.skin-98 #view.w98-hidden{ display:none; }
+html.skin-98 .w98-snap{ pointer-events:none; }
+html.skin-98 .w98-snap.os-main{ max-width:none; margin:0; padding:12px 14px 24px; }
+
+/* the caption strip that flies when a window opens, closes down to the taskbar or grows to fill the screen */
+html.skin-98 .w98-ghost{ position:absolute; height:18px; z-index:790; pointer-events:none; background:linear-gradient(90deg, var(--w-t1), var(--w-t2));
+  transition:left .26s steps(8), top .26s steps(8), width .26s steps(8); }
+
+/* ---------------------------------------------------------------- the taskbar */
+html.skin-98 .w98-bar{ position:absolute; left:0; right:0; bottom:0; height:28px; z-index:800; display:flex; align-items:center; gap:3px; padding:4px 2px 2px;
+  background:var(--w-face); box-shadow:inset 0 1px var(--w-lt), inset 0 2px var(--w-hi); }
+html.skin-98 .w98-start{ flex:none; display:flex; align-items:center; gap:4px; height:22px; padding:0 6px 0 4px; border:0; font-weight:700; background:var(--w-face); box-shadow:var(--w-button); }
+html.skin-98 .w98-start.w98-on, html.skin-98 .w98-start:active{ padding:1px 5px 0 5px; box-shadow:var(--w-pressed); }
+html.skin-98 .w98-start:focus-visible{ outline:1px dotted #000; outline-offset:-4px; }
+html.skin-98 .w98-grip{ flex:none; width:3px; height:20px; margin:0 1px 0 2px; box-shadow:inset 1px 1px var(--w-hi), inset -1px -1px var(--w-sh); }
+html.skin-98 .w98-quick{ flex:none; display:flex; gap:1px; }
+html.skin-98 .w98-ql{ width:22px; height:22px; padding:0; border:0; background:none; display:flex; align-items:center; justify-content:center; }
+html.skin-98 .w98-ql:hover{ box-shadow:inset -1px -1px var(--w-sh), inset 1px 1px var(--w-hi); }
+html.skin-98 .w98-ql:active{ box-shadow:inset -1px -1px var(--w-hi), inset 1px 1px var(--w-sh); }
+html.skin-98 .w98-ql svg{ display:block; width:16px; height:16px; }
+html.skin-98 .w98-tasks{ flex:1; min-width:0; display:flex; gap:3px; overflow:hidden; }
+html.skin-98 .w98-task{ flex:0 1 160px; min-width:36px; height:22px; display:flex; align-items:center; gap:4px; padding:0 6px; border:0; text-align:left;
+  background:var(--w-face); box-shadow:var(--w-button); }
+html.skin-98 .w98-task.w98-on{ font-weight:700; padding:1px 5px 0 7px; background:var(--w-check); box-shadow:var(--w-pressed); }
+html.skin-98 .w98-task:active{ box-shadow:var(--w-pressed); }
+html.skin-98 .w98-tk-ic, html.skin-98 .w98-tk-ic svg{ display:block; flex:none; width:16px; height:16px; }
+html.skin-98 .w98-tk-l{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* the Admin desktop's campaign picker, as a toolbar on the taskbar */
+html.skin-98 .w98-band{ flex:none; display:flex; align-items:center; max-width:42%; min-width:0; }
+html.skin-98 .w98-band:empty{ display:none; }
+html.skin-98 .w98-band #active-name{ display:flex; align-items:center; gap:6px; min-width:0; padding:0 6px 0 4px; margin:0; height:22px; background:none; border:0; box-shadow:inset 1px 0 var(--w-hi), inset -1px 0 var(--w-sh);
+  font-family:var(--w-font); font-size:11px; letter-spacing:0; color:#000; white-space:nowrap; overflow:hidden; }
+html.skin-98 .w98-band #active-name select{ height:20px; padding:0 2px; font:inherit; color:#000; background:#fff; box-shadow:var(--w-sunken); border:0; max-width:220px; }
+html.skin-98 .w98-tray{ flex:none; display:flex; align-items:center; gap:3px; height:22px; padding:0 8px 0 3px; box-shadow:var(--w-well); }
+html.skin-98 .w98-spk{ width:18px; height:18px; padding:0; border:0; background:none; display:flex; align-items:center; justify-content:center; }
+html.skin-98 .w98-spk svg{ display:block; }
+html.skin-98 .w98-tray .os-tray{ display:flex; align-items:center; gap:3px; height:auto; margin:0; padding:0; background:none; border:0; box-shadow:none;
+  font-family:var(--w-font); font-size:11px; letter-spacing:0; color:#000; }
+html.skin-98 .w98-tray .os-tray > span{ display:flex; align-items:center; height:auto; padding:0; border:0; box-shadow:none; }
+html.skin-98 .w98-tray .os-tray-ico{ width:16px; height:16px; font-size:0; color:#008000; text-shadow:none; animation:none; opacity:1; }
+html.skin-98 .w98-tray .os-tray-ico::before{ content:""; display:block; width:16px; height:16px; background:currentColor;
+  -webkit-mask:var(--w-ico) center / 16px 16px no-repeat; mask:var(--w-ico) center / 16px 16px no-repeat; }
+/* the link: two machines talking */
+html.skin-98 #os-tray-link{ --w-ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1 1h8v6H1zM2 2v4h6V2zM4 7h2v1h1v1H3V8h1zM7 8h8v6H7zM8 9v4h6V9zM10 14h2v1h1v1H9v-1h1z'/%3E%3C/svg%3E"); color:#008080; }
+/* the save: a disk */
+html.skin-98 #os-tray-sync{ --w-ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M2 2h10l2 2v10H2zM5 2v4h6V2zM4 9v5h8V9zM9 3h1v2H9z'/%3E%3C/svg%3E"); color:#000080; }
+html.skin-98 .w98-tray #os-tray-clock{ padding-left:5px; }
+
+/* ---------------------------------------------------------------- menus */
+html.skin-98 .w98-menu{ position:fixed; z-index:1000; display:flex; padding:3px; background:var(--w-face); box-shadow:var(--w-raised), 1px 1px 0 rgba(0,0,0,.4);
+  font-family:var(--w-font); font-size:11px; line-height:1.25; color:#000; user-select:none; cursor:default; }
+html.skin-98 .w98-mlist{ display:flex; flex-direction:column; min-width:150px; }
+html.skin-98 .w98-mi{ display:flex; align-items:center; width:100%; height:20px; padding:0 6px 0 0; border:0; background:none; text-align:left; white-space:nowrap; color:#000; }
+html.skin-98 .w98-mi-ic{ flex:none; width:24px; display:flex; align-items:center; justify-content:center; }
+html.skin-98 .w98-mi-ic svg{ display:block; }
+html.skin-98 .w98-mi-l{ flex:1; padding-right:18px; }
+html.skin-98 .w98-mi-k{ padding:0 4px 0 18px; }
+html.skin-98 .w98-mi-a{ display:flex; padding-left:8px; }
+html.skin-98 .w98-mi:not(.w98-dis):is(:hover, .w98-hot, .w98-on, :focus-visible){ background:var(--w-sel); color:#fff; outline:none; }
+html.skin-98 .w98-mi:focus{ outline:none; }
+html.skin-98 .w98-mi.w98-dis{ color:var(--w-sh); text-shadow:1px 1px 0 var(--w-hi); }
+html.skin-98 .w98-mi.w98-empty{ padding-left:24px; }
+html.skin-98 .w98-mi-big{ height:38px; padding-right:4px; }
+html.skin-98 .w98-mi-big .w98-mi-ic{ width:46px; }
+html.skin-98 .w98-msep{ height:2px; margin:3px 1px; border-top:1px solid var(--w-sh); border-bottom:1px solid var(--w-hi); }
+html.skin-98 .w98-startm .w98-mlist{ min-width:176px; }
+html.skin-98 .w98-sband{ flex:none; width:22px; display:flex; align-items:flex-end; justify-content:center; padding-bottom:6px; background:linear-gradient(0deg, var(--w-t1), var(--w-t2)); }
+html.skin-98 .w98-sband span{ writing-mode:vertical-rl; transform:rotate(180deg); font-family:"Arial Black", "Franklin Gothic Medium", Arial, sans-serif; font-size:16px; letter-spacing:.5px; white-space:nowrap; color:var(--w-face); }
+html.skin-98 .w98-sband b{ color:#fff; }
+/* menus slide out of where they open from: Start up from the taskbar, a submenu out to the right, a menu bar's menu down */
+html.skin-98 .w98-startm.w98-rise{ animation:w98-up .18s steps(9) both; }
+html.skin-98 .w98-menu:not(.w98-startm){ animation:w98-right .14s steps(7) both; }
+html.skin-98 .w98-menu.w98-down{ animation-name:w98-down; }
+@keyframes w98-up{ from{ transform:translateY(100%); clip-path:inset(0 0 100% 0); } to{ transform:none; clip-path:inset(0); } }
+@keyframes w98-down{ from{ transform:translateY(-100%); clip-path:inset(100% 0 0 0); } to{ transform:none; clip-path:inset(0); } }
+@keyframes w98-right{ from{ transform:translateX(-100%); clip-path:inset(0 0 0 100%); } to{ transform:none; clip-path:inset(0); } }
+@media (prefers-reduced-motion: reduce){
+  html.skin-98 .w98-menu{ animation:none !important; }
+  html.skin-98 .w98-ghost{ display:none; }
+}
+
+/* ---------------------------------------------------------------- controls the desktop's own windows and dialogs use */
+html.skin-98 .w98-btn{ min-width:75px; height:23px; padding:0 10px; border:0; background:var(--w-face); color:#000; box-shadow:var(--w-button); }
+html.skin-98 .w98-btn:active{ padding:1px 9px 0 11px; box-shadow:var(--w-pressed); }
+html.skin-98 .w98-btn.w98-def{ box-shadow:inset -1px -1px var(--w-dk), inset 1px 1px var(--w-dk), inset -2px -2px var(--w-dk), inset 2px 2px var(--w-hi), inset -3px -3px var(--w-sh), inset 3px 3px var(--w-lt); }
+html.skin-98 .w98-btn:focus-visible, html.skin-98 .w98-btn:focus{ outline:1px dotted #000; outline-offset:-5px; }
+html.skin-98 input.w98-field[type]{ height:21px; padding:2px 4px; border:0; border-radius:0; background:#fff; color:#000; box-shadow:var(--w-sunken); font:inherit; outline:none; }
+html.skin-98 input.w98-field[type]:focus{ outline:none; box-shadow:var(--w-sunken); }
+html.skin-98 .w98-opt{ display:flex; align-items:center; gap:6px; height:20px; }
+html.skin-98 input.w98-radio[type]{ appearance:none; -webkit-appearance:none; flex:none; width:12px; height:12px; margin:0; padding:0; border:0; border-radius:50%; background:#fff;
+  box-shadow:inset 1px 1px var(--w-sh), inset -1px -1px var(--w-hi), inset 2px 2px var(--w-dk), inset -2px -2px var(--w-lt); }
+html.skin-98 input.w98-radio[type]:checked{ background:radial-gradient(circle, #000 0 2px, #fff 2.6px); }
+html.skin-98 input.w98-radio[type]:focus-visible + span{ outline:1px dotted #000; }
+html.skin-98 .w98-hr{ height:2px; margin:8px 0; border-top:1px solid var(--w-sh); border-bottom:1px solid var(--w-hi); }
+
+/* ---------------------------------------------------------------- dialogs */
+html.skin-98 .w98-modal{ position:fixed; inset:0; z-index:99000; display:flex; align-items:center; justify-content:center; padding:8px; }
+html.skin-98 .w98-modal.w98-dim{ background:repeating-conic-gradient(rgba(0,0,0,.55) 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
+html.skin-98 .w98-dlg{ position:relative; max-width:100%; }
+html.skin-98 .w98-dlg .w98-tt{ padding-left:3px; }
+html.skin-98 .w98-dbody{ display:flex; align-items:flex-start; gap:14px; padding:14px 12px 10px; }
+html.skin-98 .w98-dicon svg{ display:block; }
+html.skin-98 .w98-dtext{ flex:1; min-width:0; padding-top:3px; line-height:1.4; user-select:text; }
+html.skin-98 .w98-dtext p{ margin:0; }
+html.skin-98 .w98-dbtns{ display:flex; justify-content:center; flex-wrap:wrap; gap:6px; padding:4px 10px 10px; }
+html.skin-98 .w98-runrow{ display:flex; align-items:flex-start; gap:12px; margin-bottom:12px; }
+html.skin-98 .w98-runrow p{ margin:2px 0 0; }
+html.skin-98 .w98-runic svg{ display:block; }
+html.skin-98 .w98-runl{ display:flex; align-items:center; gap:8px; }
+html.skin-98 .w98-runl input{ flex:1; min-width:0; }
+html.skin-98 .w98-about{ display:flex; align-items:flex-start; gap:14px; }
+html.skin-98 .w98-about-m svg{ display:block; }
+html.skin-98 .w98-about-n{ font-size:18px; margin-bottom:6px; }
+html.skin-98 .w98-screen{ position:fixed; inset:0; z-index:200000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; background:#000; cursor:default; outline:none; }
+html.skin-98 .w98-safe{ margin:0; padding:0 20px; text-align:center; font-family:Georgia, "Times New Roman", serif; font-size:28px; color:#ff8a1f; }
+html.skin-98 .w98-safe-s{ margin:0; font-family:var(--w-font); font-size:12px; color:#9a9a9a; }
+
+/* ---------------------------------------------------------------- folder windows and Find */
+html.skin-98 .w98-lg{ display:flex; flex-wrap:wrap; align-content:flex-start; gap:10px 4px; padding:8px; }
+html.skin-98 .w98-lgi{ width:76px; padding:2px 0; border:0; background:none; display:flex; flex-direction:column; align-items:center; gap:4px; color:#000; }
+html.skin-98 .w98-lgi:focus{ outline:none; }
+html.skin-98 .w98-lgi.w98-sel .w98-dl{ background:var(--w-sel); color:#fff; outline:1px dotted #ffff80; }
+html.skin-98 .w98-win[data-win="a:find"] .w98-client{ background:var(--w-face); box-shadow:none; padding:0; }
+html.skin-98 .w98-find{ display:flex; flex-direction:column; gap:8px; height:100%; padding:8px; }
+html.skin-98 .w98-tabs{ display:flex; padding-left:2px; position:relative; z-index:1; }
+html.skin-98 .w98-tab{ padding:3px 8px 2px; margin-top:2px; background:var(--w-face); box-shadow:inset 1px 1px var(--w-hi), inset -1px 0 var(--w-dk), inset -2px 0 var(--w-sh); }
+html.skin-98 .w98-tab.w98-tab-on{ margin:0 -2px -2px; padding:4px 10px 5px; z-index:2; }
+html.skin-98 .w98-tabpane{ padding:14px 10px; box-shadow:var(--w-raised); }
+html.skin-98 .w98-findb{ display:flex; gap:6px; }
+html.skin-98 .w98-list{ flex:1; min-height:100px; overflow:auto; background:#fff; box-shadow:var(--w-sunken); padding:2px; }
+html.skin-98 .w98-lh{ display:flex; position:sticky; top:0; }
+html.skin-98 .w98-lh span{ padding:2px 6px; background:var(--w-face); box-shadow:var(--w-button); }
+html.skin-98 .w98-lh span:first-child, html.skin-98 .w98-lr span:first-child{ flex:0 0 58%; }
+html.skin-98 .w98-lh span:last-child, html.skin-98 .w98-lr span:last-child{ flex:1; }
+html.skin-98 .w98-lr{ display:flex; width:100%; height:18px; padding:0; border:0; background:none; text-align:left; align-items:center; }
+html.skin-98 .w98-lr span{ padding:0 6px; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+html.skin-98 .w98-lr:is(.w98-sel, :focus){ background:var(--w-sel); color:#fff; outline:none; }
+
+/* ---------------------------------------------------------------- the boot screen: a grid running to the horizon */
+html.skin-98 #boot{ background:#000; padding:0; }
+html.skin-98 #boot > .blogo, html.skin-98 #boot > .blines{ display:none; }
+html.skin-98 .w98-boot{ display:block; position:absolute; inset:0; overflow:hidden; color:#fff; font-family:var(--w-font);
+  background:linear-gradient(180deg, #00002e 0%, #000080 40%, #0a7a9a 62%, #00101f 62.2%, #000 100%); }
+html.skin-98 .w98-boot-grid{ position:absolute; left:-60%; right:-60%; top:62%; height:80%; transform-origin:50% 0; transform:perspective(260px) rotateX(62deg);
+  background:repeating-linear-gradient(90deg, rgba(0,255,255,.6) 0 2px, transparent 2px 80px), repeating-linear-gradient(0deg, rgba(0,255,255,.6) 0 2px, transparent 2px 80px);
+  animation:w98-grid 2s linear infinite; }
+@keyframes w98-grid{ to{ background-position:0 0, 0 80px; } }
+html.skin-98 .w98-boot-lock{ position:absolute; left:0; right:0; top:22%; display:flex; align-items:center; justify-content:center; gap:22px; }
+html.skin-98 .w98-boot-m svg{ display:block; width:clamp(56px, 11vw, 96px); height:auto; }
+html.skin-98 .w98-boot-w{ display:flex; align-items:flex-start; line-height:1; font-family:"Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif; font-size:clamp(44px, 10vw, 84px); }
+html.skin-98 .w98-boot-w b{ font-weight:700; letter-spacing:-1px; }
+html.skin-98 .w98-boot-w i{ font-style:normal; color:#cfe9ff; }
+html.skin-98 .w98-boot-w em{ font-style:normal; font-weight:700; font-size:.52em; color:#ffb000; margin:4px 0 0 8px; }
+html.skin-98 .w98-boot-sub{ position:absolute; left:0; right:0; top:calc(22% + clamp(70px, 13vw, 120px)); text-align:center; font-size:15px; letter-spacing:5px; color:#cfe9ff; }
+html.skin-98 .w98-boot-go{ position:absolute; left:18px; bottom:28px; font-size:13px; color:#cfe9ff; }
+html.skin-98 .w98-boot-band{ position:absolute; left:0; right:0; bottom:0; height:16px; background:repeating-linear-gradient(90deg, #000080 0, #1084d0 80px, #9fd8ff 120px, #1084d0 160px, #000080 240px);
+  background-size:240px 100%; animation:w98-band 1.5s linear infinite; }
+@keyframes w98-band{ to{ background-position:240px 0; } }
+@media (prefers-reduced-motion: reduce){ html.skin-98 :is(.w98-boot-grid, .w98-boot-band){ animation:none; } }

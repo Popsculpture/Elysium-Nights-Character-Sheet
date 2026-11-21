@@ -484,14 +484,14 @@ EN.gmScenes = (function () {
     var fits = !!(live && next && live.length === next.length);
     for (var i = 0; fits && i < live.length; i++) if (live[i].nodeName !== next[i].nodeName) fits = false;
     if (!fits) { redrawFocus(key, s0, s1); return; }
-    var sx = window.scrollX, sy = window.scrollY;
+    var sp = EN.ui.scrollPos(), sx = sp.x, sy = sp.y;
     var lp = _mount, np = holder;
     for (var k = 0; k < live.length; k++) {
       graft(lp, np, live[k], next[k]);
       syncAttrs(live[k], next[k]);
       lp = live[k]; np = next[k];
     }
-    window.scrollTo(sx, sy);
+    EN.ui.scrollToPos(sx, sy);
   }
 
   /* COPY. The clipboard API first; a hidden textarea and execCommand where the

@@ -829,18 +829,34 @@ EN.ui = (function () {
   var PINNED = [".os-topbar", "#os-tabs", "#view .inv-bar", "#view .wizard-rail"];
   function scrollUnderChrome(node, onlyIfHidden) {
     if (!node || !node.getBoundingClientRect) return;
-    var pin = 0;
+    var sc = pageScroller(), box = sc ? sc.getBoundingClientRect() : null;
+    var pin = box ? box.top : 0, foot = box ? box.bottom : window.innerHeight;
     PINNED.forEach(function (s) {
       var n = document.querySelector(s);
       if (!n) return;
       var pos = getComputedStyle(n).position;
       if (pos !== "sticky" && pos !== "fixed") return;
       var r = n.getBoundingClientRect();
-      if (r.height && r.top < 300 && r.bottom > pin) pin = r.bottom;
+      if (r.height && r.top < 300 + (box ? box.top : 0) && r.bottom > pin) pin = r.bottom;
     });
     var top = node.getBoundingClientRect().top;
-    if (onlyIfHidden && top >= pin && top < window.innerHeight - 40) return;
-    window.scrollTo(window.scrollX, Math.max(0, top + window.scrollY - pin - 8));
+    if (onlyIfHidden && top >= pin && top < foot - 40) return;
+    var at = scrollPos();
+    scrollToPos(at.x, Math.max(0, top + at.y - pin - 8));
+  }
+
+  /* THE PAGE'S SCROLL. Everywhere the page scrolls, except '98, where the page holds still and the program's window
+     scrolls instead (js/w98.js). Anything that reads or moves "the page" goes through these, so it moves the right thing. */
+  function pageScroller() { try { return EN.w98 && EN.w98.scroller ? EN.w98.scroller() : null; } catch (e) { return null; } }
+  function scrollPos() { var s = pageScroller(); return s ? { x: s.scrollLeft, y: s.scrollTop } : { x: window.scrollX, y: window.scrollY }; }
+  function scrollToPos(x, y) { var s = pageScroller(); if (s) { s.scrollLeft = x; s.scrollTop = y; } else window.scrollTo(x, y); }
+  function scrollByPage(dy) { var s = pageScroller(); if (s) s.scrollTop += dy; else window.scrollBy(0, dy); }
+  // scroll so a node's top sits `gap` pixels below the top of what scrolls
+  function scrollToNode(node, gap) {
+    if (!node || !node.getBoundingClientRect) return;
+    var s = pageScroller(), at = scrollPos();
+    var y = node.getBoundingClientRect().top - (s ? s.getBoundingClientRect().top : 0) + at.y - (s ? Math.min(gap, 24) : gap);
+    scrollToPos(0, Math.max(0, y));
   }
 
   return { el: el, append: append, clear: clear, panel: panel, sectionTitle: sectionTitle, stat: stat, toast: toast, renderText: renderText, applyInline: applyInline, proseP: proseP, nameCaret: nameCaret,
@@ -848,5 +864,6 @@ EN.ui = (function () {
            currencyGlyphsOk: currencyGlyphsOk, substituteCurrencyGlyphs: substituteCurrencyGlyphs,
            dieFace: dieFace, dieFaceSvg: dieFaceSvg, d20Face: d20Face, svgText: svgText, animatePoolRoll: animatePoolRoll, playFiled: playFiled,
            armButton: armButton, disarm: disarm, isArmed: isArmed, scrollUnderChrome: scrollUnderChrome,
+           pageScroller: pageScroller, scrollPos: scrollPos, scrollToPos: scrollToPos, scrollByPage: scrollByPage, scrollToNode: scrollToNode,
            heldChip: heldChip, heldSuffix: heldSuffix };
 })();
