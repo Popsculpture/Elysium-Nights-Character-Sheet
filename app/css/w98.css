@@ -462,12 +462,12 @@ html.skin-98 .w98-gizmo{ position:absolute; z-index:600; display:flex; flex-dire
 html.skin-98 .w98-gz-fig{ pointer-events:auto; padding:0; border:0; background:none; cursor:grab; touch-action:none; filter:drop-shadow(1px 2px 0 rgba(0,0,0,.35)); }
 html.skin-98 .w98-gz-fig:active{ cursor:grabbing; }
 html.skin-98 .w98-gz-fig:focus-visible{ outline:1px dotted #fff; outline-offset:2px; }
-html.skin-98 .w98-gz-svg{ display:block; width:40px; height:52px; transform-origin:50% 90%; animation:w98-gz-bob 2.6s ease-in-out infinite; }
+html.skin-98 .w98-gz-svg{ display:block; width:72px; height:94px; transform-origin:50% 90%; animation:w98-gz-bob 2.6s ease-in-out infinite; }
 @keyframes w98-gz-bob{ 0%,100%{ transform:rotate(-4deg); } 50%{ transform:rotate(5deg); } }
-html.skin-98 .w98-gz-bubble{ display:none; pointer-events:auto; position:relative; max-width:230px; padding:6px 9px; background:#ffffe1; color:#000; border:1px solid #000;
-  box-shadow:2px 2px 0 rgba(0,0,0,.35); font:12px/1.35 var(--w-font); cursor:default; user-select:none; }
+html.skin-98 .w98-gz-bubble{ display:none; pointer-events:auto; position:relative; max-width:270px; padding:8px 11px; background:#ffffe1; color:#000; border:1px solid #000;
+  box-shadow:2px 2px 0 rgba(0,0,0,.35); font:13px/1.4 var(--w-font); cursor:default; user-select:none; }
 html.skin-98 .w98-gz-bubble.on{ display:block; }
-html.skin-98 .w98-gz-bubble::after{ content:""; position:absolute; right:18px; bottom:-6px; width:9px; height:9px; background:#ffffe1; border:solid #000; border-width:0 1px 1px 0; transform:rotate(45deg); }
+html.skin-98 .w98-gz-bubble::after{ content:""; position:absolute; right:30px; bottom:-6px; width:9px; height:9px; background:#ffffe1; border:solid #000; border-width:0 1px 1px 0; transform:rotate(45deg); }
 html.skin-98 .w98-gz-bubble.w98-gz-in{ animation:w98-gz-pop .2s steps(5) both; }
 @keyframes w98-gz-pop{ from{ transform:scale(.6); opacity:0; } to{ transform:none; opacity:1; } }
 @media (prefers-reduced-motion: reduce){ html.skin-98 :is(.w98-gz-svg, .w98-gz-bubble.w98-gz-in){ animation:none; } }
@@ -496,3 +496,6 @@ html.skin-98 .w98-pspane *{ letter-spacing:normal !important; }
 html.skin-98 .w98-pspane :is(.btn, .chip, .set-label, .set-sw-name, .set-sw-mini){ text-transform:none; }
 html.skin-98 .w98-pspane .set-label{ font-family:var(--w-font); font-size:12px; font-weight:700; }
 html.skin-98 .w98-pspane .set-hint{ font-size:11px; }
+
+/* a phone gives him less of a small screen */
+@media (max-width: 759px){ html.skin-98 .w98-gz-svg{ width:52px; height:68px; } html.skin-98 .w98-gz-bubble::after{ right:20px; } }
