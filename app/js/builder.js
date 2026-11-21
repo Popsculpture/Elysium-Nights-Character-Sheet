@@ -558,6 +558,7 @@ EN.builder = (function () {
   // `done` fires once the last total has settled. The banked groups do not pass one; the
   // Overclocked matrix does, because its highest-line mark must not appear over spinning dice.
   function animateDiceRoll(g, done) {
+    if (EN.w98 && EN.w98.diceHold) { try { EN.w98.diceHold(); } catch (e) {} }
     var root = document.querySelector('[data-rg="' + g.id + '"]');
     if (!root) return;
     var dice = [].slice.call(root.querySelectorAll("[data-die]"));

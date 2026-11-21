@@ -445,6 +445,7 @@ EN.ui = (function () {
   // scramble every [data-die] under root for ~700ms with a staggered settle,
   // scrambling any [data-tot] counters, then call done() (which should re-render)
   function animatePoolRoll(root, done) {
+    if (EN.w98 && EN.w98.diceHold) { try { EN.w98.diceHold(); } catch (e) {} }   // Gizmo keeps quiet while the dice fly (js/w98_gizmo_act.js)
     if (!root) { if (done) done(); return; }
     var dice = [].slice.call(root.querySelectorAll("[data-die]"));
     var tots = [].slice.call(root.querySelectorAll("[data-tot]"));

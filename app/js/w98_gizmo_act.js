@@ -24,13 +24,21 @@ window.EN = window.EN || {};
   var FREQ = "en_w98_gizmo_freq_v1", FID = "en_w98_gizmo_fid_v1";
 
   /* name: [viewBox width, viewBox height, seconds for one pass] (read from the files) */
-  var M = {"back-alley-deal":[64,104,6],"black-ice":[84,92,8],"boot-up":[64,84,3],"chain-reaction":[150,100,9],"clean-getaway":[112,84,3],"copycat":[130,94,8],"core-envy":[100,96,8],"data-check":[96,84,5],"dead-drop":[72,96,8],"desync":[88,84,4],"evidence-disposal":[108,100,6],"eye-heist":[140,96,9],"gremlin-error":[112,104,5],"gremlin-fall":[108,104,10],"gremlin-idle":[108,104,6],"gremlin-notice":[112,108,4],"gremlin-redeemed":[124,104,10],"gremlin-success":[120,104,4],"gremlin-working":[120,104,4.5],"home-run":[172,130,8],"ice-encounter":[96,100,6],"knocked-askew":[120,96,9],"laser-limbo":[184,92,8],"light-switch":[140,92,8],"lights-out":[128,104,10],"lockpick":[88,90,8],"memory-leak":[72,92,5],"no-cameras":[112,84,6],"nothing-to-see-here":[200,140,6],"overheat":[84,104,6],"paperclip-maximizer":[130,100,10],"percussive-maintenance":[118,88,6],"plug-in":[104,84,4],"rebuilt":[160,96,10],"rewire":[104,92,9],"sleep-mode":[86,96,8],"stakeout":[86,104,10],"street-victory":[80,100,4],"unauthorized-upgrade":[96,112,6],"vending-trouble":[128,100,9]};
+  var M = {"back-alley-deal":[64,104,6],"black-ice":[84,92,8],"boot-up":[64,84,3],"chain-reaction":[150,100,9],"clean-getaway":[112,84,3],"copycat":[130,94,8],"core-envy":[100,96,8],"data-check":[96,84,5],"dead-drop":[72,96,8],"desync":[88,84,4],"evidence-disposal":[108,100,6],"eye-heist":[140,96,9],"gremlin-error":[112,104,5],"gremlin-fall":[108,104,10],"gremlin-idle":[108,104,6],"gremlin-notice":[112,108,4],"gremlin-redeemed":[124,104,10],"gremlin-success":[120,104,4],"gremlin-working":[120,104,4.5],"home-run":[172,130,8],"ice-encounter":[96,100,6],"knocked-askew":[120,96,9],"laser-limbo":[184,92,8],"light-switch":[140,92,8],"lights-out":[128,104,10],"lockpick":[88,90,8],"memory-leak":[72,92,5],"no-cameras":[112,84,6],"natural-one":[104,100,4],"faceplant":[138,100,4.5],"nothing-to-see-here":[200,140,6],"overheat":[84,104,6],"paperclip-maximizer":[130,100,10],"percussive-maintenance":[118,88,6],"plug-in":[104,84,4],"rebuilt":[160,96,10],"rewire":[104,92,9],"sleep-mode":[86,96,8],"stakeout":[86,104,10],"street-victory":[80,100,4],"unauthorized-upgrade":[96,112,6],"vending-trouble":[128,100,9]};
   var IDLE = ["lights-out", "stakeout", "unauthorized-upgrade", "rewire", "copycat", "chain-reaction", "paperclip-maximizer", "laser-limbo"];
+  /* the rest of the spectacle pool: pieces that also have an event of their own (the events come in a later phase); the two fumbles are
+     semi-rare, so each carries twice the weight. The Fidget story is one more slot, which is the only thing that moves its counter. */
+  var EXTRA = ["no-cameras", "memory-leak", "overheat"], FUMBLES = ["natural-one", "faceplant"];
+  var FUMBLE_POOL = ["natural-one", "faceplant", "black-ice", "core-envy", "eye-heist", "knocked-askew"], FUMBLE_QUIET = ["natural-one", "faceplant", "black-ice"];
   var STORY = ["light-switch", "core-envy", "eye-heist", "knocked-askew", "vending-trouble", "home-run", "rebuilt"];
   /* spectacle gap in minutes per preset; the sleep wait; the double click cooldown; hover cooldown */
   var GAP = { quiet: 0, normal: 10, lively: 4 }, SLEEP_MIN = 5, DBL_MS = 5000, HOVER_MS = 90000, AWAY_MS = 60000;
-  var PRIO = { spectacle: 1, sleep: 1, hover: 2, fn: 3 };
+  /* ranks: the order when two events land together is crash, errors and refusals, successes, tips, then spectacles */
+  var RANK = { crash: 5, error: 4, success: 3, tip: 2, spectacle: 1 };
+  var PRIO = { sleep: 0, spectacle: 1, hover: 2, fn: 3 };
+  var HOLD_MS = 3000, WAIT_MS = 20000;
 
+  var Q = { list: [], pend: null, holdUntil: 0, flushT: null };
   var A = { cur: null, last: Date.now(), nextSpec: Date.now(), lastDbl: 0, lastHover: 0, hiddenAt: 0, asleep: false, timer: null, tick: null };
 
   /* ---- the setting */
@@ -39,11 +47,14 @@ window.EN = window.EN || {};
   function eff() { return K.reduced() ? "quiet" : freq(); }
 
   /* ---- the protected moments: the tour, the login egg, the access-denied page, a dialog, a dice roll */
-  function protectedNow() {
+  function hardProtected() {
     try { if (EN.tour && EN.tour.active && EN.tour.active()) return true; } catch (e) {}
     try { if (EN.gate && EN.gate.deniedOpen && EN.gate.deniedOpen()) return true; } catch (e) {}
-    return !!document.querySelector(".w98-modal, .gate-stage, .gate-card, .tb-die.rolling");
+    return !!document.querySelector(".w98-modal, .gate-stage, .gate-card");
   }
+  function rolling() { return !!document.querySelector(".tb-die.rolling"); }
+  function holding() { return Date.now() < Q.holdUntil; }
+  function protectedNow() { return hardProtected() || rolling() || holding(); }
   function ready() { return K.active() && GZ.on() && GZ.present() && !GZ.hidden(); }
 
   /* ---- the stage */
@@ -58,6 +69,7 @@ window.EN = window.EN || {};
     var box = GZ.stage(); if (box) box.style.removeProperty("--gz-lift");
     if (c.name === "sleep-mode") A.asleep = false;
     if (c.done) { try { c.done(why || "stopped"); } catch (e) {} }
+    kick();
   }
   /* play(name, opts): opts.prio (number), opts.kind ("fn" | "spectacle" | "sleep" | "hover"), opts.done(reason), opts.loop (hold until stop) */
   function play(name, o) {
@@ -92,16 +104,58 @@ window.EN = window.EN || {};
   /* ---- the story: Fidget pieces in order, a counter kept on this device */
   function fidIndex() { var n = parseInt(store(FID), 10); return n >= 0 && n < STORY.length ? n : 0; }
   function nextFidget(peek) { var i = fidIndex(); if (!peek) store(FID, String((i + 1) % STORY.length)); return STORY[i]; }
-  /* one spectacle: eight idle pieces plus one slot for the next Fidget piece */
+  /* one spectacle: the idle pieces and the other event pieces (weight 1), the two fumbles (weight 2), and one slot for the next Fidget piece */
+  var POOL = [];
+  IDLE.concat(EXTRA).forEach(function (n) { POOL.push([n, 1]); });
+  FUMBLES.forEach(function (n) { POOL.push([n, 2]); });
+  POOL.push(["", 1]);
+  var POOL_W = POOL.reduce(function (t, p) { return t + p[1]; }, 0);
   function pickSpectacle() {
-    var k = Math.floor(Math.random() * (IDLE.length + 1));
-    return k === IDLE.length ? nextFidget(false) : IDLE[k];
+    var x = Math.random() * POOL_W, i;
+    for (i = 0; i < POOL.length; i++) { x -= POOL[i][1]; if (x < 0) break; }
+    i = Math.min(i, POOL.length - 1);
+    return POOL[i][0] || nextFidget(false);
   }
+  /* a fumble: one at random, after the hold; Quiet blocks the Fidget pieces. It never touches the story counter. */
+  function pickFumble() { var l = eff() === "quiet" ? FUMBLE_QUIET : FUMBLE_POOL; return l[Math.floor(Math.random() * l.length)]; }
   function spectacle() {
-    if (!ready() || protectedNow() || A.cur) return false;
+    if (!ready() || protectedNow() || A.cur || Q.pend) return false;
     var name = pickSpectacle(), ok = play(name, { kind: "spectacle" });
     return ok ? name : false;
   }
+
+  /* ---- events: two that land together are put in order (crash, errors and refusals, successes, tips, spectacles); the top one plays, at most
+     one more waits its turn, the rest are dropped. A roll starts a quiet window of about three seconds; what arrives in it plays after. */
+  function fire(name, o) {
+    o = o || {};
+    if (!M[name] || !ready() || hardProtected()) return false;
+    Q.list.push({ name: name, rank: o.rank || RANK[o.kind] || RANK.success, o: o, t: Date.now(), n: Q.list.length });
+    if (!Q.flushT) Q.flushT = setTimeout(flush, 0);
+    return true;
+  }
+  function flush() {
+    Q.flushT = null;
+    var now = Date.now(), l = Q.list.concat(Q.pend ? [Q.pend] : []);
+    Q.list = []; Q.pend = null;
+    l = l.filter(function (e) { return now - e.t < WAIT_MS; });
+    if (!l.length || !ready() || hardProtected()) return;
+    l.sort(function (a, b) { return b.rank - a.rank || a.t - b.t || a.n - b.n; });
+    var top = l[0], cur = A.cur;
+    var can = !holding() && !rolling() && (!cur || (cur.prio <= 1 && top.rank > cur.prio));
+    if (can) {
+      var o = top.o; o.kind = o.kind || "fn"; o.prio = top.rank;
+      if (play(top.name, o)) { Q.pend = l[1] || null; return; }
+    }
+    Q.pend = top;
+  }
+  function kick() { if (Q.pend && !Q.flushT) Q.flushT = setTimeout(flush, 0); }
+  function hold(ms) {
+    ms = ms || HOLD_MS;
+    Q.holdUntil = Math.max(Q.holdUntil, Date.now() + ms);
+    if (A.cur && A.cur.prio <= 1) stop("hold");
+    setTimeout(kick, ms + 60);
+  }
+  EN.w98.diceHold = function () { hold(); };
 
   /* ---- idle: the timer counts time with no input */
   function poke() { A.last = Date.now(); A.nextSpec = A.last; if (A.cur && A.cur.name === "sleep-mode") stop("input"); }
@@ -109,8 +163,10 @@ window.EN = window.EN || {};
   function gapMs() { var g = GAP[eff()]; return g ? g * 60000 : 0; }
   function step() {
     var now = Date.now();
-    if (protectedNow()) { if (A.cur && A.cur.kind !== "fn") stop("protected"); return; }
+    if (hardProtected()) { Q.pend = null; if (A.cur && A.cur.kind !== "fn") stop("protected"); return; }
+    if (protectedNow()) return;
     if (!ready() || document.hidden) return;
+    kick();
     if (A.cur && A.cur.name !== "sleep-mode") return;
     var idle = now - A.last;
     /* a spectacle: the gap of no input since the last input or the last spectacle (it breaks into his sleep, then he nods off again) */
@@ -172,7 +228,9 @@ window.EN = window.EN || {};
       el("p.set-hint", { style: { margin: "3px 0 0 0" }, text: "Quiet: he only reacts. Normal: a little show when you have been away about every ten minutes. Lively: about every four. Reduced motion on your device forces Quiet." })])];
   });
 
-  GZ.act = { play: play, stop: stop, freq: freq, setFreq: setFreq, effective: eff, boot: boot, leave: leave, spectacle: spectacle, hello: hello,
+  GZ.act = { fire: fire, hold: hold, rank: RANK, victory: function () { return fire("street-victory", { rank: RANK.success }); },
+    fumble: function () { return fire(pickFumble(), { rank: RANK.success }); }, pickFumble: pickFumble, fumblePool: FUMBLE_POOL.slice(), pool: POOL.map(function (p) { return p.slice(); }),
+    pending: function () { return Q.pend ? Q.pend.name : null; }, holding: holding, play: play, stop: stop, freq: freq, setFreq: setFreq, effective: eff, boot: boot, leave: leave, spectacle: spectacle, hello: hello,
     now: function () { return A.cur ? A.cur.name : null; }, asleep: function () { return A.asleep; }, protectedNow: protectedNow,
     story: STORY.slice(), idleSet: IDLE.slice(), nextFidget: nextFidget, files: Object.keys(M),
     test: { setIdle: function (ms, keepGap) { A.last = Date.now() - ms; if (!keepGap) A.nextSpec = A.last; }, step: step, pick: pickSpectacle } };

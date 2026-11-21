@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 138 100" width="552" height="400" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: Faceplant</title>
+<desc id="desc">Gizmo crouches and launches into his victory spin. He lands it wrong, his eyes go wide, and he topples over sideways and slaps flat onto the floor with a puff of dust. He lies there with his eyes shut. They open and dart around. He levers himself upright, checks left and right for witnesses, and stares at the ceiling as if nothing happened. Four and a half second loop on a transparent background.</desc>
+<style>
+
+.tipover{transform-origin:47px 78px;animation:tip 4.5s ease-in-out infinite}.hop{animation:hop 4.5s ease-in-out infinite}
+.spin{transform-origin:32px 42px;animation:spin 4.5s linear infinite}.gizmo{transform-origin:32px 78px;animation:pose 4.5s ease-in-out infinite}
+.eyes{transform-origin:33px 41px;animation:lids 4.5s steps(1,end) infinite}.pupils{animation:look 4.5s steps(1,end) infinite}.brows{animation:brows 4.5s steps(1,end) infinite}
+.dust{opacity:0;animation:dust 4.5s steps(1,end) infinite}
+@keyframes pose{0%,7%{transform:rotate(0deg) scale(1,1)}12%{transform:rotate(0deg) scale(1.12,0.84);animation-timing-function:cubic-bezier(.2,.8,.3,1)}16%{transform:rotate(0deg) scale(0.92,1.12)}26%,100%{transform:rotate(0deg) scale(1,1)}}
+@keyframes hop{0%,13%{transform:translateY(0);animation-timing-function:cubic-bezier(.1,.6,.4,1)}20%{transform:translateY(-12px);animation-timing-function:cubic-bezier(.6,0,.9,.4)}27%,100%{transform:translateY(0)}}
+@keyframes spin{0%,14%{transform:scaleX(1)}17%{transform:scaleX(-1)}20%{transform:scaleX(1)}23%{transform:scaleX(-1)}26%,100%{transform:scaleX(1)}}
+@keyframes tip{0%,27%{transform:rotate(0);animation-timing-function:cubic-bezier(.6,0,1,.5)}35.5%{transform:rotate(90deg)}37.8%{transform:rotate(83deg)}40%,66%{transform:rotate(90deg);animation-timing-function:cubic-bezier(.3,0,.2,1)}74%{transform:rotate(-5deg)}77.8%,100%{transform:rotate(0)}}
+@keyframes dust{0%{opacity:0}35.5%{opacity:1}40%{opacity:0}100%{opacity:0}}
+@keyframes look{0%{transform:translate(0px,0px)}27%{transform:translate(1.4px,1.8px)}52%{transform:translate(-2px,0px)}56.7%{transform:translate(1.4px,0px)}61%{transform:translate(0px,0px)}78.9%{transform:translate(-3.3px,0.2px)}84.4%{transform:translate(1.4px,0.2px)}90%{transform:translate(-1px,-2.3px)}96.7%{transform:translate(0px,0px)}100%{transform:translate(0px,0px)}}
+@keyframes lids{0%{transform:scale(1,1)}12%{transform:scale(1.15,1.15)}27%{transform:scale(1.3,1.3)}35.5%{transform:scale(1,0.08)}52%{transform:scale(1,1)}66%{transform:scale(1,0.7)}77.8%{transform:scale(1,1)}100%{transform:scale(1,1)}}
+@keyframes brows{0%{transform:translateY(0)}12%{transform:translateY(-2px)}27%{transform:translateY(-3px)}35.5%{transform:translateY(2px)}52%{transform:translateY(0)}90%{transform:translateY(-2.5px)}96.7%{transform:translateY(0)}100%{transform:translateY(0)}}
+
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<g transform="translate(6 16)"><g class="dust" fill="#e9f1fb"><rect x="56" y="70" width="4" height="4"/><rect x="82" y="42" width="3.5" height="3.5"/><rect x="104" y="41" width="4" height="4"/><rect x="120" y="68" width="3.5" height="3.5"/><rect x="70" y="40" width="3" height="3"/><rect x="94" y="36" width="3" height="3"/></g><g class="tipover"><g class="hop"><g class="spin"><g class="gizmo"><path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g><g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g></g></g></g></g></g>
+</svg>
