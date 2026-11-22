@@ -56,7 +56,8 @@ window.EN = window.EN || {};
     var root = document.getElementById("w98");
     if (!root) return null;
     var fig = el("button.w98-gz-fig", { type: "button", title: "Gizmo. Press for his menu, drag to move him.", "aria-label": "Gizmo, your assistant. Press for his menu.", "aria-haspopup": "menu" });
-    fig.innerHTML = EN.gate.gizmoSvg("gate-clipsvg w98-gz-svg");
+    /* the still is the author's own Everyday Idle (blinks, a wary glance, a faint neon flicker), at his native size: one drawing unit is one whole pixel */
+    fig.innerHTML = '<img class="w98-gz-svg" src="img/gizmo/everyday.svg" width="64" height="84" alt="" draggable="false">';
     var txt = el("span.w98-gz-t");
     var bubble = el("div.w98-gz-bubble", { role: "status", "aria-live": "polite", onclick: function () { hush(); rough("dismiss"); } }, [txt]);
     var box = el("div.w98-gizmo", { dataset: { gizmo: "1" } }, [bubble, fig]);
@@ -139,6 +140,8 @@ window.EN = window.EN || {};
     fig.addEventListener("pointerup", up);
     fig.addEventListener("pointercancel", function () { st = null; });
     fig.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); menu(); } });
+    // a right click is the options menu; a press is the quick one
+    fig.addEventListener("contextmenu", function (e) { e.preventDefault(); e.stopPropagation(); st = null; optionsMenu(); });
   }
 
   /* ---- his menu */
@@ -147,16 +150,41 @@ window.EN = window.EN || {};
     if (!G.fig) return;
     rough("poke");
     hush();
-    var r = G.fig.getBoundingClientRect();
     var live = EN.app.activeTab();
-    K.openMenu([
+    beside([
       { label: "Tell me a &tip", icon: K.pix("bulb", 16), go: function () { var t = EN.w98.extras && EN.w98.extras.nextTip && EN.w98.extras.nextTip(); say(t || "Press Ctrl+K to find a rule, your gear or someone you know."); if (EN.w98.moment) EN.w98.moment("tip"); } },
       { label: "What is &this?", go: function () { say(HINT[live] || "That is the open window. Its menu bar has File, View and Help.") } },
       { sep: true },
+      { label: "&More...", go: function () { setTimeout(optionsMenu, 0); } }   // also how a phone, with no right click, reaches the options
+    ]);
+  }
+  /* the options menu (a right click): sending him away, how lively he is, his Control Panel page */
+  function optionsMenu() {
+    if (!G.fig) return;
+    hush();
+    var a = EN.w98.gizmo && EN.w98.gizmo.act, cur = a && a.freq ? a.freq() : "normal";
+    function antic(v, label) { return { label: label, check: cur === v, radio: true, go: function () { if (a && a.setFreq) a.setFreq(v); } }; }
+    beside([
       { label: "&Hide me for now", go: function () { rough("dismiss"); leaving(function () { G.hidden = true; paint(); }); } },
       { label: "Turn Gizmo &off", go: function () { setOn(false); } },
+      { sep: true },
+      antic("quiet", "Antics: &Quiet"), antic("normal", "Antics: &Normal"), antic("lively", "Antics: &Lively"),
+      { sep: true },
       { label: "Gizmo &options...", go: function () { EN.w98.openControlPanel("extras"); } }
-    ], r.left, r.top, { owner: null });
+    ]);
+  }
+  /* a menu beside him, never over him: to his left (or his right if there is no room), its bottom edge level with his feet */
+  function beside(items) {
+    var r = G.fig.getBoundingClientRect();
+    K.closeMenus();
+    var node = K.openMenu(items, r.left, r.top, { owner: null });
+    if (!node) return node;
+    var m = node.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+    var x = r.left - m.width - 6;
+    if (x < 2) x = Math.min(vw - m.width - 2, r.right + 6);
+    var y = Math.min(r.bottom - m.height, vh - m.height - 2);
+    node.style.left = Math.round(Math.max(2, x)) + "px"; node.style.top = Math.round(Math.max(2, y)) + "px";
+    return node;
   }
 
   /* ---- he greets you, once the start-up box (if any) is out of the way */
@@ -173,7 +201,7 @@ window.EN = window.EN || {};
   });
 
   EN.w98.say = say;
-  EN.w98.gizmo = { on: on, setOn: setOn, say: say, hush: hush, menu: menu, hint: function (k) { return HINT[k]; }, present: function () { return !!(G.box && document.documentElement.contains(G.box)); },
+  EN.w98.gizmo = { on: on, setOn: setOn, say: say, hush: hush, menu: menu, optionsMenu: optionsMenu, hint: function (k) { return HINT[k]; }, present: function () { return !!(G.box && document.documentElement.contains(G.box)); },
     fig: function () { return G.fig; }, stage: function () { return G.box; }, hidden: function () { return G.hidden; } };
   // Control Panel > Desktop Extras
   X.cplExtras.push(function () {

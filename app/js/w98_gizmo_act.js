@@ -60,11 +60,15 @@ window.EN = window.EN || {};
   function ready() { return K.active() && GZ.on() && GZ.present() && !GZ.hidden(); }
 
   /* ---- the stage */
-  function scale() { var w = GZ.fig().querySelector(".w98-gz-svg"), r = w && w.getBoundingClientRect(); return r && r.width ? r.width / 64 : 1.125; }
+  /* one size for the still and every scene: a unit of his drawing is one whole pixel (every scene's width and height is even, so it also centres on whole pixels) */
+  var SCALE = 1;
+  function scale() { return SCALE; }
   function stop(why) {
     var c = A.cur;
     if (!c) return;
+    if (c.ctl && why === "input" && c.ctl.wake()) return;   // asleep: his wake-up plays first, then he stands down
     A.cur = null; clearTimeout(c.t);
+    if (c.ctl) c.ctl.dispose();
     if (c.img && c.img.parentNode) c.img.parentNode.removeChild(c.img);
     var f = GZ.fig();
     if (f) f.classList.remove("acting");
@@ -80,9 +84,16 @@ window.EN = window.EN || {};
     if (!m || !ready() || protectedNow()) return false;
     var prio = o.prio || PRIO[o.kind] || PRIO.fn;
     if (A.cur && A.cur.prio > prio) return false;
+    if (A.cur && A.cur.name === "sleep-mode") A.last = Date.now();   // whatever cuts in on his sleep has woken him: he does not nod straight off again
     if (A.cur) stop("replaced");
     var f = GZ.fig(), s = scale(), w = m[0] * s, h = m[1] * s;
-    var img = el("img.w98-gz-stage", { src: "img/gizmo/" + name + ".svg", alt: "", "aria-hidden": "true", draggable: "false" });
+    var img, host = null;
+    if (name === "sleep-mode" && sleepSvg && !K.reduced() && document.body.attachShadow) {
+      /* his sleep is one drawing played in three parts: he nods off once, he sleeps in a loop, he wakes only when you wake him. It sits in a shadow root so its own style rules stay to itself. */
+      img = el("div.w98-gz-stage", { "aria-hidden": "true" });
+      host = img.attachShadow({ mode: "open" });
+      host.innerHTML = "<style>svg{display:block;width:100%;height:100%}</style>" + sleepSvg;
+    } else img = el("img.w98-gz-stage", { src: "img/gizmo/" + name + ".svg", alt: "", "aria-hidden": "true", draggable: "false" });
     img.style.width = w + "px"; img.style.height = h + "px";
     f.appendChild(img); f.classList.add("acting");
     if (!o.keep) GZ.hush();   // a scene that goes with what he is saying (a tip) leaves his bubble up
@@ -90,9 +101,35 @@ window.EN = window.EN || {};
     keepOn(img);
     var c = { name: name, prio: prio, img: img, done: o.done, kind: o.kind };
     A.cur = c;
+    if (host) { c.ctl = sleeper(host, c); c.ctl.start(); }
     if (name === "sleep-mode") A.asleep = true;
     if (!o.loop) c.t = setTimeout(function () { if (A.cur === c) stop("ended"); }, m[2] * 1000 + 150);
     return true;
+  }
+  /* ---- sleep in three parts, all from sleep-mode.svg (8 s): 0 to 3.4 s he nods off, 3.4 to 5.4 s is one breath of sleep that begins and ends in
+     the same pose (so it loops with no seam), and from 6.45 s the jolt, the cap flying off and the neutral pose are the wake-up. */
+  var SL = { from: 3400, to: 5400, wake: 6450, end: 8000 };
+  var sleepSvg = "";
+  try { fetch("img/gizmo/sleep-mode.svg").then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) { if (/<svg/.test(t)) sleepSvg = t; }).catch(function () {}); } catch (e) {}
+  function sleeper(host, c) {
+    /* its own clock (the three parts are cut where it says), and the drawing's animations are only moved to match at a cut */
+    var S = { phase: "down", iv: 0, anims: [], waking: false, t0: Date.now() };
+    function now() { return Date.now() - S.t0; }
+    function seek(ms) { S.t0 = Date.now() - ms; S.anims.forEach(function (a) { try { a.currentTime = ms; } catch (e) {} }); }
+    function tick() {
+      if (!S.anims.length) S.anims = host.getAnimations ? host.getAnimations() : [];
+      var t = now();
+      if (S.phase === "down" && t >= SL.from) S.phase = "loop";
+      if (S.phase === "loop") {
+        if (S.waking) { S.phase = "wake"; seek(SL.wake); }
+        else if (t >= SL.to) seek(SL.from + (t - SL.to));
+      } else if (S.phase === "wake" && t >= SL.end) { S.dispose(); if (A.cur === c) stop("woke"); }
+    }
+    S.start = function () { S.t0 = Date.now(); S.iv = setInterval(tick, 40); };
+    S.dispose = function () { if (S.iv) clearInterval(S.iv); S.iv = 0; };
+    S.wake = function () { S.waking = true; return true; };
+    S.state = function () { return { phase: S.phase, waking: S.waking, t: now() }; };
+    return S;
   }
   /* a wide scene is centred on his place; if that runs off the desktop, slide it back on */
   function keepOn(img) {
@@ -168,6 +205,8 @@ window.EN = window.EN || {};
   function poke() { A.last = Date.now(); A.nextSpec = A.last; if (A.cur && A.cur.name === "sleep-mode") stop("input"); }
   ["pointerdown", "pointermove", "keydown", "wheel", "touchstart"].forEach(function (t) { document.addEventListener(t, poke, { passive: true, capture: true }); });
   function gapMs() { var g = GAP[eff()]; return g ? g * 60000 : 0; }
+  /* he nods off two minutes after his spectacle would have played (so the show comes first and the sleep after); with no shows (Quiet) at five minutes */
+  function sleepMs() { var g = gapMs(); return g ? g + 2 * 60000 : SLEEP_MIN * 60000; }
   function step() {
     var now = Date.now();
     if (hardProtected()) { if (Q.pend && !Q.pend.o.wait) Q.pend = null; if (A.cur && A.cur.kind !== "fn") stop("protected"); return; }
@@ -177,11 +216,11 @@ window.EN = window.EN || {};
     if (HOOKS.tick) HOOKS.tick(now);
     if (A.cur && A.cur.name !== "sleep-mode") return;
     var idle = now - A.last, rust = HOOKS.rusted();
-    /* a spectacle: the gap of no input since the last input or the last spectacle (it breaks into his sleep, then he nods off again) */
+    /* a spectacle: the gap of no input since the last input or the last spectacle, while he is awake */
     var g = gapMs();
-    if (g && !rust && now - A.nextSpec >= g && idle >= g) { A.nextSpec = now; if (A.cur) stop("spectacle"); spectacle(); return; }
-    if (A.cur) return;
-    if (idle >= SLEEP_MIN * 60000 && !A.asleep && !rust) play("sleep-mode", { kind: "sleep", loop: true });
+    if (A.cur) return;   // asleep, he stays asleep: only you (or something real happening) wakes him
+    if (g && !rust && now - A.nextSpec >= g && idle >= g) { A.nextSpec = now; spectacle(); return; }
+    if (idle >= sleepMs() && !A.asleep && !rust) play("sleep-mode", { kind: "sleep", loop: true });
   }
   A.tick = step;
   A.timer = setInterval(step, 1000);
@@ -255,7 +294,7 @@ window.EN = window.EN || {};
 
   GZ.act = { idleMs: function () { return Date.now() - A.last; }, hooks: HOOKS, moments: MOMENT, fire: fire, hold: hold, rank: RANK, victory: victory, fumble: fumble, pickFumble: pickFumble, fumblePool: FUMBLE_POOL.slice(), pool: POOL.map(function (p) { return p.slice(); }),
     pending: function () { return Q.pend ? Q.pend.name : null; }, holding: holding, play: play, stop: stop, freq: freq, setFreq: setFreq, effective: eff, boot: boot, leave: leave, spectacle: spectacle, hello: hello,
-    now: function () { return A.cur ? A.cur.name : null; }, asleep: function () { return A.asleep; }, protectedNow: protectedNow,
+    now: function () { return A.cur ? A.cur.name : null; }, asleep: function () { return A.asleep; }, sleepMs: sleepMs, sleeper: function () { return A.cur && A.cur.ctl ? A.cur.ctl.state() : null; }, protectedNow: protectedNow,
     story: STORY.slice(), idleSet: IDLE.slice(), nextFidget: nextFidget, files: Object.keys(M),
     test: { setIdle: function (ms, keepGap) { A.last = Date.now() - ms; if (!keepGap) A.nextSpec = A.last; }, step: step, pick: pickSpectacle } };
 })();

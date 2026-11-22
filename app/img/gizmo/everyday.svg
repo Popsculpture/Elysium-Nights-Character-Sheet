@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 84" width="256" height="336" role="img" aria-labelledby="title desc">
+<title id="title">Gizmo: everyday idle</title>
+<desc id="desc">A green cyberpunk paperclip with staggered blinks, an occasional wary sideways glance, and a subtle neon flicker. Transparent background. Animation repeats every 18 seconds.</desc>
+<style>
+.neon {animation: flicker 18s linear infinite}
+.eye-left {transform-origin:27px 41px;animation:blink-left 18s linear infinite}
+.eye-right {transform-origin:39px 41px;animation:blink-right 18s linear infinite}
+.pupil {animation: glance 18s ease-in-out infinite}
+.brows {animation: brow 18s ease-in-out infinite}
+@keyframes blink-left {0%,15%,16.4%,17.7%,19%,47%,48.4%,79%,80.4%,100%{transform:scaleY(1)}15.6%,18.3%,47.6%,79.6%{transform:scaleY(.08)}}
+@keyframes blink-right {0%,15.25%,16.65%,17.95%,19.25%,47.25%,48.65%,79.25%,80.65%,100%{transform:scaleY(1)}15.85%,18.55%,47.85%,79.85%{transform:scaleY(.08)}}
+@keyframes glance {0%,54%,72%,100%{transform:translate(0,0)}57%,63%{transform:translate(-2px,-.3px)}66%,69%{transform:translate(1px,-.3px)}}
+@keyframes brow {0%,54%,72%,100%{transform:translateY(0)}57%,69%{transform:translateY(-.6px)}}
+@keyframes flicker {0%,35%,36%,37.2%,100%{opacity:1}35.4%{opacity:.68}36.5%{opacity:.84}}
+@media (prefers-reduced-motion:reduce){.neon,.eye-left,.eye-right,.pupil,.brows{animation:none}}
+</style>
+<g class="neon">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+</g>
+<g class="eye-left"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle class="pupil" cx="28" cy="41.5" r="2" fill="#07090d"/></g>
+<g class="eye-right"><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><circle class="pupil" cx="40" cy="41.5" r="2" fill="#07090d"/></g>
+</svg>
