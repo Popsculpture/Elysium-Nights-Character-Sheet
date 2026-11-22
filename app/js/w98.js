@@ -10,8 +10,12 @@
    (the open tab) is the LIVE window: #view itself is moved into that window's client area, so everything in it works
    as it always did. A window behind it keeps the last frame it showed: a copy of the view taken the moment you left
    it, with every id and form name stripped and the copy made inert, so nothing in it can be clicked or found by id.
-   Clicking a window behind makes it the live one (a tab switch, so the app draws it fresh). Find, My Smartdeck and
-   My Freelancers are windows of this file's own, always live.
+   Clicking a window behind makes it the live one (a tab switch, so the app draws it fresh). Find, My Documents and
+   the Admin desktop's My Smartdeck are windows of this file's own, always live.
+
+   WHERE A TAB IS HOSTED (22 Nov 2026). A window is named for its HOST, which is the tab's own key unless an extension
+   says otherwise (X.host): on the Freelancer desktop js/w98_web.js hosts Social, the Codex, Bills and the storefronts in
+   the #GRID browser's window, so several tabs, or two pages of one tab, share one window. LIVE is the host showing.
 
    The page itself does not scroll on '98: the live window's client area does. EN.ui.scrollPos and friends ask
    scroller() which element that is.
@@ -29,7 +33,7 @@ EN.w98 = (function () {
   var D = null;          // the mounted desk: { root, icons, wins, bar, tasks, tray, ghosts, portal, iconSig }
   var W = {};            // the windows of this desktop, by id ("t:combat", "a:find")
   var ORDER = [];        // window ids, back to front
-  var LIVE = null;       // the tab key #view is drawn under
+  var LIVE = null;       // the host #view is drawn under: a tab key, or the window an extension hosts that tab in
   var SWITCHED = false;  // render() is moving to another program: restore its scroll, not the top
   var homes = {};        // where a node we borrowed lives on the other skins
 
@@ -37,6 +41,12 @@ EN.w98 = (function () {
   function portal() { try { return EN.app.portal(); } catch (e) { return "freelancer"; } }
   function landing() { try { return !!(EN.app.onLanding && EN.app.onLanding()); } catch (e) { return false; } }
   function liveKey() { return landing() ? "landing" : EN.app.activeTab(); }
+  // the window a tab draws in (see WHERE A TAB IS HOSTED above): the first extension that names one, else the tab's own
+  function hostOf(k) {
+    for (var i = 0; i < X.host.length; i++) { try { var h = X.host[i](k); if (h) return h; } catch (e) {} }
+    return k;
+  }
+  function liveHost() { var k = liveKey(); return k ? hostOf(k) : k; }
   function reduced() { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
   function deskW() { return Math.max(320, document.documentElement.clientWidth || window.innerWidth || 1024); }
   /* TOUCH. A phone, or any screen whose main pointer is a finger, gets bigger targets (css/w98.css, the same media query) and a
@@ -79,6 +89,7 @@ EN.w98 = (function () {
      (title bars, taskbar, menus) keep glyph16: there is no 16 px set of these. */
   var PROG32 = { combat: 1, post: 1, face: 1, grid: 1, flow: 1, gear: 1, codex: 1, print: 1, sysop: 1, table: 1, scenes: 1, gmpost: 1, jobs: 1, encounters: 1, threats: 1, people: 1, downtime: 1, gmcodex: 1 };
   function tile32(p) {
+    if (X.tile[p.key]) { var own = X.tile[p.key](32); if (own) return own; }
     if (PROG32[p.key]) return '<img class="w98-px" src="img/programs-32/' + p.key + '-32.svg" width="32" height="32" alt="" draggable="false">';
     var ink = INK[p.key] || "#000080", g = parts(p.icon);
     var inside = g
@@ -87,6 +98,7 @@ EN.w98 = (function () {
     return '<svg viewBox="0 0 32 32" width="32" height="32">' + FRAME32 + inside + '</svg>';
   }
   function glyph16(p, ink) {
+    if (X.tile[p.key]) { var own = X.tile[p.key](16); if (own) return own; }
     var g = parts(p.icon);
     ink = ink || INK[p.key] || "#000080";
     return g
@@ -219,7 +231,12 @@ EN.w98 = (function () {
   function raise(id) { ORDER = ORDER.filter(function (x) { return x !== id; }); ORDER.push(id); }
 
   /* ======================================================================== PROGRAMS */
-  function programs() { try { return EN.app.programs(); } catch (e) { return []; } }
+  // the tabs as '98's programs, under the names an extension gives them here (X.relabel: #GRID's network tab is My Smartdeck)
+  function programs() {
+    var list; try { list = EN.app.programs(); } catch (e) { return []; }
+    list.forEach(function (p) { if (X.relabel[p.key]) { var n = X.relabel[p.key](); if (n) p.label = n; } });
+    return list;
+  }
   function program(key) {
     if (key === "landing") return { key: "landing", label: "Campaigns", sub: "pick the campaign to run", glyph: "◆", icon: "" };
     return programs().filter(function (p) { return p.key === key; })[0] || { key: key, label: key, sub: "", glyph: "?", icon: "" };
@@ -230,6 +247,7 @@ EN.w98 = (function () {
   }
   function titleOf(w) {
     if (w.kind === "app") return APPS[w.key] ? APPS[w.key].title() : w.key;
+    if (X.title[w.key]) { var own = X.title[w.key](w); if (own) return own; }
     var p = program(w.key), n = portal() === "freelancer" ? recordName() : "";
     return p.label + (n ? " - " + n : "");
   }
@@ -243,7 +261,15 @@ EN.w98 = (function () {
     closeMenus();
     if (from) _from = from;
     _want = key;
+    // an extension may set the page first (the Stash opens on its own worksheet, never on a page the browser hosts)
+    X.prelaunch.forEach(function (fn) { try { fn(key); } catch (e) {} });
     try { EN.app.openProgram(key); } catch (e) { EN.app.gotoTab(key); }
+  }
+  /* A window behind comes alive: its tab is drawn again, on the page it showed. A window an extension hosts knows that page
+     (X.wake: the browser's site, the Stash's worksheet); any other is its tab. */
+  function wake(w) {
+    if (X.wake[w.key]) { try { if (X.wake[w.key](w) !== false) return; } catch (e) {} }
+    EN.app.gotoTab(w.key);
   }
   var _from = null;   // where the next window to open zooms out from (an icon's box)
   var _want = null;   // a program asked for by name: its window opens even if it is the one already drawn (closed or put away)
@@ -264,7 +290,9 @@ EN.w98 = (function () {
   }
   /* EXTENSIONS (js/w98_extras.js): the screen saver, tips, the fumble error and the Breach game add to these lists, so this file stays the
      desktop and nothing else. Each list holds functions that answer with menu items (or, for `about`, an element). */
-  var X = { settings: [], programs: [], desktop: [], about: [], boot: [], runNames: {}, open: [], paint: [], cpl: [], cplExtras: [], display: [], controlPanel: null };
+  var X = { settings: [], programs: [], desktop: [], about: [], boot: [], runNames: {}, open: [], paint: [], cpl: [], cplExtras: [], display: [], controlPanel: null,
+    // where a tab is hosted, and what a hosted window needs (js/w98_web.js): see WHERE A TAB IS HOSTED at the top of this file
+    host: [], wake: {}, frame: [], title: {}, status: {}, relabel: {}, tile: {}, prelaunch: [], icons: [], run: [] };
 
   function mount() {
     var os = document.getElementById("os");
@@ -373,7 +401,7 @@ EN.w98 = (function () {
   }
   function beforeRender() {
     if (!D || !is98() || D.portal !== portal()) return;
-    var k = liveKey();
+    var k = liveHost();
     if (!k || k === LIVE) return;
     var old = LIVE ? W["t:" + LIVE] : null;
     if (old && old.open) { snapshot(old); }
@@ -401,7 +429,7 @@ EN.w98 = (function () {
     if (!is98()) { unmount(); return; }
     if (D && D.portal !== portal()) unmount();
     if (!D && !mount()) return;
-    var k = liveKey(), changed = k !== LIVE, asked = _want === k;
+    var k = liveHost(), changed = k !== LIVE, asked = !!_want && hostOf(_want) === k;
     _want = null;
     var w = W["t:" + k] || makeWin("t:" + k, "tab", k);
     frameFor(w);
@@ -413,7 +441,9 @@ EN.w98 = (function () {
       // a program opened (from a link, the Start menu, an icon): its window opens or comes back, in front
       var wasShut = !w.open;
       if (!w.open || w.min) { if (wasShut) w.opened = ++_opened; w.open = true; w.min = false; zoomIn(w, wasShut); }
-      X.open.forEach(function (fn) { try { fn(k); } catch (e) {} });
+      // the window that opened, and the tab it opened on (the browser opens on a site: the Codex, say)
+      var tabNow = liveKey();
+      X.open.forEach(function (fn) { try { fn(k, tabNow); } catch (e) {} });
       raise(w.id);
     }
     // a program the record no longer has (Flow, #GRID, #POST come and go) loses its window
@@ -469,6 +499,8 @@ EN.w98 = (function () {
     w.frame = el("div.w98-win", { dataset: { win: w.id, kind: w.kind }, role: "region",
       onpointerdown: function (e) { if (e.button === 0 || e.pointerType !== "mouse") focusWin(w); } }, kids);
     w.tb = tb; w.mb = mb; w.sb = sb;
+    // a hosted window's own chrome (the browser's toolbars, the Stash's worksheet tabs) goes in around the client area
+    if (w.kind === "tab") X.frame.forEach(function (fn) { try { fn(w); } catch (e) { console.error("A window's own chrome could not be drawn", e); } });
     paintMenuBar(w);
     if (w.kind === "app" && APPS[w.key]) APPS[w.key].build(w);
     D.wins.appendChild(w.frame);
@@ -500,6 +532,7 @@ EN.w98 = (function () {
       var sub = "";
       try { var st = EN.app.subTab(w.key), hit = (p.subs || []).filter(function (s) { return s.key === st; })[0]; sub = hit ? hit.label : ""; } catch (e) {}
       var at = w.key === LIVE ? (sub ? sub.charAt(0) + sub.slice(1).toLowerCase() + ": " : "") + (p.sub || "") : "Click to bring this window to the front";
+      if (w.key === LIVE && X.status[w.key]) { var own = X.status[w.key](w); if (own) at = own; }
       if (a.textContent !== at) a.textContent = at;
       var bt = portal() === "freelancer" && recordName() ? (EN.store.activeIsExample && EN.store.activeIsExample() ? "Example, not saved" : "") : "";
       if (b.textContent !== bt) b.textContent = bt;
@@ -524,7 +557,7 @@ EN.w98 = (function () {
     if (w.kind === "tab" && w.key !== LIVE) {
       raise(w.id);
       if (w.key === "landing") { layout(); return; }
-      EN.app.gotoTab(w.key);   // the program behind comes alive: the app draws it fresh in its window
+      wake(w);   // the program behind comes alive: the app draws it fresh in its window
       return;
     }
     if (topId() === w.id) return;
@@ -544,7 +577,7 @@ EN.w98 = (function () {
     var wasMin = w.min;
     w.min = false;
     raise(w.id);
-    if (w.kind === "tab" && w.key !== LIVE && w.key !== "landing") { EN.app.gotoTab(w.key); }
+    if (w.kind === "tab" && w.key !== LIVE && w.key !== "landing") { wake(w); }
     else layout();
     if (wasMin) zoomIn(w, false);
   }
@@ -554,7 +587,7 @@ EN.w98 = (function () {
     w.max = !w.max;
     remember(w);
     raise(w.id);
-    if (w.kind === "tab" && w.key !== LIVE) { EN.app.gotoTab(w.key); return; }
+    if (w.kind === "tab" && w.key !== LIVE) { wake(w); return; }
     layout();
     ghost(from, rectOf(w));
   }
@@ -568,7 +601,7 @@ EN.w98 = (function () {
     var next = null;
     for (var i = ORDER.length - 1; i >= 0; i--) { var x = W[ORDER[i]]; if (shown(x) && x.kind === "tab") { next = x; break; } }
     if (w.snap && w.snap.parentNode) w.snap.parentNode.removeChild(w.snap);
-    if (next) { borrow(document.getElementById("view"), D.park); dropWinKeepLive(w); EN.app.gotoTab(next.key); return; }
+    if (next) { borrow(document.getElementById("view"), D.park); dropWinKeepLive(w); wake(next); return; }
     borrow(document.getElementById("view"), D.park);
     layout();
   }
@@ -586,7 +619,7 @@ EN.w98 = (function () {
     closeMenus();
     var up = ORDER.filter(function (id) { return shown(W[id]); });
     if (up.length) { _shown = up; up.forEach(function (id) { W[id].min = true; }); layout(); return; }
-    if (_shown) { _shown.forEach(function (id) { if (W[id] && W[id].open) W[id].min = false; }); var t = _shown[_shown.length - 1]; _shown = null; if (W[t]) { var w = W[t]; if (w.kind === "tab" && w.key !== LIVE) { raise(t); EN.app.gotoTab(w.key); return; } } layout(); }
+    if (_shown) { _shown.forEach(function (id) { if (W[id] && W[id].open) W[id].min = false; }); var t = _shown[_shown.length - 1]; _shown = null; if (W[t]) { var w = W[t]; if (w.kind === "tab" && w.key !== LIVE) { raise(t); wake(w); return; } } layout(); }
   }
 
   /* ---- move and resize: the outline follows the pointer the way the real thing's "show window contents" did */
@@ -764,8 +797,9 @@ EN.w98 = (function () {
     X.programs.forEach(function (fn) { try { more = more.concat(fn()); } catch (e) {} });
     if (more.length) { list.push({ sep: true }); list = list.concat(more); }
     list.push({ sep: true });
-    list.push({ label: "My Smartdeck", icon: pix("deck", 16), go: function () { openApp("deck"); } });
-    if (portal() === "freelancer") list.push({ label: "My Freelancers", icon: pix("docs", 16), go: function () { openApp("docs"); } });
+    // on the Freelancer desktop My Smartdeck is a program of its own (the network tab, above); the Admin desktop keeps the folder
+    if (portal() === "freelancer") list.push({ label: "My Documents", icon: pix("docs", 16), go: function () { openApp("docs"); } });
+    else list.push({ label: "My Smartdeck", icon: pix("deck", 16), go: function () { openApp("deck"); } });
     return list;
   }
   function settingsItems() {
@@ -858,10 +892,22 @@ EN.w98 = (function () {
     if (_sel && _sel !== b) _sel.classList.remove("w98-sel");
     _sel = b; if (b) b.classList.add("w98-sel");
   }
+  /* The Freelancer desktop (22 Nov 2026, the author's layout): My Smartdeck (the network tab, for whoever runs it), My Documents, then the
+     programs. The Admin desktop keeps its My Smartdeck folder first. An extension may say what an icon opens (X.icons: the browser's
+     sites open in its window, and the Stash on its Gear sheet). */
   function iconList() {
-    var out = [{ id: "deck", label: "My Smartdeck", art: pix("deck", 32), go: function (r) { openApp("deck", r); } }];
-    if (portal() === "freelancer") out.push({ id: "docs", label: "My Freelancers", art: pix("docs", 32), go: function (r) { openApp("docs", r); } });
-    programs().forEach(function (p) { out.push({ id: "p:" + p.key, label: p.label, art: tile32(p), go: function (r) { launch(p.key, r); } }); });
+    var out = [], docs = { id: "docs", label: "My Documents", art: pix("docs", 32), go: function (r) { openApp("docs", r); } };
+    if (portal() !== "freelancer") out.push({ id: "deck", label: "My Smartdeck", art: pix("deck", 32), go: function (r) { openApp("deck", r); } });
+    programs().forEach(function (p) {
+      var it = { id: "p:" + p.key, label: p.label, art: tile32(p), go: function (r) { launch(p.key, r); } };
+      X.icons.forEach(function (fn) { try { var g = fn(p.key); if (g) it.go = function (r) { _from = r; g(); }; } catch (e) {} });
+      out.push(it);
+    });
+    if (portal() === "freelancer") {
+      var deck = out.filter(function (i) { return i.id === "p:grid"; })[0];
+      if (deck) out.splice(out.indexOf(deck), 1);
+      out = (deck ? [deck, docs] : [docs]).concat(out);
+    }
     if (arrangeMode() === "name") out.sort(function (a, b) { return a.label.replace(/^#/, "").localeCompare(b.label.replace(/^#/, ""), undefined, { sensitivity: "base" }); });
     return out;
   }
@@ -893,12 +939,15 @@ EN.w98 = (function () {
   function paintQuick() {
     var q = D.bar.querySelector(".w98-quick");
     var first = programs()[0], codex = portal() === "admin" ? "gmcodex" : "codex";
-    var sig = (first ? first.key : "") + "|" + codex;
+    var web = programs().filter(function (p) { return p.key === "web"; })[0];   // the #GRID browser, on the Freelancer desktop
+    var sig = (first ? first.key : "") + "|" + codex + "|" + (web ? "web" : "");
     if (q.getAttribute("data-sig") === sig) return;
     q.setAttribute("data-sig", sig);
     EN.ui.clear(q);
     q.appendChild(el("button.w98-ql", { type: "button", title: "Show Desktop", "aria-label": "Show Desktop", html: pix("desk", 16), onclick: showDesktop }));
     if (first) q.appendChild(el("button.w98-ql", { type: "button", title: first.label, "aria-label": first.label, html: glyph16(first), onclick: function () { launch(first.key); } }));
+    if (web) q.appendChild(el("button.w98-ql", { type: "button", title: web.label, "aria-label": web.label, dataset: { ql: "web" }, html: glyph16(web),
+      onclick: function () { var g = null; X.icons.forEach(function (fn) { try { g = g || fn("web"); } catch (e) {} }); if (g) g(); else launch("web"); } }));
     if (program(codex).label && first && first.key !== codex) q.appendChild(el("button.w98-ql", { type: "button", title: "Codex", "aria-label": "Codex", html: glyph16(program(codex)), onclick: function () { launch(codex); } }));
   }
   function paintTasks(top) {
@@ -1035,13 +1084,18 @@ EN.w98 = (function () {
       msg("Run", "Rolled " + n + "d" + s + (mod ? (mod > 0 ? "+" : "") + mod : "") + ": " + rolls.join(", ") + (mod ? (mod > 0 ? " + " : " - ") + Math.abs(mod) : "") + " = " + sum + ".");
       return;
     }
-    var hit = programs().filter(function (p) { return p.label.toLowerCase().replace(/^#/, "") === low || p.key === low; })[0];
+    // a program's name wins over another's key ("grid" is the #GRID browser, not the network tab whose key it is)
+    var progs = programs();
+    var hit = progs.filter(function (p) { return p.label.toLowerCase().replace(/^#/, "") === low; })[0] || progs.filter(function (p) { return p.key === low; })[0];
     if (hit) { launch(hit.key); return; }
-    var named = { "my smartdeck": "deck", "smartdeck": "deck", "my freelancers": "docs", "freelancers": "docs", "find": "find", "search": "find" };
+    var named = { "my smartdeck": "deck", "smartdeck": "deck", "my documents": "docs", "documents": "docs", "my freelancers": "docs", "freelancers": "docs", "find": "find", "search": "find" };
+    // on the Freelancer desktop My Smartdeck is the network program, when this record runs it
+    if (named[low] === "deck" && portal() === "freelancer" && progs.some(function (p) { return p.key === "grid"; })) { launch("grid"); return; }
     if (named[low]) { openApp(named[low]); return; }
     if (low === "control" || low === "control panel" || low === "settings") { openSettings(); return; }
     if (low === "winver" || low === "about") { aboutDialog(); return; }
     if (X.runNames[low]) { X.runNames[low](); return; }
+    if (X.run.some(function (fn) { try { return fn(t) === true; } catch (e) { return false; } })) return;
     dialog({ id: "runerr", title: t, icon: "error", body: "#GRIDOS cannot find '" + t + "'. Check the name and try again, or type a roll like 2d6+3.",
       buttons: [{ label: "OK", def: true, cancel: true, go: runDialog }] });
   }
@@ -1134,11 +1188,12 @@ EN.w98 = (function () {
   }
   var APPS = {
     deck: {
-      title: function () { return "My Smartdeck"; }, icon: function (px) { return pix("deck", px); },
+      // the Admin desktop's My Smartdeck; on the Freelancer desktop that name is the network program's, so this folder is Programs (Run's Browse)
+      title: function () { return portal() === "freelancer" ? "Programs" : "My Smartdeck"; }, icon: function (px) { return pix(portal() === "freelancer" ? "folder" : "deck", px); },
       build: function () {},
       refresh: function (w) {
         var items = programs().map(function (p) { return { label: p.label, art: tile32(p), go: function () { launch(p.key); } }; });
-        if (portal() === "freelancer") items.push({ label: "My Freelancers", art: pix("docs", 32), go: function () { openApp("docs"); } });
+        if (portal() === "freelancer") items.push({ label: "My Documents", art: pix("docs", 32), go: function () { openApp("docs"); } });
         items.push({ label: "Control Panel", art: pix("panel", 32), go: openSettings });
         var sig = items.map(function (i) { return i.label; }).join("|");
         if (w._sig === sig) return; w._sig = sig;
@@ -1146,7 +1201,7 @@ EN.w98 = (function () {
       }
     },
     docs: {
-      title: function () { return "My Freelancers"; }, icon: function (px) { return pix("docs", px); },
+      title: function () { return "My Documents"; }, icon: function (px) { return pix("docs", px); },
       build: function () {},
       refresh: function (w) {
         var roster = EN.store.roster(), ids = Object.keys(roster || {});
@@ -1250,7 +1305,8 @@ EN.w98 = (function () {
       el: el, label: label, dialog: dialog, msg: msg, openMenu: openMenu, closeMenus: closeMenus, pix: pix, PIX: PIX, mark: mark, sound: sound, soundOn: soundOn,
       store: store, APPS: APPS, openApp: openApp, launch: launch, programs: programs, portal: portal, reduced: reduced, is98: is98,
       tile32: tile32, glyph16: glyph16, closeApp: function (k) { if (W["a:" + k]) closeWin(W["a:" + k]); }, winOf: function (id) { return W[id] || null; },
-      active: function () { return !!D && is98(); }, openSettings: openSettings, recordName: recordName, deskSize: function () { return { w: deskW(), h: deskH() }; }
+      active: function () { return !!D && is98(); }, openSettings: openSettings,
+      hostOf: hostOf, live: function () { return LIVE; }, wake: function (id) { if (W[id]) wake(W[id]); }, layout: layout, from: function (r) { if (r) _from = r; }, recordName: recordName, deskSize: function () { return { w: deskW(), h: deskH() }; }
     },
     sound: sound, soundOn: soundOn, aboutDialog: aboutDialog, runDialog: runDialog, shutDownDialog: shutDownDialog, logOffDialog: logOffDialog, closeDialogs: closeDialogs
   };

@@ -511,3 +511,142 @@ html.skin-98 .w98-gz-fig.acting .w98-gz-svg{ visibility:hidden; }
 html.skin-98 .w98-gz-stage{ position:absolute; left:0; top:0; max-width:none; pointer-events:none; user-select:none; -webkit-user-drag:none; }
 html.skin-98 .w98-gizmo{ padding-top:var(--gz-lift, 0px); transition:transform .3s ease-out; }
 @media (prefers-reduced-motion: reduce){ html.skin-98 .w98-gizmo{ transition:none; } }
+
+/* ===========================================================================
+   THE #GRID BROWSER AND THE STASH SPREADSHEET (js/w98_web.js, 22 Nov 2026, the author's call). The browser's chrome is three rows
+   above its page: tabs, the navigation row with the address, and the Links bar. The Stash wears a spreadsheet's: a formula bar
+   and column letters above the sheet, row numbers in a gutter, worksheet tabs along the bottom. The pages inside are the app's
+   own; only their frame and their dress change.
+   =========================================================================== */
+html.skin-98 .w98-web{ flex:none; display:flex; flex-direction:column; gap:2px; padding:1px 0 2px; }
+html.skin-98 .w98-web-ti, html.skin-98 .w98-web-ti svg{ display:block; flex:none; }
+/* the tab strip: the tab in front rises and joins the toolbar under it */
+html.skin-98 .w98-web-tabs{ display:flex; align-items:flex-end; gap:2px; min-height:24px; padding:2px 2px 0; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; box-shadow:inset 0 -1px var(--w-hi); }
+html.skin-98 .w98-web-tabs::-webkit-scrollbar{ display:none; }
+html.skin-98 .w98-web-tab{ flex:0 1 190px; min-width:76px; height:20px; display:flex; align-items:center; gap:4px; padding:0 3px 0 5px; background:var(--w-face);
+  box-shadow:inset 1px 1px var(--w-hi), inset -1px 0 var(--w-dk), inset -2px 0 var(--w-sh); }
+html.skin-98 .w98-web-tab.w98-on{ height:23px; position:relative; z-index:1; box-shadow:inset 1px 1px var(--w-hi), inset -1px 0 var(--w-dk), inset -2px 0 var(--w-sh), 0 1px 0 var(--w-face); }
+html.skin-98 .w98-web-tt{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+html.skin-98 .w98-web-x{ flex:none; width:14px; height:13px; padding:0; border:0; background:var(--w-face); box-shadow:var(--w-button); font-size:10px; line-height:11px; text-align:center; }
+html.skin-98 .w98-web-x:active{ box-shadow:var(--w-pressed); }
+html.skin-98 .w98-web-new{ flex:none; width:22px; height:19px; margin:0 0 2px 2px; padding:0; border:0; background:var(--w-face); box-shadow:var(--w-button); font-size:14px; line-height:16px; }
+html.skin-98 .w98-web-new:active{ box-shadow:var(--w-pressed); }
+/* the navigation row: flat buttons that rise under the pointer, the way the browsers of the era drew them */
+html.skin-98 .w98-web-nav{ display:flex; align-items:center; gap:1px; padding:1px 2px; }
+html.skin-98 .w98-web-b{ flex:none; width:26px; height:24px; padding:0; border:0; background:none; display:flex; align-items:center; justify-content:center; color:#000; }
+html.skin-98 .w98-web-b:hover:not(:disabled){ box-shadow:inset -1px -1px var(--w-sh), inset 1px 1px var(--w-hi); }
+html.skin-98 .w98-web-b:active:not(:disabled){ box-shadow:inset 1px 1px var(--w-sh), inset -1px -1px var(--w-hi); }
+html.skin-98 .w98-web-b:active:not(:disabled) svg{ transform:translate(1px,1px); }
+html.skin-98 .w98-web-b:disabled{ color:var(--w-sh); filter:drop-shadow(1px 1px 0 var(--w-hi)); }
+html.skin-98 .w98-web-al{ flex:none; padding:0 4px 0 8px; }
+html.skin-98 input.w98-web-addr[type]{ flex:1; min-width:60px; }
+html.skin-98 .w98-btn.w98-web-go{ flex:none; min-width:0; height:22px; margin-left:3px; padding:0 9px; }
+/* the Links bar */
+html.skin-98 .w98-web-links{ display:flex; align-items:center; gap:1px; padding:3px 2px 1px; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; box-shadow:inset 0 1px var(--w-sh), inset 0 2px var(--w-hi); }
+html.skin-98 .w98-web-links::-webkit-scrollbar{ display:none; }
+html.skin-98 .w98-web-ll{ flex:none; padding:0 8px 0 3px; }
+html.skin-98 .w98-web-lk{ flex:none; height:20px; display:flex; align-items:center; gap:4px; padding:0 7px 0 4px; border:0; background:none; white-space:nowrap; }
+html.skin-98 .w98-web-lk:hover{ box-shadow:inset -1px -1px var(--w-sh), inset 1px 1px var(--w-hi); }
+html.skin-98 .w98-web-lk:active, html.skin-98 .w98-web-lk.w98-on{ box-shadow:inset 1px 1px var(--w-sh), inset -1px -1px var(--w-hi); }
+html.skin-98 .w98-web-lk.w98-due{ color:#a00000; font-weight:700; }
+/* a page in the browser is a site: no Stash heading, no Stash page row, no storefront picker, no painted address bar of its own */
+html.skin-98 .w98-webwin .w98-client :is(.inv-head, .inv-subs, .mkt-fronts){ display:none !important; }
+html.skin-98 .w98-webwin .w98-client .inv-sub{ padding-top:12px; box-shadow:none; }
+html.skin-98 .w98-webwin .w98-client:has(.inv-sub){ background:#fff; }
+html.skin-98 .w98-webwin .w98-client:has(.inv-sub) .inv-bar{ background:#fff !important; backdrop-filter:none !important; border-top:0 !important; }
+html.skin-98 .w98-webwin .w98-client .inv-sub::after{ display:none; }
+html.skin-98 .w98-webwin .w98-client .inv-bar{ justify-content:flex-end; }
+
+/* ---- the start page: a dark sky over the city, the counters at the top left, the clock at the right, the tiles in the middle */
+/* the page it sits in gives up its padding and becomes a column, so the start page fills the window however tall it is */
+html.skin-98 .w98-client > :is(#view, .w98-snap).os-main:has(> .w98-ntp){ display:flex; flex-direction:column; padding:0; }
+html.skin-98 .w98-ntp{ position:relative; flex:1 0 auto; display:flex; flex-direction:column; box-sizing:border-box; min-height:420px; padding:16px 22px 14px; overflow:hidden;
+  color:#fff; font-family:Arial, Helvetica, sans-serif; user-select:none;
+  background:radial-gradient(ellipse 70% 55% at 72% 105%, rgba(255,64,150,.42), transparent 70%), radial-gradient(ellipse 60% 50% at 8% -5%, rgba(0,200,255,.30), transparent 70%), linear-gradient(180deg, #0a0d26 0%, #170d31 55%, #2a0c2c 100%); }
+/* the skyline: one cut-out shape, its lit windows a dotted pattern on it */
+html.skin-98 .w98-ntp::before{ content:""; position:absolute; left:0; right:0; bottom:0; height:120px; pointer-events:none;
+  background:radial-gradient(circle, rgba(255,214,120,.55) 0 1px, transparent 1.5px) 0 0 / 9px 11px, #07051a;
+  clip-path:polygon(0 100%, 0 62%, 4% 62%, 4% 40%, 8% 40%, 8% 55%, 11% 55%, 11% 22%, 13% 22%, 13% 14%, 15% 14%, 15% 22%, 17% 22%, 17% 60%, 21% 60%, 21% 35%, 26% 35%, 26% 70%, 30% 70%, 30% 48%, 34% 48%, 34% 30%, 37% 30%, 37% 52%, 41% 52%, 41% 66%, 45% 66%, 45% 26%, 47% 26%, 47% 8%, 48% 8%, 48% 26%, 50% 26%, 50% 58%, 55% 58%, 55% 38%, 60% 38%, 60% 72%, 64% 72%, 64% 44%, 68% 44%, 68% 20%, 71% 20%, 71% 50%, 75% 50%, 75% 64%, 79% 64%, 79% 32%, 84% 32%, 84% 56%, 88% 56%, 88% 42%, 92% 42%, 92% 68%, 96% 68%, 96% 50%, 100% 50%, 100% 100%); }
+html.skin-98 .w98-ntp-top{ position:relative; z-index:1; display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+html.skin-98 .w98-ntp-stats{ display:flex; gap:22px; flex-wrap:wrap; }
+html.skin-98 .w98-ntp-stats > div{ display:flex; flex-direction:column; gap:2px; }
+html.skin-98 .w98-ntp-stats b{ font-size:22px; font-weight:700; color:#ff8a3d; }
+html.skin-98 .w98-ntp-stats > div:nth-child(2) b{ color:#b89cff; }
+html.skin-98 .w98-ntp-stats > div:nth-child(3) b{ color:#fff; }
+html.skin-98 .w98-ntp-stats span{ font-size:11px; color:rgba(255,255,255,.72); }
+html.skin-98 .w98-ntp-clock{ font-size:42px; font-weight:400; line-height:1; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+html.skin-98 .w98-ntp-mid{ position:relative; z-index:1; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:18px 0 110px; }
+html.skin-98 .w98-ntp-brand{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+html.skin-98 .w98-ntp-brand b{ font-size:34px; text-shadow:0 0 18px rgba(0,229,255,.55); }
+html.skin-98 .w98-ntp-brand span{ font-size:12px; color:rgba(255,255,255,.7); }
+html.skin-98 .w98-ntp-search{ display:flex; gap:6px; width:min(540px, 100%); }
+html.skin-98 input.w98-ntp-q[type]{ flex:1; min-width:0; height:26px; font-size:13px; }
+html.skin-98 .w98-ntp-search .w98-btn{ height:26px; }
+html.skin-98 .w98-ntp-tiles{ display:grid; grid-template-columns:repeat(auto-fill, 96px); gap:12px; justify-content:center; width:min(680px, 100%); }
+html.skin-98 .w98-ntp-tile{ display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 4px 10px; border:0; border-radius:12px; background:rgba(255,255,255,.09); color:#fff !important;
+  font-family:Arial, Helvetica, sans-serif; font-size:12px; cursor:pointer !important; }
+html.skin-98 .w98-ntp-tile:hover{ background:rgba(255,255,255,.2); }
+html.skin-98 .w98-ntp-tile:focus-visible{ outline:2px solid #00e5ff; outline-offset:1px; }
+html.skin-98 .w98-ntp-fav svg{ display:block; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.45); }
+html.skin-98 .w98-ntp-nm{ max-width:92px; text-align:center; overflow-wrap:anywhere; }
+html.skin-98 .w98-ntp-foot{ position:relative; z-index:1; font-size:11px; color:rgba(255,255,255,.6); }
+
+/* ---- the Stash as a spreadsheet ---- */
+html.skin-98 .w98-xls-fx{ flex:none; display:flex; align-items:center; gap:3px; padding:2px 1px 3px; }
+html.skin-98 .w98-xls-nb{ flex:none; width:62px; height:19px; line-height:19px; padding:0 4px; background:#fff; box-shadow:var(--w-sunken); }
+html.skin-98 .w98-xls-f{ flex:none; padding:0 6px; font:italic 700 13px "Times New Roman", Times, serif; color:#000080; }
+html.skin-98 .w98-xls-v{ flex:1; min-width:0; height:19px; line-height:19px; padding:0 5px; background:#fff; box-shadow:var(--w-sunken); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:Arial, Helvetica, sans-serif; font-size:12px; }
+html.skin-98 .w98-xls-cols{ flex:none; display:flex; height:17px; margin:0 2px; background:var(--w-face); overflow:hidden; }
+html.skin-98 .w98-xls-cols span{ flex:1 1 0; min-width:0; line-height:17px; text-align:center; box-shadow:inset -1px -1px var(--w-sh), inset 1px 1px var(--w-hi); }
+html.skin-98 .w98-xls-cols .w98-xls-c0{ flex:0 0 34px; }
+/* the worksheet tabs: the sheet in front is white and joined to the grid above it */
+html.skin-98 .w98-xls-tabs{ flex:none; display:flex; align-items:flex-start; height:20px; padding:0 2px; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; box-shadow:inset 0 1px var(--w-dk); }
+html.skin-98 .w98-xls-tabs::-webkit-scrollbar{ display:none; }
+html.skin-98 .w98-xls-arr{ flex:none; padding:3px 10px 0 4px; color:var(--w-sh); }
+html.skin-98 .w98-xls-tab{ flex:none; height:18px; margin-right:-1px; padding:0 14px; border:0; background:var(--w-face); font-family:Arial, Helvetica, sans-serif; font-size:11px;
+  box-shadow:inset 1px 0 var(--w-dk), inset -1px 0 var(--w-dk), inset 0 -1px var(--w-dk); }
+html.skin-98 .w98-xls-tab.w98-on{ position:relative; z-index:1; margin-top:-1px; height:19px; background:#fff; font-weight:700; }
+/* the sheet: white, Arial, gridlines that scroll with it, and a grey gutter where the row numbers go */
+html.skin-98 .w98-xls .w98-client{ --xls-g:34px; padding:0; position:relative; counter-reset:xlsrow;
+  background:linear-gradient(90deg, var(--w-face) 0 calc(var(--xls-g) - 1px), var(--w-sh) calc(var(--xls-g) - 1px) var(--xls-g), transparent var(--xls-g)) 0 0 / 100% 100% no-repeat local,
+             repeating-linear-gradient(90deg, transparent 0 calc(100% / 12 - 1px), #d9d9d9 calc(100% / 12 - 1px) calc(100% / 12)) var(--xls-g) 0 / calc(100% - var(--xls-g)) 100% no-repeat local,
+             #fff; }
+html.skin-98 .w98-xls .w98-client > :is(#view, .w98-snap).os-main{ padding:4px 10px 24px calc(var(--xls-g) + 8px); color:#000; background:transparent;
+  --text:#000; --text2:#222; --text3:#555; --text4:#888; --border:#d0d0d0; --border2:#a0a0a0; --bg:#fff; --bg1:#fff; --bg2:#fff; --bg3:#f2f2f2; --bg4:#e6e6e6; --panel:#fff; --panel-solid:#fff; --w-field:#fff; }
+/* the white pages in the browser take white fields too (the palette's field colour is a dark one on a dark palette) */
+html.skin-98 .w98-webwin .w98-client :is(.inv-sub, .post-sub, .contact-sub){ --w-field:#fff; }
+html.skin-98 .w98-xls .w98-client :is(.inv-head, .inv-subs){ display:none !important; }
+html.skin-98 .w98-xls .w98-client .inv-bar{ position:static !important; margin:0 0 6px !important; padding:3px 0 !important; background:transparent !important; backdrop-filter:none !important; border:0 !important; border-bottom:1px solid #d9d9d9 !important; justify-content:flex-end; }
+html.skin-98 .w98-xls .w98-client .inv-sub{ position:static; padding:0; margin:0; background:transparent; box-shadow:none; font-size:13px; }
+html.skin-98 .w98-xls .w98-client .inv-sub::after{ display:none; }
+html.skin-98 .w98-xls .w98-client :is(.inv-sub, .inv-sub *){ font-family:Arial, Helvetica, sans-serif !important; }
+/* every box is a run of cells: no rounding, no shadow, no glow, a hairline under each row */
+html.skin-98 .w98-xls .w98-client .inv-sub :is(.panel, .feature, .muted-box, .device-card, .opt-card){ border-radius:0 !important; box-shadow:none !important; filter:none !important; background:transparent !important; }
+html.skin-98 .w98-xls .w98-client .inv-sub .panel{ border:0 !important; margin:0 !important; position:static; }
+html.skin-98 .w98-xls .w98-client .inv-sub .panel > .panel-h{ position:static; padding:3px 4px !important; background:#e8eef7 !important; border:0 !important; border-bottom:1px solid #9fb3d1 !important; }
+html.skin-98 .w98-xls .w98-client .inv-sub .panel > .panel-h h3{ font-size:13px !important; font-weight:700 !important; color:#000 !important; text-decoration:none !important; }
+html.skin-98 .w98-xls .w98-client .inv-sub .panel > .panel-b{ padding:0 !important; }
+html.skin-98 .w98-xls .w98-client .inv-sub .section-title{ position:static; margin:0 !important; padding:3px 4px; min-height:20px; font-size:13px !important; font-weight:700; color:#000 !important;
+  background:#f2f2f2; border-bottom:1px solid #c8c8c8; text-transform:none; }
+html.skin-98 .w98-xls .w98-client .inv-sub .section-title .line{ display:none; }
+html.skin-98 .w98-xls .w98-client .inv-sub .feature{ position:static; margin:0 !important; padding:3px 4px !important; border:0 !important; border-bottom:1px solid #d9d9d9 !important; }
+html.skin-98 .w98-xls .w98-client .inv-sub .feature:nth-child(even){ background:transparent !important; }
+html.skin-98 .w98-xls .w98-client .inv-sub .feature h4{ font-size:13px !important; font-weight:400; }
+/* the row numbers: each row counts, its number set in the gutter at the row's top (an absolute box with no top keeps its place in the flow) */
+html.skin-98 .w98-xls .w98-client .inv-sub :is(.panel > .panel-h, .section-title, .feature){ counter-increment:xlsrow; }
+html.skin-98 .w98-xls .w98-client .inv-sub :is(.panel > .panel-h, .section-title, .feature)::before{ content:counter(xlsrow); position:absolute; left:0; width:calc(var(--xls-g) - 1px); height:auto;
+  margin:-3px 0 0; padding:3px 0; text-align:center; font:11px/14px var(--w-font) !important; color:#000 !important; background:var(--w-face); box-shadow:inset 0 -1px var(--w-sh); text-transform:none; opacity:1; }
+@media (max-width: 759px){
+  html.skin-98 .w98-web-al, html.skin-98 .w98-web-go, html.skin-98 .w98-web-ll{ display:none; }
+  html.skin-98 .w98-web-b{ width:36px; height:36px; }
+  html.skin-98 .w98-web-tab{ height:30px; min-width:96px; }
+  html.skin-98 .w98-web-tab.w98-on{ height:33px; }
+  html.skin-98 .w98-web-x{ width:26px; height:24px; font-size:13px; }
+  html.skin-98 .w98-web-new{ width:34px; height:30px; font-size:18px; }
+  html.skin-98 .w98-web-lk{ height:34px; padding:0 10px 0 6px; }
+  html.skin-98 .w98-xls-tab{ height:30px; padding:0 16px; }
+  html.skin-98 .w98-xls-tabs{ height:32px; }
+  html.skin-98 .w98-xls-cols{ display:none; }
+  html.skin-98 .w98-ntp-clock{ font-size:30px; }
+  html.skin-98 .w98-ntp-tiles{ grid-template-columns:repeat(auto-fill, 84px); gap:10px; }
+}
