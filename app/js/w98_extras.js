@@ -4,7 +4,7 @@
    Breach, a small game of its own; Gizmo (js/w98_gizmo.js) and the Control Panel (js/w98_cpanel.js) are their own files. All of it hangs on js/w98.js through EN.w98.ext (menu lists) and EN.w98.kit (its dialogs, menus and sounds), so
    the desktop stays the desktop; none of it runs on another skin.
 
-   Original work only. Breach is a sweeper-genre game (find the hidden ICE from the counts around it) in its own dress: its own name,
+   Original work only. Breach is a sweeper-genre game (find the hidden IC from the counts around it) in its own dress: its own name,
    glyphs, colours and screen, none of the look of any game that shipped with a desktop of the era. The error box is a joke about the
    die, in its own words, not a copy of any system's message. No em or en dashes anywhere in this file (house style).
    =========================================================================== */
@@ -14,7 +14,7 @@ window.EN = window.EN || {};
   var K = EN.w98.kit, X = EN.w98.ext, el = K.el, store = K.store;
   function on(k, def) { var v = store(k); return v == null ? def : v !== "0"; }
 
-  /* two more pixel icons, drawn here: a lit bulb, and a crystal of ICE */
+  /* two more pixel icons, drawn here: a lit bulb, and a crystal of IC */
   K.PIX.bulb = '<circle cx="8" cy="6" r="4.5" fill="#ffee55" stroke="#000"/><path d="M6.2 5.4Q8 3.4 9.8 5.4" stroke="#fff" fill="none"/><rect x="6" y="10.5" width="4" height="3.5" fill="#808080" stroke="#000" stroke-width=".8"/><rect x="6.6" y="11.6" width="2.8" height=".8" fill="#000"/>';
   K.PIX.ice = '<path d="M8 1l2.2 4.8L15 8l-4.8 2.2L8 15l-2.2-4.8L1 8l4.8-2.2z" fill="#b00000" stroke="#000" stroke-width=".8"/><circle cx="8" cy="8" r="1.6" fill="#fff"/>';
 
@@ -226,9 +226,9 @@ window.EN = window.EN || {};
   });
 
   /* ======================================================================== BREACH
-     A grid of nodes, some of them ICE. Open a node and it shows how many of the eight around it are ICE; open an ICE and the
-     run is over. Mark the nodes you think are ICE (right-click, the F key, or the Mark button on a phone). Your first open is
-     always safe. Open every node that is not ICE to breach the grid. Best times are kept per size on this device. */
+     A grid of nodes, some of them IC. Open a node and it shows how many of the eight around it are IC; open an IC and the
+     run is over. Mark the nodes you think are IC (right-click, the F key, or the Mark button on a phone). Your first open is
+     always safe. Open every node that is not IC to breach the grid. Best times are kept per size on this device. */
   var BR_KEY = "en_w98_breach_v1", BR_SIZE = "en_w98_breach_size_v1";
   var SIZES = { s: { c: 8, r: 8, n: 10, name: "Small" }, m: { c: 10, r: 10, n: 16, name: "Medium" }, l: { c: 12, r: 12, n: 28, name: "Large" } };
   function bests() { try { var v = JSON.parse(store(BR_KEY) || "{}"); return v && typeof v === "object" ? v : {}; } catch (e) { return {}; } }
@@ -246,16 +246,16 @@ window.EN = window.EN || {};
       var kind = store(BR_SIZE); if (!SIZES[kind]) kind = "s";
       var G = w._g = { kind: kind, cells: [], tm: null, mark: false };
       var sel = el("select", { "aria-label": "Size", onchange: function () { G.kind = sel.value; store(BR_SIZE, G.kind); fresh(); } },
-        Object.keys(SIZES).map(function (k) { var z = SIZES[k]; return el("option", { value: k, selected: k === G.kind, text: z.name + " (" + z.c + " by " + z.r + ", " + z.n + " ICE)" }); }));
+        Object.keys(SIZES).map(function (k) { var z = SIZES[k]; return el("option", { value: k, selected: k === G.kind, text: z.name + " (" + z.c + " by " + z.r + ", " + z.n + " IC)" }); }));
       var left = el("span.w98-bn", { text: "" }), clock = el("span.w98-bn", { text: "" });
-      var markBtn = el("button.btn.sm", { type: "button", "aria-pressed": "false", title: "Mark nodes you think are ICE instead of opening them (the F key, or a right-click, does the same)", onclick: function () {
+      var markBtn = el("button.btn.sm", { type: "button", "aria-pressed": "false", title: "Mark nodes you think are IC instead of opening them (the F key, or a right-click, does the same)", onclick: function () {
         G.mark = !G.mark; markBtn.setAttribute("aria-pressed", String(G.mark)); markBtn.classList.toggle("w98-mark-on", G.mark);
       } }, "Mark");
       var grid = el("div.w98-bgrid", { role: "grid", "aria-label": "Breach" });
       var msg = el("div.w98-bmsg", { role: "status", "aria-live": "polite" });
       w.client.appendChild(el("div.w98-b", null, [
         el("div.w98-brow", null, [sel, el("button.btn.sm", { type: "button", onclick: function () { fresh(); } }, "New Game"), markBtn]),
-        el("div.w98-brow.w98-bstat", null, [el("span", null, ["ICE left ", left]), el("span", null, ["Time ", clock])]),
+        el("div.w98-brow.w98-bstat", null, [el("span", null, ["IC left ", left]), el("span", null, ["Time ", clock])]),
         el("div.w98-bwrap", null, [grid]),
         msg
       ]));
@@ -279,7 +279,7 @@ window.EN = window.EN || {};
         var c = G.cells[i], b = c.b;
         b.className = "w98-bc" + (c.open ? " on" : "") + (c.open && c.n > 0 ? " n" + c.n : "") + (c.flag ? " flag" : "") + (c.show ? " ice" : "") + (c.wrong ? " wrong" : "");
         b.innerHTML = c.wrong ? CROSS : c.show ? CRYSTAL : c.flag ? FLAG : (c.open && c.n > 0 ? String(c.n) : "");
-        b.setAttribute("aria-label", c.open ? (c.n ? c.n + " ICE around" : "clear") : c.flag ? "marked" : "closed");
+        b.setAttribute("aria-label", c.open ? (c.n ? c.n + " IC around" : "clear") : c.flag ? "marked" : "closed");
       }
       function fresh() {
         clearInterval(G.tm); G.tm = null;
@@ -315,7 +315,7 @@ window.EN = window.EN || {};
         if (!G.started) {
           G.started = true; plant(i);
           G.tm = setInterval(function () { G.secs++; paintHead(); }, 1000);
-          msg.textContent = "A number counts the ICE in the eight nodes around it. Mark what you think is ICE.";
+          msg.textContent = "A number counts the IC in the eight nodes around it. Mark what you think is IC.";
         }
         if (c.ice) { lose(i); return; }
         var stack = [i];
@@ -336,10 +336,10 @@ window.EN = window.EN || {};
           else if (!c.ice && c.flag) { c.wrong = true; paint(i); }
         });
         G.cells[hit].b.classList.add("hit");
-        msg.textContent = "ICE tripped. The run is over.";
+        msg.textContent = "IC tripped. The run is over.";
         if (EN.w98.moment) EN.w98.moment("breach-lose");
-        K.dialog({ id: "breach-lose", title: "Breach", icon: "error", width: 340, body: "You opened a node that was ICE. It had been waiting for you.",
-          buttons: [{ label: "OK", def: true, cancel: true, go: function () { if (EN.w98.say) EN.w98.say("That one was ICE. It usually is."); } }, { label: "&New Game", go: fresh }] });
+        K.dialog({ id: "breach-lose", title: "Breach", icon: "error", width: 340, body: "You opened a node that was IC. It had been waiting for you.",
+          buttons: [{ label: "OK", def: true, cancel: true, go: function () { if (EN.w98.say) EN.w98.say("That one was IC. It usually is."); } }, { label: "&New Game", go: fresh }] });
       }
       function win() {
         end();

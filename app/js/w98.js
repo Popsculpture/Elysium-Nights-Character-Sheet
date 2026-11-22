@@ -116,9 +116,17 @@ EN.w98 = (function () {
     error: '<circle cx="8" cy="8" r="7" fill="#c00000" stroke="#000"/><path d="M5 5l6 6M11 5l-6 6" stroke="#fff" stroke-width="2"/>',
     question: '<circle cx="8" cy="8" r="7" fill="#fff" stroke="#000"/><circle cx="8" cy="8" r="6" fill="#000080"/><path d="M5.6 6.2Q5.6 3.8 8 3.8T10.4 6.2Q10.4 7.6 8.8 8.4T8 10" stroke="#fff" stroke-width="1.6" fill="none"/><rect x="7.2" y="11" width="1.6" height="1.6" fill="#fff"/>'
   };
-  function pix(name, px) { return '<svg viewBox="0 0 16 16" width="' + px + '" height="' + px + '" shape-rendering="crispEdges">' + (PIX[name] || PIX.page) + '</svg>'; }
+  /* the redrawn 32 px system icons (21 Nov 2026): at 32 px (or a whole multiple) a name that has a file shows that file, whole, pixelated,
+     never tinted. At 16 px the drawing below stays: there is no 16 px set of the new art, so the two sizes differ for now. */
+  var P32 = { deck: "deck", docs: "docs", page: "page", folder: "folder", panel: "panel", desk: "desk", find: "find", help: "help", run: "run", key: "key", power: "power",
+    speaker: "speaker", speaker32: "speaker", mute: "mute", bulb: "bulb", link: "link", layout: "layout", die: "die", info: "info", warn: "warn", error: "error", question: "question", ice: "aggressive-ic" };
+  function img32(file, px) { return '<img class="w98-px" src="img/pixel-32/' + file + '-32.svg" width="' + px + '" height="' + px + '" alt="" draggable="false">'; }
+  function pix(name, px) {
+    if (P32[name] && px >= 32 && px % 32 === 0) return img32(P32[name], px);
+    return '<svg viewBox="0 0 16 16" width="' + px + '" height="' + px + '" shape-rendering="crispEdges">' + (PIX[name] || PIX.page) + '</svg>'; }
   // a Freelancer record on the desktop: a page with the author's operative on it
   function docIcon(px) {
+    if (px >= 32 && px % 32 === 0) return img32("freelancer-document", px);
     var g = parts(EN.app.tabIcon("combat"));
     return '<svg viewBox="0 0 16 16" width="' + px + '" height="' + px + '"><g shape-rendering="crispEdges">' + PIX.page + '</g>' +
       (g ? '<svg x="5" y="5" width="5.5" height="7" viewBox="' + g.vb + '" fill="#000080"' + g.keep + '>' + g.inner + '</svg>' : '') + '</svg>';

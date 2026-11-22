@@ -39,7 +39,7 @@ html.skin-98 .w98-di.w98-sel .w98-dl{ background:var(--w-sel); outline:1px dotte
 /* a selected icon takes the selection's blue through a 50% dither, the way the era tinted it */
 html.skin-98 .w98-di .w98-ic, html.skin-98 .w98-lgi .w98-ic{ position:relative; }
 /* the program art is never tinted: a chosen one gets a highlight behind and around it instead of the dither over it */
-html.skin-98 .w98-px{ display:block; width:32px; height:32px; image-rendering:crisp-edges; image-rendering:pixelated; filter:none; opacity:1; }
+html.skin-98 .w98-px{ display:block; image-rendering:crisp-edges; image-rendering:pixelated; filter:none; opacity:1; }
 html.skin-98 :is(.w98-di, .w98-lgi).w98-sel .w98-icpx{ background:var(--w-sel); box-shadow:0 0 0 2px var(--w-sel); outline:1px dotted #ffff80; outline-offset:2px; }
 html.skin-98 :is(.w98-di, .w98-lgi).w98-sel .w98-icpx::after{ display:none; }
 html.skin-98 :is(.w98-di, .w98-lgi).w98-sel .w98-ic::after{ content:""; position:absolute; inset:0; background:repeating-conic-gradient(var(--w-sel) 0 25%, transparent 0 50%) 0 0 / 2px 2px; }
