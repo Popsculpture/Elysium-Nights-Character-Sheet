@@ -1,118 +1,98 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140" width="600" height="420" role="img" aria-labelledby="title desc">
-<title id="title">Gizmo: Nothing to See Here</title>
-<desc id="desc">Gizmo checks both ways and pops open three suspicious terminals, hunching over them with narrowed eyes. A pointer slides in and he jumps. He slams the three windows shut one after another and snaps upright with wide, innocent eyes fixed on the ceiling. The pointer pokes him and he sneaks a glance at it. One window creeps back open; he glares at it and it shuts. The pointer leaves and he sags with relief. Six second loop on a transparent background.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" class="nts" viewBox="0 0 200 140" width="600" height="420" role="img" aria-labelledby="nts-title nts-desc">
+<title id="nts-title">Gizmo: Nothing to See Here</title>
+<desc id="nts-desc">Gizmo checks both ways and pops open three suspicious terminals, hunching over them with narrowed eyes. He freezes: he has been seen. Eyes wide, he lunges at each window and slams it shut, his eyes darting to each one in turn. Two new windows pop up as the last one closes, and one of them will not stay shut. His eyes flick between them in a panic. He stops, glares, hops, and lands hard. Everything closes at once. He snaps upright and whistles at the ceiling, sneaks one look at you, looks away, and sags with relief. Seven second loop on a transparent background.</desc>
 <style>
-.window{opacity:0;transform-box:fill-box;transform-origin:center;animation:6s linear infinite}
-.a{animation-name:winA,visA}.b{animation-name:winB,visB}.c{animation-name:winC,visC}
-.a,.b,.c{animation-timing-function:linear,steps(1,end)}
-.gizmo{transform-origin:99px 105px;animation:pose 6s ease-in-out infinite}
-.eyes{transform-origin:33px 41px;animation:lids 6s linear infinite}
-.pupils{animation:look 6s ease-in-out infinite}
-.brows{animation:brows 6s ease-in-out infinite}
-.cursor{transform:translate(72px,-30px);animation:cursor 6s ease-in-out infinite}
-.panic{opacity:0;animation:panic 6s steps(1,end) infinite}
-.code{animation:type .4s steps(1,end) infinite}
-@keyframes winA{0%,9%{transform:scale(.6)}10.2%{transform:scale(1.08)}11.4%,41.5%{transform:scale(1)}42.3%{transform:scale(1.06)}43%,100%{transform:scale(0)}}
-@keyframes visA{0%{opacity:0}9%{opacity:1}43%,100%{opacity:0}}
-@keyframes winB{0%,13%{transform:scale(.6)}14.2%{transform:scale(1.08)}15.4%,44%{transform:scale(1)}44.8%{transform:scale(1.06)}45.5%,100%{transform:scale(0)}}
-@keyframes visB{0%{opacity:0}13%{opacity:1}45.5%,100%{opacity:0}}
-@keyframes winC{0%,17%{transform:scale(.6)}18.2%{transform:scale(1.08)}19.4%,46.5%{transform:scale(1)}47.3%{transform:scale(1.06)}48%,66.5%{transform:scale(.2)}69%{transform:scale(1.04)}69.6%,70.6%{transform:scale(1)}71.4%,100%{transform:scale(0)}}
-@keyframes visC{0%{opacity:0}17%{opacity:1}48%{opacity:0}66.5%{opacity:1}71.4%,100%{opacity:0}}
-@keyframes pose{
-0%,6%,93%,100%{transform:translateY(0) rotate(0) scale(1,1)}
-10%,37%{transform:translateY(0) rotate(-4deg) scale(1,.97)}
-40%{transform:translateY(-5px) rotate(4deg) scale(.97,1.05)}
-41.7%{transform:translateY(0) rotate(-6deg) scale(1,1)}
-44.2%{transform:translateY(0) rotate(6deg) scale(1,1)}
-46.7%{transform:translateY(0) rotate(-3deg) scale(1,1)}
-49.5%{transform:translateY(0) rotate(0) scale(.96,1.07)}
-52%,59%{transform:translateY(0) rotate(0) scale(.97,1.04)}
-60.5%{transform:translateY(0) rotate(-3deg) scale(.97,1.04)}
-63%{transform:translateY(0) rotate(1deg) scale(.97,1.04)}
-65%,69.5%{transform:translateY(0) rotate(0) scale(.97,1.04)}
-71%{transform:translateY(0) rotate(-2deg) scale(1,1)}
-74%,83%{transform:translateY(0) rotate(0) scale(.97,1.04)}
-88.5%{transform:translateY(0) rotate(0) scale(1.03,.96)}}
-@keyframes lids{
-0%,8%,93%,95%,98%,100%{transform:scale(1,1)}
-10%,39.9%{transform:scale(1,.7)}
-40%,43%{transform:scale(1.3,1.3)}
-47%{transform:scale(1.2,1.2)}
-49.5%,63.5%{transform:scale(1.15,1.15)}
-64.5%,67%{transform:scale(1,.85)}
-68%{transform:scale(1.15,1.15)}
-69.8%,71.5%{transform:scale(1,.6)}
-73.5%,83%{transform:scale(1.15,1.15)}
-88.5%{transform:scale(1,.6)}
-96.5%{transform:scale(1,.08)}}
-@keyframes look{
-0%,3%,92.5%,100%{transform:translate(0,0)}
-4.5%,6%{transform:translate(-3px,0)}
-7.2%,9%{transform:translate(1.4px,0)}
-10%,13%{transform:translate(-3px,-.8px)}
-14%,17%{transform:translate(1.4px,-.4px)}
-18%,22.5%{transform:translate(-2.6px,1.4px)}
-24%,27%{transform:translate(-3px,-.8px)}
-28%,31%{transform:translate(1.4px,-.4px)}
-32%,35.5%{transform:translate(-2.6px,1.4px)}
-37%,40.5%{transform:translate(1.4px,-.2px)}
-41.7%{transform:translate(-3px,-.8px)}
-44.2%{transform:translate(1.4px,-.4px)}
-46.7%{transform:translate(-2.6px,1.4px)}
-49.5%,63.5%{transform:translate(-2.4px,-2.4px)}
-64.8%,67%{transform:translate(1.4px,.3px)}
-68.2%{transform:translate(-2.4px,-2.4px)}
-69.8%,71.6%{transform:translate(-2.6px,1.4px)}
-73.5%,82.5%{transform:translate(-2.4px,-2.4px)}
-84.5%,88.5%{transform:translate(1.4px,-.5px)}}
-@keyframes brows{
-0%,8%,93%,100%{transform:translateY(0)}
-10%,39.9%{transform:translateY(1.4px)}
-40%,47%{transform:translateY(-3px)}
-49.5%,69%{transform:translateY(-2.6px)}
-69.8%,71.6%{transform:translateY(1px)}
-73.5%,83%{transform:translateY(-2.6px)}
-88.5%{transform:translateY(.5px)}}
-@keyframes cursor{
-0%,33%,88%,100%{transform:translate(72px,-30px)}
-40%,57.5%{transform:translate(0,0)}
-59.5%{transform:translate(-21px,1px)}
-62.5%,80%{transform:translate(-5px,0)}}
-@keyframes panic{0%{opacity:0}40%{opacity:1}43%,100%{opacity:0}}
-@keyframes type{0%{opacity:1}50%,100%{opacity:0}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+.nts-window{opacity:0;transform-box:fill-box;transform-origin:center;animation:7.2s linear infinite}
+.nts-a{animation-name:nts-winA,nts-visA}.nts-b{animation-name:nts-winB,nts-visB}.nts-c{animation-name:nts-winC,nts-visC}.nts-d{animation-name:nts-winD,nts-visD}.nts-e{animation-name:nts-winE,nts-visE}
+.nts-a,.nts-b,.nts-c,.nts-d,.nts-e{animation-timing-function:linear,steps(1,end)}
+.nts-gizmo{transform-origin:99px 105px;animation:nts-pose 7.2s ease-in-out infinite}
+.nts-eyes{transform-origin:33px 41px;animation:nts-lids 7.2s linear infinite}
+.nts-follow{transform:translate(calc(var(--gizmo-look-x,0)*1px),calc(var(--gizmo-look-y,0)*1px));transition:transform .12s linear}
+.nts-pupils{animation:nts-look 7.2s ease-in-out infinite}
+.nts-brows{animation:nts-brows 7.2s ease-in-out infinite}
+.nts-panic{opacity:0;animation:nts-panic 7.2s steps(1,end) infinite}
+.nts-thud{opacity:0;animation:nts-thud 7.2s steps(1,end) infinite}
+.nts-note1,.nts-note2{opacity:0;animation:7.2s linear infinite;animation-timing-function:linear,steps(1,end)}
+.nts-note1{animation-name:nts-drift1,nts-on1}.nts-note2{animation-name:nts-drift2,nts-on2}
+.nts-bar{transform-box:fill-box;transform-origin:left center;animation:nts-bar 7.2s linear infinite}
+.nts-code{animation:nts-type .4s steps(1,end) infinite}
+@keyframes nts-winA{0.00%{transform:scale(.6)}9.72%{transform:scale(.6)}10.83%{transform:scale(1.08)}11.94%{transform:scale(1)}36.67%{transform:scale(1)}37.36%{transform:scale(1.07)}38.06%{transform:scale(0)}100.00%{transform:scale(0)}}
+@keyframes nts-visA{0.00%{opacity:0}9.72%{opacity:1}38.06%{opacity:0}100.00%{opacity:0}}
+@keyframes nts-winB{0.00%{transform:scale(.6)}13.19%{transform:scale(.6)}14.31%{transform:scale(1.08)}15.42%{transform:scale(1)}40.00%{transform:scale(1)}40.69%{transform:scale(1.07)}41.39%{transform:scale(0)}100.00%{transform:scale(0)}}
+@keyframes nts-visB{0.00%{opacity:0}13.19%{opacity:1}41.39%{opacity:0}100.00%{opacity:0}}
+@keyframes nts-winC{0.00%{transform:scale(.6)}16.67%{transform:scale(.6)}17.78%{transform:scale(1.08)}18.89%{transform:scale(1)}43.33%{transform:scale(1)}44.03%{transform:scale(1.07)}44.72%{transform:scale(0)}100.00%{transform:scale(0)}}
+@keyframes nts-visC{0.00%{opacity:0}16.67%{opacity:1}44.72%{opacity:0}100.00%{opacity:0}}
+@keyframes nts-winD{0.00%{transform:scale(.6)}45.83%{transform:scale(.6)}46.94%{transform:scale(1.08)}48.06%{transform:scale(1)}52.08%{transform:scale(1)}52.78%{transform:scale(1.07)}53.47%{transform:scale(0)}55.28%{transform:scale(.6)}56.39%{transform:scale(1.08)}57.50%{transform:scale(1)}65.83%{transform:scale(1)}66.53%{transform:scale(1.07)}67.22%{transform:scale(0)}100.00%{transform:scale(0)}}
+@keyframes nts-visD{0.00%{opacity:0}45.83%{opacity:1}53.47%{opacity:0}55.28%{opacity:1}67.22%{opacity:0}100.00%{opacity:0}}
+@keyframes nts-winE{0.00%{transform:scale(.6)}47.22%{transform:scale(.6)}48.33%{transform:scale(1.08)}49.44%{transform:scale(1)}66.39%{transform:scale(1)}67.08%{transform:scale(1.07)}67.78%{transform:scale(0)}100.00%{transform:scale(0)}}
+@keyframes nts-visE{0.00%{opacity:0}47.22%{opacity:1}67.78%{opacity:0}100.00%{opacity:0}}
+@keyframes nts-pose{0.00%{transform:translateY(0px) rotate(0deg) scale(1,1)}8.61%{transform:translateY(0px) rotate(0deg) scale(1,1)}11.11%{transform:translateY(0px) rotate(-4deg) scale(1,0.97)}31.39%{transform:translateY(0px) rotate(-4deg) scale(1,0.97)}32.36%{transform:translateY(-5px) rotate(0deg) scale(0.97,1.06)}33.89%{transform:translateY(0px) rotate(0deg) scale(0.98,1.03)}35.83%{transform:translateY(0px) rotate(0deg) scale(0.98,1.03)}37.22%{transform:translateY(0px) rotate(-7deg) scale(1,1)}38.61%{transform:translateY(0px) rotate(-7deg) scale(1,1)}40.56%{transform:translateY(0px) rotate(7deg) scale(1,1)}41.94%{transform:translateY(0px) rotate(7deg) scale(1,1)}43.89%{transform:translateY(0px) rotate(-4deg) scale(1.02,0.96)}45.28%{transform:translateY(0px) rotate(-4deg) scale(1.02,0.96)}46.53%{transform:translateY(-3px) rotate(2deg) scale(0.97,1.05)}47.92%{transform:translateY(0px) rotate(-3deg) scale(1,1)}49.31%{transform:translateY(0px) rotate(4deg) scale(1,1)}50.69%{transform:translateY(0px) rotate(-3deg) scale(1,1)}52.50%{transform:translateY(0px) rotate(7deg) scale(1,1)}53.89%{transform:translateY(0px) rotate(7deg) scale(1,1)}54.86%{transform:translateY(0px) rotate(2deg) scale(1,1)}55.97%{transform:translateY(-2px) rotate(0deg) scale(0.97,1.04)}57.50%{transform:translateY(0px) rotate(0deg) scale(1.02,0.98)}61.39%{transform:translateY(0px) rotate(0deg) scale(1.02,0.98)}62.78%{transform:translateY(0px) rotate(0deg) scale(1.09,0.87);animation-timing-function:cubic-bezier(.2,.7,.4,1)}65.00%{transform:translateY(-13px) rotate(0deg) scale(0.94,1.1);animation-timing-function:cubic-bezier(.6,0,.9,.5)}66.94%{transform:translateY(0px) rotate(0deg) scale(1.12,0.84)}68.33%{transform:translateY(0px) rotate(0deg) scale(0.95,1.08)}69.72%{transform:translateY(0px) rotate(0deg) scale(0.97,1.04)}81.67%{transform:translateY(0px) rotate(0deg) scale(0.97,1.04)}83.06%{transform:translateY(0px) rotate(-2deg) scale(0.98,1.03)}86.94%{transform:translateY(0px) rotate(-2deg) scale(0.98,1.03)}88.33%{transform:translateY(0px) rotate(0deg) scale(0.97,1.04)}90.28%{transform:translateY(0px) rotate(0deg) scale(0.97,1.04)}92.22%{transform:translateY(0px) rotate(0deg) scale(1.04,0.95)}95.28%{transform:translateY(0px) rotate(0deg) scale(1.04,0.95)}97.92%{transform:translateY(0px) rotate(0deg) scale(1,1)}100.00%{transform:translateY(0px) rotate(0deg) scale(1,1)}}
+@keyframes nts-lids{0.00%{transform:scale(1,1)}9.72%{transform:scale(1,1)}11.11%{transform:scale(1,0.7)}31.67%{transform:scale(1,0.7)}31.94%{transform:scale(1.3,1.3)}35.56%{transform:scale(1.3,1.3)}36.11%{transform:scale(1.2,1.2)}45.42%{transform:scale(1.2,1.2)}45.83%{transform:scale(1.3,1.3)}56.81%{transform:scale(1.3,1.3)}57.36%{transform:scale(1.05,0.5)}63.06%{transform:scale(1.05,0.5)}63.89%{transform:scale(1.1,1.1)}66.53%{transform:scale(1.1,1.1)}66.94%{transform:scale(1.2,0.5)}68.19%{transform:scale(1.2,0.5)}68.89%{transform:scale(1.15,1.15)}81.94%{transform:scale(1.15,1.15)}82.78%{transform:scale(1,0.8)}87.08%{transform:scale(1,0.8)}87.50%{transform:scale(1.15,1.15)}90.00%{transform:scale(1.15,1.15)}91.39%{transform:scale(1,0.6)}95.14%{transform:scale(1,0.6)}95.83%{transform:scale(1,0.08)}96.25%{transform:scale(1,0.08)}96.94%{transform:scale(1,1)}100.00%{transform:scale(1,1)}}
+@keyframes nts-look{0.00%{transform:translate(0px,0px)}2.36%{transform:translate(0px,0px)}3.47%{transform:translate(-3px,0px)}5.83%{transform:translate(-3px,0px)}6.94%{transform:translate(1.5px,0px)}9.17%{transform:translate(1.5px,0px)}10.00%{transform:translate(-3.2px,-1.6px)}12.64%{transform:translate(-3.2px,-1.6px)}13.47%{transform:translate(1.4px,-1.0px)}16.11%{transform:translate(1.4px,-1.0px)}16.94%{transform:translate(-3.0px,1.0px)}19.44%{transform:translate(-3.0px,1.0px)}20.83%{transform:translate(-3.2px,-1.6px)}22.50%{transform:translate(-3.2px,-1.6px)}23.89%{transform:translate(1.4px,-1.0px)}25.56%{transform:translate(1.4px,-1.0px)}26.94%{transform:translate(-3.0px,1.0px)}28.06%{transform:translate(-3.0px,1.0px)}29.44%{transform:translate(1.4px,-1.0px)}31.67%{transform:translate(1.4px,-1.0px)}31.94%{transform:translate(-1.0px,-0.5px)}35.69%{transform:translate(-1.0px,-0.5px)}36.11%{transform:translate(-3.2px,-1.6px)}39.03%{transform:translate(-3.2px,-1.6px)}39.44%{transform:translate(1.4px,-1.0px)}42.36%{transform:translate(1.4px,-1.0px)}42.78%{transform:translate(-3.0px,1.0px)}45.56%{transform:translate(-3.0px,1.0px)}45.97%{transform:translate(1.1px,1.0px)}46.94%{transform:translate(1.1px,1.0px)}47.36%{transform:translate(-3.2px,-1.6px)}48.19%{transform:translate(-3.2px,-1.6px)}48.61%{transform:translate(1.1px,1.0px)}49.31%{transform:translate(1.1px,1.0px)}49.72%{transform:translate(-3.2px,-1.6px)}50.42%{transform:translate(-3.2px,-1.6px)}50.83%{transform:translate(-1.0px,-0.5px)}51.39%{transform:translate(-1.0px,-0.5px)}51.81%{transform:translate(1.1px,1.0px)}53.61%{transform:translate(1.1px,1.0px)}54.03%{transform:translate(-3.2px,-1.6px)}55.00%{transform:translate(-3.2px,-1.6px)}55.42%{transform:translate(1.1px,1.0px)}55.97%{transform:translate(1.1px,1.0px)}56.39%{transform:translate(-3.2px,-1.6px)}56.94%{transform:translate(-3.2px,-1.6px)}57.36%{transform:translate(-1.0px,-0.2px)}61.11%{transform:translate(-1.0px,-0.2px)}61.94%{transform:translate(-1.0px,1.0px)}63.33%{transform:translate(-1.0px,1.0px)}64.17%{transform:translate(-1.0px,-1.6px)}66.53%{transform:translate(-1.0px,-1.6px)}66.94%{transform:translate(-1.0px,1.0px)}68.19%{transform:translate(-1.0px,1.0px)}68.89%{transform:translate(-2.4px,-2.4px)}81.94%{transform:translate(-2.4px,-2.4px)}82.78%{transform:translate(-0.3px,0.2px)}87.08%{transform:translate(-0.3px,0.2px)}87.50%{transform:translate(-2.4px,-2.4px)}90.00%{transform:translate(-2.4px,-2.4px)}91.39%{transform:translate(0.6px,0.4px)}95.56%{transform:translate(0.6px,0.4px)}96.67%{transform:translate(0px,0px)}100.00%{transform:translate(0px,0px)}}
+@keyframes nts-brows{0.00%{transform:translateY(0px)}9.72%{transform:translateY(0px)}11.11%{transform:translateY(1.4px)}31.67%{transform:translateY(1.4px)}31.94%{transform:translateY(-3px)}56.81%{transform:translateY(-3px)}57.36%{transform:translateY(1.8px)}63.06%{transform:translateY(1.8px)}63.89%{transform:translateY(-2px)}66.53%{transform:translateY(-2px)}66.94%{transform:translateY(1.0px)}68.19%{transform:translateY(1.0px)}68.89%{transform:translateY(-2.6px)}81.94%{transform:translateY(-2.6px)}82.78%{transform:translateY(0.6px)}87.08%{transform:translateY(0.6px)}87.50%{transform:translateY(-2.6px)}90.00%{transform:translateY(-2.6px)}91.39%{transform:translateY(0.5px)}95.83%{transform:translateY(0.5px)}96.94%{transform:translateY(0px)}100.00%{transform:translateY(0px)}}
+@keyframes nts-panic{0.00%{opacity:0}31.94%{opacity:1}35.56%{opacity:0}45.83%{opacity:1}48.89%{opacity:0}100.00%{opacity:0}}
+@keyframes nts-thud{0.00%{opacity:0}66.94%{opacity:1}70.00%{opacity:0}100.00%{opacity:0}}
+@keyframes nts-drift1{0.00%{transform:translate(0,0)}71.11%{transform:translate(0,0)}78.61%{transform:translate(5px,-13px)}100.00%{transform:translate(5px,-13px)}}
+@keyframes nts-on1{0.00%{opacity:0}71.11%{opacity:1}78.61%{opacity:0}100.00%{opacity:0}}
+@keyframes nts-drift2{0.00%{transform:translate(0,0)}75.00%{transform:translate(0,0)}82.22%{transform:translate(6px,-12px)}100.00%{transform:translate(6px,-12px)}}
+@keyframes nts-on2{0.00%{opacity:0}75.00%{opacity:1}82.22%{opacity:0}100.00%{opacity:0}}
+@keyframes nts-bar{0.00%{transform:scaleX(.04)}47.22%{transform:scaleX(.04)}67.22%{transform:scaleX(.94)}100.00%{transform:scaleX(.94)}}
+@keyframes nts-type{0%{opacity:1}50%,100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.nts *{animation:none!important}}
 </style>
 <!-- Terminals sit behind Gizmo. Solid colours only: no stroke or fill opacity. -->
-<g class="window a">
+<g class="nts-window nts-a">
 <rect x="12" y="16" width="80" height="44" rx="3" fill="#0c1822" stroke="#2ee6a0" stroke-width="1"/>
 <path d="M12 26H92" stroke="#17705a"/>
 <text x="17" y="23" fill="#2ee6a0" font-family="monospace" font-size="4.5">OFF_THE_BOOKS.exe</text>
 <path d="m84 19 4 4m0-4-4 4" stroke="#ff6f9f"/>
 <path d="M18 33h35m-35 6h54m-54 6h26m-26 6h44" stroke="#1f9e77" stroke-width="1.3"/>
-<rect class="code" x="65" y="49" width="3" height="4" fill="#2ee6a0"/>
+<rect class="nts-code" x="65" y="49" width="3" height="4" fill="#2ee6a0"/>
 </g>
-<g class="window b">
+<g class="nts-window nts-b">
 <rect x="111" y="24" width="77" height="47" rx="3" fill="#171325" stroke="#b893ff"/>
 <path d="M111 34H188" stroke="#5b4a8a"/>
 <text x="116" y="31" fill="#c4a4ff" font-family="monospace" font-size="4.5">CORP_SECRETS.zip</text>
 <path d="m180 27 4 4m0-4-4 4" stroke="#ff6f9f"/>
 <path d="M117 41h39m-39 6h60m-60 6h32m-32 6h49" stroke="#7f66c0" stroke-width="1.3"/>
-<rect class="code" x="169" y="57" width="3" height="4" fill="#b893ff"/>
+<rect class="nts-code" x="169" y="57" width="3" height="4" fill="#b893ff"/>
 </g>
-<g class="window c">
+<g class="nts-window nts-c">
 <rect x="24" y="65" width="71" height="38" rx="3" fill="#221524" stroke="#ff6f9f"/>
 <path d="M24 75H95" stroke="#8a3d59"/>
 <text x="29" y="72" fill="#ff8caf" font-family="monospace" font-size="4.5">DELETE_LOGS?</text>
 <path d="m87 68 4 4m0-4-4 4" stroke="#ff6f9f"/>
 <path d="M30 82h35m-35 6h53m-53 6h24" stroke="#b04e73" stroke-width="1.3"/>
-<rect class="code" x="57" y="92" width="3" height="4" fill="#ff6f9f"/>
+<rect class="nts-code" x="57" y="92" width="3" height="4" fill="#ff6f9f"/>
 </g>
-<g class="gizmo"><g transform="translate(67 27)">
+<g class="nts-window nts-e">
+<rect x="10" y="20" width="78" height="40" rx="3" fill="#240f14" stroke="#ff3b4e"/>
+<path d="M10 30H88" stroke="#8a2330"/>
+<text x="15" y="27" fill="#ff7f8c" font-family="monospace" font-size="4.5">SNITCH.exe</text>
+<path d="m80 23 4 4m0-4-4 4" stroke="#ff6f9f"/>
+<path d="M16 38h46" stroke="#b3202f" stroke-width="1.3"/>
+<rect x="16" y="45" width="66" height="7" fill="#07090d" stroke="#b3202f"/>
+<rect class="nts-bar" x="17.5" y="46.5" width="63" height="4" fill="#ff3b4e"/>
+</g>
+<g class="nts-window nts-d">
+<rect x="113" y="70" width="75" height="36" rx="3" fill="#221a0c" stroke="#ffcc66"/>
+<path d="M113 80H188" stroke="#8a6a2a"/>
+<text x="118" y="77" fill="#ffd98a" font-family="monospace" font-size="4.5">ARE_YOU_SURE?</text>
+<path d="m180 73 4 4m0-4-4 4" stroke="#ff6f9f"/>
+<path d="M119 87h52" stroke="#b8862a" stroke-width="1.3"/>
+<rect x="121" y="92" width="26" height="9" rx="1.5" fill="#221a0c" stroke="#ffcc66"/>
+<rect x="154" y="92" width="26" height="9" rx="1.5" fill="#221a0c" stroke="#b8862a"/>
+<path d="M130 96.500h8" stroke="#ffcc66" stroke-width="1.3"/><path d="M163 96.500h8" stroke="#b8862a" stroke-width="1.3"/>
+</g>
+<clipPath id="nts-eyeclip"><circle cx="27" cy="41" r="4.6"/><circle cx="39" cy="41" r="4.6"/></clipPath>
+<g class="nts-gizmo"><g transform="translate(67 27)">
 <path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-<g class="brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
-<g class="eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
-<g class="pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g>
+<g class="nts-brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+<g class="nts-eyes"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/>
+<g clip-path="url(#nts-eyeclip)"><g class="nts-follow"><g class="nts-pupils"><circle cx="28" cy="41.5" r="2" fill="#07090d"/><circle cx="40" cy="41.5" r="2" fill="#07090d"/></g></g></g></g>
 </g></g>
-<g class="panic" fill="none" stroke="#ffcc66" stroke-linecap="round"><path d="m116 42 4-5m0 12 6-1m-44-9-3-5" stroke-width="2"/></g>
-<g class="cursor"><path d="M138 63v17l4-4 4 8 4-2-4-8h6z" fill="#e9f1fb" stroke="#07090d" stroke-width="1.3" stroke-linejoin="round"/></g>
+<g class="nts-panic" fill="none" stroke="#ffcc66" stroke-linecap="round"><path d="m116 42 4-5m0 12 6-1m-44-9-3-5" stroke-width="2"/></g>
+<g class="nts-thud" fill="none" stroke="#ffcc66" stroke-linecap="round" stroke-width="2"><path d="M83 103l-7-3m5 8-8 1m42-6 7-3m-5 8 8 1"/></g>
+<g class="nts-note1"><g transform="translate(120 52)"><ellipse cx="0" cy="0" rx="2.5" ry="1.9" transform="rotate(-20)" fill="#ffcc66"/><path d="M2.1 -.4V-9.500q4.500 1 3.500 5.500" fill="none" stroke="#ffcc66" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g></g>
+<g class="nts-note2"><g transform="translate(127 60)"><ellipse cx="0" cy="0" rx="2.5" ry="1.9" transform="rotate(-20)" fill="#ffcc66"/><path d="M2.1 -.4V-9.500q4.500 1 3.500 5.500" fill="none" stroke="#ffcc66" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g></g>
 </svg>

@@ -507,6 +507,7 @@ html.skin-98 .w98-pspane .set-hint{ font-size:11px; }
 /* GIZMO'S ANTICS (js/w98_gizmo_act.js): the scene is laid over his place, centred on him, and his still drawing steps aside while it plays */
 html.skin-98 .w98-gz-fig{ position:relative; overflow:visible; }
 html.skin-98 .w98-gz-fig.acting .w98-gz-svg{ visibility:hidden; }
-html.skin-98 .w98-gz-stage{ position:absolute; left:50%; bottom:0; max-width:none; pointer-events:none; user-select:none; -webkit-user-drag:none;
-  transform:translate(calc(-50% + var(--gz-dx, 0px)), var(--gz-dy, 0px)); }
-html.skin-98 .w98-gizmo{ padding-top:var(--gz-lift, 0px); }
+/* a scene is placed by its feet (inline left and top, js/w98_gizmo_act.js): it never takes a click */
+html.skin-98 .w98-gz-stage{ position:absolute; left:0; top:0; max-width:none; pointer-events:none; user-select:none; -webkit-user-drag:none; }
+html.skin-98 .w98-gizmo{ padding-top:var(--gz-lift, 0px); transition:transform .3s ease-out; }
+@media (prefers-reduced-motion: reduce){ html.skin-98 .w98-gizmo{ transition:none; } }

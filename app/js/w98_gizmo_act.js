@@ -23,8 +23,9 @@ window.EN = window.EN || {};
   var K = EN.w98.kit, X = EN.w98.ext, el = K.el, store = K.store, GZ = EN.w98.gizmo;
   var FREQ = "en_w98_gizmo_freq_v1", FID = "en_w98_gizmo_fid_v1";
 
-  /* name: [viewBox width, viewBox height, seconds for one pass] (read from the files) */
-  var M = {"back-alley-deal":[64,104,6],"black-ice":[84,92,8],"boot-up":[64,84,3],"chain-reaction":[150,100,9],"clean-getaway":[112,84,3],"copycat":[130,94,8],"core-envy":[100,96,8],"data-check":[96,84,5],"dead-drop":[72,96,8],"desync":[88,84,4],"evidence-disposal":[108,100,6],"eye-heist":[140,96,9],"gremlin-error":[112,104,5],"gremlin-fall":[108,104,10],"gremlin-idle":[108,104,6],"gremlin-notice":[112,108,4],"gremlin-redeemed":[124,104,10],"gremlin-success":[120,104,4],"gremlin-working":[120,104,4.5],"home-run":[172,130,8],"ice-encounter":[96,100,6],"knocked-askew":[120,96,9],"laser-limbo":[184,92,8],"light-switch":[140,92,8],"lights-out":[128,104,10],"lockpick":[88,90,8],"memory-leak":[72,92,5],"no-cameras":[112,84,6],"natural-one":[104,100,4],"faceplant":[138,100,4.5],"nothing-to-see-here":[200,140,6],"overheat":[84,104,6],"paperclip-maximizer":[130,100,10],"percussive-maintenance":[118,88,6],"plug-in":[104,84,4],"rebuilt":[160,96,10],"rewire":[104,92,9],"sleep-mode":[86,96,8],"stakeout":[86,104,10],"street-victory":[80,100,4],"unauthorized-upgrade":[96,112,6],"vending-trouble":[128,100,9]};
+  /* name: [viewBox width, viewBox height, seconds for one pass, feet x, feet y] (read from the files and the author's gizmo-anchors.json: the feet are
+     the point where his body ends, in the file's own units, and every scene starts and ends standing on them) */
+  var M = {"back-alley-deal":[64,104,6.0,32.0,78.2],"black-ice":[84,92,8.0,40.0,84.2],"boot-up":[64,84,3.0,32.0,78.2],"chain-reaction":[150,100,9.0,75.0,94.2],"clean-getaway":[112,84,3.0,56.0,78.2],"copycat":[130,94,8.0,56.0,84.2],"core-envy":[100,96,8.0,50.0,88.2],"data-check":[96,84,5.0,48.0,78.2],"dead-drop":[72,96,8.0,36.0,88.2],"desync":[88,84,4.0,50.0,78.2],"evidence-disposal":[108,100,6.0,40.0,84.2],"eye-heist":[140,96,9.0,56.0,88.2],"gremlin-error":[112,104,5.0,62.0,92.0],"gremlin-fall":[108,104,10.0,54.0,92.2],"gremlin-idle":[108,104,6.0,54.0,92.2],"gremlin-notice":[112,108,4.0,56.0,98.2],"gremlin-redeemed":[124,104,10.0,66.0,92.0],"gremlin-success":[120,104,4.0,54.0,92.2],"gremlin-working":[120,104,4.5,54.0,92.2],"home-run":[172,130,8.0,78.0,88.2],"ice-encounter":[96,100,6.0,42.0,86.2],"knocked-askew":[120,96,9.0,72.0,88.2],"laser-limbo":[184,92,8.0,16.0,84.2],"light-switch":[140,92,8.0,56.0,84.2],"lights-out":[128,104,10.0,64.0,96.2],"lockpick":[88,90,8.0,40.0,82.2],"memory-leak":[72,92,5.0,32.0,78.2],"no-cameras":[112,84,6.0,56.0,78.2],"natural-one":[104,100,4.0,46.0,94.2],"faceplant":[138,100,4.5,38.0,94.2],"nothing-to-see-here":[200,140,7.2,99.0,105.2],"overheat":[84,104,6.0,52.0,94.2],"paperclip-maximizer":[130,100,10.0,72.0,88.2],"percussive-maintenance":[118,88,6.0,56.0,78.2],"plug-in":[104,84,4.0,42.0,78.2],"rebuilt":[160,96,10.0,84.0,86.2],"rewire":[104,92,9.0,40.0,84.2],"sleep-mode":[86,96,8.0,40.0,92.2],"stakeout":[86,104,10.0,40.0,96.2],"street-victory":[80,100,4.0,40.0,90.2],"unauthorized-upgrade":[96,112,6.0,46.0,106.2],"vending-trouble":[128,100,9.0,56.0,88.2]};
   var IDLE = ["lights-out", "stakeout", "unauthorized-upgrade", "rewire", "copycat", "chain-reaction", "paperclip-maximizer", "laser-limbo"];
   /* the rest of the spectacle pool: pieces that also have an event of their own (the events come in a later phase); the two fumbles are
      semi-rare, so each carries twice the weight. The Fidget story is one more slot, which is the only thing that moves its counter. */
@@ -66,13 +67,13 @@ window.EN = window.EN || {};
   function stop(why) {
     var c = A.cur;
     if (!c) return;
-    if (c.ctl && why === "input" && c.ctl.wake()) return;   // asleep: his wake-up plays first, then he stands down
+    if (c.ctl && c.ctl.wake && why === "input" && c.ctl.wake()) return;   // asleep: his wake-up plays first, then he stands down
     A.cur = null; clearTimeout(c.t);
     if (c.ctl) c.ctl.dispose();
     if (c.img && c.img.parentNode) c.img.parentNode.removeChild(c.img);
     var f = GZ.fig();
     if (f) f.classList.remove("acting");
-    var box = GZ.stage(); if (box) box.style.removeProperty("--gz-lift");
+    var box = GZ.stage(); if (box) { box.style.removeProperty("--gz-lift"); box.style.removeProperty("transform"); }   // and if he slid off an edge to fit it, he slides back
     if (c.name === "sleep-mode") A.asleep = false;
     if (c.done) { try { c.done(why || "stopped"); } catch (e) {} }
     kick();
@@ -88,20 +89,25 @@ window.EN = window.EN || {};
     if (A.cur) stop("replaced");
     var f = GZ.fig(), s = scale(), w = m[0] * s, h = m[1] * s;
     var img, host = null;
-    if (name === "sleep-mode" && sleepSvg && !K.reduced() && document.body.attachShadow) {
-      /* his sleep is one drawing played in three parts: he nods off once, he sleeps in a loop, he wakes only when you wake him. It sits in a shadow root so its own style rules stay to itself. */
+    if (INLINE[name] && !K.reduced() && document.body.attachShadow) {
+      /* two scenes are drawn into the page (inside a shadow root, so their own style rules stay to themselves): his sleep, which is played in
+         three parts, and Nothing to See Here, whose eyes follow the pointer. Everything else is a plain image. */
       img = el("div.w98-gz-stage", { "aria-hidden": "true" });
       host = img.attachShadow({ mode: "open" });
-      host.innerHTML = "<style>svg{display:block;width:100%;height:100%}</style>" + sleepSvg;
+      host.innerHTML = "<style>svg{display:block;width:100%;height:100%}</style>" + INLINE[name];
     } else img = el("img.w98-gz-stage", { src: "img/gizmo/" + name + ".svg", alt: "", "aria-hidden": "true", draggable: "false" });
-    img.style.width = w + "px"; img.style.height = h + "px";
+    /* every scene is played where he already stands: the box is sized from its viewBox and set so its feet point lands on his own feet,
+       whole pixels, so he does not shift when a scene starts or ends */
+    var left = Math.round(STAND[0] - m[3] * s), top = Math.round(STAND[1] - m[4] * s);
+    img.style.width = w + "px"; img.style.height = h + "px"; img.style.left = left + "px"; img.style.top = top + "px";
     f.appendChild(img); f.classList.add("acting");
     if (!o.keep) GZ.hush();   // a scene that goes with what he is saying (a tip) leaves his bubble up
-    var box = GZ.stage(); if (box) box.style.setProperty("--gz-lift", Math.max(0, h - f.getBoundingClientRect().height) + "px");
+    var box = GZ.stage(); if (box) box.style.setProperty("--gz-lift", Math.max(0, -top) + "px");
     keepOn(img);
     var c = { name: name, prio: prio, img: img, done: o.done, kind: o.kind };
     A.cur = c;
-    if (host) { c.ctl = sleeper(host, c); c.ctl.start(); }
+    if (host && name === "sleep-mode") { c.ctl = sleeper(host, c); c.ctl.start(); }
+    else if (host && EYES[name]) c.ctl = follower(img, EYES[name]);
     if (name === "sleep-mode") A.asleep = true;
     if (!o.loop) c.t = setTimeout(function () { if (A.cur === c) stop("ended"); }, m[2] * 1000 + 150);
     return true;
@@ -109,8 +115,23 @@ window.EN = window.EN || {};
   /* ---- sleep in three parts, all from sleep-mode.svg (8 s): 0 to 3.4 s he nods off, 3.4 to 5.4 s is one breath of sleep that begins and ends in
      the same pose (so it loops with no seam), and from 6.45 s the jolt, the cap flying off and the neutral pose are the wake-up. */
   var SL = { from: 3400, to: 5400, wake: 6450, end: 8000 };
-  var sleepSvg = "";
-  try { fetch("img/gizmo/sleep-mode.svg").then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) { if (/<svg/.test(t)) sleepSvg = t; }).catch(function () {}); } catch (e) {}
+  var INLINE = {};   // the scenes drawn into the page, read once
+  ["sleep-mode", "nothing-to-see-here"].forEach(function (n) {
+    try { fetch("img/gizmo/" + n + ".svg").then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) { if (/<svg/.test(t)) INLINE[n] = t; }).catch(function () {}); } catch (e) {}
+  });
+  /* where his feet are on the still (the author's anchors: the feet of Everyday and of every scene are one point, in drawing units) */
+  var STAND = [32, 78.2];
+  /* Nothing to See Here reads --gizmo-look-x and --gizmo-look-y (drawing units, at most 1.4) to lean his pupils toward the pointer; its eyes are at (100, 68) */
+  var EYES = { "nothing-to-see-here": [100, 68] };
+  function follower(img, eye) {
+    function mv(e) {
+      var r = img.getBoundingClientRect(), dx = e.clientX - (r.left + eye[0] * SCALE), dy = e.clientY - (r.top + eye[1] * SCALE);
+      var d = Math.hypot(dx, dy) || 1, k = Math.min(1.4, d / 80);
+      img.style.setProperty("--gizmo-look-x", (dx / d * k).toFixed(2)); img.style.setProperty("--gizmo-look-y", (dy / d * k).toFixed(2));
+    }
+    document.addEventListener("pointermove", mv, true);
+    return { dispose: function () { document.removeEventListener("pointermove", mv, true); }, move: mv };
+  }
   function sleeper(host, c) {
     /* its own clock (the three parts are cut where it says), and the drawing's animations are only moved to match at a cut */
     var S = { phase: "down", iv: 0, anims: [], waking: false, t0: Date.now() };
@@ -131,13 +152,17 @@ window.EN = window.EN || {};
     S.state = function () { return { phase: S.phase, waking: S.waking, t: now() }; };
     return S;
   }
-  /* a wide scene is centred on his place; if that runs off the desktop, slide it back on */
+  /* a scene wider than the room he has would be cut off at the edge of the desktop: only then he slides to the nearest spot where it fits, plays, and slides back (the whole of him moves, so the scene stays on his feet) */
   function keepOn(img) {
-    var root = document.getElementById("w98"), rr = root && root.getBoundingClientRect(), r = img.getBoundingClientRect(), dx = 0, dy = 0;
-    if (!rr) return;
+    var root = document.getElementById("w98"), rr = root && root.getBoundingClientRect(), box = GZ.stage(), dx = 0, dy = 0;
+    if (!rr || !box) return;
+    box.style.transition = "none"; box.style.removeProperty("transform"); void box.offsetWidth;   // measure him at rest, not part way through a slide
+    var r = img.getBoundingClientRect();
+    box.style.removeProperty("transition");
     if (r.left < rr.left + 4) dx = rr.left + 4 - r.left; else if (r.right > rr.right - 4) dx = rr.right - 4 - r.right;
-    if (r.top < rr.top + 4) dy = rr.top + 4 - r.top;
-    img.style.setProperty("--gz-dx", dx + "px"); img.style.setProperty("--gz-dy", dy + "px");
+    var th = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--w-task-h") || "28") || 28;
+    if (r.top < rr.top + 4) dy = rr.top + 4 - r.top; else if (r.bottom > rr.bottom - th) dy = rr.bottom - th - r.bottom;   // a scene hangs below his feet too: not under the taskbar
+    if (dx || dy) box.style.transform = "translate(" + Math.round(dx) + "px," + Math.round(dy) + "px)";
   }
 
   /* ---- the story: Fidget pieces in order, a counter kept on this device */
