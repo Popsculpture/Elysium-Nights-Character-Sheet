@@ -61,7 +61,7 @@ window.EN = window.EN || {};
     if (!root) return null;
     var fig = el("button.w98-gz-fig", { type: "button", title: "Gizmo. Press for his menu, drag to move him.", "aria-label": "Gizmo, your assistant. Press for his menu.", "aria-haspopup": "menu" });
     /* the still is the author's own Everyday Idle (blinks, a wary glance, a faint neon flicker), at his native size: one drawing unit is one whole pixel.
-       It comes in two (23 Nov 2026): everyday-left on the left half of the desktop, everyday-right on the right (setStill) */
+       It comes in two (23 Nov 2026): everyday-right on the left half of the desktop, everyday-left on the right (setStill) */
     fig.innerHTML = '<img class="w98-gz-svg" src="' + STILL.right + '" width="64" height="84" alt="" draggable="false">';
     var txt = el("span.w98-gz-t");
     var bubble = el("div.w98-gz-bubble", { role: "status", "aria-live": "polite", onclick: function () { hush(); rough("dismiss"); } }, [txt]);
@@ -72,8 +72,9 @@ window.EN = window.EN || {};
     drag(fig);
     return box;
   }
-  /* which half of the desktop he stands on, by the middle of his figure, picks the still (the author's two idles, 23 Nov 2026) */
-  var STILL = { left: "img/gizmo/everyday-left.svg", right: "img/gizmo/everyday-right.svg" };
+  /* which half of the desktop he stands on, by the middle of his figure, picks the still (the author's two idles, 23 Nov 2026):
+     each file is named for the way he looks, so on the right half he looks left, toward the desktop, and on the left half right */
+  var STILL = { left: "img/gizmo/everyday-right.svg", right: "img/gizmo/everyday-left.svg" };
   function side() {
     var root = document.getElementById("w98");
     if (!G.fig || !root) return "right";
