@@ -1,7 +1,8 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · CLASSIC'S STATUS RAIL: the bar on it (15 Nov 2026, the author's call; it began as #GRIDeck's status bar,
    and that skin was removed on 20 Nov 2026). What he listed and no more: the level, the name over the class and subclass,
-   Vitality, Wounds, the class resource, the wallet and the rest button. The name opens the Record drawer (js/rail_record.js).
+   Vitality, Wounds, the class resource and the rest button (the wallet was taken off on 23 Nov 2026, his call). The name opens
+   the Record drawer (js/rail_record.js).
    A Body Save that is waiting shows, since a Wound taken from this bar on another tab would otherwise ask for a roll nobody
    sees. It wears Classic's look (css/rail.css, THE RAIL WEARS CLASSIC): the palette's own colours and fonts, cut corners,
    square bars. js/rail_shell.js mounts it in #os-rail.
@@ -308,11 +309,10 @@ EN.deck.hud = (function () {
     n.res = el("div.dk-res", null, [n.resName = el("i"), el("div.dk-pips", null, [n.pips = el("span.dk-pipset"), n.resVal = el("b")])]);
     n.conds = el("div.dk-conds", { dataset: { dkHud: "conditions" } });
     n.condWrap = el("div.dk-condw.dk-has-pop", null, [n.conds]);
-    n.wallet = el("div.dk-wal", null, [el("i", { text: "Glimmer" }), n.glim = el("b")]);
     n.rest = el("button.dk-hb", { type: "button", title: "Rest", "aria-label": "Rest", "aria-haspopup": "dialog", "aria-expanded": "false", dataset: { dkPopBtn: "rest", dkHud: "rest" },
       onclick: function () { if (can()) openPop("rest", null, n.restWrap, "Rest", function (root) { return restPop(root, "menu"); }); } }, [icon((core().icons || {}).longRest), el("span.dk-hb-l", { text: "Rest" })]);   // a button reads its name, as Classic's do
     n.restWrap = el("div.dk-has-pop.dk-pop-r", null, [n.rest]);
-    n.root = el("div#dk-hud.dk.dk-lean", { dataset: { dkHud: "bar" } }, [n.idn, n.vit.root, n.wd.root, n.res, n.condWrap, n.wallet, n.restWrap]);
+    n.root = el("div#dk-hud.dk.dk-lean", { dataset: { dkHud: "bar" } }, [n.idn, n.vit.root, n.wd.root, n.res, n.condWrap, n.restWrap]);
     return n;
   }
   function setMeter(m, cur, max, vigor, low) {
@@ -402,8 +402,6 @@ EN.deck.hud = (function () {
       title: st.dying ? "Dying: Death Saves and Stabilize" : "Stable: unconscious at 0 Wounds", onclick: function () { if (P && P.key === "wd") return; openPop("wd", null, N.wd.root, "Wounds", wdPop); } },
       st.dying ? "Dying" : "Stable"));
     N.restWrap.hidden = !live;
-
-    N.glim.textContent = String(Number(ch.glimmer) || 0);
 
     // the popover that is open: gone with what it was about, patched otherwise
     if (P) {
