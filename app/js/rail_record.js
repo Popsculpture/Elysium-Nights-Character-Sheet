@@ -21,6 +21,10 @@ EN.deck.record = (function () {
   var TABS = [["badge", "#PRINT"], ["level", "Level up"], ["edit", "Edit record"], ["chars", "Characters"], ["notes", "Notes"]];
   function tabs() { return TABS; }
   var D = null;          // the open drawer: { root, tab, head, tabs, body, from }
+  /* the pages are also hosted by #GRIDOS '98's Properties window (js/w98_props.js, 23 Nov 2026): a button that leaves for another
+     screen closes whichever is showing them */
+  var _leave = null;
+  function leave() { close(false); if (_leave) { try { _leave(); } catch (e) {} } }
 
   function reading() { try { return EN.deck.shell.reading(); } catch (e) { return null; } }
   function isOpen() { return !!D; }
@@ -95,6 +99,7 @@ EN.deck.record = (function () {
 
   function paint(c, force) {
     var ch = c.ch, d = c.d || {}, T = tabs();
+    _leave = null;
     if (!T.some(function (t) { return t[0] === D.tab; })) D.tab = T[0][0];
     // who
     clear(D.head);
@@ -161,7 +166,7 @@ EN.deck.record = (function () {
   }
 
   function toPrint(step) {
-    close(false);
+    leave();
     try { if (step === "advance") EN.builder.openAdvance(); else EN.builder.goStep(step); } catch (e) {}
     EN.app.gotoTab("print");
     // the rail's own tap on #PRINT lands on Advance; this names its step, so say it again once the tab is up
@@ -203,7 +208,7 @@ EN.deck.record = (function () {
       out.push(el("div.dk-ft.dk-line", null, [el("b", { text: x[1] }), el("small", { text: x[2] }), el("span.dk-grow"), btn("Open", "sm", "step-" + x[0], function () { toPrint(x[0]); })]));
     });
     out.push(el("div.dk-row", null, [
-      EN.printSheet && EN.printSheet.open ? btn("Print hardcopy", "ghost", "print", function () { close(false); EN.printSheet.open(); }) : null,
+      EN.printSheet && EN.printSheet.open ? btn("Print hardcopy", "ghost", "print", function () { leave(); EN.printSheet.open(); }) : null,
       EN.pdfExport && EN.pdfExport.download ? btn("Fillable PDF", "ghost", "pdf", function () { EN.pdfExport.download(EN.store.active()); }) : null
     ]));
     return out;
@@ -238,13 +243,19 @@ EN.deck.record = (function () {
       });
     }
     out.push(el("div.dk-row", null, [
-      btn("+ New character", "pri", "new", function () { close(false); EN.builder.newRecord(); }),
+      btn("+ New character", "pri", "new", function () { leave(); EN.builder.newRecord(); }),
       btn("Import", "", "import", function () { EN.builder.importPrompt(); }),
       btn("Export", "", "export", function () { EN.builder.exportChar(EN.store.active()); }),
-      btn("Manage", "", "manage", function () { close(false); EN.builder.openManager(); }, "Rename, delete and campaign membership")
+      btn("Manage", "", "manage", function () { leave(); EN.builder.openManager(); }, "Rename, delete and campaign membership")
     ]));
     return out;
   }
 
-  return { open: open, close: close, sync: sync, isOpen: isOpen, owed: owed };
+  // one page by its key, for a host of its own (the Properties window on '98); onLeave closes that host when a button leaves
+  function page(tab, c, onLeave) {
+    _leave = onLeave || null;
+    var fn = { level: level, edit: edit, chars: chars, notes: notes }[tab] || badge;
+    return fn(c);
+  }
+  return { open: open, close: close, sync: sync, isOpen: isOpen, owed: owed, page: page, tabs: tabs };
 })();

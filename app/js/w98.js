@@ -292,7 +292,9 @@ EN.w98 = (function () {
      desktop and nothing else. Each list holds functions that answer with menu items (or, for `about`, an element). */
   var X = { settings: [], programs: [], desktop: [], about: [], boot: [], runNames: {}, open: [], paint: [], cpl: [], cplExtras: [], display: [], controlPanel: null,
     // where a tab is hosted, and what a hosted window needs (js/w98_web.js): see WHERE A TAB IS HOSTED at the top of this file
-    host: [], wake: {}, frame: [], title: {}, status: {}, relabel: {}, tile: {}, prelaunch: [], icons: [], run: [] };
+    host: [], wake: {}, frame: [], title: {}, status: {}, relabel: {}, tile: {}, prelaunch: [], icons: [], run: [],
+    // more lines for a desktop icon's right-click menu: fn(iconKey) -> [items] (js/w98_props.js puts Properties on #PRINT's)
+    iconMenu: [] };
 
   function mount() {
     var os = document.getElementById("os");
@@ -329,6 +331,9 @@ EN.w98 = (function () {
     if (icon) {
       selectIcon(icon);
       items = [{ label: "&Open", bold: true, go: function () { if (icon._open) icon._open(); } }];
+      var ik = icon.getAttribute("data-icon"), more = [];
+      X.iconMenu.forEach(function (fn) { try { more = more.concat(fn(ik) || []); } catch (x) {} });
+      if (more.length) items = items.concat([{ sep: true }], more);
     } else {
       selectIcon(null);
       items = [

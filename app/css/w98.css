@@ -619,3 +619,68 @@ html.skin-98 .w98-xls .w98-client .inv-sub :is(.panel > .panel-h, .section-title
   html.skin-98 .w98-xls-tabs{ height:32px; }
   html.skin-98 .w98-xls-cols{ display:none; }
 }
+
+/* ===========================================================================
+   THE FREELANCER'S PROPERTIES (23 Nov 2026, js/w98_props.js): the HUD's nameplate, and the #PRINT card and record pages
+   (Classic's Record drawer pages, js/rail_record.js) in a property sheet, dressed as the era's controls.
+   =========================================================================== */
+/* the nameplate: a raised plate the width of its name, the level sunken in it, the headshot beside, the name over the class */
+/* its colours are the palette's, the way a button inside a window takes them (the theme recolours it) */
+html.skin-98 button.w98-np{ display:inline-flex; align-items:center; gap:10px; min-height:52px; padding:5px 14px 5px 6px; border:0; border-radius:0; background:var(--w-btn); color:var(--text);
+  box-shadow:var(--c-raised); font:inherit; text-align:left; cursor:pointer; max-width:100%; }
+html.skin-98 button.w98-np:active{ box-shadow:var(--c-pressed); }
+html.skin-98 button.w98-np:active > *{ transform:translate(1px, 1px); }
+html.skin-98 button.w98-np:focus-visible{ outline:1px dotted var(--text); outline-offset:-5px; }
+html.skin-98 .w98-np-lv{ flex:none; width:40px; height:40px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--w-field); box-shadow:var(--c-sunken); }
+html.skin-98 .w98-np-lv i{ font:normal 9px var(--w-font); color:var(--text3); }
+html.skin-98 .w98-np-lv b{ font:bold 18px/1 var(--w-font); color:var(--accent); }
+html.skin-98 .w98-np-pic{ flex:none; width:32px; height:40px; box-shadow:var(--c-sunken); padding:2px; box-sizing:border-box; background:var(--w-field); }
+html.skin-98 .w98-np-pic img{ display:block; width:100%; height:100%; object-fit:cover; }
+html.skin-98 .w98-np-t{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+html.skin-98 .w98-np-t b{ font:bold 16px/1.15 var(--w-font); color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+html.skin-98 .w98-np-t span{ font:12px/1.2 var(--w-font); color:var(--text3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+html.skin-98 button.w98-np .chip.edit-freely{ flex:none; }
+
+/* the window: the property sheet the Control Panel uses, with the record's pages in it, black on face grey */
+html.skin-98 .w98-props .w98-pspane{ color:#000; font-size:12px; }
+html.skin-98 .w98-props .w98-tab .w98-pr-dot{ display:inline-block; width:6px; height:6px; margin-left:5px; vertical-align:middle; background:#c00000; border-radius:50%; }
+html.skin-98 .w98-props .dk-badge{ max-width:340px; margin:0 auto 12px; }
+html.skin-98 .w98-props .dk-badge svg{ display:block; width:100%; height:auto; }
+html.skin-98 .w98-props .dk-row{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:8px 0; }
+html.skin-98 .w98-props .dk-btn{ display:inline-flex; align-items:center; justify-content:center; min-height:23px; min-width:75px; padding:0 10px; border:0; border-radius:0;
+  background:var(--w-face); color:#000; box-shadow:var(--w-button); font:12px var(--w-font); cursor:default; }
+html.skin-98 .w98-props .dk-btn:active:not(:disabled){ box-shadow:var(--w-pressed); }
+html.skin-98 .w98-props .dk-btn.pri{ outline:1px solid #000; outline-offset:-1px; }
+html.skin-98 .w98-props .dk-btn.sm{ min-width:56px; min-height:21px; }
+html.skin-98 .w98-props .dk-btn:disabled{ color:var(--w-sh); text-shadow:1px 1px 0 var(--w-hi); }
+html.skin-98 .w98-props .dk-btn:focus-visible{ outline:1px dotted #000; outline-offset:-4px; }
+html.skin-98 .w98-props .dk-empty{ margin:6px 0; font-size:11px; line-height:1.45; color:#404040; }
+html.skin-98 .w98-props .dk-empty b{ color:#000; }
+html.skin-98 .w98-props .dk-h{ margin:14px 0 6px; font:bold 12px var(--w-font); color:#000; }
+html.skin-98 .w98-props .dk-h small{ margin-left:6px; font-weight:normal; color:#404040; }
+/* a card is a group box: an etched frame */
+html.skin-98 .w98-props .dk-card{ margin:0 0 10px; padding:8px 10px; border:1px solid var(--w-sh); box-shadow:1px 1px 0 var(--w-hi), inset 1px 1px 0 var(--w-hi); }
+html.skin-98 .w98-props .dk-card h4{ margin:0 0 6px; font:bold 12px var(--w-font); color:#000; }
+html.skin-98 .w98-props .dk-card p{ margin:0 0 6px; }
+html.skin-98 .w98-props .dk-card ul{ margin:0 0 8px; padding-left:18px; }
+html.skin-98 .w98-props .dk-lu{ background:#ffffe1; }
+/* a progress bar of the era: sunken, filled with navy blocks */
+html.skin-98 .w98-props .dk-track{ display:block; height:16px; padding:2px; background:#fff; box-shadow:var(--w-sunken); box-sizing:border-box; }
+html.skin-98 .w98-props .dk-fill{ display:block; height:100%; background:repeating-linear-gradient(90deg, #000080 0 8px, transparent 8px 10px); }
+/* the lists: a row each, the action on the right */
+html.skin-98 .w98-props .dk-line{ display:flex; align-items:center; gap:8px; padding:5px 2px; border-bottom:1px solid #dfdfdf; }
+html.skin-98 .w98-props .dk-line > b{ min-width:110px; }
+html.skin-98 .w98-props .dk-line small{ color:#404040; }
+html.skin-98 .w98-props .dk-two{ display:flex; flex-direction:column; min-width:0; }
+html.skin-98 .w98-props .dk-two b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+html.skin-98 .w98-props .dk-grow{ flex:1; }
+html.skin-98 .w98-props .dk-line.on{ background:#fff; }
+html.skin-98 .w98-props .dk-chip{ display:inline-block; padding:1px 6px; background:#fff; box-shadow:var(--w-sunken); font-size:11px; color:#000; }
+html.skin-98 .w98-props .dk-chip.ok{ color:#006400; font-weight:bold; }
+html.skin-98 .w98-props textarea.dk-in{ display:block; width:100%; min-height:320px; box-sizing:border-box; padding:4px; border:0; border-radius:0; background:#fff; color:#000;
+  box-shadow:var(--w-sunken); font:12px var(--w-font); resize:vertical; }
+@media (max-width: 759px){
+  html.skin-98 button.w98-np{ min-height:56px; }
+  html.skin-98 .w98-props .dk-btn{ min-height:36px; }
+  html.skin-98 .w98-props .dk-line{ flex-wrap:wrap; }
+}

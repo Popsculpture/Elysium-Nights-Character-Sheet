@@ -5014,11 +5014,14 @@ EN.combatView = (function () {
     /* Nor the header line over the tab ("FREELANCER // live status · handle · class / subclass · L1 · CAL I"): the rail names
        the Freelancer, the class, the subclass and the level, and holds the Caliber in the level box's tooltip. The EDIT FREELY
        flag that line carried is in the top bar on every skin (js/app.js, paintActiveName). */
+    /* On #GRIDOS '98's Freelancer desktop the line is a nameplate instead (js/w98_props.js, 23 Nov 2026): the level, the
+       headshot, the name over the class and subclass; pressing it opens the Freelancer's Properties (the #PRINT card and record). */
+    var plate = !railed && EN.w98props && EN.w98props.on && EN.w98props.on() ? EN.w98props.nameplate(ch, d) : null;
     if (!railed) blocks.push(el("div.row.between.wrap", { style: { marginBottom: "14px" } }, [
       /* Built from nodes, not from a string handed to innerHTML: the handle (or, with none, the first
          word of the name) is whatever a Freelancer's file holds, and a file imported by hand can hold
          an <img onerror> there. As text it prints as typed. The nodes are the ones the string made. */
-      el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" } }, (function () {
+      plate || el("h1", { style: { fontSize: "22px", letterSpacing: ".06em" } }, (function () {
         var handle = (ch.identity && ch.identity.handle) || (ch.name || "Unnamed").split(" ")[0];
         var cls = (d.classInfo && d.classInfo.name) || "";
         var sub = (d.subclassInfo && d.subclassInfo.name) || "";
