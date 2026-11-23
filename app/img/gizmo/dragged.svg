@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 84" width="256" height="336" role="img" aria-labelledby="drg-title drg-desc">
+<title id="drg-title">Gizmo: dragged</title>
+<desc id="drg-desc">A green cyberpunk paperclip held by the top of his loop. He swings from side to side and squirms, eyes wide and darting, brows raised. Transparent background. Animation repeats every 3.2 seconds.</desc>
+<style>
+.drg-tilt {transform-origin:32px 9px;transform:rotate(var(--gizmo-drag-tilt,0deg))}
+.drg-swing {transform-origin:32px 9px;animation:drg-swing 1.6s ease-in-out infinite}
+.drg-squirm {transform-origin:32px 46px;animation:drg-squirm 3.2s linear infinite}
+.drg-neon {animation:drg-flicker 3.2s linear infinite}
+.drg-eye-left {transform-origin:27px 41px;animation:drg-blink-left 3.2s linear infinite}
+.drg-eye-right {transform-origin:39px 41px;animation:drg-blink-right 3.2s linear infinite}
+.drg-pupil {animation:drg-dart 3.2s linear infinite}
+.drg-brows {animation:drg-brow 3.2s ease-in-out infinite}
+@keyframes drg-swing {0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}
+@keyframes drg-squirm {0%,36%,64%,100%{transform:rotate(0deg) scaleX(1)}40%{transform:rotate(-4deg) scaleX(.97)}44%{transform:rotate(4deg) scaleX(1.02)}48%{transform:rotate(-4deg) scaleX(.97)}52%{transform:rotate(4deg) scaleX(1.02)}56%{transform:rotate(-3deg) scaleX(.98)}60%{transform:rotate(2deg) scaleX(1)}}
+@keyframes drg-dart {0%,10%{transform:translate(0,-2px)}14%,24%{transform:translate(-2px,1px)}28%,34%{transform:translate(2px,1px)}38%,62%{transform:translate(0,-2.2px)}66%,76%{transform:translate(1.6px,1.4px)}80%,88%{transform:translate(-1.8px,.6px)}92%,100%{transform:translate(0,-2px)}}
+@keyframes drg-brow {0%,36%,64%,100%{transform:translateY(-1.4px)}40%,60%{transform:translateY(-2.4px)}}
+@keyframes drg-blink-left {0%,70%,73%,100%{transform:scaleY(1.08)}71.5%{transform:scaleY(.08)}}
+@keyframes drg-blink-right {0%,70.4%,73.4%,100%{transform:scaleY(1.08)}71.9%{transform:scaleY(.08)}}
+@keyframes drg-flicker {0%,38%,39.2%,40.6%,100%{opacity:1}38.5%{opacity:.7}39.8%{opacity:.85}}
+@media (prefers-reduced-motion:reduce){.drg-swing{animation:none;transform:rotate(-6deg)}.drg-squirm,.drg-neon,.drg-eye-left,.drg-eye-right{animation:none}.drg-pupil{animation:none;transform:translate(0,-2px)}.drg-brows{animation:none;transform:translateY(-1.4px)}}
+</style>
+<g class="drg-tilt"><g class="drg-swing"><g class="drg-squirm">
+<g class="drg-neon">
+<path d="M19 76 V22 a13 13 0 0 1 26 0 V62 a7 7 0 0 1 -14 0 V30" fill="none" stroke="#2ee6a0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="drg-brows"><path d="M22 33 l7 -3 M44 30 l-7 3" stroke="#2ee6a0" stroke-width="2.2" stroke-linecap="round"/></g>
+</g>
+<g class="drg-eye-left"><circle cx="27" cy="41" r="4.6" fill="#e9f1fb"/><circle class="drg-pupil" cx="27" cy="41" r="2" fill="#07090d"/></g>
+<g class="drg-eye-right"><circle cx="39" cy="41" r="4.6" fill="#e9f1fb"/><circle class="drg-pupil" cx="39" cy="41" r="2" fill="#07090d"/></g>
+</g></g></g>
+</svg>

@@ -60,8 +60,9 @@ window.EN = window.EN || {};
     var root = document.getElementById("w98");
     if (!root) return null;
     var fig = el("button.w98-gz-fig", { type: "button", title: "Gizmo. Press for his menu, drag to move him.", "aria-label": "Gizmo, your assistant. Press for his menu.", "aria-haspopup": "menu" });
-    /* the still is the author's own Everyday Idle (blinks, a wary glance, a faint neon flicker), at his native size: one drawing unit is one whole pixel */
-    fig.innerHTML = '<img class="w98-gz-svg" src="img/gizmo/everyday.svg" width="64" height="84" alt="" draggable="false">';
+    /* the still is the author's own Everyday Idle (blinks, a wary glance, a faint neon flicker), at his native size: one drawing unit is one whole pixel.
+       It comes in two (23 Nov 2026): everyday-left on the left half of the desktop, everyday-right on the right (setStill) */
+    fig.innerHTML = '<img class="w98-gz-svg" src="' + STILL.right + '" width="64" height="84" alt="" draggable="false">';
     var txt = el("span.w98-gz-t");
     var bubble = el("div.w98-gz-bubble", { role: "status", "aria-live": "polite", onclick: function () { hush(); rough("dismiss"); } }, [txt]);
     var box = el("div.w98-gizmo", { dataset: { gizmo: "1" } }, [bubble, fig]);
@@ -70,6 +71,20 @@ window.EN = window.EN || {};
     place();
     drag(fig);
     return box;
+  }
+  /* which half of the desktop he stands on, by the middle of his figure, picks the still (the author's two idles, 23 Nov 2026) */
+  var STILL = { left: "img/gizmo/everyday-left.svg", right: "img/gizmo/everyday-right.svg" };
+  function side() {
+    var root = document.getElementById("w98");
+    if (!G.fig || !root) return "right";
+    var r = G.fig.getBoundingClientRect(), R = root.getBoundingClientRect();
+    return r.left + r.width / 2 < R.left + R.width / 2 ? "left" : "right";
+  }
+  function setStill() {
+    if (!G.fig) return;
+    var img = G.fig.querySelector(".w98-gz-svg"), s = side();
+    G.fig.setAttribute("data-side", s);
+    if (img && img.getAttribute("src") !== STILL[s]) img.setAttribute("src", STILL[s]);
   }
   function place() {
     if (!G.box) return;
@@ -82,6 +97,7 @@ window.EN = window.EN || {};
       G.box.style.right = r + "px"; G.box.style.bottom = "calc(var(--w-task-h) + " + b + "px)";
     }
     else { G.box.style.right = "14px"; G.box.style.bottom = "calc(var(--w-task-h) + 38px)"; }   // above the visitor counter
+    setStill();
   }
   function paint() {
     if (!K.active() || !on() || G.hidden) { remove(); return; }
@@ -116,6 +132,53 @@ window.EN = window.EN || {};
   }
   function hush() { clearTimeout(G.timer); if (G.bubble) G.bubble.classList.remove("on"); }
 
+  /* ---- dragged (23 Nov 2026, the author's Dragged): while he is carried, dragged.svg stands in for the still, swinging and squirming from the
+     top of his loop. It is drawn into the page (a shadow root keeps its rules to itself) so --gizmo-drag-tilt can lean him against the way he
+     is pulled; it eases back to hanging straight when the pointer stops. A scene he was playing stops, and none starts while he is held. */
+  var DRAGGED = "img/gizmo/dragged.svg", DRAG_SVG = "";
+  try { fetch(DRAGGED).then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) { if (/<svg/.test(t)) DRAG_SVG = t; }).catch(function () {}); } catch (e) {}
+  var D = { on: false, el: null, tilt: 0, vx: 0, lastX: 0, lastT: 0, raf: 0 };
+  function dragOn(x) {
+    if (D.on || !G.fig) return;
+    D.on = true; D.tilt = 0; D.vx = 0; D.lastX = x; D.lastT = Date.now();
+    var a = EN.w98.gizmo && EN.w98.gizmo.act;
+    if (a && a.stop && a.now && a.now()) try { a.stop("drag"); } catch (e) {}
+    var holder;
+    if (DRAG_SVG && document.body.attachShadow) {
+      holder = el("div.w98-gz-drag", { "aria-hidden": "true" });
+      holder.attachShadow({ mode: "open" }).innerHTML = "<style>svg{display:block;width:100%;height:100%}</style>" + DRAG_SVG;
+    } else holder = el("img.w98-gz-drag", { src: DRAGGED, alt: "", "aria-hidden": "true", draggable: "false" });
+    D.el = holder;
+    G.fig.appendChild(holder);
+    G.fig.classList.add("dragging");
+    if (!K.reduced()) D.raf = requestAnimationFrame(tiltStep);
+  }
+  // the lean: up to 24 degrees, against the pull, easing toward the pointer's speed (each move) and back to straight (each frame once it stops)
+  function lean() {
+    var want = Math.max(-24, Math.min(24, D.vx * 18));
+    D.tilt += (want - D.tilt) * 0.25;
+    if (D.el) D.el.style.setProperty("--gizmo-drag-tilt", D.tilt.toFixed(2) + "deg");
+  }
+  function tiltStep() {
+    if (!D.on) return;
+    if (Date.now() - D.lastT > 60) { D.vx *= 0.8; lean(); }
+    D.raf = requestAnimationFrame(tiltStep);
+  }
+  function dragMove(x) {
+    var now = Date.now(), dt = Math.max(1, now - D.lastT);
+    D.vx = D.vx * 0.6 + ((x - D.lastX) / dt) * 0.4;
+    D.lastX = x; D.lastT = now;
+    if (!K.reduced()) lean();
+  }
+  function dragOff() {
+    if (!D.on) return;
+    D.on = false; cancelAnimationFrame(D.raf);
+    if (D.el && D.el.parentNode) D.el.parentNode.removeChild(D.el);
+    D.el = null;
+    if (G.fig) G.fig.classList.remove("dragging");
+    setStill();
+  }
+
   /* ---- dragging him out of the way; a press without a drag is his menu */
   function drag(fig) {
     var st = null;
@@ -129,7 +192,9 @@ window.EN = window.EN || {};
       if (!st) return;
       var dx = e.clientX - st.x, dy = e.clientY - st.y;
       if (!st.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+      if (!st.moved) dragOn(e.clientX);
       st.moved = true; K.closeMenus(); hush();
+      dragMove(e.clientX);
       var root = document.getElementById("w98").getBoundingClientRect(), th = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--w-task-h") || "28");
       var r = Math.max(0, Math.min(root.width - 100, st.r - dx)), b = Math.max(0, Math.min(root.height - th - 130, st.b - dy));
       G.box.style.right = r + "px"; G.box.style.bottom = "calc(var(--w-task-h) + " + b + "px)";
@@ -139,10 +204,11 @@ window.EN = window.EN || {};
       if (!st) return;
       var s = st; st = null;
       try { fig.releasePointerCapture(s.id); } catch (x) {}
+      dragOff();
       if (s.moved) store(POS, JSON.stringify({ r: s.nr, b: s.nb })); else menu();
     }
     fig.addEventListener("pointerup", up);
-    fig.addEventListener("pointercancel", function () { st = null; });
+    fig.addEventListener("pointercancel", function () { st = null; dragOff(); });
     fig.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); menu(); } });
     // a right click is the options menu; a press is the quick one
     fig.addEventListener("contextmenu", function (e) { e.preventDefault(); e.stopPropagation(); st = null; optionsMenu(); });
@@ -206,7 +272,8 @@ window.EN = window.EN || {};
 
   EN.w98.say = say;
   EN.w98.gizmo = { on: on, setOn: setOn, say: say, hush: hush, menu: menu, optionsMenu: optionsMenu, hint: function (k) { return HINT[k]; }, present: function () { return !!(G.box && document.documentElement.contains(G.box)); },
-    fig: function () { return G.fig; }, stage: function () { return G.box; }, hidden: function () { return G.hidden; } };
+    fig: function () { return G.fig; }, stage: function () { return G.box; }, hidden: function () { return G.hidden; },
+    dragging: function () { return D.on; }, side: side };
   // Control Panel > Desktop Extras
   X.cplExtras.push(function () {
     var box = el("input.w98-chk", { type: "checkbox", checked: on(), onchange: function () { setOn(box.checked); } });

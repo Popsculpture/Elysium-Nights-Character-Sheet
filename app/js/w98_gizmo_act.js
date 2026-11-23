@@ -51,6 +51,7 @@ window.EN = window.EN || {};
 
   /* ---- the protected moments: the tour, the login egg, the access-denied page, a dialog, a dice roll */
   function hardProtected() {
+    if (GZ.dragging && GZ.dragging()) return true;   // held by the loop (dragged.svg): no scene starts until he is put down
     try { if (EN.tour && EN.tour.active && EN.tour.active()) return true; } catch (e) {}
     try { if (EN.gate && EN.gate.deniedOpen && EN.gate.deniedOpen()) return true; } catch (e) {}
     return !!document.querySelector(".w98-modal, .gate-stage, .gate-card");
