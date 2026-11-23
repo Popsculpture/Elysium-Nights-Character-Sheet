@@ -97,13 +97,24 @@ EN.w98sites = (function () {
     },
     codex: function () {
       return LOGO.codex(46) + '<span class="w98-ad-t"><b>Codex</b><span>The Free Encyclopedia' + CITE + '</span></span><span class="w98-ad-hr"></span>';
+    },
+    undercut: function () {
+      return LOGO.undercut(44) + '<span class="w98-ad-t"><b>the undercut</b><span>Don\'t ask for a receipt.</span></span><span class="w98-ad-cut"></span>';
+    },
+    register: function () {
+      return LOGO.register(46) + '<span class="w98-ad-t"><b>The Register</b><span>Thank you for shopping responsibly.</span></span><span class="w98-ad-tab"></span>';
+    },
+    surplus: function () {
+      return LOGO.surplus(46) + '<span class="w98-ad-t"><b>Guild Surplus</b><span>The dues pay for themselves. Mostly.</span></span><span class="w98-ad-red"></span>';
     }
   };
-  var BANNER_SITE = { magpie: "home", burnrate: "burnrate", namedrop: "namedrop", codex: "codex" };
-  var BANNER_LABEL = { magpie: "Magpie: Finders keepers.", burnrate: "Burn Rate: Know where it went.", namedrop: "NameDrop: Your name gets around.", codex: "Codex: The Free Encyclopedia" };
+  var BANNER_SITE = { magpie: "home", burnrate: "burnrate", namedrop: "namedrop", codex: "codex", undercut: "undercut", register: "register", surplus: "surplus" };
+  var BANNER_LABEL = { magpie: "Magpie: Finders keepers.", burnrate: "Burn Rate: Know where it went.", namedrop: "NameDrop: Your name gets around.", codex: "Codex: The Free Encyclopedia",
+    undercut: "The Undercut: Don't ask for a receipt.", register: "The Register: Thank you for shopping responsibly.", surplus: "Guild Surplus: The dues pay for themselves. Mostly." };
   function banner(which) {
     if (!BANNER[which]) return null;
     var site = BANNER_SITE[which];
+    if (site !== "home" && !WEB.open(site)) return null;   // a store the GM closed runs no ads
     return el("button.w98-ad-b.w98-ad-" + which, { type: "button", title: WEB.addr(site), "aria-label": BANNER_LABEL[which], html: BANNER[which](),
       onclick: function () { go(site); } });
   }
@@ -181,20 +192,134 @@ EN.w98sites = (function () {
         ]),
         el("div.w98-nd-btns", null, ["magpie", "burnrate", "undercut", "register", "surplus", "codex"].map(button88))
       ]),
-      foot: el("div.w98-s-foot.w98-nd-foot", null, [ad(banner("magpie"))])
+      // the ad wall (23 Nov 2026, the author's ask): every other site's banner, the stores only while they are open
+      foot: el("div.w98-s-foot.w98-nd-foot", null, [el("div.w98-ads", { "aria-label": "Sponsored" },
+        ["magpie", "burnrate", "undercut", "register", "surplus", "codex"].map(banner).filter(Boolean))])
     };
   }
   function initials(n) { return String(n || "?").replace(/["“”][^"“”]*["“”]/g, " ").split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w[0].toUpperCase(); }).join("") || "?"; }
 
+  /* Burn Rate's accounts (23 Nov 2026, the author's ask): Glimmer and Nexus as two bank accounts, each with its balance,
+     Deposit, Withdraw and its own statement (the record's ledger, that currency's lines) dropping down under it. They take
+     the place of the wallet buttons and the Ledger section on this site. A deposit or withdrawal is the wallet's own write
+     (inventory.js wallet.apply): one ledger line, with the player's memo. A withdrawal larger than the balance is refused
+     rather than cut to zero. A correction is an Adjustment line with its reason, as the Ledger section had it. */
+  var ACC = { open: { glimmer: null, nexus: null }, amt: { glimmer: "", nexus: "" }, note: { glimmer: "", nexus: "" }, show: { glimmer: 10, nexus: 10 },
+              fix: { glimmer: { dir: 1, amt: "", why: "" }, nexus: { dir: 1, amt: "", why: "" } } };
+  var ACCT = {
+    glimmer: { name: "Glimmer", sub: "Everyday account. Issued by #MINT.", mark: "𝒢", step: 1 },
+    nexus: { name: "Nexus", sub: "Token account. High scrutiny: brokered commissions, buyouts, favors with a paper trail.", mark: "◎", step: 0.05 }
+  };
+  function money(cur, v) { var C = inv().core; return cur === "nexus" ? C.fmtNx(v) : C.fmtG(v); }
+  function rerender() { EN.app.render(); }
+  function toast(t) { if (EN.ui && EN.ui.toast) EN.ui.toast(t); }
+  function moneyIn(cur, v) { return cur === "nexus" ? Math.round((Number(v) || 0) * 100) / 100 : Math.floor(Number(v) || 0); }
+  function moveForm(cur, sign, bal) {
+    var W = inv().wallet, verb = sign > 0 ? "Deposit" : "Withdraw";
+    function go() {
+      var v = moneyIn(cur, ACC.amt[cur]);
+      if (!(v > 0)) { toast("Enter an amount."); return; }
+      if (sign < 0 && v > bal) { toast("That is more than the " + ACCT[cur].name + " balance (" + money(cur, bal) + ")."); return; }
+      var memo = String(ACC.note[cur] || "").trim() || (sign > 0 ? "Deposit" : "Withdrawal");
+      ACC.amt[cur] = ""; ACC.note[cur] = ""; ACC.open[cur] = null;
+      if (W.apply(cur, sign, v, memo)) toast((sign > 0 ? "Deposited " : "Withdrew ") + money(cur, v) + ".");
+      rerender();
+    }
+    var idA = "w98-acc-" + cur + "-amt", idN = "w98-acc-" + cur + "-note";
+    return el("form.w98-br-form", { dataset: { accForm: cur + ":" + (sign > 0 ? "dep" : "wd") }, onsubmit: function (e) { e.preventDefault(); go(); } }, [
+      el("div.w98-br-field", null, [el("label", { "for": idA, text: "Amount" }),
+        el("input", { id: idA, type: "number", min: 0, step: ACCT[cur].step, inputmode: "decimal", value: ACC.amt[cur], dataset: { accAmt: cur },
+          oninput: function () { ACC.amt[cur] = this.value; } })]),
+      el("div.w98-br-field.w98-br-memo", null, [el("label", { "for": idN, text: "Memo (shows on the statement)" }),
+        el("input", { id: idN, type: "text", maxLength: 80, value: ACC.note[cur], placeholder: sign > 0 ? "Job payout, a fenced piece..." : "Rent, a bribe, a buyout...",
+          oninput: function () { ACC.note[cur] = this.value; } })]),
+      el("div.w98-br-formacts", null, [
+        el("button.w98-br-b.w98-br-pri", { type: "submit", dataset: { accGo: cur } }, verb),
+        el("button.w98-br-b", { type: "button", onclick: function () { ACC.open[cur] = null; rerender(); } }, "Cancel")])
+    ]);
+  }
+  function statement(cur, ch) {
+    var W = inv().wallet, key = cur === "nexus" ? "n" : "g", bkey = cur === "nexus" ? "nb" : "gb";
+    var rows = (Array.isArray(ch.ledger) ? ch.ledger.slice().reverse() : []).filter(function (r) {
+      var k = W.kind(r); return k === "open" || k === "fwd" || (r[key] || 0) !== 0;
+    });
+    var kids = [];
+    if (!rows.length) kids.push(el("p.w98-br-none", { text: "No activity yet. Every " + ACCT[cur].name + " change lands here: buys, sales, bills, payouts, deposits and withdrawals." }));
+    else {
+      kids.push(el("div.w98-br-stmt", { role: "table", "aria-label": ACCT[cur].name + " statement" }, [
+        el("div.w98-br-srow.w98-br-shead", { role: "row" }, ["Date", "Description", "Amount", "Balance"].map(function (h) { return el("span", { role: "columnheader", text: h }); }))
+      ].concat(rows.slice(0, ACC.show[cur]).map(function (r) {
+        var k = W.kind(r), flat = k === "open" || k === "fwd", v = r[key] || 0;
+        var memo = (k === "open" ? "Opening balance" : k === "fwd" ? "Brought forward" : "") + (flat && r.m ? ": " : "") + (r.m || "");
+        return el("div.w98-br-srow" + (k === "adjust" ? ".w98-adj" : ""), { role: "row", dataset: { kind: k } }, [
+          el("span", { role: "cell", text: W.when(r.t) }),
+          el("span", { role: "cell", text: memo }),
+          el("span" + (flat ? "" : v > 0 ? ".w98-in" : ".w98-out"), { role: "cell", text: flat ? "" : (v > 0 ? "+" : "-") + money(cur, Math.abs(v)) }),
+          el("span", { role: "cell", text: money(cur, r[bkey] || 0) })
+        ]);
+      }))));
+      if (rows.length > ACC.show[cur]) kids.push(el("button.w98-br-b", { type: "button", onclick: function () { ACC.show[cur] += 10; rerender(); } },
+        "Show 10 more (" + ACC.show[cur] + " of " + rows.length + ")"));
+    }
+    // a correction is never an edit: a new Adjustment line, with its reason
+    var F = ACC.fix[cur];
+    kids.push(el("form.w98-br-fix", { onsubmit: function (e) {
+      e.preventDefault();
+      var v = moneyIn(cur, F.amt), why = String(F.why || "").trim();
+      if (!(v > 0)) { toast("Enter the amount to correct by."); return; }
+      if (!why) { toast("A correction needs a reason, so the statement says why the balance moved."); return; }
+      if (W.adjust(cur, F.dir, v, why)) toast("Correction recorded.");
+      F.amt = ""; F.why = ""; F.dir = 1; rerender();
+    } }, [
+      el("span.w98-br-fixl", { text: "Something wrong? Post a correction:" }),
+      el("select", { "aria-label": "Correction direction", onchange: function () { F.dir = this.value === "-1" ? -1 : 1; } }, [
+        el("option", { value: "1", selected: F.dir > 0, text: "add" }), el("option", { value: "-1", selected: F.dir < 0, text: "remove" })]),
+      el("input", { type: "number", min: 0, step: ACCT[cur].step, value: F.amt, placeholder: "amount", "aria-label": "Correction amount", oninput: function () { F.amt = this.value; } }),
+      el("input.w98-br-why", { type: "text", maxLength: 120, value: F.why, placeholder: "reason (required)", "aria-label": "Correction reason", oninput: function () { F.why = this.value; } }),
+      el("button.w98-br-b", { type: "submit" }, "Post")
+    ]));
+    return el("div.w98-br-ledger", { dataset: { accLedger: cur } }, kids);
+  }
+  function account(cur, ch, ro) {
+    var bal = cur === "nexus" ? (ch.nexus || 0) : (ch.glimmer || 0), o = ACC.open[cur];
+    function tog(which) {
+      return function () {
+        ACC.open[cur] = ACC.open[cur] === which ? null : which;
+        rerender();
+        if (ACC.open[cur] === "dep" || ACC.open[cur] === "wd") { var f = document.querySelector('[data-acc-amt="' + cur + '"]'); if (f) try { f.focus(); } catch (e) {} }
+      };
+    }
+    var acts = ro ? [] : [
+      el("button.w98-br-b" + (o === "dep" ? ".w98-on" : ""), { type: "button", "aria-expanded": o === "dep" ? "true" : "false", dataset: { acc: cur + ":dep" }, onclick: tog("dep") }, "Deposit"),
+      el("button.w98-br-b" + (o === "wd" ? ".w98-on" : ""), { type: "button", "aria-expanded": o === "wd" ? "true" : "false", dataset: { acc: cur + ":wd" }, onclick: tog("wd") }, "Withdraw")];
+    acts.push(el("button.w98-br-b" + (o === "led" ? ".w98-on" : ""), { type: "button", "aria-expanded": o === "led" ? "true" : "false", dataset: { acc: cur + ":led" }, onclick: tog("led") },
+      (o === "led" ? "Hide statement ▴" : "View statement ▾")));
+    return el("section.w98-br-acct.w98-br-" + cur, { dataset: { account: cur } }, [
+      el("div.w98-br-atop", null, [
+        el("span.w98-br-mark", { "aria-hidden": "true", text: ACCT[cur].mark }),
+        el("div.w98-br-aname", null, [el("b", { text: ACCT[cur].name }), el("span", { text: ACCT[cur].sub })]),
+        el("div.w98-br-abal", null, [el("b", { dataset: { accBal: cur }, text: money(cur, bal) }), el("span", { text: "Available balance" })])
+      ]),
+      el("div.w98-br-aacts", null, acts),
+      o === "dep" && !ro ? moveForm(cur, 1, bal) : o === "wd" && !ro ? moveForm(cur, -1, bal) : o === "led" ? statement(cur, ch) : null
+    ]);
+  }
+  function accounts() {
+    var ch = EN.store.active();
+    if (!ch || !inv() || !inv().wallet) return null;
+    var ro = readOnly(ch);
+    return el("section.w98-br-accts", null, [el("h2", { text: "Accounts" }), account("glimmer", ch, ro), account("nexus", ch, ro)]);
+  }
+
   // Burn Rate: the navy header with its section links, the balance and what burns each week, Bills next, the six cards
-  var BR_NAV = [["Lifestyle and Safehouse", "Lifestyle"], ["Leases", "Leases"], ["Hypercare", "Hypercare"], ["Licences and Papers", "Licences"], ["Debts", "Debts"], ["Glimmer and Nexus", "Ledger"]];
+  var BR_NAV = [["Lifestyle and Safehouse", "Lifestyle"], ["Leases", "Leases"], ["Hypercare", "Hypercare"], ["Licences and Papers", "Licences"], ["Debts", "Debts"], ["Glimmer and Nexus", null]];
   function burnrate() {
     var I = inv(), S = I && I.billsSummary ? I.billsSummary() : null, fmtG = (I && I.core && I.core.fmtG) || function (n) { return "𝒢" + n; };
     var head = el("div.w98-s-head.w98-br-head", null, [el("div.w98-br-band", null, [
       el("div.w98-s-in", null, [svg(LOGO.burnrate(56)), el("div.w98-s-brand", null, [el("b", { text: "Burn Rate" }), el("i", { text: "Know where it went." })])]),
       el("div.w98-br-red"),
       el("nav.w98-br-nav", { "aria-label": "Sections" }, BR_NAV.map(function (p) {
-        return el("button", { type: "button", onclick: function () { scrollToNode(sectionTitled(p[1])); } }, p[0]);
+        return el("button", { type: "button", onclick: function () { scrollToNode(p[1] ? sectionTitled(p[1]) : document.querySelector(".w98-br-accts")); } }, p[0]);
       }))
     ])]);
     var dash = S ? el("div.w98-br-dash", null, [
@@ -203,6 +328,7 @@ EN.w98sites = (function () {
         el("span.w98-br-rule"),
         el("i", { text: "Burning " + fmtG(S.weekly) + " a week" })
       ]),
+      accounts(),
       el("section.w98-br-next", null, [el("h2", { text: "Bills next" })].concat(S.next.length ? S.next.map(function (b) {
         return el("div.w98-br-row" + (b.late ? ".w98-late" : ""), null, [el("span", { text: b.name }), el("span.w98-br-due", { text: b.due }), el("b", { text: b.amount })]);
       }) : [el("div.w98-br-row", null, [el("span", { text: "Nothing due." })])])),
@@ -212,7 +338,8 @@ EN.w98sites = (function () {
     return {
       head: head,
       foot: el("div.w98-s-foot.w98-br-foot", null, [
-        el("div.w98-s-in", null, [el("p.w98-br-cancel", { text: "Cancellations are handled in person." }), ad(banner("namedrop"))]),
+        // no banner here: the author took NameDrop's off his bank (23 Nov 2026)
+        el("div.w98-s-in", null, [el("p.w98-br-cancel", { text: "Cancellations are handled in person." })]),
         el("footer.w98-s-bar", { text: "Glimmer is issued by #MINT." })
       ])
     };

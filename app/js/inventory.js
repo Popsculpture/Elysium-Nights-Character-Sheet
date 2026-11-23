@@ -4498,6 +4498,28 @@ EN.inventoryView = (function () {
     var nt = String((_wal.note && _wal.note[cur]) || "").trim();
     return nt || (sign > 0 ? "Credit entered by hand" : "Debit entered by hand");
   }
+  /* Money in or out by hand, one ledger line with its memo: the wallet's CREDIT and DEBIT, and '98's Burn Rate accounts
+     (js/w98_sites.js, Deposit and Withdraw). Glimmer is whole, Nexus is in hundredths, and neither goes below zero. */
+  function walletApply(cur, sign, v, memo) {
+    v = cur === "nexus" ? Math.round((Number(v) || 0) * 100) / 100 : Math.floor(Number(v) || 0);
+    if (!(v > 0)) return false;
+    store.update(function (c) {
+      if (cur === "glimmer") c.glimmer = Math.max(0, (c.glimmer || 0) + sign * v);
+      else c.nexus = Math.max(0, Math.round(((c.nexus || 0) + sign * v) * 100) / 100);
+    }, { ledger: memo || (sign > 0 ? "Credit entered by hand" : "Debit entered by hand") });
+    return true;
+  }
+  // a correction: a new Adjustment line with its reason, never an edit
+  function walletAdjust(cur, dir, v, why) {
+    v = cur === "nexus" ? Math.round((Number(v) || 0) * 100) / 100 : Math.floor(Number(v) || 0);
+    why = String(why || "").trim();
+    if (!(v > 0) || !why) return false;
+    store.update(function (c) {
+      if (cur === "nexus") c.nexus = Math.max(0, Math.round(((c.nexus || 0) + dir * v) * 100) / 100);
+      else c.glimmer = Math.max(0, (c.glimmer || 0) + dir * v);
+    }, { ledger: { memo: "Adjustment: " + why, kind: "adjust" } });
+    return true;
+  }
   function closePops() { _wal.open = null; }
   document.addEventListener("click", function (ev) {
     if (!_wal.open) return;
@@ -4780,11 +4802,7 @@ EN.inventoryView = (function () {
         var why = String(A.why || "").trim();
         if (!(v > 0)) { toast("Enter the amount to correct by."); return; }
         if (!why) { toast("An Adjustment needs a reason, so the ledger says why the balance moved."); return; }
-        var dir = A.dir, cur = A.cur;
-        store.update(function (c) {
-          if (cur === "nexus") c.nexus = Math.max(0, Math.round(((c.nexus || 0) + dir * v) * 100) / 100);
-          else c.glimmer = Math.max(0, (c.glimmer || 0) + dir * v);
-        }, { ledger: { memo: "Adjustment: " + why, kind: "adjust" } });
+        walletAdjust(A.cur, A.dir, v, why);
         A.amt = ""; A.why = ""; A.dir = 1;   // back to "add", so a stale "remove" never carries into the next one
         toast("Adjustment recorded.");
         EN.app.render();
@@ -4898,10 +4916,7 @@ EN.inventoryView = (function () {
       // the note is read, then cleared BEFORE the write, so the redraw the write causes shows it empty
       var memo = walletMemo(cur, sign);
       _wal.note[cur] = "";
-      store.update(function (c) {
-        if (cur === "glimmer") c.glimmer = Math.max(0, (c.glimmer || 0) + sign * v);
-        else c.nexus = Math.max(0, Math.round(((c.nexus || 0) + sign * v) * 100) / 100);
-      }, { ledger: memo });
+      walletApply(cur, sign, v, memo);
     }
     // Nexus is quoted in hundredths, so its field steps the way its total reads.
     function walletPop(cur, color, tip, text) {
@@ -5099,6 +5114,7 @@ EN.inventoryView = (function () {
   return { render: render, icons: { stash: ICON_STASH }, leaseTick: leaseTick,
            page: page, setPage: setPage, sheets: sheets, fronts: fronts, billsDue: billsDue, householdTick: householdTick, hypercareTick: hypercareTick,
            billsSummary: billsSummary, registerReceipt: registerReceipt, cardHooks: CARD_HOOKS,
+           wallet: { apply: walletApply, adjust: walletAdjust, kind: ledgerKind, when: ledgerWhen },
            openBench: openBench, openStash: openStash, openBills: openBills, closePops: closePops,
            pickUpDropped: pickUpDropped, installFromStash: installFromStash, cyberAnatomyPlan: cyberAnatomyPlan, sell: sell,
            // #POST packages: Take it (js/face.js) and the Admin's Attach items search (js/gm_campaign.js)

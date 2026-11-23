@@ -940,11 +940,21 @@ EN.w98 = (function () {
     var q = D.bar.querySelector(".w98-quick");
     var first = programs()[0], codex = portal() === "admin" ? "gmcodex" : "codex";
     var web = programs().filter(function (p) { return p.key === "web"; })[0];   // the #GRID browser, on the Freelancer desktop
-    var sig = (first ? first.key : "") + "|" + codex + "|" + (web ? "web" : "");
+    var both = EN.app.hasAdmin();
+    var sig = (first ? first.key : "") + "|" + codex + "|" + (web ? "web" : "") + "|" + portal() + "|" + both;
     if (q.getAttribute("data-sig") === sig) return;
     q.setAttribute("data-sig", sig);
     EN.ui.clear(q);
-    q.appendChild(el("button.w98-ql", { type: "button", title: "Show Desktop", "aria-label": "Show Desktop", html: pix("desk", 16), onclick: showDesktop }));
+    /* the first button (23 Nov 2026, the author's call): with an Admin desktop as well, it swaps between the two desktops,
+       as Start's own Freelancer desktop / Admin desktop item does, keeping the desktop icon either way; a player with one
+       desktop keeps Show Desktop */
+    if (both && portal() === "admin")
+      q.appendChild(el("button.w98-ql", { type: "button", title: "Freelancer desktop", "aria-label": "Switch to the Freelancer desktop", dataset: { ql: "desktop" },
+        html: pix("desk", 16), onclick: function () { EN.app.setPortal("freelancer"); } }));
+    else if (both)
+      q.appendChild(el("button.w98-ql", { type: "button", title: "Admin desktop", "aria-label": "Switch to the Admin desktop", dataset: { ql: "desktop" },
+        html: pix("desk", 16), onclick: function () { EN.app.enterAdmin(); } }));
+    else q.appendChild(el("button.w98-ql", { type: "button", title: "Show Desktop", "aria-label": "Show Desktop", html: pix("desk", 16), onclick: showDesktop }));
     if (first) q.appendChild(el("button.w98-ql", { type: "button", title: first.label, "aria-label": first.label, html: glyph16(first), onclick: function () { launch(first.key); } }));
     if (web) q.appendChild(el("button.w98-ql", { type: "button", title: web.label, "aria-label": web.label, dataset: { ql: "web" }, html: glyph16(web),
       onclick: function () { var g = null; X.icons.forEach(function (fn) { try { g = g || fn("web"); } catch (e) {} }); if (g) g(); else launch("web"); } }));

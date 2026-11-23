@@ -108,7 +108,7 @@ window.EN = window.EN || {};
     "Start, Run understands dice. Type 2d6+3 and it rolls them.",
     "Double-click a window's title bar to fill the screen with it. Double-click it again to put it back.",
     "Where you put a window is remembered on this device, so the desktop is as you left it.",
-    "The Show Desktop button beside Start puts every window away. Press it again to bring them all back.",
+    "The first button beside Start swaps between your Freelancer and Admin desktops. With only one desktop, it puts every window away instead.",
     "Click the speaker beside the clock to mute the sounds. Click it again to hear them.",
     "A window behind the others shows the last thing it drew. Click it and it comes alive.",
     "Start, Documents lists your Freelancers. Click one to open it, or add a new one from the same menu.",
