@@ -57,6 +57,12 @@ EN.inventoryView = (function () {
   var LEGAL_MULT = { "Legal": 1, "Licensed": 1.15, "Restricted": 1.4, "Contraband": 1.75 };
   var AVAIL_MULT = { "Common": 1, "Uncommon": 1.2, "Rare": 1.5, "Iconic": 1.5, "Legendary": 1.8, "Mythical": 2.2, "Artifact": 3 };
   var FENCE_RATE = 0.35;   // common contraband fences at 30-50% of market
+  /* WHOLE GLIMMER FROM A RATE (23 Nov 2026). A rate times a list price is a float, and a float can land a hair off the figure the
+     arithmetic gives: 180 × 0.35 is 62.99999999999999, which a bare floor made 𝒢62 where 35% of 𝒢180 is 𝒢63 (a Greatsword at
+     Guild Surplus and at the fence, and some forty other list prices). So the product is settled to the thousandth, which is
+     as fine as any rate here goes (a hundredth times a tenth, at The Register), before it is rounded down or up. */
+  function settled(n) { return Math.round(n * 1000) / 1000; }
+  function fenceCut(price) { return Math.max(1, Math.floor(settled(price * FENCE_RATE))); }
 
   /* ---- launch holds (data/launch.js, 16 October) --------------------------
      AVAILABILITY IS HELD. While EN.launch.holds.availability is on, no card, filter, bench
@@ -119,12 +125,12 @@ EN.inventoryView = (function () {
   // `front` names a storefront (#GRIDeck's Gear passes one, P4); without it, the one this tab is on
   function streetPrice(it, front) {
     var m = front || _mode;
-    if (m === "register") return Math.ceil(it.price * (LEGAL_MULT[it.legality] || 1) * (AVAIL_MULT[it.availability] || 1));
-    if (m === "surplus") return Math.max(1, Math.floor(it.price * FENCE_RATE));
+    if (m === "register") return Math.ceil(settled(it.price * (LEGAL_MULT[it.legality] || 1) * (AVAIL_MULT[it.availability] || 1)));
+    if (m === "surplus") return fenceCut(it.price);
     if (m === "fivefinger") return 0;
     return it.price;   // The Undercut, straight book list price
   }
-  function fencePrice(it) { return Math.max(1, Math.floor(it.price * FENCE_RATE)); }
+  function fencePrice(it) { return fenceCut(it.price); }
   function priceTitle(it) {
     var sp = streetPrice(it);
     if (it.upkeep) return "Leased, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep"
