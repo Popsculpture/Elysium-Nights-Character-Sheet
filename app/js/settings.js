@@ -481,7 +481,8 @@ EN.theme = (function () {
     if (!p) return null;
     // A TILE carries its art inline as an SVG data URL instead of naming a file, and paints
     // repeated at its own size rather than stretched to cover (see wallTileSize).
-    return p.tile ? p.svg : "img/wallpapers/" + p.file;
+    // A tile may instead name its own file (the art team's larger tiles, 23 Nov 2026), and so may a picture be an SVG.
+    return p.tile && p.svg ? p.svg : "img/wallpapers/" + p.file;
   }
   /* The repeat size, in CSS pixels, or 0 for a wallpaper that covers. Photographs are one
      picture stretched over the desktop; the pattern tiles are small squares repeated, which
@@ -1333,7 +1334,7 @@ EN.settings = (function () {
     }
     var cards = [card("none", "None, the dither", null)];
     if (sk === "98") EN.theme.wallPresets().forEach(function (w) {
-      cards.push(w.tile ? card(w.key, w.name, w.svg, null, EN.theme.wallTileSize(w.key))
+      cards.push(w.tile ? card(w.key, w.name, w.svg || "img/wallpapers/" + w.file, null, EN.theme.wallTileSize(w.key))
                         : card(w.key, w.name, "img/wallpapers/" + w.thumb));
     });
     EN.theme.wallCustoms().forEach(function (w) {

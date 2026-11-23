@@ -27,6 +27,17 @@ EN.wallpapers = [
   { key: "cyberrat-corridor",  name: "CyberRat Corridor",              file: "cyberrat-corridor.jpg",  thumb: "cyberrat-corridor.thumb.jpg" },
   { key: "grid-by-night",      name: "GRID by Night",                  file: "grid-by-night.jpg",      thumb: "grid-by-night.thumb.jpg" },
 
+  /* THE CLASS SCENES (23 Nov 2026, the art team): one for each class, pixel art drawn as SVG, so the desktop wears the vector and
+     stays sharp on any screen (covering, cropped from the centre, as a photograph is). The picker shows the JPEG thumbnail. Each
+     also comes as a full 1672x941 JPEG (class-<name>.jpg) beside it, the raster copy of the same art. */
+  { key: "class-codebreaker", name: "Cipher Lines",  file: "class-codebreaker.svg", thumb: "class-codebreaker.thumb.jpg" },
+  { key: "class-fury",        name: "Redline",       file: "class-fury.svg", thumb: "class-fury.thumb.jpg" },
+  { key: "class-hustler",     name: "House Edge",    file: "class-hustler.svg", thumb: "class-hustler.thumb.jpg" },
+  { key: "class-operator",    name: "Overwatch",     file: "class-operator.svg", thumb: "class-operator.thumb.jpg" },
+  { key: "class-scoundrel",   name: "Blind Side",    file: "class-scoundrel.svg", thumb: "class-scoundrel.thumb.jpg" },
+  { key: "class-shaper",      name: "Shardlight",    file: "class-shaper.svg", thumb: "class-shaper.thumb.jpg" },
+  { key: "class-stitcher",    name: "Steady Hands",  file: "class-stitcher.svg", thumb: "class-stitcher.thumb.jpg" },
+
   /* THE TILES. Not photographs: the small repeating patterns a desktop of the era actually wore,
      and the half of this list that made a 1998 screen look like one. Written as inline SVG rather
      than as six more binaries, so they cost the repo nothing and stay crisp at any zoom or DPI.
@@ -45,5 +56,12 @@ EN.wallpapers = [
   { key: "blue-rivets", name: "Blue Rivets", tile: true, size: 32,
     svg: "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2732%27%20height%3D%2732%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20fill%3D%27%2341556f%27%2F%3E%3Cpath%20d%3D%27M0%200h32v1.5H0z%20M0%200h1.5v32H0z%27%20fill%3D%27%2366809e%27%2F%3E%3Cpath%20d%3D%27M0%2030.5h32v1.5H0z%20M30.5%200h1.5v32h-1.5z%27%20fill%3D%27%2327364a%27%2F%3E%3Cg%3E%3Ccircle%20cx%3D%276%27%20cy%3D%276%27%20r%3D%272.6%27%20fill%3D%27%237a93b0%27%2F%3E%3Ccircle%20cx%3D%276%27%20cy%3D%276%27%20r%3D%271.2%27%20fill%3D%27%2327364a%27%2F%3E%3Ccircle%20cx%3D%2726%27%20cy%3D%276%27%20r%3D%272.6%27%20fill%3D%27%237a93b0%27%2F%3E%3Ccircle%20cx%3D%2726%27%20cy%3D%276%27%20r%3D%271.2%27%20fill%3D%27%2327364a%27%2F%3E%3Ccircle%20cx%3D%276%27%20cy%3D%2726%27%20r%3D%272.6%27%20fill%3D%27%237a93b0%27%2F%3E%3Ccircle%20cx%3D%276%27%20cy%3D%2726%27%20r%3D%271.2%27%20fill%3D%27%2327364a%27%2F%3E%3Ccircle%20cx%3D%2726%27%20cy%3D%2726%27%20r%3D%272.6%27%20fill%3D%27%237a93b0%27%2F%3E%3Ccircle%20cx%3D%2726%27%20cy%3D%2726%27%20r%3D%271.2%27%20fill%3D%27%2327364a%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E" },
   { key: "neon-grid", name: "Neon Grid", tile: true, size: 32,
-    svg: "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2732%27%20height%3D%2732%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20fill%3D%27%230b0b16%27%2F%3E%3Cg%20stroke%3D%27%2300e5ff%27%20stroke-width%3D%271%27%20opacity%3D%27.5%27%3E%3Cpath%20d%3D%27M0%20.5h32%27%2F%3E%3Cpath%20d%3D%27M.5%200v32%27%2F%3E%3C%2Fg%3E%3Ccircle%20cx%3D%27.5%27%20cy%3D%27.5%27%20r%3D%271.8%27%20fill%3D%27%23ff2fb0%27%2F%3E%3C%2Fsvg%3E" }
+    svg: "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2732%27%20height%3D%2732%27%3E%3Crect%20width%3D%2732%27%20height%3D%2732%27%20fill%3D%27%230b0b16%27%2F%3E%3Cg%20stroke%3D%27%2300e5ff%27%20stroke-width%3D%271%27%20opacity%3D%27.5%27%3E%3Cpath%20d%3D%27M0%20.5h32%27%2F%3E%3Cpath%20d%3D%27M.5%200v32%27%2F%3E%3C%2Fg%3E%3Ccircle%20cx%3D%27.5%27%20cy%3D%27.5%27%20r%3D%271.8%27%20fill%3D%27%23ff2fb0%27%2F%3E%3C%2Fsvg%3E" },
+
+  /* MORE TILES (23 Nov 2026, the art team): pixel tiles in files of their own under img/wallpapers/tiles, too big to carry inline;
+     `file` in place of `svg`, painted repeated at their size all the same. */
+  { key: "circuit-weave", name: "Circuit Weave", tile: true, size: 64, file: "tiles/circuit-weave.svg" },
+  { key: "hash-field", name: "Hash Field", tile: true, size: 64, file: "tiles/hash-field.svg" },
+  { key: "night-awning", name: "Night Awning", tile: true, size: 64, file: "tiles/night-awning.svg" },
+  { key: "lattice", name: "Quiet Lattice", tile: true, size: 64, file: "tiles/lattice.svg" },
 ];
