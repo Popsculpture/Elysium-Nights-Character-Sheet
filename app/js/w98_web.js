@@ -59,7 +59,7 @@ EN.w98web = (function () {
   function links() { return LINKS.filter(open); }
   // the site a tab is showing, or null when that tab (or that page of it) is not one
   function siteOf(tab) {
-    if (tab === "web") return "home";
+    if (tab === "web") return _closed || "home";
     if (tab === "face") return "namedrop";
     if (tab === "codex") return "codex";
     if (tab === "gear") {
@@ -88,15 +88,28 @@ EN.w98web = (function () {
 
   // what the desktop's icons open: a site in the browser, the browser as it was, the Stash on its Gear sheet
   var _siteNav = false;
+  /* CLOSED STORES (23 Nov 2026, the designer's boards). The Register and Guild Surplus each have a closed page: the
+     store's own header, its shutter down, and a notice (js/w98_sites.js). A store the GM has closed is still not on the
+     Links bar, the start page or any banner; its address, Back, a tab left on it, or the GM closing it while it is
+     showing land on that page, drawn by Magpie's own view. It opens again on its own when the GM reopens the store.
+     The Undercut and Five-Finger Supply have no closed page, so their addresses still cannot be found. */
+  var CLOSED_PAGE = { register: 1, surplus: 1 };
+  var _closed = null, _lastGo = null;
   function go(site, opts) {
     var s = SITES[site];
-    if (!s || !open(site)) { notFound(site); return false; }
+    var shut = !!(s && s.front && !open(site) && CLOSED_PAGE[site]);
+    if (!s || (!open(site) && !shut)) { notFound(site); return false; }
     opts = opts || {};
     if (opts.from) K.from(opts.from);
+    _closed = shut ? site : null;
+    _lastGo = site;
     _siteNav = true;
     try {
-      if (s.tab === "gear" && inv()) inv().setPage(s.sub, s.front);
-      K.launch(s.tab);
+      if (shut) K.launch("web");
+      else {
+        if (s.tab === "gear" && inv()) inv().setPage(s.sub, s.front);
+        K.launch(s.tab);
+      }
     } finally { _siteNav = false; }
     return true;
   }
@@ -221,6 +234,17 @@ EN.w98web = (function () {
   function paintBrowser(w) {
     if (!w._tabs) return;
     var live = K.live() === "web";
+    if (live) {
+      var tf = cur(w), was = tf && tf.hist[tf.i];
+      // a way into another page that did not come through go() (a link inside the app): the closed page is gone
+      if (_closed && EN.app.activeTab() !== "web") _closed = null;
+      // the store on the closed page has opened again: show it
+      if (_closed && open(_closed)) { var back2 = _closed; setTimeout(function () { go(back2); }, 0); return; }
+      // the GM closed the store this tab was showing (the market fell back to another store): its closed page instead
+      if (!_closed && was && was === _lastGo && CLOSED_PAGE[was] && !open(was) && EN.app.activeTab() === "gear" && invPage().sub === "market") {
+        setTimeout(function () { go(was); }, 0); return;
+      }
+    }
     // write what is showing into the tab in front
     if (live) {
       var site = liveSite(), t = cur(w);
@@ -337,6 +361,7 @@ EN.w98web = (function () {
     if (ids.length && C.open) setTimeout(function () { C.open(ids[Math.floor(Math.random() * ids.length)]); }, 0);
   }
   function render(mount) {
+    if (_closed && EN.w98sites && EN.w98sites.closedPage) { mount.appendChild(EN.w98sites.closedPage(_closed)); return; }
     var q = el("input.w98-mp-q", { type: "text", id: "w98-mp-q", spellcheck: "false", "aria-label": "Search",
       onkeydown: function (e) { if (e.key === "Enter") { e.preventDefault(); search(q.value); } } });
     var n = blocked();
@@ -377,5 +402,6 @@ EN.w98web = (function () {
   }, 15000);
 
   return { render: render, go: go, sites: SITES, siteOf: siteOf, typed: typed, open: open, links: links, addr: addr, px32: px32,
-           favicon: favicon, browser: BROWSER, shown: function () { var w = K.winOf("t:web"); return w ? shownSite(w) : null; }, search: search };
+           favicon: favicon, browser: BROWSER, shown: function () { var w = K.winOf("t:web"); return w ? shownSite(w) : null; }, search: search,
+           closed: function () { return K.live() === "web" && EN.app.activeTab() === "web" ? _closed : null; } };
 })();

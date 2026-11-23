@@ -382,6 +382,30 @@ html.skin-98 .w98-webwin[data-site="codex"] .w98-client .panel > .panel-h{ paddi
 html.skin-98 .w98-webwin[data-site="codex"] .w98-client .panel > .panel-b{ padding:8px 0 12px; font-size:14px; line-height:1.6; }
 html.skin-98 .w98-webwin[data-site="codex"] .w98-client .cx-chaps{ padding:8px 14px; background:#F8F9FA; border:1px solid #A2A9B1; }
 
+/* ======================================================================== THE CLOSED STORES (The Register, Guild Surplus)
+   The store's header, a band in its colours, the shutter down, the notice. Colours by store, from the closed boards. */
+html.skin-98 .w98-shut-head{ border-bottom:0 !important; }
+html.skin-98 .w98-shut-band{ height:12px; }
+html.skin-98 .w98-rg-head .w98-shut-band{ background:#0E5563; border-bottom:3px solid #F29A1F; }
+html.skin-98 .w98-rg-head.w98-shut-head .w98-s-in{ padding-bottom:10px; }
+html.skin-98 .w98-gs-head .w98-shut-band{ background:#1D3FBF; border-bottom:4px solid #D62828; }
+html.skin-98 .w98-closed{ --sh-a:#0E5563; --sh-b:#0B3A44; display:flex; flex-direction:column; align-items:center; gap:20px; padding:24px 0 16px; text-align:center; }
+html.skin-98 .w98-closed-surplus{ --sh-a:#1D3FBF; --sh-b:#0F2F8A; }
+html.skin-98 .w98-shut{ width:100%; max-width:420px; display:flex; flex-direction:column; border:3px solid var(--sh-b); box-sizing:border-box; }
+html.skin-98 .w98-shut > span{ display:block; height:14px; background:var(--sh-a); }
+html.skin-98 .w98-shut > span:nth-child(even){ background:var(--sh-b); }
+html.skin-98 .w98-shut > .w98-shut-sill{ height:10px; display:flex; justify-content:center; background:var(--sh-b); }
+html.skin-98 .w98-shut-sill i{ display:block; width:60px; height:6px; margin-top:2px; background:#C8CCD4; }
+html.skin-98 .w98-shut-h{ margin:0; font:normal 30px Georgia, "Times New Roman", serif; color:#9A1C1C; text-transform:none; }
+html.skin-98 .w98-shut-sign{ display:flex; flex-direction:column; gap:6px; padding:14px 24px; border:3px solid #D62828; }
+html.skin-98 .w98-shut-sign h1{ margin:0; font:bold 26px Arial, Helvetica, sans-serif; color:#D62828; text-transform:uppercase; }
+html.skin-98 .w98-shut-sign b{ font:bold 16px Arial, Helvetica, sans-serif; color:#1B1B1B; }
+html.skin-98 .w98-closed p{ margin:0; max-width:420px; font-size:14px; line-height:1.5; }
+html.skin-98 .w98-closed-register p{ font-family:Verdana, Arial, sans-serif; color:#1B2530; }
+html.skin-98 .w98-closed-surplus p{ font-family:Arial, Helvetica, sans-serif; color:#1B1B1B; }
+/* the closed page is Magpie's own view: it keeps the store's white page, not the start page's night sky */
+html.skin-98 .w98-webwin[data-closed] .w98-client{ background:#FFFFFF; }
+
 /* ======================================================================== PHONE: everything stacks, the big type comes down */
 @media (max-width: 759px){
   html.skin-98 .w98-mp{ padding:20px 14px 24px; gap:20px; }
@@ -391,7 +415,7 @@ html.skin-98 .w98-webwin[data-site="codex"] .w98-client .cx-chaps{ padding:8px 1
   html.skin-98 .w98-mp-tile{ flex-basis:96px; }
   html.skin-98 .w98-mp-counts b{ font-size:18px; }
   html.skin-98 :is(.w98-mp-go, .w98-mp-shiny), html.skin-98 input.w98-mp-q[type]{ min-height:44px; }
-  html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client{ grid-template-columns:minmax(0, 1fr) !important; grid-template-rows:none; }
+  html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client{ grid-template-columns:minmax(0, 1fr) !important; grid-template-rows:none; grid-auto-rows:max-content; }
   html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client > *{ grid-column:1 !important; grid-row:auto !important; }
   html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client > :is(#view, .w98-snap).os-main{ padding:12px 12px 16px; }
   html.skin-98 .w98-webwin[data-site="codex"] .w98-client > :is(#view, .w98-snap).os-main{ margin:0 8px 8px; padding:14px 12px 18px; }

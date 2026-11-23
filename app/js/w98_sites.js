@@ -423,6 +423,38 @@ EN.w98sites = (function () {
       top: el("div.w98-s-top.w98-cx-top", { "aria-hidden": "true" }, [el("span.w98-on", { text: "Article" }), el("span", { text: "Discussion" }), el("span", { text: "History" })])
     };
   }
+  /* THE CLOSED PAGES (the designer's two closed boards): the store's own header, a band in its colours, the shutter down,
+     the notice, and the footer line. No departments, no aisles, no banner. The notice is ours; the boards left it a
+     placeholder. Magpie draws the page itself when the GM has the store closed (js/w98_web.js CLOSED_PAGE). */
+  var CLOSED = {
+    register: { notice: "Closed for compliance review.",
+      why: "The Register is not open to this table right now. Your GM decides which stores are open; when it opens again, it is back on your Links bar." },
+    surplus: { notice: "Warehouse closed. Dues still due.",
+      why: "Guild Surplus is not open to this table right now. Your GM decides which stores are open; when it opens again, it is back on your Links bar." }
+  };
+  function closedPage(site) {
+    var C = CLOSED[site];
+    if (!C) return el("div");
+    var stripes = []; for (var i = 0; i < 13; i++) stripes.push(el("span"));
+    var shutter = el("div.w98-shut", { "aria-hidden": "true" }, stripes.concat([el("span.w98-shut-sill", null, [el("i")])]));
+    var notice = site === "surplus"
+      ? el("div.w98-shut-sign", null, [el("h1", { text: "Guild members only." }), el("b", { text: C.notice })])
+      : el("h1.w98-shut-h", { text: C.notice });
+    return el("div.w98-closed.w98-closed-" + site, { dataset: { closedStore: site } }, [shutter, notice, el("p", { text: C.why })]);
+  }
+  function closedParts(site) {
+    if (site === "register") return {
+      head: el("div.w98-s-head.w98-rg-head.w98-shut-head", null, [el("div.w98-s-in", null, [el("div.w98-rg-top", null, [svg(LOGO.register(60)), el("div.w98-s-brand", null, [
+        el("b", { text: "The Register" }), el("i", { text: "Thank you for shopping responsibly." })])])]), el("div.w98-shut-band")]),
+      foot: el("div.w98-s-foot.w98-rg-foot", null, [el("footer.w98-s-bar", { text: "Fees are non-negotiable. All sales final." })])
+    };
+    return {
+      head: el("div.w98-s-head.w98-gs-head.w98-shut-head", null, [el("div.w98-s-in", null, [svg(LOGO.surplus(68)), el("div.w98-s-brand", null, [
+        el("b", { text: "Guild Surplus" }), el("span.w98-gs-bar"), el("i", { text: "The dues pay for themselves. Mostly." })])]), el("div.w98-shut-band")]),
+      foot: el("div.w98-s-foot.w98-gs-foot", null, [el("footer.w98-s-bar", { text: "Everything works, mostly. Everything runs about a third of book, roughly." })])
+    };
+  }
+
   var PARTS = { namedrop: namedrop, burnrate: burnrate, register: register, surplus: surplus, undercut: function () { return classifieds("undercut"); },
                 fivefinger: function () { return classifieds("fivefinger"); }, codex: codex };
 
@@ -448,9 +480,11 @@ EN.w98sites = (function () {
     if (!on98fl()) { clearParts(w); delete w.frame.dataset.site; return; }
     var live = K.live() === "web", site = WEB.shown() || "home";
     if (live) {
+      var shut = WEB.closed ? WEB.closed() : null;
       w.frame.dataset.site = site;
+      if (shut) w.frame.dataset.closed = shut; else delete w.frame.dataset.closed;
       clearParts(w);
-      var make = PARTS[site];
+      var make = shut ? function () { return closedParts(shut); } : PARTS[site];
       if (make) { try { w._sp = make(); } catch (e) { console.error("A Magpie site could not be dressed", e); w._sp = null; } }
       if (w._sp) AREAS.forEach(function (a) { if (w._sp[a]) w._sp[a].setAttribute("data-area", a); });
     }
@@ -481,5 +515,5 @@ EN.w98sites = (function () {
     return null;
   });
 
-  return { banner: banner, button88: button88, logo: LOGO };
+  return { banner: banner, button88: button88, logo: LOGO, closedPage: closedPage };
 })();
