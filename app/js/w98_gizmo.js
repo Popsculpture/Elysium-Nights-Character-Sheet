@@ -27,9 +27,9 @@ window.EN = window.EN || {};
   /* what he says about a program the first time it is opened: a sentence each, all of it true of that program */
   var HINT = {
     combat: "This is the HUD. Short Rest, Long Rest and Downtime are along the top.",
-    face: "Social keeps how each room reads you, and the people you know.",
+    face: "NameDrop keeps how each room reads you, and the people you know.",
     grid: "My Smartdeck runs the network. Run Mode sets what a roll is: a d20 in a combat round, a dice pool outside one.",
-    web: "#GRID is your browser. Socials, Bills, the shops and the Codex are bookmarked on its start page.",
+    web: "Magpie is your browser. NameDrop, Burn Rate, the shops and the Codex are bookmarked on its start page.",
     flow: "Flow is for whoever can shape. Your Reservoir and your patterns live here.",
     gear: "The Stash is your gear, kept as a spreadsheet. Chrome, the Workbench and the Garage are its other sheets.",
     codex: "The Codex has the rules. Search it, or open a chapter from the buttons.",
@@ -47,7 +47,9 @@ window.EN = window.EN || {};
     gmcodex: "The Codex here has the Game Master's chapters as well."
   };
   X.open.push(function (key, tab) {
-    key = tab || key;   // a program the browser hosts is spoken of as itself (the Codex), not as the browser
+    // a program the browser hosts is spoken of as itself (the Codex), not as the browser; but the Stash's Bills and stores
+    // there are Magpie's sites (Burn Rate, the shops), not the Stash, so they get Magpie's hint
+    key = key === "web" && tab === "gear" ? "web" : (tab || key);
     if (!on() || G.hidden || G.seen[key] || !HINT[key]) return;
     G.seen[key] = true;
     say(HINT[key], { soft: true });

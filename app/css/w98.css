@@ -557,39 +557,6 @@ html.skin-98 .w98-webwin .w98-client:has(.inv-sub) .inv-bar{ background:#fff !im
 html.skin-98 .w98-webwin .w98-client .inv-sub::after{ display:none; }
 html.skin-98 .w98-webwin .w98-client .inv-bar{ justify-content:flex-end; }
 
-/* ---- the start page: a dark sky over the city, the counters at the top left, the clock at the right, the tiles in the middle */
-/* the page it sits in gives up its padding and becomes a column, so the start page fills the window however tall it is */
-html.skin-98 .w98-client > :is(#view, .w98-snap).os-main:has(> .w98-ntp){ display:flex; flex-direction:column; padding:0; }
-html.skin-98 .w98-ntp{ position:relative; flex:1 0 auto; display:flex; flex-direction:column; box-sizing:border-box; min-height:420px; padding:16px 22px 14px; overflow:hidden;
-  color:#fff; font-family:Arial, Helvetica, sans-serif; user-select:none;
-  background:radial-gradient(ellipse 70% 55% at 72% 105%, rgba(255,64,150,.42), transparent 70%), radial-gradient(ellipse 60% 50% at 8% -5%, rgba(0,200,255,.30), transparent 70%), linear-gradient(180deg, #0a0d26 0%, #170d31 55%, #2a0c2c 100%); }
-/* the skyline: one cut-out shape, its lit windows a dotted pattern on it */
-html.skin-98 .w98-ntp::before{ content:""; position:absolute; left:0; right:0; bottom:0; height:120px; pointer-events:none;
-  background:radial-gradient(circle, rgba(255,214,120,.55) 0 1px, transparent 1.5px) 0 0 / 9px 11px, #07051a;
-  clip-path:polygon(0 100%, 0 62%, 4% 62%, 4% 40%, 8% 40%, 8% 55%, 11% 55%, 11% 22%, 13% 22%, 13% 14%, 15% 14%, 15% 22%, 17% 22%, 17% 60%, 21% 60%, 21% 35%, 26% 35%, 26% 70%, 30% 70%, 30% 48%, 34% 48%, 34% 30%, 37% 30%, 37% 52%, 41% 52%, 41% 66%, 45% 66%, 45% 26%, 47% 26%, 47% 8%, 48% 8%, 48% 26%, 50% 26%, 50% 58%, 55% 58%, 55% 38%, 60% 38%, 60% 72%, 64% 72%, 64% 44%, 68% 44%, 68% 20%, 71% 20%, 71% 50%, 75% 50%, 75% 64%, 79% 64%, 79% 32%, 84% 32%, 84% 56%, 88% 56%, 88% 42%, 92% 42%, 92% 68%, 96% 68%, 96% 50%, 100% 50%, 100% 100%); }
-html.skin-98 .w98-ntp-top{ position:relative; z-index:1; display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; }
-html.skin-98 .w98-ntp-stats{ display:flex; gap:22px; flex-wrap:wrap; }
-html.skin-98 .w98-ntp-stats > div{ display:flex; flex-direction:column; gap:2px; }
-html.skin-98 .w98-ntp-stats b{ font-size:22px; font-weight:700; color:#ff8a3d; }
-html.skin-98 .w98-ntp-stats > div:nth-child(2) b{ color:#b89cff; }
-html.skin-98 .w98-ntp-stats > div:nth-child(3) b{ color:#fff; }
-html.skin-98 .w98-ntp-stats span{ font-size:11px; color:rgba(255,255,255,.72); }
-html.skin-98 .w98-ntp-clock{ font-size:42px; font-weight:400; line-height:1; text-shadow:0 2px 8px rgba(0,0,0,.6); }
-html.skin-98 .w98-ntp-mid{ position:relative; z-index:1; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:18px 0 110px; }
-html.skin-98 .w98-ntp-brand{ display:flex; flex-direction:column; align-items:center; gap:2px; }
-html.skin-98 .w98-ntp-brand b{ font-size:34px; text-shadow:0 0 18px rgba(0,229,255,.55); }
-html.skin-98 .w98-ntp-brand span{ font-size:12px; color:rgba(255,255,255,.7); }
-html.skin-98 .w98-ntp-search{ display:flex; gap:6px; width:min(540px, 100%); }
-html.skin-98 input.w98-ntp-q[type]{ flex:1; min-width:0; height:26px; font-size:13px; }
-html.skin-98 .w98-ntp-search .w98-btn{ height:26px; }
-html.skin-98 .w98-ntp-tiles{ display:grid; grid-template-columns:repeat(auto-fill, 96px); gap:12px; justify-content:center; width:min(680px, 100%); }
-html.skin-98 .w98-ntp-tile{ display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 4px 10px; border:0; border-radius:12px; background:rgba(255,255,255,.09); color:#fff !important;
-  font-family:Arial, Helvetica, sans-serif; font-size:12px; cursor:pointer !important; }
-html.skin-98 .w98-ntp-tile:hover{ background:rgba(255,255,255,.2); }
-html.skin-98 .w98-ntp-tile:focus-visible{ outline:2px solid #00e5ff; outline-offset:1px; }
-html.skin-98 .w98-ntp-fav svg{ display:block; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.45); }
-html.skin-98 .w98-ntp-nm{ max-width:92px; text-align:center; overflow-wrap:anywhere; }
-html.skin-98 .w98-ntp-foot{ position:relative; z-index:1; font-size:11px; color:rgba(255,255,255,.6); }
 
 /* ---- the Stash as a spreadsheet ---- */
 html.skin-98 .w98-xls-fx{ flex:none; display:flex; align-items:center; gap:3px; padding:2px 1px 3px; }
@@ -647,6 +614,4 @@ html.skin-98 .w98-xls .w98-client .inv-sub :is(.panel > .panel-h, .section-title
   html.skin-98 .w98-xls-tab{ height:30px; padding:0 16px; }
   html.skin-98 .w98-xls-tabs{ height:32px; }
   html.skin-98 .w98-xls-cols{ display:none; }
-  html.skin-98 .w98-ntp-clock{ font-size:30px; }
-  html.skin-98 .w98-ntp-tiles{ grid-template-columns:repeat(auto-fill, 84px); gap:10px; }
 }

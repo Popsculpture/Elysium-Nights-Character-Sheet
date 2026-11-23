@@ -27,19 +27,25 @@ EN.w98web = (function () {
   var BROWSED = { bills: 1, market: 1 };   // the Stash pages that are sites on '98
 
   /* ======================================================================== THE SITES */
+  /* The sites' names, taglines and 32 px icons are the designer's (23 Nov 2026, gridos-98-sites-handoff): Magpie is the
+     browser, NameDrop the Social tab, Burn Rate the Bills page. `icon` is a file in img/sites-32 (the Codex keeps its
+     Programs icon); `tile`, `ink` and `bg` draw the small lettered stand-in where no 16 px cut exists yet. */
   var SITES = {
-    home:       { title: "New Tab", tab: "web" },
-    socials:    { title: "Socials", tab: "face", tile: "S", ink: "#fff", bg: "#3b5998" },
-    bills:      { title: "Bills", tab: "gear", sub: "bills", tile: "B", ink: "#fff", bg: "#0f8a6a" },
-    undercut:   { title: "The Undercut", tab: "gear", sub: "market", front: "undercut", tile: "U", ink: "#fff", bg: "#5a1a8a" },
-    register:   { title: "The Register", tab: "gear", sub: "market", front: "register", tile: "R", ink: "#111", bg: "#ff9f1a" },
-    surplus:    { title: "Guild Surplus", tab: "gear", sub: "market", front: "surplus", tile: "GS", ink: "#fff", bg: "#e53238" },
-    fivefinger: { title: "Five-Finger Supply", tab: "gear", sub: "market", front: "fivefinger", tile: "5", ink: "#fff", bg: "#2d7a3a" },
-    codex:      { title: "Codex", tab: "codex", tile: "C", ink: "#000", bg: "#f6f6f6" }
+    home:       { title: "Start", tab: "web" },
+    namedrop:   { title: "NameDrop", tab: "face", tile: "N", ink: "#fff", bg: "#3D5A96", icon: "sites-32/namedrop-32.svg", tag: "Your name gets around." },
+    burnrate:   { title: "Burn Rate", tab: "gear", sub: "bills", tile: "BR", ink: "#fff", bg: "#14295A", icon: "sites-32/burn-rate-32.svg", tag: "Know where it went." },
+    undercut:   { title: "The Undercut", tab: "gear", sub: "market", front: "undercut", tile: "U", ink: "#fff", bg: "#5A2D91", icon: "sites-32/undercut-32.svg", tag: "Don't ask for a receipt." },
+    register:   { title: "The Register", tab: "gear", sub: "market", front: "register", tile: "R", ink: "#1B2530", bg: "#F29A1F", icon: "sites-32/register-32.svg", tag: "Thank you for shopping responsibly." },
+    surplus:    { title: "Guild Surplus", tab: "gear", sub: "market", front: "surplus", tile: "GS", ink: "#fff", bg: "#1D3FBF", icon: "sites-32/guild-surplus-32.svg", tag: "The dues pay for themselves. Mostly." },
+    fivefinger: { title: "Five-Finger Supply", tab: "gear", sub: "market", front: "fivefinger", tile: "5", ink: "#fff", bg: "#2d7a3a", tag: "No receipts. No refunds. No snitching." },
+    codex:      { title: "Codex", tab: "codex", tile: "C", ink: "#000", bg: "#f6f6f6", icon: "programs-32/codex-32.svg", tag: "The Free Encyclopedia" }
   };
-  var LINKS = ["socials", "bills", "undercut", "register", "surplus", "fivefinger", "codex"];
-  var ALIAS = { "": "home", newtab: "home", "new tab": "home", start: "home", social: "socials", wiki: "codex", rules: "codex",
+  var LINKS = ["namedrop", "burnrate", "undercut", "register", "surplus", "fivefinger", "codex"];
+  // the old addresses (and the names they had before the sites were named) still go where they went
+  var ALIAS = { "": "home", newtab: "home", "new tab": "home", start: "home", socials: "namedrop", social: "namedrop", bills: "burnrate",
+    "burn rate": "burnrate", "name drop": "namedrop", wiki: "codex", rules: "codex",
     "the undercut": "undercut", "the register": "register", "guild surplus": "surplus", "five-finger supply": "fivefinger", "five finger": "fivefinger" };
+  var BROWSER = "Magpie";
 
   function addr(site) { return "grid://" + site; }
   function fronts() { var I = inv(); return I && I.fronts ? I.fronts().map(function (f) { return f.key; }) : ["undercut", "register", "surplus"]; }
@@ -54,11 +60,11 @@ EN.w98web = (function () {
   // the site a tab is showing, or null when that tab (or that page of it) is not one
   function siteOf(tab) {
     if (tab === "web") return "home";
-    if (tab === "face") return "socials";
+    if (tab === "face") return "namedrop";
     if (tab === "codex") return "codex";
     if (tab === "gear") {
       var p = invPage();
-      if (p.sub === "bills") return "bills";
+      if (p.sub === "bills") return "burnrate";
       if (p.sub === "market") return SITES[p.front] ? p.front : "undercut";
     }
     return null;
@@ -68,15 +74,17 @@ EN.w98web = (function () {
   /* ======================================================================== HOSTING (js/w98.js) */
   X.host.push(function (k) { return fl() && siteOf(k) ? "web" : null; });
   X.relabel.grid = function () { return fl() ? "My Smartdeck" : null; };
-  X.relabel.face = function () { return fl() ? "Socials" : null; };
+  X.relabel.face = function () { return fl() ? "NameDrop" : null; };
   X.tile.grid = function (px) { return fl() ? K.pix("deck", px) : null; };
-  // the browser keeps the author's #GRID globe at 32 px; at 16 there is no cut of it, so a small globe is drawn here
+  // a site's 32 px icon, at 32 or a whole multiple of it only (never 40 or 48: the pixels would smear)
+  function px32(file, px) { return '<img class="w98-px" src="img/' + file + '" width="' + px + '" height="' + px + '" alt="" draggable="false">'; }
+  /* Magpie's icon and NameDrop's are the designer's 32 px art. Neither has a 16 px cut yet, and the 32 px files are never
+     shrunk, so at 16 the browser keeps the small globe drawn here and NameDrop keeps the Social tab's own glyph. */
   var GLOBE16 = '<svg viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="#07090d"/>' +
     '<path d="M8 1.5v13M1.5 8h13M3 4.5h10M3 11.5h10" stroke="#a6ff4d" stroke-width="1" fill="none"/><ellipse cx="8" cy="8" rx="3" ry="6.5" stroke="#6aa82f" fill="none"/>' +
     '<circle cx="8" cy="8" r="6.5" stroke="#000" fill="none"/></svg>';
-  X.tile.web = function (px) {
-    return px >= 32 && px % 32 === 0 ? '<img class="w98-px" src="img/programs-32/grid-32.svg" width="' + px + '" height="' + px + '" alt="" draggable="false">' : GLOBE16;
-  };
+  X.tile.web = function (px) { return px >= 32 && px % 32 === 0 ? px32("sites-32/magpie-32.svg", px) : GLOBE16; };
+  X.tile.face = function (px) { return fl() && px >= 32 && px % 32 === 0 ? px32(SITES.namedrop.icon, px) : null; };
 
   // what the desktop's icons open: a site in the browser, the browser as it was, the Stash on its Gear sheet
   var _siteNav = false;
@@ -93,12 +101,12 @@ EN.w98web = (function () {
     return true;
   }
   function notFound(site) {
-    K.dialog({ id: "web404", title: "#GRID", icon: "error",
-      body: "#GRID cannot find " + addr(site || "") + ". The uplink may be closed, or the address is wrong. Check it and try again." });
+    K.dialog({ id: "web404", title: BROWSER, icon: "error",
+      body: BROWSER + " cannot find " + addr(site || "") + ". The uplink may be closed, or the address is wrong. Check it and try again." });
   }
   X.icons.push(function (k) {
     if (!fl()) return null;
-    if (k === "face") return function () { go("socials"); };
+    if (k === "face") return function () { go("namedrop"); };
     if (k === "codex") return function () { go("codex"); };
     if (k === "web") return function () {
       var w = K.winOf("t:web");
@@ -125,7 +133,7 @@ EN.w98web = (function () {
     go(t && t.hist[t.i] ? t.hist[t.i] : "home");
   };
   X.status.gear = function () { return fl() ? "Ready" : null; };
-  // Run takes an address, the way that box opened a web page: grid://bills opens Bills in the browser
+  // Run takes an address, the way that box opened a web page: grid://burnrate opens Burn Rate in the browser
   X.run.push(function (text) {
     if (!fl() || !/^grid:/i.test(String(text).trim())) return false;
     goTyped(text);
@@ -133,7 +141,7 @@ EN.w98web = (function () {
   });
   X.title.web = function (w) {
     var site = shownSite(w);
-    return (SITES[site] ? SITES[site].title : "New Tab") + " - #GRID";
+    return siteTitle(site) + " - " + BROWSER;
   };
 
   /* ======================================================================== THE BROWSER'S TABS AND HISTORY
@@ -176,8 +184,8 @@ EN.w98web = (function () {
     if (s) { go(s); return; }
     // nothing there: the bar goes back to the page that is showing, under the error
     var w = K.winOf("t:web"); if (w && w._addr) { w._addr.value = addr(shownSite(w)); try { w._addr.blur(); } catch (e) {} }
-    K.dialog({ id: "web404", title: "#GRID", icon: "error",
-      body: "#GRID cannot find " + (String(text).indexOf("grid://") === 0 ? text : addr(String(text || "").trim())) + ". Check the address and try again." });
+    K.dialog({ id: "web404", title: BROWSER, icon: "error",
+      body: BROWSER + " cannot find " + (String(text).indexOf("grid://") === 0 ? text : addr(String(text || "").trim())) + ". Check the address and try again." });
   }
 
   /* ======================================================================== THE BROWSER'S CHROME */
@@ -209,7 +217,7 @@ EN.w98web = (function () {
     w._tabs = tabs; w._addr = field; w._links = lk; w._lsig = ""; w._tsig = "";
     freshTabs(w);
   }
-  function siteTitle(site) { return SITES[site] ? SITES[site].title : "New Tab"; }
+  function siteTitle(site) { return SITES[site] ? SITES[site].title : SITES.home.title; }
   function paintBrowser(w) {
     if (!w._tabs) return;
     var live = K.live() === "web";
@@ -246,9 +254,10 @@ EN.w98web = (function () {
       EN.ui.clear(w._links);
       w._links.appendChild(el("span.w98-web-ll", { text: "Links" }));
       links().forEach(function (s) {
-        w._links.appendChild(el("button.w98-web-lk" + (s === shown ? ".w98-on" : "") + (s === "bills" && due ? ".w98-due" : ""), { type: "button", dataset: { link: s },
-          title: addr(s) + (s === "bills" && due ? " (something is overdue)" : ""), onclick: function () { go(s); } },
-          [el("span.w98-web-ti", { html: favicon(s, 16) }), document.createTextNode(siteTitle(s) + (s === "bills" && due ? " (!)" : ""))]));
+        // Burn Rate's bookmark turns red while something is overdue; its stand-in mark keeps its own colours
+        w._links.appendChild(el("button.w98-web-lk" + (s === shown ? ".w98-on" : "") + (s === "burnrate" && due ? ".w98-due" : ""), { type: "button", dataset: { link: s },
+          title: addr(s) + (s === "burnrate" && due ? " (something is overdue)" : ""), onclick: function () { go(s); } },
+          [el("span.w98-web-ti", { html: favicon(s, 16) }), document.createTextNode(siteTitle(s) + (s === "burnrate" && due ? " (!)" : ""))]));
       });
     }
   }
@@ -308,35 +317,52 @@ EN.w98web = (function () {
     var g = K.winOf("t:gear"); if (g && g.frame) paintSheet(g);
   });
 
-  /* ======================================================================== THE START PAGE (the web tab's view) */
+  /* ======================================================================== MAGPIE'S START PAGE (the web tab's view)
+     The designer's board (23 Nov 2026): the clock, the logo and wordmark, the search, "Ooh, shiny!", six quick tiles with
+     the sites' 32 px icons shown at 64, three counters, and Burn Rate's banner. The counters are for fun, not a record. */
   function blocked() { return Math.max(0, Math.floor((Date.now() / 1000 - 1700000000) / 37)); }
   function clockNow() {
-    var d = new Date(), h = d.getHours();
-    return (h % 12 || 12) + ":" + String(d.getMinutes()).padStart(2, "0");
+    var d = new Date();
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+  var TILES = ["namedrop", "burnrate", "undercut", "register", "surplus", "codex"];
+  // "Ooh, shiny!": a store that is open to this sheet, or a page of the Codex, at random
+  function shiny() {
+    var pool = ["undercut", "register", "surplus"].filter(open).concat(["codex"]);
+    var s = pool[Math.floor(Math.random() * pool.length)];
+    if (s !== "codex") { go(s); return; }
+    var C = EN.codexView, ids = [];
+    try { (C.chapters() || []).forEach(function (c) { (c.panels || []).forEach(function (p) { ids.push(p.id); }); }); } catch (e) {}
+    go("codex");
+    if (ids.length && C.open) setTimeout(function () { C.open(ids[Math.floor(Math.random() * ids.length)]); }, 0);
   }
   function render(mount) {
-    var q = el("input.w98-field.w98-ntp-q", { type: "text", spellcheck: "false", placeholder: "Search the #GRID: rules, gear and people", "aria-label": "Search the #GRID",
+    var q = el("input.w98-mp-q", { type: "text", id: "w98-mp-q", spellcheck: "false", "aria-label": "Search",
       onkeydown: function (e) { if (e.key === "Enter") { e.preventDefault(); search(q.value); } } });
     var n = blocked();
-    mount.appendChild(el("div.w98-ntp", null, [
-      el("div.w98-ntp-top", null, [
-        el("div.w98-ntp-stats", null, [
-          el("div", null, [el("b", { text: n.toLocaleString() }), el("span", { text: "Corp trackers blocked" })]),
-          el("div", null, [el("b", { text: (n * 0.0007).toFixed(1) + " MB" }), el("span", { text: "Bandwidth saved" })]),
-          el("div", null, [el("b", { text: Math.round(n / 900) + " minutes" }), el("span", { text: "Time saved" })])
-        ]),
-        el("div.w98-ntp-clock", { text: clockNow() })
+    var banner = EN.w98sites && EN.w98sites.banner ? EN.w98sites.banner("burnrate") : null;
+    mount.appendChild(el("div.w98-ntp.w98-mp", null, [
+      el("div.w98-mp-clock", { text: clockNow() }),
+      el("div.w98-mp-brand", null, [
+        el("img.w98-mp-logo", { src: "img/sites/magpie-logo.png", width: "202", height: "132", alt: "Magpie logo: a magpie with a coin in its beak", draggable: "false" }),
+        el("div", null, [el("h1.w98-mp-word", { text: BROWSER }), el("p.w98-mp-tag", { text: "Finders keepers." })])
       ]),
-      el("div.w98-ntp-mid", null, [
-        el("div.w98-ntp-brand", null, [el("b", { text: "#GRID" }), el("span", { text: "a browser for the rest of us" })]),
-        el("div.w98-ntp-search", null, [q, el("button.w98-btn", { type: "button", onclick: function () { search(q.value); } }, "Search")]),
-        el("div.w98-ntp-tiles", null, links().map(function (s) {
-          return el("button.w98-ntp-tile", { type: "button", dataset: { site: s }, title: addr(s), onclick: function () { go(s); } }, [
-            el("span.w98-ntp-fav", { html: favicon(s, 48) }), el("span.w98-ntp-nm", { text: SITES[s].title })
-          ]);
-        }))
+      el("form.w98-mp-search", { role: "search", onsubmit: function (e) { e.preventDefault(); search(q.value); } }, [
+        el("label.w98-sr", { "for": "w98-mp-q", text: "Search" }), q,
+        el("button.w98-mp-go", { type: "submit" }, "Go"),
+        el("button.w98-mp-shiny", { type: "button", onclick: shiny }, "Ooh, shiny!")
       ]),
-      el("div.w98-ntp-foot", { text: "Elysium after dark. Your #GRID, your rules." })
+      el("nav.w98-mp-tiles", { "aria-label": "Quick tiles" }, TILES.filter(open).map(function (s) {
+        return el("button.w98-mp-tile", { type: "button", dataset: { site: s }, title: addr(s), onclick: function () { go(s); } }, [
+          el("span.w98-mp-ic", { html: px32(SITES[s].icon, 64) }), el("span.w98-mp-nm", { text: SITES[s].title })
+        ]);
+      })),
+      el("div.w98-mp-counts", null, [
+        el("div", null, [el("b", { text: n.toLocaleString() }), el("span", { text: "Ads pecked" })]),
+        el("div", null, [el("b", { text: Math.round(n / 7).toLocaleString() }), el("span", { text: "Trackers dropped" })]),
+        el("div", null, [el("b", { text: Math.round(n / 900).toLocaleString() }), el("span", { text: "Shiny things kept" })])
+      ]),
+      banner ? el("div.w98-ad", null, [banner]) : null
     ]));
   }
   function search(text) {
@@ -346,9 +372,10 @@ EN.w98web = (function () {
     if (f && f._inp) { f._inp.value = t; if (f._go) f._go(); }
   }
   setInterval(function () {
-    var c = document.querySelector("#view .w98-ntp-clock");
+    var c = document.querySelector("#view .w98-mp-clock");
     if (c) { var t = clockNow(); if (c.textContent !== t) c.textContent = t; }
   }, 15000);
 
-  return { render: render, go: go, sites: SITES, siteOf: siteOf, typed: typed };
+  return { render: render, go: go, sites: SITES, siteOf: siteOf, typed: typed, open: open, links: links, addr: addr, px32: px32,
+           favicon: favicon, browser: BROWSER, shown: function () { var w = K.winOf("t:web"); return w ? shownSite(w) : null; }, search: search };
 })();

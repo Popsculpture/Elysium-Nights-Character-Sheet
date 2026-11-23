@@ -97,7 +97,7 @@ EN.app = (function () {
     /* '98's #GRID browser (22 Nov 2026, the author's call): on that skin the network tab above is My Smartdeck and this is the
        browser, whose start page is drawn by js/w98_web.js. Socials, Bills, the storefronts and the Codex open in its window as sites.
        It exists on '98 alone (`is98`), so no other skin ever lists it; `rail: false` keeps it off every rail and the swipe order. */
-    { key: "web",     label: "#GRID",     glyph: "◍", icon: ICON_WEB, sub: "Done", portal: "freelancer", rail: false,
+    { key: "web",     label: "Magpie",    glyph: "◍", icon: ICON_WEB, sub: "Done", portal: "freelancer", rail: false,
       gated: function () { return registered() && is98(); },
       view: function (m) { if (EN.w98web && EN.w98web.render) EN.w98web.render(m); } },
     { key: "flow",    label: "Flow",      glyph: "❋", icon: ICON_FLOW, sub: "the current", portal: "freelancer", gated: canShape, view: function (m) { EN.flowView.render(m); } },

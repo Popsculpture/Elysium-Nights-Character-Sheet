@@ -1,0 +1,354 @@
+/* ===========================================================================
+   #GRIDOS '98, THE MAGPIE SITES (23 Nov 2026, the designer's boards, gridos-98-sites-handoff)
+   Magpie's start page, and the dress of each site the browser hosts: NameDrop, Burn Rate, The Undercut, The Register,
+   Guild Surplus, the Codex, and Five-Finger Supply in The Undercut's plain look until it has art of its own. The parts
+   around each page (mastheads, sidebars, footers, banners) are drawn in js/w98_sites.js; the page in the middle is the
+   app's own, recoloured here. Colours and type are the boards'; no real site's logo, name or font file.
+   Every rule is under html.skin-98 and a [data-site] on Magpie's window, so no other skin or window is touched.
+   =========================================================================== */
+
+/* ======================================================================== MAGPIE'S START PAGE */
+html.skin-98 .w98-client > :is(#view, .w98-snap).os-main:has(> .w98-mp){ display:flex; flex-direction:column; padding:0; }
+html.skin-98 .w98-mp{ flex:1 0 auto; box-sizing:border-box; min-height:100%; display:flex; flex-direction:column; align-items:center; gap:28px;
+  padding:32px 20px 32px; background:#14161C; color:#F2F4F7; font-family:Verdana, Tahoma, sans-serif; }
+html.skin-98 .w98-mp > *{ width:100%; max-width:800px; box-sizing:border-box; }
+html.skin-98 .w98-mp-clock{ width:auto; align-self:flex-end; margin-right:max(0px, calc((100% - 800px) / 2)); padding:6px 12px; border:1px solid #3A4452;
+  font:20px "Courier New", Courier, monospace; color:#19C2B0; }
+html.skin-98 .w98-mp-brand{ display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:24px; }
+html.skin-98 .w98-mp-logo{ display:block; flex:none; width:202px; height:132px; }
+html.skin-98 .w98-mp-word{ margin:0; font:italic bold 84px/0.95 "Trebuchet MS", Verdana, sans-serif; letter-spacing:-3px !important; color:#19C2B0; text-transform:none; }
+html.skin-98 .w98-mp-tag{ margin:6px 0 0; font-size:20px; color:#F2F4F7; }
+html.skin-98 .w98-mp-search{ display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; }
+html.skin-98 input.w98-mp-q[type]{ flex:999 1 280px; min-width:0; height:auto; min-height:36px; box-sizing:border-box; padding:0 8px; border:2px solid; border-color:#5A5F6B #FFFFFF #FFFFFF #5A5F6B;
+  background:#F2F4F7; color:#14161C; font:15px Verdana, sans-serif; box-shadow:none; border-radius:0; }
+html.skin-98 :is(.w98-mp-go, .w98-mp-shiny){ min-height:36px; padding:0 16px; border:2px solid; font:bold 13px Tahoma, Verdana, sans-serif; cursor:pointer; border-radius:0; }
+html.skin-98 .w98-mp-go{ border-color:#FFFFFF #5A5F6B #5A5F6B #FFFFFF; background:#C8CCD4; color:#14161C; }
+html.skin-98 .w98-mp-shiny{ border-color:#7CE6DA #0E8C80 #0E8C80 #7CE6DA; background:#19C2B0; color:#14161C; }
+html.skin-98 :is(.w98-mp-go, .w98-mp-shiny):active{ border-color:#5A5F6B #FFFFFF #FFFFFF #5A5F6B; }
+html.skin-98 .w98-mp-tiles{ display:flex; flex-wrap:wrap; justify-content:center; gap:12px; }
+html.skin-98 .w98-mp-tile{ flex:0 1 112px; min-width:96px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; gap:8px; padding:12px 6px 10px;
+  background:#1E222B; border:1px solid #3A4452; border-radius:8px; color:#F2F4F7; font:12px Verdana, Tahoma, sans-serif; cursor:pointer; text-align:center; }
+html.skin-98 .w98-mp-tile:hover{ border-color:#19C2B0; }
+html.skin-98 .w98-mp-tile:focus-visible{ outline:2px solid #19C2B0; outline-offset:2px; }
+html.skin-98 .w98-mp-ic .w98-px{ width:64px; height:64px; }
+html.skin-98 .w98-mp-counts{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; }
+html.skin-98 .w98-mp-counts > div{ display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 10px; border:1px solid #19C2B0; text-align:center; }
+html.skin-98 .w98-mp-counts b{ padding:4px 8px; background:#0B0C10; font:bold 28px "Courier New", Courier, monospace; color:#19C2B0; overflow-wrap:anywhere; }
+html.skin-98 .w98-mp-counts span{ font-size:12px; color:#C9CFDA; }
+html.skin-98 .w98-sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+/* ======================================================================== BANNERS (468 x 60) AND LINK BUTTONS (88 x 31) */
+html.skin-98 .w98-ad{ max-width:100%; margin:16px 0 0; }
+html.skin-98 .w98-mp .w98-ad{ display:flex; justify-content:center; margin-top:12px; }
+html.skin-98 .w98-ad-b{ width:468px; max-width:100%; height:60px; box-sizing:border-box; display:flex; align-items:center; gap:12px; padding:0 12px; margin:0; overflow:hidden;
+  border:0; border-radius:0; cursor:pointer; text-align:left; font:12px Verdana, sans-serif; box-shadow:none; }
+html.skin-98 .w98-ad-b:focus-visible{ outline:2px solid #19C2B0; outline-offset:2px; }
+html.skin-98 .w98-ad-b > :is(svg, img){ flex:none; display:block; }
+html.skin-98 .w98-ad-t{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+html.skin-98 .w98-ad-t > *{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+html.skin-98 .w98-ad-magpie{ background:#14161C; border:1px solid #19C2B0; }
+html.skin-98 .w98-ad-magpie b{ font:italic bold 24px/1 "Trebuchet MS", Verdana, sans-serif; color:#19C2B0; }
+html.skin-98 .w98-ad-magpie .w98-ad-t span{ color:#F2F4F7; }
+html.skin-98 .w98-ad-cta{ flex:none; padding:6px 12px; border:2px solid; border-color:#7CE6DA #0E8C80 #0E8C80 #7CE6DA; background:#19C2B0; color:#14161C; font:bold 13px Tahoma, Verdana, sans-serif; }
+html.skin-98 .w98-ad-burnrate{ flex-direction:column; align-items:stretch; gap:0; padding:0; background:#14295A; }
+html.skin-98 .w98-ad-row{ flex:1; display:flex; align-items:center; gap:12px; padding:0 12px; min-width:0; }
+html.skin-98 .w98-ad-row > svg{ flex:none; display:block; }
+html.skin-98 .w98-ad-row b{ flex:1; min-width:0; font:normal 28px Georgia, "Times New Roman", serif; color:#FFFFFF; white-space:nowrap; }
+html.skin-98 .w98-ad-row i{ font:italic 15px Georgia, "Times New Roman", serif; color:#FFFFFF; white-space:nowrap; }
+html.skin-98 .w98-ad-rule{ display:block; height:3px; background:#E0242F; }
+html.skin-98 .w98-ad-namedrop{ background:#3D5A96; border:1px solid #2A3F6E; gap:14px; padding:0 14px; }
+html.skin-98 .w98-ad-namedrop b{ font:bold 26px/1 Tahoma, Verdana, sans-serif; letter-spacing:-1px !important; color:#FFFFFF; }
+html.skin-98 .w98-ad-namedrop .w98-ad-t span{ color:#FFFFFF; }
+html.skin-98 .w98-ad-bar{ flex:none; width:96px; height:4px; background:#F2F4F7; }
+html.skin-98 .w98-ad-codex{ background:#F8F9FA; border:1px solid #A2A9B1; }
+html.skin-98 .w98-ad-codex b{ font:normal 24px/1 Georgia, "Times New Roman", serif; font-variant:small-caps; letter-spacing:3px !important; color:#202122; }
+html.skin-98 .w98-ad-codex .w98-ad-t span{ color:#202122; }
+html.skin-98 .w98-ad-hr{ flex:none; width:60px; border-top:1px solid #A2A9B1; }
+html.skin-98 .w98-cite{ font:italic 10px Arial, Helvetica, sans-serif; font-variant:normal; letter-spacing:0 !important; color:#3366CC; white-space:nowrap; }
+html.skin-98 .w98-cite i{ font-style:italic; }
+
+html.skin-98 .w98-88{ width:88px; height:31px; box-sizing:border-box; display:flex; align-items:center; gap:4px; padding:0 3px; margin:0; overflow:hidden; border:1px solid; border-radius:0;
+  cursor:pointer; box-shadow:none; }
+html.skin-98 .w98-88 > :is(svg, img){ flex:none; display:block; }
+html.skin-98 .w98-88 span{ font-weight:bold; font-size:10px; letter-spacing:-0.3px !important; white-space:nowrap; }
+html.skin-98 .w98-88:focus-visible{ outline:2px solid #3D5A96; outline-offset:2px; }
+html.skin-98 .w98-88-magpie{ background:#14161C; border-color:#19C2B0; }
+html.skin-98 .w98-88-magpie span{ font-family:"Trebuchet MS", Verdana, sans-serif; color:#19C2B0; }
+html.skin-98 .w98-88-burnrate{ background:#14295A; border-color:#E0242F; }
+html.skin-98 .w98-88-burnrate span{ font-family:Georgia, serif; color:#FFFFFF; }
+html.skin-98 .w98-88-undercut{ background:#FFFFFF; border-color:#5A2D91; }
+html.skin-98 .w98-88-undercut span{ font-family:"Times New Roman", serif; color:#5A2D91; }
+html.skin-98 .w98-88-register{ background:#FFFFFF; border-color:#1B2530; }
+html.skin-98 .w98-88-register span{ font-family:Georgia, serif; color:#1B2530; }
+html.skin-98 .w98-88-surplus{ background:#FFFFFF; border-color:#1D4ED8; }
+html.skin-98 .w98-88-surplus span{ font-family:Arial, sans-serif; color:#1D3FBF; }
+html.skin-98 .w98-88-codex{ background:#F8F9FA; border-color:#A2A9B1; }
+html.skin-98 .w98-88-codex span{ font-family:Georgia, serif; color:#202122; }
+
+/* ======================================================================== EVERY SITE: THE GRID AROUND THE PAGE
+   The client's children: the head (full width), the side, the top (above the page), the page, the foot (full width).
+   A site with a sidebar sets its own columns. Under 760 px everything stacks in the order it sits in. */
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client{
+  display:grid; grid-template-columns:minmax(0, 1fr); grid-template-rows:auto auto minmax(min-content, 1fr) auto; align-content:stretch; padding:0; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client > [data-area="head"]{ grid-column:1 / -1; grid-row:1; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client > [data-area="top"]{ grid-column:1; grid-row:2; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client > :is(#view, .w98-snap){ grid-column:1; grid-row:3; min-width:0; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client > [data-area="foot"]{ grid-column:1 / -1; grid-row:4; }
+html.skin-98 .w98-s-in{ margin:0; padding:8px 24px; box-sizing:border-box; display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; }
+html.skin-98 .w98-s-in > .w98-svg{ flex:none; display:block; }
+html.skin-98 .w98-svg > svg{ display:block; }
+html.skin-98 .w98-s-brand{ display:flex; flex-direction:column; flex:1 1 auto; min-width:0; }
+html.skin-98 .w98-s-bar{ padding:14px 16px; text-align:center; font-size:12px; }
+html.skin-98 .w98-webwin[data-site] [data-area] button{ font-family:inherit; }
+
+/* ---- the page in the middle: a white site page, not a '98 window. Light inks (the paper set), the site's type. ---- */
+/* the site's own palette is set on the window's client area (below, per site), never on the window itself, whose title
+   bar and toolbars stay '98's; the pages inside inherit it past the paper set the Stash's pages carry (css/theme.css),
+   which would otherwise put its own ink and accent back */
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client :is(.inv-sub, .post-sub, .contact-sub){
+  --bg:inherit; --border:inherit; --border2:inherit; --accent:inherit; --accent-dim:inherit; --accent-hi:inherit; --accent-ink:inherit;
+  --text:inherit; --text2:inherit; --text3:inherit; --text4:inherit; --link:inherit; --link-hot:inherit; --w-font:inherit; --w-btn:inherit;
+}
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) :is(.w98-client, .w98-client :is(.inv-sub, .post-sub, .contact-sub)){
+  --bg1:#f7f7f7; --bg2:#ffffff; --bg3:#eeeeee; --bg4:#e2e2e2; --panel:#ffffff; --panel-solid:#ffffff; --grid-line:transparent;
+  --flow:#5b2fa8; --ember:#b8470f; --gold:#8a6200; --success:#0f7a3a; --warn:#946400; --danger:#b5121f; --wound:#b5121f; --shield:#5b2fa8; --bw:#0b5fa8; --fp:#5b2fa8;
+  --bev-hi:#ffffff; --bev-lo:#808080; --bev-mid:#c0c0c0; --glow-cyan:none; --glow-flow:none;
+  --w-field:#ffffff; --w-sunk:#ffffff; --w-ground:var(--bg);
+  --disp:var(--w-font); --mono:var(--w-font); --body:var(--w-font);
+}
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client{ background:var(--bg); color:var(--text); font-family:var(--w-font); }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client :is(.inv-sub, .post-sub, .contact-sub){ background:transparent; font-family:var(--w-font); }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client > :is(#view, .w98-snap).os-main{ padding:16px 24px 20px; background:transparent; }
+/* the page's own furniture a website has no use for: the '98 window bits inside its boxes, its big heading, the market's storefront chooser and banner */
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client :is(.win-menu, .win-status, .corner){ display:none !important; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client :is(.mkt-banner){ display:none !important; }
+html.skin-98 .w98-webwin[data-site="fivefinger"] .w98-client .mkt-banner{ display:block !important; background:none !important; border:1px solid var(--border) !important; border-radius:0 !important; }
+html.skin-98 .w98-webwin[data-site="fivefinger"] .w98-client .mkt-banner .mkt-title{ display:none; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client .inv-sub{ padding:0; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client .inv-bar{ position:static !important; margin:0 0 12px !important; padding:4px 0 !important; border:0 !important; }
+
+/* a box on the page: the site's border, a title bar in the site's colours */
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client .panel{ position:relative; margin:0 0 14px; padding:0; background:var(--s-box, #fff);
+  border:var(--s-box-bd, 1px solid var(--border)); border-radius:0; box-shadow:none; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client .panel > .panel-h{ position:static; top:auto; left:auto; z-index:auto; margin:0; padding:6px 10px;
+  background:var(--s-bar, var(--bg3)); border:0; border-top:var(--s-bar-top, 0); box-shadow:none; min-height:0; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client .panel > .panel-h h3{ margin:0; font:var(--s-h3, bold 13px var(--w-font)); color:var(--s-bar-ink, var(--text)); text-transform:none; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client .panel > .panel-h :is(.tag, .collapse-caret){ color:var(--s-bar-ink2, var(--text3)); font-family:var(--w-font); font-size:11px; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client .panel > .panel-b{ padding:10px; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client .feature{ background:#fff; border-radius:0; box-shadow:none; }
+html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client a:not(.btn){ color:var(--link, var(--accent)); }
+
+/* ======================================================================== NAMEDROP (Social) */
+html.skin-98 .w98-webwin[data-site="namedrop"] .w98-client{
+  --bg:#F2F4F7; --border:#B8C4DD; --border2:#8C9BBB; --accent:#3D5A96; --accent-dim:#2A3F6E; --accent-hi:#5B7FC0; --accent-ink:#ffffff;
+  --text:#1C2434; --text2:#3A4560; --text3:#56627C; --text4:#8A94AA; --link:#3D5A96; --w-font:Tahoma, Verdana, sans-serif; --w-btn:#E6EBF4;
+  --s-box:#ffffff; --s-box-bd:1px solid #B8C4DD; --s-bar:#D9E1F0; --s-bar-top:1px solid #3D5A96; --s-bar-ink:#2A3F6E; --s-bar-ink2:#3D5A96; --s-h3:bold 13px Tahoma, Verdana, sans-serif;
+}
+html.skin-98 .w98-webwin[data-site="namedrop"] .w98-client{ grid-template-columns:minmax(170px, 240px) minmax(0, 1fr); }
+html.skin-98 .w98-webwin[data-site="namedrop"] .w98-client > [data-area="side"]{ grid-column:1; grid-row:2 / 4; }
+html.skin-98 .w98-webwin[data-site="namedrop"] .w98-client > :is(#view, .w98-snap){ grid-column:2; padding-left:0; }
+html.skin-98 .w98-webwin[data-site="namedrop"] .w98-client > [data-area="foot"]{ grid-column:2; }
+html.skin-98 .w98-nd-head{ background:#3D5A96; border-bottom:3px solid #2A3F6E; color:#fff; }
+html.skin-98 .w98-nd-head .w98-s-brand b{ font:bold 34px/1.1 Tahoma, Verdana, sans-serif; letter-spacing:-1px !important; color:#FFFFFF; }
+html.skin-98 .w98-nd-head .w98-s-brand span{ font:13px Tahoma, Verdana, sans-serif; color:#FFFFFF; }
+html.skin-98 .w98-nd-nav{ display:flex; flex-wrap:wrap; gap:4px; }
+html.skin-98 .w98-nd-nav button{ min-height:40px; padding:0 12px; border:0; background:none; color:#FFFFFF; font:bold 13px Tahoma, Verdana, sans-serif; cursor:pointer; }
+html.skin-98 .w98-nd-nav button.w98-on, html.skin-98 .w98-nd-nav button:hover{ text-decoration:underline; }
+html.skin-98 .w98-nd-side{ display:flex; flex-direction:column; gap:16px; padding:16px 16px 16px 24px; min-width:0; }
+html.skin-98 .w98-nd-card{ display:flex; flex-direction:column; gap:10px; padding:10px; background:#FFFFFF; border:1px solid #B8C4DD; }
+html.skin-98 .w98-nd-pic{ aspect-ratio:4 / 5; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#D9E1F0; border:1px solid #B8C4DD;
+  font:bold 34px Tahoma, Verdana, sans-serif; color:#2A3F6E; }
+html.skin-98 .w98-nd-pic img{ display:block; width:100%; height:100%; object-fit:cover; }
+html.skin-98 button.w98-nd-pic{ position:relative; width:100%; padding:0; cursor:pointer; box-shadow:none; border-radius:0; }
+html.skin-98 button.w98-nd-pic i{ position:absolute; left:0; right:0; bottom:8px; font:italic 12px Tahoma, Verdana, sans-serif; color:#2A3F6E; }
+html.skin-98 button.w98-nd-pic:hover, html.skin-98 button.w98-nd-pic:focus-visible{ outline:2px solid #3D5A96; outline-offset:2px; }
+html.skin-98 .w98-nd-picrow{ display:flex; flex-wrap:wrap; gap:6px; }
+html.skin-98 .w98-nd-picb{ min-height:28px; padding:0 10px; border:1px solid #B8C4DD; background:#F2F4F7; color:#2A3F6E; font:bold 12px Tahoma, Verdana, sans-serif; cursor:pointer; border-radius:0; box-shadow:none; }
+html.skin-98 .w98-nd-picb:hover{ background:#D9E1F0; }
+html.skin-98 .w98-nd-card h2{ margin:0; font:bold 18px Tahoma, Verdana, sans-serif; color:#2A3F6E; overflow-wrap:anywhere; text-transform:none; }
+html.skin-98 .w98-nd-btns{ display:flex; flex-wrap:wrap; gap:8px; }
+html.skin-98 .w98-nd-foot{ padding:0 24px 16px 0; }
+html.skin-98 .w98-webwin[data-site="namedrop"] .w98-client .face-bar{ display:none !important; }
+html.skin-98 .w98-webwin[data-site="namedrop"] .w98-client > :is(#view, .w98-snap) > div > div:first-child > h1{ display:none; }
+html.skin-98 .w98-webwin[data-site="namedrop"] .w98-client h2{ color:#2A3F6E; }
+
+/* ======================================================================== BURN RATE (Bills) */
+html.skin-98 .w98-webwin[data-site="burnrate"] .w98-client{
+  --bg:#FFFFFF; --border:#B9C2D6; --border2:#8A96B2; --accent:#14295A; --accent-dim:#14295A; --accent-hi:#2F55B0; --accent-ink:#ffffff;
+  --text:#1A2233; --text2:#2E3A50; --text3:#4A5568; --text4:#7A8598; --link:#14295A; --w-font:Verdana, Tahoma, sans-serif; --w-btn:#EEF1F7;
+  --s-box:transparent; --s-box-bd:0; --s-bar:transparent;
+}
+html.skin-98 .w98-br-band{ background:#14295A; color:#FFFFFF; }
+html.skin-98 .w98-br-band .w98-s-in{ padding:12px 16px; }
+html.skin-98 .w98-br-band .w98-s-brand b{ font:normal 36px/1 Georgia, "Times New Roman", serif; color:#FFFFFF; }
+html.skin-98 .w98-br-band .w98-s-brand i{ font:italic 15px Georgia, "Times New Roman", serif; color:#FFFFFF; }
+html.skin-98 .w98-br-red{ height:3px; background:#E0242F; }
+html.skin-98 .w98-br-nav{ margin:0; padding:0 14px; box-sizing:border-box; display:flex; flex-wrap:wrap; }
+html.skin-98 .w98-br-nav button{ min-height:40px; padding:0 10px; border:0; background:none; color:#FFFFFF; font:12px Verdana, Tahoma, sans-serif; cursor:pointer; }
+html.skin-98 .w98-br-nav button:hover{ text-decoration:underline; }
+html.skin-98 .w98-br-dashw{ display:block; padding:28px 24px 4px; }
+html.skin-98 .w98-br-dash{ display:flex; flex-direction:column; gap:24px; font-family:Georgia, "Times New Roman", serif; color:#1A2233; }
+html.skin-98 .w98-br-bal{ display:flex; flex-direction:column; align-items:center; gap:8px; padding:28px 20px; border:1px solid #14295A; background:#F5F7FB; text-align:center; }
+html.skin-98 .w98-br-amt{ font:56px/1 Georgia, "Times New Roman", serif; color:#14295A; overflow-wrap:anywhere; }
+html.skin-98 .w98-br-rule{ width:120px; height:2px; background:#E0242F; }
+html.skin-98 .w98-br-bal i{ font-size:18px; }
+html.skin-98 .w98-br-next{ border:1px solid #B9C2D6; }
+html.skin-98 .w98-br-next h2, html.skin-98 .w98-webwin[data-site="burnrate"] .w98-client .inv-sub .section-title{
+  margin:0; padding:10px 14px; background:#14295A; color:#FFFFFF; font:normal 18px Georgia, "Times New Roman", serif; text-transform:none; }
+html.skin-98 .w98-br-row{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 12px; padding:12px 14px; border-bottom:1px solid #DCE1EC; font:13px Verdana, Tahoma, sans-serif; }
+html.skin-98 .w98-br-row:last-child{ border-bottom:0; }
+html.skin-98 .w98-br-due{ color:#4A5568; }
+html.skin-98 .w98-br-row b{ color:#14295A; }
+html.skin-98 .w98-br-row.w98-late .w98-br-due{ color:#B5121F; font-weight:bold; }
+html.skin-98 .w98-br-cards{ display:grid; grid-template-columns:repeat(auto-fit, minmax(max(240px, calc((100% - 24px) / 3)), 1fr)); gap:12px; }
+html.skin-98 .w98-br-cards section{ display:flex; flex-direction:column; gap:6px; padding:14px; border:1px solid #B9C2D6; }
+html.skin-98 .w98-br-cards h2{ margin:0; font:normal 17px Georgia, "Times New Roman", serif; color:#14295A; text-transform:none; }
+html.skin-98 .w98-br-cards span{ font:13px Verdana, Tahoma, sans-serif; color:#4A5568; overflow-wrap:anywhere; }
+html.skin-98 .w98-br-foot .w98-s-in{ display:block; padding:4px 24px 20px; }
+html.skin-98 .w98-br-cancel{ margin:0; font:13px Verdana, Tahoma, sans-serif; color:#14295A; }
+html.skin-98 .w98-br-foot .w98-s-bar{ background:#14295A; color:#FFFFFF; font-family:Verdana, Tahoma, sans-serif; }
+/* the Bills page itself: its sections as boxes with a navy title bar, like Bills next */
+html.skin-98 .w98-webwin[data-site="burnrate"] .w98-client .inv-sub .panel > .panel-h{ display:none; }
+html.skin-98 .w98-webwin[data-site="burnrate"] .w98-client .inv-sub .panel > .panel-b{ padding:0; }
+html.skin-98 .w98-webwin[data-site="burnrate"] .w98-client .inv-sub .panel-b > div{ margin:0 0 16px !important; padding:0 14px 12px; border:1px solid #B9C2D6; }
+html.skin-98 .w98-webwin[data-site="burnrate"] .w98-client .inv-sub .panel-b > div > .section-title{ margin:0 -14px 10px !important; }
+html.skin-98 .w98-webwin[data-site="burnrate"] .w98-client .inv-sub .section-title .line{ display:none; }
+html.skin-98 .w98-webwin[data-site="burnrate"] .w98-client .inv-sub .section-title .codex-chip{ color:#FFFFFF; border-color:#FFFFFF; }
+
+/* ======================================================================== THE REGISTER */
+html.skin-98 .w98-webwin[data-site="register"] .w98-client{
+  --bg:#FFFFFF; --border:#CCCCCC; --border2:#999999; --accent:#0E5563; --accent-dim:#0B3A44; --accent-hi:#0E5563; --accent-ink:#ffffff;
+  --text:#1B2530; --text2:#2B3A48; --text3:#4A5560; --text4:#7A8590; --link:#0B4F8A; --w-font:Verdana, Arial, sans-serif; --w-btn:#F3F3F3;
+  --s-box:#ffffff; --s-box-bd:1px solid #0E5563; --s-bar:#0E5563; --s-bar-ink:#FFFFFF; --s-bar-ink2:#D8EEF1; --s-h3:bold 13px Verdana, Arial, sans-serif;
+}
+html.skin-98 .w98-rg-head .w98-s-in{ flex-direction:column; align-items:stretch; padding:10px 24px 0; gap:8px; }
+html.skin-98 .w98-rg-top{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; }
+html.skin-98 .w98-rg-top .w98-s-brand b{ font:bold 36px/1 Georgia, "Times New Roman", serif; color:#1B2530; }
+html.skin-98 .w98-rg-top .w98-s-brand i{ margin-top:4px; font:italic 13px Verdana, Arial, sans-serif; color:#1B2530; }
+html.skin-98 .w98-rg-dept{ display:flex; flex-wrap:wrap; gap:3px; }
+html.skin-98 .w98-rg-dept button{ min-height:32px; padding:0 12px; border:1px solid #0B3A44; border-bottom:0; background:#0E5563; color:#FFFFFF; font:bold 12px Verdana, Arial, sans-serif; cursor:pointer; }
+html.skin-98 .w98-rg-dept button.w98-on, html.skin-98 .w98-rg-dept button:hover{ background:#F29A1F; color:#1B2530; }
+html.skin-98 .w98-rg-head{ border-bottom:3px solid #F29A1F; background:linear-gradient(#FFFFFF, #FFFFFF) top / 100% calc(100% - 0px) no-repeat; }
+html.skin-98 .w98-webwin[data-site="register"] .w98-client .mkt-controls{ margin:0 0 16px !important; padding:8px 12px !important; background:#0E5563 !important; border:0 !important; border-bottom:3px solid #F29A1F !important; border-radius:0 !important; color:#FFFFFF; }
+html.skin-98 .w98-webwin[data-site="register"] .w98-client .mkt-controls :is(.row-label, .mono, span){ color:#FFFFFF !important; }
+html.skin-98 .w98-webwin[data-site="register"] .w98-client .mkt-controls .btn{ background:#F29A1F; color:#1B2530; box-shadow:inset -1px -1px #9A5B00, inset 1px 1px #FFD58A; }
+html.skin-98 .w98-rg-foot .w98-s-in{ display:block; padding:0 24px 16px; }
+html.skin-98 .w98-rg-foot .w98-s-bar{ background:#0E5563; color:#FFFFFF; }
+html.skin-98 .w98-rg-extra{ display:flex; flex-direction:column; align-items:flex-start; gap:6px; margin:4px 0 2px; }
+html.skin-98 .w98-rg-tag{ display:inline-block; padding:2px 6px; border:1px solid #9A1C1C; color:#9A1C1C; font:bold 11px Verdana, Arial, sans-serif; }
+html.skin-98 .w98-rcpt{ align-self:stretch; max-width:360px; display:flex; flex-direction:column; }
+html.skin-98 .w98-rcpt > div{ display:flex; justify-content:space-between; gap:12px; padding:5px 0; border-bottom:1px solid #DDDDDD; font:12px Verdana, Arial, sans-serif; color:#1B2530; }
+html.skin-98 .w98-rcpt > .w98-rcpt-t{ border-bottom:0; font:bold 16px Verdana, Arial, sans-serif; color:#9A1C1C; }
+
+/* ======================================================================== GUILD SURPLUS */
+html.skin-98 .w98-webwin[data-site="surplus"] .w98-client{
+  --bg:#FFFFFF; --border:#9DB0E8; --border2:#1D4ED8; --accent:#1D3FBF; --accent-dim:#0F2F8A; --accent-hi:#1D4ED8; --accent-ink:#ffffff;
+  --text:#1B1B1B; --text2:#2E2E2E; --text3:#4A5560; --text4:#7A8590; --link:#1D3FBF; --w-font:Arial, Helvetica, sans-serif; --w-btn:#EEF2FC;
+  --s-box:#ffffff; --s-box-bd:2px solid #1D4ED8; --s-bar:#1D3FBF; --s-bar-ink:#FFFFFF; --s-bar-ink2:#DCE4FF; --s-h3:bold 14px Arial, Helvetica, sans-serif;
+}
+html.skin-98 .w98-gs-head > .w98-s-in:first-child{ padding:10px 24px; }
+html.skin-98 .w98-gs-head .w98-s-brand{ gap:4px; }
+html.skin-98 .w98-gs-head .w98-s-brand b{ font:italic bold 42px/1 Arial, Helvetica, sans-serif; letter-spacing:-1px !important; color:#1D3FBF; }
+html.skin-98 .w98-gs-bar{ display:block; width:250px; max-width:100%; height:6px; background:#D62828; }
+html.skin-98 .w98-gs-head .w98-s-brand i{ font:italic 15px Arial, Helvetica, sans-serif; color:#1B1B1B; }
+html.skin-98 .w98-gs-aisles{ background:#1D3FBF; border-bottom:4px solid #D62828; }
+html.skin-98 .w98-gs-aisles .w98-s-in{ padding:0 12px; gap:0; }
+html.skin-98 .w98-gs-aisles span{ min-height:40px; padding:0 12px; display:flex; align-items:center; color:#FFFFFF; font:bold 13px Arial, Helvetica, sans-serif; }
+html.skin-98 .w98-gs-head > .w98-s-in:last-child{ padding:16px 24px 0; }
+html.skin-98 .w98-gs-sign{ flex:1; display:flex; flex-direction:column; gap:4px; padding:14px; border:3px solid #D62828; }
+html.skin-98 .w98-gs-sign h2{ margin:0; font:bold 24px Arial, Helvetica, sans-serif; color:#D62828; text-transform:uppercase; }
+html.skin-98 .w98-gs-sign b{ font:bold 16px Arial, Helvetica, sans-serif; }
+html.skin-98 .w98-gs-foot .w98-s-in{ display:block; padding:0 24px 16px; }
+html.skin-98 .w98-gs-foot .w98-s-bar{ background:#1D3FBF; color:#FFFFFF; font:13px Arial, Helvetica, sans-serif; }
+html.skin-98 .w98-gs-book{ display:flex; flex-wrap:wrap; gap:4px 14px; margin:2px 0; font:12px Arial, Helvetica, sans-serif; color:#4A5560; }
+html.skin-98 .w98-webwin[data-site="surplus"] .w98-client .mkt-price{ padding:2px 8px; background:#D62828; color:#FFFFFF !important; font:bold 15px Arial, Helvetica, sans-serif; }
+
+/* ======================================================================== THE UNDERCUT, AND FIVE-FINGER SUPPLY IN ITS LOOK */
+html.skin-98 .w98-webwin:is([data-site="undercut"], [data-site="fivefinger"]) .w98-client{
+  --bg:#FFFFFF; --border:#CCCCCC; --border2:#999999; --accent:#5A2D91; --accent-dim:#5A2D91; --accent-hi:#7A4DB1; --accent-ink:#ffffff;
+  --text:#222222; --text2:#333333; --text3:#555555; --text4:#888888; --link:#0000EE; --w-font:"Times New Roman", Times, serif; --w-btn:#EEEEEE;
+  --s-box:transparent; --s-box-bd:0; --s-bar:#EEEEEE; --s-bar-ink:#5A2D91; --s-bar-ink2:#555555; --s-h3:normal 16px Arial, Helvetica, sans-serif;
+}
+html.skin-98 .w98-webwin[data-site="fivefinger"] .w98-client{ --accent:#2D7A3A; --accent-dim:#2D7A3A; --s-bar-ink:#2D7A3A; }
+html.skin-98 .w98-webwin:is([data-site="undercut"], [data-site="fivefinger"]) .w98-client{ grid-template-columns:minmax(150px, 240px) minmax(0, 1fr); }
+html.skin-98 .w98-webwin:is([data-site="undercut"], [data-site="fivefinger"]) .w98-client > [data-area="side"]{ grid-column:1; grid-row:2 / 4; }
+html.skin-98 .w98-webwin:is([data-site="undercut"], [data-site="fivefinger"]) .w98-client > :is([data-area="top"], #view, .w98-snap){ grid-column:2; }
+html.skin-98 .w98-uc-side{ align-self:start; margin:12px 0 12px 12px; padding:14px; display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center;
+  background:#EEEEEE; border:1px solid #CCCCCC; font-family:"Times New Roman", Times, serif; }
+html.skin-98 .w98-uc-name{ font:bold 30px/1 "Times New Roman", Times, serif; color:#5A2D91; }
+html.skin-98 .w98-webwin[data-site="fivefinger"] .w98-uc-name{ color:#2D7A3A; }
+html.skin-98 .w98-uc-side i{ font:italic 16px "Times New Roman", Times, serif; color:#222222; }
+html.skin-98 .w98-uc-top{ padding:12px 24px 0; }
+html.skin-98 .w98-uc-top h1{ margin:0; padding:6px; background:#EEEEEE; border:1px solid #CCCCCC; font:normal 22px Arial, Helvetica, sans-serif; text-align:center; color:#222222; text-transform:none; }
+html.skin-98 .w98-webwin:is([data-site="undercut"], [data-site="fivefinger"]) .w98-client .panel > .panel-h{ border:1px solid #CCCCCC; justify-content:center; }
+html.skin-98 .w98-webwin:is([data-site="undercut"], [data-site="fivefinger"]) .w98-client .panel > .panel-b{ padding:4px 6px; }
+html.skin-98 .w98-webwin:is([data-site="undercut"], [data-site="fivefinger"]) .w98-client .mkt-card{ border:0 !important; border-bottom:1px dotted #CCCCCC !important; background:transparent; }
+html.skin-98 .w98-webwin:is([data-site="undercut"], [data-site="fivefinger"]) .w98-client .mkt-name{ color:#0000EE; text-decoration:underline; font-size:16px; }
+
+/* the market's search row: The Register paints it teal (above); the others in their own plain colours, not '98's yellow */
+html.skin-98 .w98-webwin:is([data-site="undercut"], [data-site="fivefinger"]) .w98-client .mkt-controls{ background:#EEEEEE !important; border:1px solid #CCCCCC !important; border-radius:0 !important; }
+html.skin-98 .w98-webwin[data-site="surplus"] .w98-client .mkt-controls{ background:#FFFFFF !important; border:2px solid #1D4ED8 !important; border-radius:0 !important; }
+
+/* ======================================================================== THE CODEX */
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client{
+  --bg:#FFFFFF; --border:#A2A9B1; --border2:#72777D; --accent:#3366CC; --accent-dim:#1A3F8F; --accent-hi:#3366CC; --accent-ink:#ffffff;
+  --text:#202122; --text2:#303233; --text3:#54595D; --text4:#7A7F84; --link:#3366CC; --w-font:Arial, Helvetica, sans-serif; --w-btn:#F8F9FA;
+  --s-box:transparent; --s-box-bd:0; --s-bar:transparent; --s-bar-ink:#202122; --s-bar-ink2:#54595D; --s-h3:normal 20px Georgia, "Times New Roman", serif;
+}
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client{ background:#F6F6F6; grid-template-columns:minmax(140px, 200px) minmax(0, 1fr); }
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client > [data-area="side"]{ grid-column:1; grid-row:2 / 4; }
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client > :is([data-area="top"], #view, .w98-snap){ grid-column:2; }
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client > :is(#view, .w98-snap).os-main{ width:auto; box-sizing:border-box; margin:0 24px 16px 0; padding:20px 24px 28px; background:#FFFFFF; border:1px solid #A2A9B1; }
+html.skin-98 .w98-cx-side{ align-self:start; padding:16px 12px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+html.skin-98 .w98-cx-name{ font:normal 26px Georgia, "Times New Roman", serif; font-variant:small-caps; letter-spacing:3px !important; color:#202122; }
+html.skin-98 .w98-cx-tag{ font:12px Georgia, "Times New Roman", serif; color:#202122; text-align:center; }
+html.skin-98 .w98-cx-nav{ align-self:stretch; display:flex; flex-direction:column; margin-top:8px; padding-top:4px; border-top:1px solid #A2A9B1; }
+html.skin-98 .w98-cx-nav button{ min-height:32px; padding:0; border:0; background:none; color:#3366CC; font:13px Arial, Helvetica, sans-serif; text-align:left; cursor:pointer; }
+html.skin-98 .w98-cx-nav button:hover{ text-decoration:underline; }
+html.skin-98 .w98-cx-top{ display:flex; flex-wrap:wrap; gap:4px; padding:12px 24px 0 0; margin-bottom:-1px; }
+html.skin-98 .w98-cx-top span{ min-height:34px; padding:0 14px; display:flex; align-items:center; border:1px solid #A2A9B1; border-bottom:0; background:#EAECF0; font:13px Arial, Helvetica, sans-serif; color:#202122; }
+html.skin-98 .w98-cx-top span.w98-on{ background:#FFFFFF; font-weight:bold; position:relative; z-index:1; }
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client :is(#view, .w98-snap) > div > .row.between.wrap:first-child{ display:none; }
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client .section-title{ margin:18px 0 8px; padding:0 0 4px; border-bottom:1px solid #A2A9B1; background:none;
+  font:normal 28px Georgia, "Times New Roman", serif; color:#202122; text-transform:none; }
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client .section-title .line{ display:none; }
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client .panel{ margin:0 0 6px; }
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client .panel > .panel-h{ padding:4px 0; border-bottom:1px solid #EAECF0; }
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client .panel > .panel-b{ padding:8px 0 12px; font-size:14px; line-height:1.6; }
+html.skin-98 .w98-webwin[data-site="codex"] .w98-client .cx-chaps{ padding:8px 14px; background:#F8F9FA; border:1px solid #A2A9B1; }
+
+/* ======================================================================== PHONE: everything stacks, the big type comes down */
+@media (max-width: 759px){
+  html.skin-98 .w98-mp{ padding:20px 14px 24px; gap:20px; }
+  html.skin-98 .w98-mp-logo{ width:101px; height:66px; }
+  html.skin-98 .w98-mp-word{ font-size:52px; letter-spacing:-2px !important; }
+  html.skin-98 .w98-mp-tag{ font-size:16px; }
+  html.skin-98 .w98-mp-tile{ flex-basis:96px; }
+  html.skin-98 .w98-mp-counts b{ font-size:18px; }
+  html.skin-98 :is(.w98-mp-go, .w98-mp-shiny), html.skin-98 input.w98-mp-q[type]{ min-height:44px; }
+  html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client{ grid-template-columns:minmax(0, 1fr) !important; grid-template-rows:none; }
+  html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client > *{ grid-column:1 !important; grid-row:auto !important; }
+  html.skin-98 .w98-webwin:where([data-site]:not([data-site="home"])) .w98-client > :is(#view, .w98-snap).os-main{ padding:12px 12px 16px; }
+  html.skin-98 .w98-webwin[data-site="codex"] .w98-client > :is(#view, .w98-snap).os-main{ margin:0 8px 8px; padding:14px 12px 18px; }
+  html.skin-98 .w98-nd-side{ padding:12px; flex-direction:row; flex-wrap:wrap; }
+  html.skin-98 .w98-webwin[data-site="namedrop"] .w98-client > :is(#view, .w98-snap).os-main{ padding-left:12px; }
+  html.skin-98 .w98-nd-foot{ padding:0 12px 12px; }
+  html.skin-98 .w98-s-in, html.skin-98 .w98-rg-head .w98-s-in, html.skin-98 :is(.w98-gs-head, .w98-br-foot, .w98-rg-foot, .w98-gs-foot) .w98-s-in, html.skin-98 .w98-gs-head > .w98-s-in:is(:first-child, :last-child){ padding-left:12px; padding-right:12px; }
+  html.skin-98 .w98-br-dashw{ padding:16px 12px 4px; }
+  html.skin-98 .w98-nd-card{ flex:1 1 160px; flex-direction:row; align-items:center; }
+  html.skin-98 .w98-nd-pic{ width:64px; flex:none; font-size:22px; }
+  html.skin-98 button.w98-nd-pic{ width:64px; }
+  html.skin-98 button.w98-nd-pic i{ display:none; }
+  html.skin-98 .w98-nd-btns{ flex:1 1 100%; }
+  html.skin-98 :is(.w98-nd-nav, .w98-br-nav) button, html.skin-98 .w98-rg-dept button, html.skin-98 .w98-cx-nav button{ min-height:44px; }
+  html.skin-98 .w98-nd-head .w98-s-brand b{ font-size:26px; }
+  html.skin-98 .w98-br-band .w98-s-brand b, html.skin-98 .w98-rg-top .w98-s-brand b{ font-size:28px; }
+  html.skin-98 .w98-gs-head .w98-s-brand b{ font-size:32px; }
+  html.skin-98 .w98-br-amt{ font-size:38px; }
+  html.skin-98 .w98-br-cards{ grid-template-columns:minmax(0, 1fr); }
+  html.skin-98 .w98-uc-side, html.skin-98 .w98-cx-side{ margin:8px; flex-direction:row; flex-wrap:wrap; justify-content:center; }
+  html.skin-98 .w98-uc-top{ padding:0 8px; }
+  html.skin-98 .w98-cx-top{ padding:0 8px; }
+  html.skin-98 .w98-cx-nav{ flex-direction:row; flex-wrap:wrap; gap:0 16px; border-top:0; }
+  html.skin-98 .w98-ad-row i, html.skin-98 .w98-ad-cta, html.skin-98 .w98-ad-bar, html.skin-98 .w98-ad-hr{ display:none; }
+}

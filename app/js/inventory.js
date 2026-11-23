@@ -132,6 +132,26 @@ EN.inventoryView = (function () {
     return it.price;   // The Undercut, straight book list price
   }
   function fencePrice(it) { return fenceCut(it.price); }
+  /* THE REGISTER'S RECEIPT (23 Nov 2026, gridos-98-sites-handoff). Display only: the price is streetPrice's, list x the
+     Legality rate x the Availability rate, rounded up, and these lines break that figure down, working from the real total
+     so they always add up to it. Scarcity is list x (Availability rate - 1), rounded down; what is left of the total over
+     list and scarcity is the legality share, 40% of it compliance handling and 20% #PRINT verification (each rounded
+     down), the rest licensing escrow. The Availability rate is charged even while its word is held, so its line shows. */
+  /* What another face of the market adds under a listing's head ('98's storefront sites, js/w98_sites.js): each hook is
+     fn(item, { front, price, open }) and returns a node or null. Display only; the price and the buy are this file's. */
+  var CARD_HOOKS = [];
+  function cardExtras(it, sp, open) {
+    return CARD_HOOKS.map(function (fn) { try { return fn(it, { front: _mode, price: sp, open: !!open }); } catch (e) { return null; } });
+  }
+  function registerReceipt(it) {
+    if (!it || !(it.price > 0) || it.vendor === false) return null;
+    var list = it.price, total = streetPrice(it, "register");
+    var scarcity = Math.min(total - list, Math.max(0, Math.floor(settled(list * ((AVAIL_MULT[it.availability] || 1) - 1)))));
+    var share = Math.max(0, total - list - scarcity);
+    var compliance = Math.floor(settled(share * 0.4)), print = Math.floor(settled(share * 0.2));
+    return { list: list, compliance: compliance, print: print, escrow: share - compliance - print, scarcity: scarcity, total: total,
+             surcharge: LEGAL_MULT[it.legality] > 1 ? it.legality : null };
+  }
   /* A LEASE'S BUY-IN, AS IT IS QUOTED (23 Nov 2026). The buy-in is a price like any other, so the storefront moves it, and
      every line that quotes it says what this storefront will take, with the list figure beside it where the two differ. */
   function buyInText(it, sp) {
@@ -1399,13 +1419,13 @@ EN.inventoryView = (function () {
        stock out of reach doesn't push what you can buy three screens down. */
     if (mode === "mkt" && !open && !afford && !ownedTotal && _mode !== "fivefinger" && !it.upkeep && it.vendor !== false && !it.cyber)
       return el("div.feature.mkt-card.mkt-short", { title: "Can't afford it at " + fmtG(sp) + ". Tap to read it.",
-        style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)", opacity: 0.72 } }, [head]);
+        style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)", opacity: 0.72 } }, [head].concat(cardExtras(it, sp, false)));
     var traitsExpandRow = (traits.length && traitsOpen)
       ? el("div.row.wrap", { style: { gap: "6px", marginTop: "6px", paddingTop: "6px", borderTop: "1px dashed var(--border)" } },
           traits.map(function (t) { return traitChip(t, armorFirst); }))
       : null;
     return el("div.feature" + (mode === "mkt" ? ".mkt-card" : ""), { style: { borderLeftColor: LEGAL_COLOR[it.legality] || "var(--border2)" } }, [
-      head, info, traitsExpandRow,
+      head].concat(mode === "mkt" ? cardExtras(it, sp, open) : []).concat([info, traitsExpandRow,
       it.benchPart ? partInfoLine(ch, it) : it.armorMod ? armorModInfoLine(ch, it) : (mode !== "mkt" ? installedPartsLine(ch, it, entry) : null),
       mode === "stash" ? armorResistPicker(ch, it, entry) : null,
       it.relayTier ? relayLine(ch, it, mode, entry) : null,
@@ -1440,7 +1460,7 @@ EN.inventoryView = (function () {
       open && it.basic ? rulesLine({ margin: "4px 0 0" }, "Basic Use", "var(--text2)", it.basic, lo) : null,
       open && it.proficient ? rulesLine({ margin: "4px 0 0" }, "Proficient Use", "var(--gold)", it.proficient, lo) : null,
       open && it.range ? el("p.help", { style: { margin: "4px 0 0" }, text: "Range: " + it.range + (it.ammoUnit ? " · Ammo: " + it.ammo + " " + it.ammoUnit : "") }) : null
-    ]);
+    ]));
   }
 
   /* ---- sub-views ---- */
@@ -5045,9 +5065,40 @@ EN.inventoryView = (function () {
   }
   function fronts() { return storefronts().map(function (s) { return { key: s.key, name: s.name, desc: s.desc }; }); }
   function billsDue(ch) { ch = ch || store.active(); try { return !!(ch && billsOverdue(ch)); } catch (e) { return false; } }
+  /* The Bills page's figures in one read, for a second face of that page ('98's Burn Rate, js/w98_sites.js). Nothing new
+     is reckoned: the same household week, leases, Hypercare, papers and debts billsPanel draws. `weekly` is what burns
+     every week, Lifestyle and Safehouse (with its upgrades' upkeep) and every lease. */
+  function billsSummary(ch) {
+    ch = ch || store.active();
+    if (!ch) return null;
+    var hh = ch.household || {}, w = householdWeekly(ch), leases = activeLeases(ch), hc = hypercareOf(ch), next = [];
+    var leaseWeek = 0;
+    leases.forEach(function (e) {
+      var it = findItem(e.name), amt = upkeepOf(it, e) || 0;
+      leaseWeek += amt;
+      next.push({ name: e.name, due: e.leaseDue ? "Due now" : "Due in " + leaseDaysOf(e) + "d", late: !!e.leaseDue, amount: fmtG(amt), days: e.leaseDue ? 0 : leaseDaysOf(e) });
+    });
+    if (w.total) next.push({ name: "Lifestyle and Safehouse", due: hh.due ? "Due now" : "Due in " + (hh.days || 7) + "d", late: !!hh.due, amount: fmtG(w.total), days: hh.due ? 0 : (hh.days || 7) });
+    if (hc) next.push({ name: "Hypercare: " + hc.tier, due: hh.hypercareDue ? "Due now" : "Due in " + (hh.hypercareDays || 30) + "d", late: !!hh.hypercareDue,
+      amount: (hc.currency === "nexus" ? fmtNx(hc.cost) : fmtG(hc.cost)) + openMark(hc), days: hh.hypercareDue ? 0 : (hh.hypercareDays || 30) });
+    next.sort(function (a, b) { return a.days - b.days; });
+    var papers = (hh.licenses || []).length, debts = (ch.debts || []).length;
+    return {
+      glimmer: ch.glimmer || 0, nexus: ch.nexus || 0, weekly: w.total + leaseWeek, next: next,
+      cards: [
+        { title: "Lifestyle and Safehouse", text: w.total ? fmtG(w.total) + " / week" : "Nothing owed" },
+        { title: "Leases", text: leases.length ? leases.length + (leases.length === 1 ? " lease, " : " leases, ") + fmtG(leaseWeek) + " / week" : "No active leases" },
+        { title: "Hypercare", text: hc ? hc.tier + ", " + (hc.currency === "nexus" ? fmtNx(hc.cost) : fmtG(hc.cost)) + openMark(hc) + " / month" : "No plan" },
+        { title: "Licences and Papers", text: papers ? papers + (papers === 1 ? " held" : " held") : "None held" },
+        { title: "Debts", text: debts ? debts + (debts === 1 ? " debt" : " debts") : "No debts" },
+        { title: "Glimmer and Nexus", text: fmtG(ch.glimmer || 0) + " and " + fmtNx(ch.nexus || 0) }
+      ]
+    };
+  }
 
   return { render: render, icons: { stash: ICON_STASH }, leaseTick: leaseTick,
            page: page, setPage: setPage, sheets: sheets, fronts: fronts, billsDue: billsDue, householdTick: householdTick, hypercareTick: hypercareTick,
+           billsSummary: billsSummary, registerReceipt: registerReceipt, cardHooks: CARD_HOOKS,
            openBench: openBench, openStash: openStash, openBills: openBills, closePops: closePops,
            pickUpDropped: pickUpDropped, installFromStash: installFromStash, cyberAnatomyPlan: cyberAnatomyPlan, sell: sell,
            // #POST packages: Take it (js/face.js) and the Admin's Attach items search (js/gm_campaign.js)
