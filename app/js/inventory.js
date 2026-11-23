@@ -126,14 +126,21 @@ EN.inventoryView = (function () {
   function streetPrice(it, front) {
     var m = front || _mode;
     if (m === "register") return Math.ceil(settled(it.price * (LEGAL_MULT[it.legality] || 1) * (AVAIL_MULT[it.availability] || 1)));
-    if (m === "surplus") return fenceCut(it.price);
+    // a list price of nothing stays nothing: a vehicle lease has no buy-in, and the 𝒢1 floor is for a price that rounds away
+    if (m === "surplus") return it.price > 0 ? fenceCut(it.price) : 0;
     if (m === "fivefinger") return 0;
     return it.price;   // The Undercut, straight book list price
   }
   function fencePrice(it) { return fenceCut(it.price); }
+  /* A LEASE'S BUY-IN, AS IT IS QUOTED (23 Nov 2026). The buy-in is a price like any other, so the storefront moves it, and
+     every line that quotes it says what this storefront will take, with the list figure beside it where the two differ. */
+  function buyInText(it, sp) {
+    var list = it.price || 0;
+    return fmtG(sp) + " buy-in" + (sp !== list ? " (list " + fmtG(list) + ")" : "");
+  }
   function priceTitle(it) {
     var sp = streetPrice(it);
-    if (it.upkeep) return "Leased, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep"
+    if (it.upkeep) return "Leased, " + buyInText(it, sp) + ", " + fmtG(it.upkeep) + "/wk Upkeep"
       + (buyoutCost(it) ? ", " + fmtBuyout(buyoutCost(it)) + " Buyout" : "")
       + ". Lapse, get flagged, or cross the issuer and it drops to its zero state.";
     if (_mode === "register") {
@@ -644,11 +651,12 @@ EN.inventoryView = (function () {
       landed = entryKey(e);
       if (opts && opts.place) placeEntry(c, e, it, opts.place);
     }, { ledger: "Bought " + it.name + (it.relayTier ? " loaded with " + relayLoadPick(it) : "") + (it.upkeep ? " (lease buy-in" + (planFee ? " and first Premium installment" : "") + ")" : "") });
-    toast(_mode === "register" ? it.name + " purchased for " + fmtG(sp) + ". Compliance fees included. All sales final." :
+    // a lease says what was taken at any storefront: the buy-in this one charged, and the Premium installment when there was one
+    toast(_mode === "fivefinger" ? it.name + " taken. You were never here." :
+          (it.upkeep && planFee) ? it.name + " leased on the Premium plan: " + fmtG(sp) + " buy-in and " + fmtG(planFee) + " charged now, " + fmtG(planFee) + " due in 7 days (Long Rests)." :
+          it.upkeep ? it.name + " lease signed: " + fmtG(sp) + " buy-in, " + fmtG(it.upkeep) + " due in 7 days (Long Rests)." :
+          _mode === "register" ? it.name + " purchased for " + fmtG(sp) + ". Compliance fees included. All sales final." :
           _mode === "surplus" ? it.name + " claimed from the Guild lot for " + fmtG(sp) + ". Mostly works." :
-          _mode === "fivefinger" ? it.name + " taken. You were never here." :
-          (it.upkeep && planFee) ? it.name + " leased on the Premium plan: " + fmtG(it.price || 0) + " buy-in and " + fmtG(planFee) + " charged now, " + fmtG(planFee) + " due in 7 days (Long Rests)." :
-          it.upkeep ? it.name + " lease signed: " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + " due in 7 days (Long Rests)." :
           it.name + " acquired for " + fmtG(sp) + ". No receipt. It never happened.");
     return landed;
   }
@@ -1231,7 +1239,7 @@ EN.inventoryView = (function () {
           ? (owned.leaseOwned ? tagChip("OWNED OUTRIGHT", "var(--success)", "Lease bought out; it is yours, no more Upkeep.")
              : owned.leaseDue ? tagChip("⚠ PAYMENT DUE", "var(--danger)", "Installment due: " + fmtG(upkeepOf(it, owned)) + ". It grants none of its benefits until you pay.")
              : tagChip((owned.premium ? "PREMIUM · " : "LEASE · ") + leaseDaysOf(owned) + (leaseDaysOf(owned) === 1 ? " DAY" : " DAYS"), "var(--gold)", "Next installment " + fmtG(upkeepOf(it, owned)) + " in " + leaseDaysOf(owned) + " day(s); each Long Rest marks one day."))
-          : tagChip("LEASED", "var(--ember)", "Leased, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null
+          : tagChip("LEASED", "var(--ember)", "Leased, " + buyInText(it, sp) + ", " + fmtG(it.upkeep) + "/wk Upkeep. Lapse and it drops to its zero state.")) : null
       ])),
       el("span.mkt-side", { style: { display: "inline-flex", alignItems: "baseline", gap: "10px", flexShrink: 0 } }, [
         el("span.mono.mkt-meta", { style: { fontSize: "10.5px", letterSpacing: ".03em" } }, [
@@ -1323,12 +1331,12 @@ EN.inventoryView = (function () {
     } else if (it.vendor === false) {
       mktBtn = el("button.btn.sm", { disabled: true, title: "Not vendor stock, found, recovered, or campaign-granted, not bought. It can still turn up in Five-Finger Supply.", style: { color: "var(--flow)", borderColor: "var(--flow)" } }, "FOUND, NOT SOLD");
     } else if (it.upkeep) {
-      var leaseBtn = el("button.btn.sm.primary", { title: "Sign the lease, " + fmtG(it.price || 0) + " buy-in, " + fmtG(it.upkeep) + "/wk Upkeep. It works until the autopay lapses.", onclick: function () { buy(it); } }, "LEASE · " + fmtG(it.upkeep) + "/wk");
+      var leaseBtn = el("button.btn.sm.primary", { title: "Sign the lease, " + buyInText(it, sp) + ", " + fmtG(it.upkeep) + "/wk Upkeep. It works until the autopay lapses.", onclick: function () { buy(it); } }, "LEASE · " + fmtG(it.upkeep) + "/wk");
       // an item with a Premium tier can be signed onto it here, or upgraded later from the Stash
       mktBtn = it.premium
         ? el("div.row.wrap", { style: { gap: "6px", justifyContent: "flex-end" } }, [leaseBtn,
             el("button.btn.sm", {
-              title: "Sign straight onto the Premium plan: " + fmtG(it.price || 0) + " buy-in plus " + fmtG(it.premium.upkeep) + " charged now, " + it.premium.dr + " DR while the plan is live, then " + fmtG(it.premium.upkeep) + " every 7 days. Cancel any time; nothing is refunded.",
+              title: "Sign straight onto the Premium plan: " + buyInText(it, sp) + " plus " + fmtG(it.premium.upkeep) + " charged now, " + it.premium.dr + " DR while the plan is live, then " + fmtG(it.premium.upkeep) + " every 7 days. Cancel any time; nothing is refunded.",
               style: { color: "var(--success)", borderColor: "var(--success)" },
               onclick: function () { buy(it, true); } }, "PREMIUM · " + fmtG(it.premium.upkeep) + "/wk")])
         : leaseBtn;
@@ -1404,7 +1412,7 @@ EN.inventoryView = (function () {
       mode === "stash" && it.dumpAndRun ? dumpLine(ch, it, entry) : null,
       mode === "stash" && entry ? stowLine(ch, it, entry) : null,
       open && it.desc ? EN.ui.ruleText(el("p", { style: { marginTop: "8px" } }), it.desc, lo) : null,
-      open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + fmtG(it.price || 0) + " buy-in, " + fmtG(upkeepOf(it, owned)) + "/wk Upkeep" + (owned && owned.premium ? " (Premium plan)" : "") : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
+      open && it.type ? el("p.help", { style: { margin: "4px 0 0", color: "var(--text2)" }, text: "Type: " + it.type + (it.upkeep ? " · Leased: " + (mode === "mkt" ? buyInText(it, sp) : fmtG(it.price || 0) + " buy-in") + ", " + fmtG(upkeepOf(it, owned)) + "/wk Upkeep" + (owned && owned.premium ? " (Premium plan)" : "") : "") + (it.nexus ? " · Nexus: " + it.nexus : "") }) : null,
       open && it.proficiency ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: "Proficiency: " + it.proficiency + (it.signature ? " · Signature weapon (0 customization slots)" : "") }) : null,
       open && (it.category || it.skill) ? el("p.help", { style: { margin: "4px 0 0", color: "var(--flow)" }, text: (it.category ? "Tool Category: " + it.category + (it.categoryAlt ? " or " + it.categoryAlt : "") : "") + (it.category && it.skill ? " · " : "") + (it.skill ? "Governing Skill: " + it.skill : "") }) : null,
       open && it.feeds ? el("p.help", { style: { margin: "4px 0 0", color: "var(--gold)" }, text: "Feeds: " + it.feeds }) : null,
