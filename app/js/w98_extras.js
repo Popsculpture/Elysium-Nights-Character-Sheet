@@ -22,46 +22,61 @@ window.EN = window.EN || {};
      Off until you ask (Start, Settings, Screen Saver): a sheet read slowly over a long turn is not idle. After the minutes you
      pick without a press, a key, a wheel or a touch, the desktop goes black and the #GRIDOS mark drifts about the screen,
      changing colour at every wall. Any input wakes it, and a key or a click is eaten, so it never does anything twice.
-     Back Alleys (23 Nov 2026, the art team's saver) is the other choice: a walk through a night maze, drawn by js/back_alleys.js
-     from data/back_alleys_data.js. Neither file loads until the saver first runs, so it costs nothing at start-up. Show map puts the
-     maze's map in the top right corner. */
-  var SS = { key: "en_w98_ss_v1", kindKey: "en_w98_ss_kind_v1", mapKey: "en_w98_ss_map_v1", timer: null, el: null, iv: null, p: null, last: 0, alley: null };
+     The art team's canvas savers are the other choices (CANVAS below): Back Alleys (23 Nov 2026), a walk through a night maze, and
+     Vending Fleet (23 Nov 2026), vending machines on lift jets over a circuit-board city. Each is a script and its data, loaded
+     only when that saver first runs, so none of it costs anything at start-up. Back Alleys has Show map (the maze's map, top
+     right); Vending Fleet has Fleet density, five steps from Sparse to Swarm. */
+  var SS = { key: "en_w98_ss_v1", kindKey: "en_w98_ss_kind_v1", mapKey: "en_w98_ss_map_v1", densKey: "en_w98_ss_density_v1", timer: null, el: null, iv: null, p: null, last: 0, live: null };
+  var DENSITY = [{ label: "Sparse", v: 0 }, { label: "Light", v: 0.25 }, { label: "Normal", v: 0.5 }, { label: "Busy", v: 0.75 }, { label: "Swarm", v: 1 }];
+  var CANVAS = {
+    alleys: { name: "Back Alleys", js: "js/back_alleys.js", data: "data/back_alleys_data.js", lib: "BackAlleys", dataVar: "EN_BACK_ALLEYS_DATA",
+      extra: function (box) { return ssMap() ? el("canvas.w98-alleys-map", { "aria-hidden": "true", style: { display: "none" } }) : null; },
+      opts: function (map) { return { mapCanvas: map || undefined }; },
+      after: function (sv, map) { if (map) sv.setMap(true); } },
+    fleet: { name: "Vending Fleet", js: "js/vending_fleet.js", data: "data/vending_fleet_data.js", lib: "VendingFleet", dataVar: "EN_VENDING_FLEET_DATA",
+      opts: function () { return { density: DENSITY[ssDensity() - 1].v }; } }
+  };
   function ssMins() { var n = parseInt(store(SS.key) || "0", 10); return n > 0 ? n : 0; }
   function ssSet(m) { store(SS.key, String(m)); ssArm(); }
-  function ssKind() { return store(SS.kindKey) === "alleys" ? "alleys" : "mark"; }
-  function ssSetKind(k) { store(SS.kindKey, k === "alleys" ? "alleys" : "mark"); }
+  function ssKind() { var k = store(SS.kindKey); return CANVAS[k] ? k : "mark"; }
+  function ssSetKind(k) { store(SS.kindKey, CANVAS[k] ? k : "mark"); }
   function ssMap() { return store(SS.mapKey) === "1"; }
   function ssSetMap(v) { store(SS.mapKey, v ? "1" : "0"); }
-  // the two files, fetched once on the first run and kept
-  // they carry this file's own ?v= stamp (tools/stamp_version.py), so a deploy swaps them with everything else
+  function ssDensity() { var n = parseInt(store(SS.densKey) || "3", 10); return n >= 1 && n <= 5 ? n : 3; }
+  function ssSetDensity(n) { store(SS.densKey, String(n)); }
+  // each saver's two files, fetched once on its first run and kept; they carry this file's own ?v= stamp
+  // (tools/stamp_version.py), so a deploy swaps them with everything else. The data is the art team's JSON, wrapped as a
+  // script so it loads from file:// as well as the site.
   var VER = (function () { try { var m = /\?v=([^&#]+)/.exec(document.currentScript.src); return m ? "?v=" + m[1] : ""; } catch (e) { return ""; } })();
-  var alleysLoad = null;
-  function loadAlleys() {
-    if (alleysLoad) return alleysLoad;
-    function script(src, have) {
-      return have() ? Promise.resolve() : new Promise(function (res, rej) {
+  var loads = {};
+  function loadSaver(k) {
+    var c = CANVAS[k];
+    if (loads[k]) return loads[k];
+    function script(src, name) {
+      return window[name] ? Promise.resolve() : new Promise(function (res, rej) {
         var s = document.createElement("script"); s.src = src + VER; s.onload = res; s.onerror = rej; document.head.appendChild(s);
       });
     }
-    // the data is the art team's JSON, wrapped as a script (data/back_alleys_data.js) so it loads from file:// as well as the site
-    alleysLoad = Promise.all([script("js/back_alleys.js", function () { return !!window.BackAlleys; }), script("data/back_alleys_data.js", function () { return !!window.EN_BACK_ALLEYS_DATA; })])
-      .then(function () { if (!window.BackAlleys || !window.EN_BACK_ALLEYS_DATA) throw new Error("Back Alleys did not load"); return window.EN_BACK_ALLEYS_DATA; });
-    alleysLoad.catch(function () { alleysLoad = null; });
-    return alleysLoad;
+    loads[k] = Promise.all([script(c.js, c.lib), script(c.data, c.dataVar)])
+      .then(function () { if (!window[c.lib] || !window[c.dataVar]) throw new Error(c.name + " did not load"); return window[c.dataVar]; });
+    loads[k].catch(function () { loads[k] = null; });
+    return loads[k];
   }
-  function alleysStart(box) {
-    var cv = el("canvas.w98-alleys", { role: "img", "aria-label": "Back Alleys screen saver" });
-    var map = ssMap() ? el("canvas.w98-alleys-map", { "aria-hidden": "true", style: { display: "none" } }) : null;
-    box.appendChild(cv); if (map) box.appendChild(map);
-    loadAlleys().then(function (data) {
+  function canvasStart(box, k) {
+    var c = CANVAS[k];
+    var cv = el("canvas.w98-ss-cv.w98-" + k, { role: "img", "aria-label": c.name + " screen saver" });
+    var extra = c.extra ? c.extra(box) : null;
+    box.appendChild(cv); if (extra) box.appendChild(extra);
+    loadSaver(k).then(function (data) {
       if (SS.el !== box) return;
-      var sv = SS.alley = window.BackAlleys.create(cv, data, { mapCanvas: map || undefined, reducedMotion: K.reduced() });
-      return sv.ready.then(function () { if (SS.alley === sv && map) sv.setMap(true); });
+      var o = c.opts(extra); o.reducedMotion = K.reduced();
+      var sv = SS.live = window[c.lib].create(cv, data, o);
+      return sv.ready.then(function () { if (SS.live === sv && c.after) c.after(sv, extra); });
     }).catch(function () {
       // the files did not come: the mark drifts instead, so the screen still goes dark
       if (SS.el !== box) return;
-      box.removeChild(cv); if (map) box.removeChild(map);
-      box.classList.remove("w98-saver-alleys");
+      box.removeChild(cv); if (extra) box.removeChild(extra);
+      box.className = "w98-saver"; box.setAttribute("data-saver", "mark");
       markStart(box);
     });
   }
@@ -74,11 +89,11 @@ window.EN = window.EN || {};
   function ssStart() {
     if (SS.el || !K.active()) return;
     K.closeMenus();
-    var alleys = ssKind() === "alleys";
-    var box = el("div.w98-saver" + (alleys ? ".w98-saver-alleys" : ""), { role: "presentation", "data-saver": alleys ? "alleys" : "mark" });
+    var k = ssKind();
+    var box = el("div.w98-saver" + (k !== "mark" ? ".w98-saver-" + k : ""), { role: "presentation", "data-saver": k });
     document.body.appendChild(box);
     SS.el = box; SS.p = null;
-    if (alleys) alleysStart(box); else markStart(box);
+    if (CANVAS[k]) canvasStart(box, k); else markStart(box);
   }
   function markStart(box) {
     var logo = el("div.w98-saver-logo", { html: K.mark(44, "currentColor") + "<span><b>#GRID</b>OS '98</span>" });
@@ -100,7 +115,7 @@ window.EN = window.EN || {};
   }
   function ssWake() {
     clearInterval(SS.iv); SS.iv = null;
-    if (SS.alley) { try { SS.alley.stop(); } catch (e) {} SS.alley = null; }
+    if (SS.live) { try { SS.live.stop(); } catch (e) {} SS.live = null; }
     if (SS.el && SS.el.parentNode) SS.el.parentNode.removeChild(SS.el);
     SS.el = null; SS.p = null;
     ssArm();
@@ -123,13 +138,16 @@ window.EN = window.EN || {};
   }
   ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"].forEach(function (t) { document.addEventListener(t, ssAct, true); });
   X.settings.push(function () {
-    var m = ssMins();
+    var m = ssMins(), k = ssKind(), d = ssDensity();
     function opt(min, text) { return { label: text, check: m === min, radio: true, go: function () { ssSet(min); } }; }
-    function kind(k, text) { return { label: text, check: ssKind() === k, radio: true, go: function () { ssSetKind(k); } }; }
+    function kind(key, text) { return { label: text, check: k === key, radio: true, go: function () { ssSetKind(key); } }; }
     return [{ label: "Screen &Saver", icon: K.pix("desk", 16), sub: [
       opt(0, "&None"), opt(1, "After &1 minute"), opt(5, "After &5 minutes"), opt(10, "After 1&0 minutes"), { sep: true },
-      kind("mark", "#GRIDOS &Mark"), kind("alleys", "&Back Alleys"),
-      { label: "Show m&ap", check: ssMap(), disabled: ssKind() !== "alleys", go: function () { ssSetMap(!ssMap()); } }, { sep: true },
+      kind("mark", "#GRIDOS &Mark"), kind("alleys", "&Back Alleys"), kind("fleet", "&Vending Fleet"), { sep: true },
+      { label: "Show m&ap", check: ssMap(), disabled: k !== "alleys", go: function () { ssSetMap(!ssMap()); } },
+      { label: "Fleet &density", disabled: k !== "fleet", sub: DENSITY.map(function (s, i) {
+        return { label: s.label, check: d === i + 1, radio: true, go: function () { ssSetDensity(i + 1); } };
+      }) }, { sep: true },
       { label: "&Preview", go: ssStart }
     ] }];
   });
@@ -142,19 +160,25 @@ window.EN = window.EN || {};
     var which = el("select", { "aria-label": "Screen Saver" }, [
       el("option", { value: "none", selected: !m, text: "(None)" }),
       el("option", { value: "mark", selected: !!m && k === "mark", text: "#GRIDOS Mark" }),
-      el("option", { value: "alleys", selected: !!m && k === "alleys", text: "Back Alleys" })
+      el("option", { value: "alleys", selected: !!m && k === "alleys", text: "Back Alleys" }),
+      el("option", { value: "fleet", selected: !!m && k === "fleet", text: "Vending Fleet" })
     ]);
     var wait = el("select", { "aria-label": "Wait", disabled: !m }, [1, 5, 10].map(function (n) { return el("option", { value: String(n), selected: (m || 5) === n, text: n + (n === 1 ? " minute" : " minutes") }); }));
     var map = el("input.w98-chk", { type: "checkbox", "aria-label": "Show map", checked: ssMap(), disabled: !(m && k === "alleys"), onchange: function () { ssSetMap(map.checked); } });
+    var dens = el("select", { "aria-label": "Fleet density", disabled: !(m && k === "fleet") }, DENSITY.map(function (s, i) { return el("option", { value: String(i + 1), selected: ssDensity() === i + 1, text: s.label }); }));
+    dens.onchange = function () { ssSetDensity(parseInt(dens.value, 10)); };
     var screen = el("div.w98-monitor-s");
     function paintMonitor() {
-      var a = which.value === "alleys";
-      screen.classList.toggle("w98-monitor-alleys", a);
-      screen.innerHTML = a ? "<span class=\"w98-mon-neon\">JACK IN</span>" : which.value === "mark" ? "<span>" + K.mark(26, "currentColor") + "</span>" : "";
+      var v = which.value;
+      screen.classList.toggle("w98-monitor-alleys", v === "alleys");
+      screen.classList.toggle("w98-monitor-fleet", v === "fleet");
+      screen.innerHTML = v === "alleys" ? "<span class=\"w98-mon-neon\">JACK IN</span>"
+        : v === "fleet" ? "<span class=\"w98-mon-neon w98-mon-vend\">VEND</span>"
+        : v === "mark" ? "<span>" + K.mark(26, "currentColor") + "</span>" : "";
     }
     which.onchange = function () {
       var v = which.value, on = v !== "none";
-      wait.disabled = !on; map.disabled = v !== "alleys";
+      wait.disabled = !on; map.disabled = v !== "alleys"; dens.disabled = v !== "fleet";
       if (on) ssSetKind(v);
       ssSet(on ? parseInt(wait.value, 10) : 0);
       paintMonitor();
@@ -165,6 +189,7 @@ window.EN = window.EN || {};
       el("div.w98-monitor", { "aria-hidden": "true" }, [screen]),
       group("Screen saver", [field("&Screen Saver:", which), field("&Wait:", wait),
         el("label.w98-tip-c", { style: { marginTop: "6px" } }, [map, el("span", null, K.label("Show &map (Back Alleys)"))]),
+        field("Fleet &density:", dens),
         el("div.w98-ps-btns", null, [el("button.btn.sm", { type: "button", onclick: ssStart }, "Preview")])]),
       el("p.set-hint", { text: "The screen saver comes up after the wait without a key, a click or a touch. Any of them wakes it." })
     ];
