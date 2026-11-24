@@ -199,8 +199,9 @@ window.EN = window.EN || {};
   });
 
   /* THE COUNTER ON THE DESKTOP, bottom right, under the windows: the same real count, in the odometer cells the hit counters of the
-     era had. A right-click on the desktop, or the Control Panel, puts it away. */
+     era had. Off by default; a right-click on the desktop, or the Control Panel, puts it up. */
   var CNT_KEY = "en_w98_counter_v1";
+  var CNT_DEF = false;   // off until asked for (23 Nov 2026, the author's call): a right-click on the desktop or the Control Panel turns it on
   function visitDigits() {
     var n = (parseInt(store("en_visits_v1") || "1", 10) || 1) % 1000000, s = String(n);
     while (s.length < 6) s = "0" + s;
@@ -210,7 +211,7 @@ window.EN = window.EN || {};
     var root = document.getElementById("w98");
     if (!root || !K.active()) return;
     var w = root.querySelector(".w98-hits");
-    if (!on(CNT_KEY, true)) { if (w) w.parentNode.removeChild(w); return; }
+    if (!on(CNT_KEY, CNT_DEF)) { if (w) w.parentNode.removeChild(w); return; }
     var d = visitDigits();
     if (!w) {
       w = el("div.w98-hits", { title: "Times this Smartdeck has been opened on this device" }, [el("span", { text: "visitors since 1998" }), el("span.w98-vis-d")]);
@@ -220,9 +221,9 @@ window.EN = window.EN || {};
     if (cell.getAttribute("data-n") !== d) { EN.ui.clear(cell); d.split("").forEach(function (c) { cell.appendChild(el("i", { text: c })); }); cell.setAttribute("data-n", d); }
   }
   X.paint.push(counterPaint);
-  X.desktop.push(function () { return [{ sep: true }, { label: "Visitor &Counter", check: on(CNT_KEY, true), go: function () { store(CNT_KEY, on(CNT_KEY, true) ? "0" : "1"); counterPaint(); } }]; });
+  X.desktop.push(function () { return [{ sep: true }, { label: "Visitor &Counter", check: on(CNT_KEY, CNT_DEF), go: function () { store(CNT_KEY, on(CNT_KEY, CNT_DEF) ? "0" : "1"); counterPaint(); } }]; });
   X.cplExtras.push(function () {
-    return [checkRow("Show the &visitor counter on the desktop", function () { return on(CNT_KEY, true); }, function (v) { store(CNT_KEY, v ? "1" : "0"); counterPaint(); }, "How many times this Smartdeck has been opened on this device. A real count.")];
+    return [checkRow("Show the &visitor counter on the desktop", function () { return on(CNT_KEY, CNT_DEF); }, function (v) { store(CNT_KEY, v ? "1" : "0"); counterPaint(); }, "How many times this Smartdeck has been opened on this device. A real count.")];
   });
 
   /* ======================================================================== BREACH
