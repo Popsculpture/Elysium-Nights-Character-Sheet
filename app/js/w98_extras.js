@@ -223,7 +223,12 @@ window.EN = window.EN || {};
   X.paint.push(counterPaint);
   X.desktop.push(function () { return [{ sep: true }, { label: "Visitor &Counter", check: on(CNT_KEY, CNT_DEF), go: function () { store(CNT_KEY, on(CNT_KEY, CNT_DEF) ? "0" : "1"); counterPaint(); } }]; });
   X.cplExtras.push(function () {
-    return [checkRow("Show the &visitor counter on the desktop", function () { return on(CNT_KEY, CNT_DEF); }, function (v) { store(CNT_KEY, v ? "1" : "0"); counterPaint(); }, "How many times this Smartdeck has been opened on this device. A real count.")];
+    var rows = [checkRow("Show the &visitor counter on the desktop", function () { return on(CNT_KEY, CNT_DEF); }, function (v) { store(CNT_KEY, v ? "1" : "0"); counterPaint(); }, "How many times this Smartdeck has been opened on this device. A real count.")];
+    // the warnings on the way into '98 (js/gridos_warn.js): where a "Don't show this again" is taken back
+    var GW = EN.gridosWarn;
+    if (GW && GW.skipped) rows.push(checkRow("&Warn before switching to #GRIDOS '98", function () { return !GW.skipped(); }, function (v) { GW.setSkipped(!v); },
+      "The warnings that come up when #GRIDOS '98 is picked from another skin. On this device."));
+    return rows;
   });
 
   /* ======================================================================== BREACH

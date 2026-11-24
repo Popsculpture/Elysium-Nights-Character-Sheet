@@ -1290,7 +1290,17 @@ EN.settings = (function () {
              skin difference was CSS; it stopped being fine once EN.ui.panel started placing the
              header controls differently per skin, since a panel built under one skin would keep
              the other's arrangement until something else forced a rebuild. */
-          onclick: function () { EN.theme.setSkin(s.key); EN.app.render(); rebuild(); }
+          onclick: function () {
+            function to(k) { EN.theme.setSkin(k); EN.app.render(); rebuild(); }
+            /* the way into '98 passes its warnings first (js/gridos_warn.js): open it anyway, take #GRIDroid, or stay put */
+            // the skin in force now, not the one this tray was drawn under (it may have changed while the tray stayed up)
+            var now = EN.theme.getSkin();
+            if (s.key === "98" && now !== "98" && EN.gridosWarn && EN.gridosWarn.open) {
+              EN.gridosWarn.open({ go: function () { to("98"); }, droid: function () { if (EN.theme.getSkin() !== "droid") to("droid"); else rebuild(); } });
+              return;
+            }
+            to(s.key);
+          }
         }, s.name);
       })),
       pending

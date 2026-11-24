@@ -1,0 +1,56 @@
+/* ===========================================================================
+   THE WAY INTO #GRIDOS '98 (23 Nov 2026, js/gridos_warn.js): the cascade of '98 warning boxes and the one that matters.
+   It shows over whatever skin is up, before '98 exists, so it wears its own era look here and reads nothing from w98.css.
+   =========================================================================== */
+#gw-root{ position:fixed; inset:0; z-index:400000; --gw-face:#c0c0c0; --gw-hi:#ffffff; --gw-lt:#dfdfdf; --gw-sh:#808080; --gw-dk:#0a0a0a;
+  font:12px Tahoma, "MS Sans Serif", Verdana, Arial, sans-serif; color:#000; letter-spacing:normal; text-transform:none; }
+#gw-root *{ box-sizing:border-box; letter-spacing:normal; text-transform:none; }
+#gw-root .gw-scrim{ position:absolute; inset:0; background:rgba(0, 0, 0, .35); }
+#gw-root .gw-stack{ position:absolute; inset:0; pointer-events:none; }
+/* a window: the raised grey frame, a navy title bar, a white-bordered button row */
+#gw-root .gw-win{ position:absolute; width:min(320px, calc(100vw - 24px)); padding:3px; background:var(--gw-face); pointer-events:auto;
+  box-shadow:inset -1px -1px var(--gw-dk), inset 1px 1px var(--gw-lt), inset -2px -2px var(--gw-sh), inset 2px 2px var(--gw-hi), 2px 2px 0 rgba(0, 0, 0, .25); }
+#gw-root .gw-tb{ display:flex; align-items:center; gap:4px; height:20px; padding:0 2px 0 4px; background:linear-gradient(90deg, #000080, #1084d0); color:#fff; font-weight:bold; }
+#gw-root .gw-tt{ flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+#gw-root .gw-x{ flex:none; width:16px; height:14px; padding:0; border:0; background:var(--gw-face); color:#000; font:bold 10px/12px Tahoma, Arial, sans-serif; cursor:pointer;
+  box-shadow:inset -1px -1px var(--gw-dk), inset 1px 1px var(--gw-hi), inset -2px -2px var(--gw-sh), inset 2px 2px var(--gw-lt); }
+#gw-root .gw-body{ display:flex; gap:12px; align-items:flex-start; padding:14px 12px 10px; }
+#gw-root .gw-ic{ flex:none; }
+#gw-root .gw-ic img{ display:block; width:32px; height:32px; image-rendering:pixelated; }
+#gw-root .gw-body p{ margin:0 0 8px; line-height:1.4; }
+#gw-root .gw-body p:last-child{ margin-bottom:0; }
+#gw-root .gw-btns{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; padding:4px 8px 8px; }
+#gw-root .gw-b{ min-width:75px; min-height:23px; padding:0 10px; border:0; border-radius:0; background:var(--gw-face); color:#000; font:12px Tahoma, "MS Sans Serif", Verdana, sans-serif; cursor:pointer;
+  box-shadow:inset -1px -1px var(--gw-dk), inset 1px 1px var(--gw-hi), inset -2px -2px var(--gw-sh), inset 2px 2px var(--gw-lt); }
+#gw-root .gw-b:active{ box-shadow:inset -1px -1px var(--gw-hi), inset 1px 1px var(--gw-dk), inset -2px -2px var(--gw-lt), inset 2px 2px var(--gw-sh); }
+#gw-root .gw-b.gw-def{ outline:1px solid #000; outline-offset:-1px; }
+#gw-root .gw-b:focus-visible{ outline:1px dotted #000; outline-offset:-4px; }
+
+/* the cascade: each box down and to the right of the last, popping in */
+#gw-root .gw-decoy{ left:calc(12px + var(--gw-i) * min(36px, 5vw)); top:calc(12px + var(--gw-i) * min(34px, 4.5vh)); animation:gw-pop .12s ease-out both; }
+@keyframes gw-pop{ from{ transform:scale(.6); opacity:0; } to{ transform:none; opacity:1; } }
+/* the one that matters: centred, wider, on top of the pile */
+#gw-root .gw-final{ z-index:50; width:min(440px, calc(100vw - 24px)); left:50%; top:50%; transform:translate(-50%, -50%); animation:gw-pop-c .16s ease-out both; }
+@keyframes gw-pop-c{ from{ transform:translate(-50%, -50%) scale(.7); opacity:0; } to{ transform:translate(-50%, -50%); opacity:1; } }
+#gw-root .gw-final .gw-btns{ justify-content:flex-end; }
+#gw-root .gw-skip{ display:flex; align-items:center; gap:6px; margin:0 12px 4px 56px; cursor:pointer; user-select:none; }
+#gw-root .gw-skip input{ width:13px; height:13px; margin:0; accent-color:#000080; }
+#gw-root .gw-skip input:focus-visible + span{ outline:1px dotted #000; outline-offset:1px; }
+@media (max-width: 759px){ #gw-root .gw-skip{ margin-left:12px; min-height:32px; } #gw-root .gw-skip input{ width:18px; height:18px; } }
+/* Gizmo, beside the box, below it on a narrow screen */
+#gw-root .gw-gizmo{ position:absolute; z-index:60; left:min(calc(50% + 232px), calc(100% - 212px)); top:calc(50% - 30px); display:flex; flex-direction:column; align-items:flex-end; gap:6px;
+  width:200px; animation:gw-pop .2s ease-out both; }
+#gw-root .gw-gz-bub{ position:relative; padding:8px 10px; background:#ffffe1; border:1px solid #000; font-size:12px; line-height:1.4; }
+#gw-root .gw-gz-bub::after{ content:""; position:absolute; right:26px; bottom:-8px; width:12px; height:12px; background:#ffffe1; border-right:1px solid #000; border-bottom:1px solid #000; transform:rotate(45deg); }
+#gw-root .gw-gz-bub p{ margin:0 0 6px; }
+#gw-root .gw-gz-btns{ display:flex; flex-wrap:wrap; gap:6px; }
+#gw-root .gw-gz-btns .gw-b{ min-width:0; }
+#gw-root .gw-gz-fig{ display:block; width:64px; height:84px; margin-right:12px; filter:drop-shadow(1px 2px 0 rgba(0, 0, 0, .35)); }
+@media (max-width: 759px){
+  #gw-root .gw-final{ top:42%; }
+  #gw-root .gw-b{ min-height:40px; }
+  #gw-root .gw-gizmo{ left:auto; right:12px; top:auto; bottom:12px; width:min(240px, calc(100vw - 24px)); }
+}
+@media (prefers-reduced-motion: reduce){
+  #gw-root .gw-decoy, #gw-root .gw-final, #gw-root .gw-gizmo{ animation:none; }
+}
