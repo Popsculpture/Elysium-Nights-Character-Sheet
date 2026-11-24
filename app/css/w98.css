@@ -423,6 +423,13 @@ html.skin-98 .w98-saver-logo{ position:absolute; left:0; top:0; display:flex; al
   font-family:"Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif; font-size:34px; }
 html.skin-98 .w98-saver-logo svg{ display:block; }
 html.skin-98 .w98-saver-logo b{ font-weight:700; }
+/* Back Alleys: the saver draws at 418 by 236 and is scaled up square-pixelled to cover the screen; Show map sits top right */
+html.skin-98 .w98-saver-alleys{ background:#07090d; }
+html.skin-98 .w98-alleys{ position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; image-rendering:pixelated; }
+html.skin-98 .w98-alleys-map{ position:absolute; top:12px; right:12px; height:auto; max-width:40vw; image-rendering:pixelated; opacity:.85;
+  background:rgba(7,9,13,.7); box-shadow:0 0 0 1px rgba(46,230,160,.35); }
+html.skin-98 .w98-monitor-s.w98-monitor-alleys{ background:linear-gradient(#141034 0 52%, #1d1a2c 52% 100%); }
+html.skin-98 .w98-mon-neon{ font:700 13px/1 "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif; letter-spacing:1px; color:#39ff6a; text-shadow:0 0 4px #39ff6a; }
 
 /* a tick box, drawn the way the era drew one: a sunken white square and a black tick */
 html.skin-98 input.w98-chk[type]{ appearance:none; -webkit-appearance:none; flex:none; width:13px; height:13px; margin:0; padding:0; border:0; border-radius:0; position:relative;

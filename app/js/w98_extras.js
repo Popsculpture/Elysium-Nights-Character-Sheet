@@ -21,10 +21,50 @@ window.EN = window.EN || {};
   /* ======================================================================== THE SCREEN SAVER
      Off until you ask (Start, Settings, Screen Saver): a sheet read slowly over a long turn is not idle. After the minutes you
      pick without a press, a key, a wheel or a touch, the desktop goes black and the #GRIDOS mark drifts about the screen,
-     changing colour at every wall. Any input wakes it, and a key or a click is eaten, so it never does anything twice. */
-  var SS = { key: "en_w98_ss_v1", timer: null, el: null, iv: null, p: null, last: 0 };
+     changing colour at every wall. Any input wakes it, and a key or a click is eaten, so it never does anything twice.
+     Back Alleys (23 Nov 2026, the art team's saver) is the other choice: a walk through a night maze, drawn by js/back_alleys.js
+     from data/back_alleys_data.js. Neither file loads until the saver first runs, so it costs nothing at start-up. Show map puts the
+     maze's map in the top right corner. */
+  var SS = { key: "en_w98_ss_v1", kindKey: "en_w98_ss_kind_v1", mapKey: "en_w98_ss_map_v1", timer: null, el: null, iv: null, p: null, last: 0, alley: null };
   function ssMins() { var n = parseInt(store(SS.key) || "0", 10); return n > 0 ? n : 0; }
   function ssSet(m) { store(SS.key, String(m)); ssArm(); }
+  function ssKind() { return store(SS.kindKey) === "alleys" ? "alleys" : "mark"; }
+  function ssSetKind(k) { store(SS.kindKey, k === "alleys" ? "alleys" : "mark"); }
+  function ssMap() { return store(SS.mapKey) === "1"; }
+  function ssSetMap(v) { store(SS.mapKey, v ? "1" : "0"); }
+  // the two files, fetched once on the first run and kept
+  // they carry this file's own ?v= stamp (tools/stamp_version.py), so a deploy swaps them with everything else
+  var VER = (function () { try { var m = /\?v=([^&#]+)/.exec(document.currentScript.src); return m ? "?v=" + m[1] : ""; } catch (e) { return ""; } })();
+  var alleysLoad = null;
+  function loadAlleys() {
+    if (alleysLoad) return alleysLoad;
+    function script(src, have) {
+      return have() ? Promise.resolve() : new Promise(function (res, rej) {
+        var s = document.createElement("script"); s.src = src + VER; s.onload = res; s.onerror = rej; document.head.appendChild(s);
+      });
+    }
+    // the data is the art team's JSON, wrapped as a script (data/back_alleys_data.js) so it loads from file:// as well as the site
+    alleysLoad = Promise.all([script("js/back_alleys.js", function () { return !!window.BackAlleys; }), script("data/back_alleys_data.js", function () { return !!window.EN_BACK_ALLEYS_DATA; })])
+      .then(function () { if (!window.BackAlleys || !window.EN_BACK_ALLEYS_DATA) throw new Error("Back Alleys did not load"); return window.EN_BACK_ALLEYS_DATA; });
+    alleysLoad.catch(function () { alleysLoad = null; });
+    return alleysLoad;
+  }
+  function alleysStart(box) {
+    var cv = el("canvas.w98-alleys", { role: "img", "aria-label": "Back Alleys screen saver" });
+    var map = ssMap() ? el("canvas.w98-alleys-map", { "aria-hidden": "true", style: { display: "none" } }) : null;
+    box.appendChild(cv); if (map) box.appendChild(map);
+    loadAlleys().then(function (data) {
+      if (SS.el !== box) return;
+      var sv = SS.alley = window.BackAlleys.create(cv, data, { mapCanvas: map || undefined, reducedMotion: K.reduced() });
+      return sv.ready.then(function () { if (SS.alley === sv && map) sv.setMap(true); });
+    }).catch(function () {
+      // the files did not come: the mark drifts instead, so the screen still goes dark
+      if (SS.el !== box) return;
+      box.removeChild(cv); if (map) box.removeChild(map);
+      box.classList.remove("w98-saver-alleys");
+      markStart(box);
+    });
+  }
   function ssArm() {
     clearTimeout(SS.timer);
     var m = ssMins();
@@ -34,10 +74,15 @@ window.EN = window.EN || {};
   function ssStart() {
     if (SS.el || !K.active()) return;
     K.closeMenus();
-    var logo = el("div.w98-saver-logo", { html: K.mark(44, "currentColor") + "<span><b>#GRID</b>OS '98</span>" });
-    var box = el("div.w98-saver", { role: "presentation" }, [logo]);
+    var alleys = ssKind() === "alleys";
+    var box = el("div.w98-saver" + (alleys ? ".w98-saver-alleys" : ""), { role: "presentation", "data-saver": alleys ? "alleys" : "mark" });
     document.body.appendChild(box);
     SS.el = box; SS.p = null;
+    if (alleys) alleysStart(box); else markStart(box);
+  }
+  function markStart(box) {
+    var logo = el("div.w98-saver-logo", { html: K.mark(44, "currentColor") + "<span><b>#GRID</b>OS '98</span>" });
+    box.appendChild(logo);
     var W = box.clientWidth || window.innerWidth, H = box.clientHeight || window.innerHeight, lw = logo.offsetWidth, lh = logo.offsetHeight;
     var x = Math.random() * Math.max(1, W - lw), y = Math.random() * Math.max(1, H - lh), vx = 2.4, vy = 1.9, ci = 0;
     var COL = ["#ffffff", "#00ffff", "#ff66cc", "#ffee00", "#66ff66"];
@@ -55,6 +100,7 @@ window.EN = window.EN || {};
   }
   function ssWake() {
     clearInterval(SS.iv); SS.iv = null;
+    if (SS.alley) { try { SS.alley.stop(); } catch (e) {} SS.alley = null; }
     if (SS.el && SS.el.parentNode) SS.el.parentNode.removeChild(SS.el);
     SS.el = null; SS.p = null;
     ssArm();
@@ -79,8 +125,11 @@ window.EN = window.EN || {};
   X.settings.push(function () {
     var m = ssMins();
     function opt(min, text) { return { label: text, check: m === min, radio: true, go: function () { ssSet(min); } }; }
+    function kind(k, text) { return { label: text, check: ssKind() === k, radio: true, go: function () { ssSetKind(k); } }; }
     return [{ label: "Screen &Saver", icon: K.pix("desk", 16), sub: [
       opt(0, "&None"), opt(1, "After &1 minute"), opt(5, "After &5 minutes"), opt(10, "After 1&0 minutes"), { sep: true },
+      kind("mark", "#GRIDOS &Mark"), kind("alleys", "&Back Alleys"),
+      { label: "Show m&ap", check: ssMap(), disabled: ssKind() !== "alleys", go: function () { ssSetMap(!ssMap()); } }, { sep: true },
       { label: "&Preview", go: ssStart }
     ] }];
   });
@@ -89,14 +138,34 @@ window.EN = window.EN || {};
   function field(text, control) { return el("label.w98-ps-field", null, [el("span", null, K.label(text)), control]); }
   // Display Properties, Screen Saver tab (js/w98_cpanel.js asks X.display for tabs)
   X.display.push({ name: "Screen Saver", build: function () {
-    var m = ssMins();
-    var which = el("select", { "aria-label": "Screen Saver" }, [el("option", { value: "none", selected: !m, text: "(None)" }), el("option", { value: "mark", selected: !!m, text: "#GRIDOS Mark" })]);
+    var m = ssMins(), k = ssKind();
+    var which = el("select", { "aria-label": "Screen Saver" }, [
+      el("option", { value: "none", selected: !m, text: "(None)" }),
+      el("option", { value: "mark", selected: !!m && k === "mark", text: "#GRIDOS Mark" }),
+      el("option", { value: "alleys", selected: !!m && k === "alleys", text: "Back Alleys" })
+    ]);
     var wait = el("select", { "aria-label": "Wait", disabled: !m }, [1, 5, 10].map(function (n) { return el("option", { value: String(n), selected: (m || 5) === n, text: n + (n === 1 ? " minute" : " minutes") }); }));
-    which.onchange = function () { var on = which.value === "mark"; wait.disabled = !on; ssSet(on ? parseInt(wait.value, 10) : 0); };
+    var map = el("input.w98-chk", { type: "checkbox", "aria-label": "Show map", checked: ssMap(), disabled: !(m && k === "alleys"), onchange: function () { ssSetMap(map.checked); } });
+    var screen = el("div.w98-monitor-s");
+    function paintMonitor() {
+      var a = which.value === "alleys";
+      screen.classList.toggle("w98-monitor-alleys", a);
+      screen.innerHTML = a ? "<span class=\"w98-mon-neon\">JACK IN</span>" : which.value === "mark" ? "<span>" + K.mark(26, "currentColor") + "</span>" : "";
+    }
+    which.onchange = function () {
+      var v = which.value, on = v !== "none";
+      wait.disabled = !on; map.disabled = v !== "alleys";
+      if (on) ssSetKind(v);
+      ssSet(on ? parseInt(wait.value, 10) : 0);
+      paintMonitor();
+    };
     wait.onchange = function () { ssSet(parseInt(wait.value, 10)); };
+    paintMonitor();
     return [
-      el("div.w98-monitor", { "aria-hidden": "true" }, [el("div.w98-monitor-s", null, [el("span", { html: K.mark(26, "currentColor") })])]),
-      group("Screen saver", [field("&Screen Saver:", which), field("&Wait:", wait), el("div.w98-ps-btns", null, [el("button.btn.sm", { type: "button", onclick: ssStart }, "Preview")])]),
+      el("div.w98-monitor", { "aria-hidden": "true" }, [screen]),
+      group("Screen saver", [field("&Screen Saver:", which), field("&Wait:", wait),
+        el("label.w98-tip-c", { style: { marginTop: "6px" } }, [map, el("span", null, K.label("Show &map (Back Alleys)"))]),
+        el("div.w98-ps-btns", null, [el("button.btn.sm", { type: "button", onclick: ssStart }, "Preview")])]),
       el("p.set-hint", { text: "The screen saver comes up after the wait without a key, a click or a touch. Any of them wakes it." })
     ];
   } });
