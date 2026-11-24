@@ -20,12 +20,10 @@
    =========================================================================== */
 window.EN = window.EN || {};
 EN.wallpapers = [
-  { key: "rolling-hill-day",   name: "Rolling Hill, Sector 7 · Day",   file: "rolling-hill-day.jpg",   thumb: "rolling-hill-day.thumb.jpg" },
-  { key: "rolling-hill-night", name: "Rolling Hill, Sector 7 · Night", file: "rolling-hill-night.jpg", thumb: "rolling-hill-night.thumb.jpg" },
-  { key: "flow-connects-all",  name: "Flow Connects All",              file: "flow-connects-all.jpg",  thumb: "flow-connects-all.thumb.jpg" },
-  { key: "toasty-clankers",    name: "Toasty Clankers",                file: "toasty-clankers.jpg",    thumb: "toasty-clankers.thumb.jpg" },
-  { key: "cyberrat-corridor",  name: "CyberRat Corridor",              file: "cyberrat-corridor.jpg",  thumb: "cyberrat-corridor.thumb.jpg" },
-  { key: "grid-by-night",      name: "GRID by Night",                  file: "grid-by-night.jpg",      thumb: "grid-by-night.thumb.jpg" },
+  /* THE #GRIDOS DESKTOPS (23 Nov 2026, the art team): the system's own, pixel art drawn as SVG like the class scenes below, with a
+     JPEG thumbnail for the picker and the full JPEG beside each as the raster copy. */
+  { key: "gridos-blue",       name: "Crosshatch Blue", file: "gridos-blue.svg", thumb: "gridos-blue.thumb.jpg" },
+  { key: "gridos-teal",       name: "Factory Teal",    file: "gridos-teal.svg", thumb: "gridos-teal.thumb.jpg" },
 
   /* THE CLASS SCENES (23 Nov 2026, the art team): one for each class, pixel art drawn as SVG, so the desktop wears the vector and
      stays sharp on any screen (covering, cropped from the centre, as a photograph is). The picker shows the JPEG thumbnail. Each
