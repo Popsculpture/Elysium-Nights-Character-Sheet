@@ -2120,6 +2120,8 @@ EN.codexView = (function () {
     render: render,
     register: register, addPanels: addPanels, slug: slug, has: has, open: open, peek: peek,
     link: link, chip: chip, linkify: linkify, terms: terms, tabKey: tabKey, kit: kit,
-    search: search, chapters: chapters, entries: entries, closePeek: closePeek
+    search: search, chapters: chapters, entries: entries, closePeek: closePeek,
+    // a setting changed what a panel's `when` or build reads (the Quick-Start switch): rebuild the index on demand
+    refresh: function () { _rev++; }
   };
 })();

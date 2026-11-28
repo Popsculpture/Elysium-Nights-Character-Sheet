@@ -265,7 +265,8 @@ EN.gmView = (function () {
     var body = (e.abilities || []).map(function (a) { return a.text; }).join(" ");
     var atk = body.match(/([+-]\d+)\s+vs\s+Defense/);
     var uniq = [];
-    (body.match(/Save\s+DC\s+(\d+)/g) || []).forEach(function (d) {
+    // "Save DC 12" (the Toolkit) or "Save (DC 12)" (the Quick-Start Rules)
+    (body.match(/Save\s+\(?DC\s+(\d+)/g) || []).forEach(function (d) {
       var v = d.replace(/[^0-9]+/g, "");
       if (uniq.indexOf(v) < 0) uniq.push(v);
     });

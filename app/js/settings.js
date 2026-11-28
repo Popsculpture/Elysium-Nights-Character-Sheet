@@ -1183,7 +1183,30 @@ EN.settings = (function () {
         style: { textTransform: "none", color: "var(--accent)" }, text: "discord.gg/b369vdP4QW" })
     ]);
   }
+  /* The Quick-Start Rules (EN1003) sit under the Companion in the same section (28 Nov 2026).
+     No gate: open to everyone, signed in or not, but off until someone turns it on. On adds
+     the booklet's five pre-mades, its Threats in the Bestiary, and its job in the Admin Codex
+     (js/quickstart.js, js/codex_quickstart.js). The folded summary stays the Companion's. */
   function supplementalSection() {
+    var kids = companionKids();
+    if (!(EN.launch && EN.launch.setQuickstart)) return kids;
+    var L = EN.launch, qs = L.quickstart();
+    var block = [
+      el("label.set-label", { text: "Quick-Start Rules" }),
+      el("p.set-hint", { "data-content-hint": "quickstart", text: qs
+        ? "On: the Quick-Start Rules add their five ready-to-play Freelancers (Gantry, Ledger, Sunday, Copper and Tinsel) to the pre-mades, their Threats to the Bestiary, and their job, The Fifth Flavor, to the Admin Codex. Saved on this device."
+        : "Off. Turn this on to add the Quick-Start Rules: five ready-to-play Freelancers among the pre-mades, their Threats in the Bestiary, and their job, The Fifth Flavor, in the Admin Codex. Open to everyone. A pre-made you saved as your own keeps either way. Saved on this device." }),
+      el("button.btn.sm" + (qs ? ".primary" : ""), {
+        type: "button", "data-content": "quickstart",
+        title: "Offer the Quick-Start Rules' pre-mades, Threats and job",
+        onclick: function () { L.setQuickstart(!qs); rebuild(); }
+      }, qs ? "◈ QUICK-START RULES: ON" : "◈ QUICK-START RULES: OFF")
+    ];
+    // the Discord invite stays the section's last line
+    var tail = kids.length ? [kids[kids.length - 1]] : [];
+    return kids.slice(0, kids.length - tail.length).concat(block, tail);
+  }
+  function companionKids() {
     var L = EN.launch, on = L.supplementalSetting();
     var P = EN.packs, C = EN.cloud;
     var pack = P ? P.status("EN1101") : "none";

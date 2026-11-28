@@ -4511,10 +4511,15 @@ EN.builder = (function () {
         text: "Finished Freelancers, ready to play. They open live but are never saved: change whatever you like, and a reload restores the original. Press SAVE AS MY OWN to keep one." }),
       el("div.pm-grid", null, xs.map(function (x) {
         var marks = premadeMarks(x);
+        // a Quick-Start pre-made (js/quickstart.js) says which book it came from
+        if (x.book === "quickstart") marks.push(el("span.chip.held-chip", { title: "From the Quick-Start Rules", dataset: { held: "quickstart" },
+          style: { marginLeft: "6px", verticalAlign: "middle", fontSize: "9px", color: "var(--accent)", borderColor: "var(--accent)" } }, "QUICK-START"));
+        // the pre-made's own class for its mark (the Handbook pre-mades are keyed by class; the Quick-Start ones are not)
+        var ck = EN.classIdentity.has(x.key) ? x.key : (x.patch && x.patch["class"]) || x.key;
         return el("button.pm-card", { title: "Open " + x.name, onclick: function () {
           if (store.setExample(x.key)) { _intake = false; _step = 0; EN.app.render(); }
         } }, [
-          el("span.pm-class", EN.classIdentity.has(x.key) ? { dataset: { cls: x.key } } : null, [EN.classIdentity.mark(x.key), document.createTextNode(String(x.label || "").toUpperCase())].filter(Boolean).concat(marks)),
+          el("span.pm-class", EN.classIdentity.has(ck) ? { dataset: { cls: ck } } : null, [EN.classIdentity.mark(ck), document.createTextNode(String(x.label || "").toUpperCase())].filter(Boolean).concat(marks)),
           el("span.pm-name", { text: x.name }),
           el("span.pm-blurb", { text: x.blurb || "" })
         ]);

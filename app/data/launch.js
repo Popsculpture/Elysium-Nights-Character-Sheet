@@ -59,6 +59,23 @@ EN.launch = (function () {
   function supplemental() { return !!(EN.packs && EN.packs.loaded("EN1101")) && supplementalSetting(); }
   function setSupplemental(on) { try { localStorage.setItem(SUPP_KEY, on ? "1" : "0"); } catch (e) {} }
 
+  /* ---- Quick-Start content: a device setting (28 Nov 2026) --------------------
+     The Quick-Start Rules (EN1003) are open to everyone: no pack, no sign-in, no
+     role. Off by default: a device shows its content only once someone turns it
+     on in Settings (// CONTENT). On adds the booklet's five pre-mades (the gate's
+     pre-made grid, the switcher, Manage characters), its Threats (the Bestiary)
+     and its job, The Fifth Flavor (the Admin Codex). js/quickstart.js merges and
+     unmerges the data; this is only the setting. Stored per device, never on a
+     character and never in an export. A pre-made already saved as the player's
+     own is an ordinary Handbook character and stays either way. */
+  var QS_KEY = "en_quickstart_v1";
+  function quickstart() { try { return localStorage.getItem(QS_KEY) === "1"; } catch (e) { return false; } }
+  function setQuickstart(on) {
+    try { localStorage.setItem(QS_KEY, on ? "1" : "0"); } catch (e) {}
+    invalidate();
+    if (EN.quickstartContent && EN.quickstartContent.apply) EN.quickstartContent.apply();
+  }
+
   /* ---- GM controls: a device setting (29 Oct 2026) ---------------------------
      Off by default: a device only shows them once someone turns them on. On shows the controls that stand in for a GM's
      call at the table: an item's GM -1 Load, and the Five-Finger Supply storefront (free, looted
@@ -620,6 +637,7 @@ EN.launch = (function () {
 
   return { holds: holds, held: held, companion: companion, toolkit: toolkit,
            supplemental: supplemental, supplementalSetting: supplementalSetting, setSupplemental: setSupplemental,
+           quickstart: quickstart, setQuickstart: setQuickstart,
            gmControls: gmControls, setGmControls: setGmControls,
            gmControlList: GM_CONTROLS, gmItem: gmItem, setGmItem: setGmItem, gmControl: gmControl,
            optionalRules: OPTIONAL_RULES, rule: rule, setRule: setRule,
