@@ -1,10 +1,9 @@
 /* ===========================================================================
    ELYSIUM NIGHTS · Inventory tab
-   Sub-tabs: Stash (owned gear) · Chrome (installed cyberware) · The Undercut
-   (gray-market storefront). Currency is Glimmer (𝒢). List prices come from
-   the Gear & Equipment catalog and assume a major district; the Undercut is
-   not a major district; legality and scarcity mark prices up, and the fence
-   pays street rate (~35% of list) when you sell.
+   Sub-tabs: Gear (owned) · Bills · Chrome · Workbench · Garage · Gray Market.
+   Currency is Glimmer (𝒢). List prices come from the Gear & Equipment catalog.
+   The Undercut sells at list; The Register marks up for legality and scarcity;
+   Guild Surplus sells at 35% of list; the fence pays 35% of list when you sell.
    =========================================================================== */
 window.EN = window.EN || {};
 
@@ -34,7 +33,7 @@ EN.inventoryView = (function () {
   // `_open` below is safe as it stands because every one of its keys is prefixed.
   var _armorPts = Object.create(null);
   var _open = {};          // collapse state for item cards (keys are all prefixed, never a bare entry key)
-  // Storefront (picked via the ⚙ settings popover; same stock, different pricing):
+  // Storefront (picked in the Gray Market; same stock, different pricing):
   //   'undercut'   · The Undercut: book list prices, no markups
   //   'register'   · The Register: predatory corporate markups (legality × scarcity)
   //   'surplus'    · Guild Surplus: Deep Discount, ~35% of list
@@ -56,7 +55,7 @@ EN.inventoryView = (function () {
     "Iconic": "var(--accent)", "Legendary": "var(--flow)", "Mythical": "#c084fc", "Artifact": "var(--gold)" };
   var LEGAL_MULT = { "Legal": 1, "Licensed": 1.15, "Restricted": 1.4, "Contraband": 1.75 };
   var AVAIL_MULT = { "Common": 1, "Uncommon": 1.2, "Rare": 1.5, "Iconic": 1.5, "Legendary": 1.8, "Mythical": 2.2, "Artifact": 3 };
-  var FENCE_RATE = 0.35;   // common contraband fences at 30-50% of market
+  var FENCE_RATE = 0.35;   // flat share of list: what the fence pays, and what Guild Surplus charges
   /* WHOLE GLIMMER FROM A RATE (23 Nov 2026). A rate times a list price is a float, and a float can land a hair off the figure the
      arithmetic gives: 180 × 0.35 is 62.99999999999999, which a bare floor made 𝒢62 where 35% of 𝒢180 is 𝒢63 (a Greatsword at
      Guild Surplus and at the fence, and some forty other list prices). So the product is settled to the thousandth, which is

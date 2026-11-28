@@ -1,7 +1,7 @@
 # Session handoff
 
-Paste the block below into a fresh session to resume work. Written 2026-08-10, after
-Environmental Hazards, the Status Changes panel and Armor Repair all merged to `main`.
+Paste the block below into a fresh session to resume work. Written 2026-08-10, brought up to
+date 2026-11-28.
 
 ---
 
@@ -9,66 +9,43 @@ Continuing work on the Elysium Nights Character Sheet
 (`C:\Users\Popsc\OneDrive\Documents\Elysium Nights Character Sheet`). This is a LOCAL
 session on my PC, so you can run a dev server and drive the real app.
 
-**Do this first: `git pull`.** The last session ran in a cloud container and pushed a lot.
-Your local clone is many commits behind, and the three feature branches it used
-(`env-hazards-wip`, `armor-repair-wip`, `claude/elysium-nights-continuation-fg8qbb`) are
-merged and deleted. Everything is on `main`, which is deployed to elysiumnightsrpg.com.
+**Do this first:** `git status` and `git pull`. Other sessions share this folder, so confirm
+the branch is `main` before committing and stage only your own files. `main` is what GitHub
+Pages deploys to elysiumnightsrpg.com.
 
 ## Read these first, in this order
 
-1. `DEFERRED-FIXES.md`: the running log, and the most important file in the repo. It
+1. `README.md`: what the app is, the content packs, campaigns and the deploy steps.
+2. `DEFERRED-FIXES.md`: the running log, and the most important file in the repo. It
    carries the invariants this codebase paid for one at a time, each learned by getting
    it wrong. Do not relitigate them. It is long; read the section headings first and go
    deep only where you are about to touch.
 
-   Two things about how to read it. It is an archaeological record, not a to-do list:
-   entries are struck and annotated in place rather than deleted, so the reasoning
-   survives. The "Live findings" section opens with a reconciliation naming exactly which
-   of the thirteen L-numbered findings are still open, and that is the list to trust. And
-   every `file.js:NNN` line reference in it is STALE, written before three branches merged
-   into `main`; treat them as a hint about which file and find the site by the quoted
-   code, which is still accurate.
-2. `review-findings/README.md`: archived adversarial-review output, with an honest table
-   of what has and has not been read.
+   It is an archaeological record, not a to-do list: entries are struck and annotated in
+   place rather than deleted, and some closed items were never struck. Check the code
+   before calling anything in it open. Its `file.js:NNN` line references are often stale;
+   find the site by the quoted code.
+3. `CAMPAIGNS-BUILD-REPORT.md`: the campaigns, inbox and Admin builds.
 
-## State
+## Open work, as of 2026-11-28
 
-`main` is deployed and healthy, and there are no branches. Everything below shipped and
-was verified on the live site: Environmental Hazards, the Status Changes panel, Armor
-Repair with Shield Durability converted beside it, the `Zeroed In` rename, Pneumatic
-Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
-
-## Open work, roughly in the order I would take it
-
-1. **Two unread review files, and they cover shipped code.** `review-findings/wx7cb0612.json`
-   was never opened, and only lens 0 of `review-findings/wmudlussk.json` was read in full.
-   Both are Armor Repair, which is now live. Parse with `PYTHONIOENCODING=utf-8`; findings
-   live under `result.verdicts`, an array of strings, one per lens.
-2. **L1, the most player-visible open defect and it needs no import.** One Talent picked
-   in two Universal Upgrade slots double-counts its unarmed step: pick Street Scrapper in
-   slots 2 and 4 and a bare fist punches `1d6`. `uuTalentsOwned` already exists in
-   `app/js/builder.js`, so the filter is one expression away. Full write-up in
-   `DEFERRED-FIXES.md`.
-3. **The action-type classifier cannot see bolded action types.** A plain-text regex
-   matching `as an Action` (three copies: `app/js/combat.js`, `app/js/printsheet.js`,
-   `app/js/pdfexport.js`) means a feature written `As an **Action**` falls through and
-   renders PASSIVE on the sheet, the print sheet and the PDF. `DEFERRED-FIXES.md` names
-   `Rig Fuel`, `Biological Meltdown` and `Chemical Warfare` as mis-tagged, but measure
-   before you fix: there are **11 bolded occurrences across four class data files**, and
-   widening the regex touches every one. Some of those features state their action type
-   unbolded elsewhere in the same text and already classify correctly, so the blast radius
-   is larger than the three. That is exactly why this wants a deliberate decision rather
-   than a quiet patch.
-4. **L2 through L7 and L13**, plus the 14 PART C rulings. All in `DEFERRED-FIXES.md`.
-5. **Thermal Regulation Weave's Resistance** is neither applied nor displayed inside the
-   hazard. Blocked on there being no damage pipeline to reduce, so it is a build, not a
-   patch.
+- **At launch:** set `products.rule` for `EN1101` back to `signed_in` (README, "The playtest
+  gate"), and decide on the three holds in `app/data/launch.js`.
+- **#GRIDroid redesign:** the layout is mapped in `handoff-gridroid-layout.md` (24 Nov,
+  not committed). No redesign has been built from it.
+- **'98 art:** the site icons exist at 32 px only; the 16 px slots wear drawn stand-ins.
+- **Deleting an Admin's account** would leave a campaign with no Admin. Nothing in the app
+  deletes accounts; it wants a ruling when something does.
+- **Live #POST between two real accounts** has not been checked, as far as the notes record.
+- **Small, known:** a removed player's device learns of it on its next read; the tour is not
+  told about a viewed sheet; an imported empty Smartdeck key is never normalized (L13, inert).
 
 ## Conventions
 
-- Commit as you go. When you reach a stopping point, STOP, summarize what you want to
-  push at a high level, and ask me whether I want to review or add anything first. Give
-  me a phrase to type back that authorizes the push. Never push without it.
+- Commit as you go. Never push unasked: offer a brief overview of what would go, and wait
+  for me to type "push it".
+- Before a push that touches `app/`, run `python tools/stamp_version.py` and commit the stamp.
+- The browser tests live beside the repo, in `Elysium Nights Test Suite` (see its README).
 - Zero em dashes and en dashes anywhere. `LC_ALL=C.UTF-8 grep -rnP "[\x{2013}\x{2014}]"`
   must be clean before every commit, excluding `app/vendor` (third party).
 - Also check for stray control characters: `grep -rlP "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]"`,
@@ -76,9 +53,9 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   silently disabled the `?dev` bypass; `cat -A` is the only thing that finds it.
 - Load the app with `?dev` to skip the login card, and add a cache-buster
   (`?dev&cb=x`). Open `app/index.html` directly, not the repo-root `index.html`, which is
-  a redirect stub that races a meta refresh against a JS redirect. There are no codes any more
-  (campaigns batch 1, 8 Nov 2- The login card (`app/js/gate.js`, since campaigns batch 1 on 8 Nov 2026) offers Jack in with
-  Discord and Run offline. Either button lands on the Freelancer desktop; a load that skips the card
+  a redirect stub that races a meta refresh against a JS redirect.
+- The login card (`app/js/gate.js`) offers Jack in with Discord and Run offline; there are no
+  codes. Either button lands on the Freelancer desktop; a load that skips the card
   answers with no profile, so the app opens on the remembered desktop (`en_portal_v1`). The
   card shows until the device has a stored Discord session or picked Run offline (`en_login_v1`);
   the old `en_gate_ok_v1` and `en_gate_admin_ok_v1` are ignored. `?dev` skips it (and records the
@@ -87,7 +64,6 @@ Bypass wired into the unarmed engine, and a `migrate()` hardening pass.
   from `EN.gate.gizmoSvg`, and `clipSvg()` is finished art that comes through byte for byte. The
   test suite's harness seeds a stored session unless a test says `@no-pack`, so a test of the card
   needs that marker.
-card.
 - Each skin remembers the palette it last wore, in `en_skin_theme_v1`, a map keyed
   `<desktop>:<skin>` (`freelancer:98`, `admin:classic`, ...). Switching skins applies that skin's
   palette THROUGH `set()`, so it lands on the active Freelancer's record and rides their export,
@@ -98,17 +74,18 @@ card.
 - Looks are device state too: the OS skin in `en_skin_v1` (Classic when absent), and on '98 the
   wallpaper choice in `en_wall_v1`, custom wallpapers as JPEG data URLs in `en_wall_custom_v1`,
   and the desktop's three toggles in `en_wall_dim_v1`, `en_wall_shadow_v1` and `en_wall_glow_v1`.
-  Presets are listed in `app/data/wallpapers.js`, in two kinds: a photograph names a `file` and a
-  `thumb` in `app/img/wallpapers`, and a tile carries `tile`, a `size` and its whole art inline as
-  an SVG data URL in `svg`, with no file at all. None of it rides a character or an export.
-- Skins are CSS, plus a few HOOKS in the modules: `.mkt-*` and `.inv-sub[data-sub]` in
-  inventory.js for the '98 Explorer, `data-sub` and `data-tab` on every tab (each TABS entry's
-  `sub` and `key`) for #GRIDroid's app-list subtitles and for reaching one named tab without
-  counting children, and `html.rail-open`, which app.js toggles when the open tab is
-  tapped again on #GRIDroid only (so that skin can fold and unfold its app list; every other skin
-  keeps re-tapping #PRINT as the shortcut to Advance). One more belongs to '98: `#win-addr`, the
-  Explorer address field in index.html, written by `paintAddr()` in app.js on every render. The
-  element is `display:none` on the other skins, so the write is a harmless no-op there.
+  Presets are listed in `app/data/wallpapers.js`, in two kinds: a picture names a `file` and a
+  `thumb`, and a tile carries `tile`, a `size` and its art, either inline as an SVG data URL in
+  `svg` or as a `file` under `tiles/`. Files sit in `app/img/wallpapers`. None of it rides a
+  character or an export.
+- Three skins: Classic (desktop), #GRIDroid (phone) and #GRIDOS '98. Classic and #GRIDroid are
+  mostly CSS, plus a few HOOKS in the modules: `.mkt-*` and `.inv-sub[data-sub]` in inventory.js,
+  `data-sub` and `data-tab` on every tab (each TABS entry's `sub` and `key`) for #GRIDroid's
+  app-list subtitles and for reaching one named tab without counting children, and
+  `html.rail-open`, which app.js toggles when the open tab is tapped again on #GRIDroid only (so
+  that skin can fold and unfold its app list; every other skin keeps re-tapping #PRINT as the
+  shortcut to Advance). '98 is a desktop of its own, in `app/js/w98*.js` and `app/css/w98*.css`:
+  the app still draws one view, which moves into the live program's window.
 - #GRIDroid's layout collapse reaches most elements through attribute-substring selectors on the
   inline styles the modules write, so it needs few hooks: `.chrome-frame`, `.chrome-stats` and
   `.inv-bar` in inventory.js, `.panel-hr` on the panel header-right wrapper in ui.js, and
@@ -116,7 +93,7 @@ card.
   Nothing reads any of them; they exist so a stylesheet can reach an inline-styled element.
 - Campaigns (batch 2, `app/js/campaigns.js`, `app/js/gm_campaign.js`) keep three device keys:
   `en_join_v1` (an invite token waiting for an answer), `en_campaigns_v1` (per account: its campaigns,
-  roles, and which row sits in which) and `en_campaign_pick_v1` (the Campaign tab's picker). A record's
+  roles, and which row sits in which) and `en_campaign_pick_v1` (the campaign picker). A record's
   campaign is the `characters.campaign_id` column, never in the record. Whoever runs a campaign can read
   its members' rows, so any read of `characters` for "my characters" must filter on `owner_id`, as
   `pull()` in cloud.js does. `store.setViewing` holds another player's sheet in memory with
@@ -171,7 +148,8 @@ card.
   arrays, EN.talents, EN.backgrounds or the gear catalogs, because a saved character resolves
   against them. inventory.js gates Toolkit gear and the Availability display through it too.
 - Give parallel agents their own preview origin. Sharing one corrupts the roster.
-- My loaded character is expendable. Do not spend effort preserving it.
+- Locally, my loaded character is expendable. On the live site, use the "Test" campaign and a
+  throwaway sheet, and restore everything.
 
 ## How this codebase expects you to work
 
@@ -235,7 +213,8 @@ and never stored.
 
 ## Manuscript source of truth
 
-Three live Google Docs. The app is synced against these, never against a local copy.
+Live Google Docs: the Player's Handbook, Parts 1 to 3, and Part 4, the Game Master's Toolkit
+(a draft). The app is synced against these, never against a local copy.
 
 | Part | Doc id |
 | ----- | ----- |
@@ -243,23 +222,12 @@ Three live Google Docs. The app is synced against these, never against a local c
 | 2, Core Rules, Combat, Survival and Specialized Systems | `1P74ExjneDDSUvEXQpVuDYvAvNz_w3rOVzVGVg7w-XHM` |
 | 3, Equipment | `1ehY_1lcqpugD1bdcpBTvq32c7SpxdYj0m5h7ClYPKgM` |
 
-Read one at `https://docs.google.com/document/d/<id>/edit`, or pull raw text from
-`https://docs.google.com/document/d/<id>/export?format=markdown`.
+The Handbook and the Toolkit are in the same Drive folder.
 
-**Use the markdown export, not txt.** Plain text strips bold and heading levels, which
-produced false negatives here: a probe for a bolded trait name found nothing and looked
-like the edit had never landed.
-
-**How to spill without burning context.** Navigate real Chrome to
-`https://docs.google.com/robots.txt`, a lightweight same-origin page, then fetch the
-export endpoint from there. Do NOT pass `credentials: "include"`; on a same-origin
-request it makes the fetch fail. The Docs editor itself freezes the renderer and its
-CSP blocks the fetch, so do not load the document.
+**Probe, do not spill.** Search inside the document and bring back answers; returning a whole
+Part costs a great deal of context. **Use the markdown export, not txt:** plain text strips
+bold and heading levels, which has produced false negatives here.
 
 **Freshness is a hard gate.** Compare each doc's modified time against any local copy
 before auditing. Auditing against a stale spill once produced a report claiming a live
 trait had been invented, and six commits were reverted.
-
-Parts 2 and 3 have never been spilled in full: Chrome refuses downloads from
-`docs.google.com` on this machine. Targeted extracts of the changed passages are the
-working substitute. Allowing automatic downloads for that origin would fix it.

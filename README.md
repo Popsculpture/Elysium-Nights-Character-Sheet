@@ -13,50 +13,61 @@ has picked Run offline, skips the card and opens on the last desktop you used. T
 // WORKSPACE buttons switch between them (`?portal=admin` lands on Admin for one load that skips the
 card). `?dev` skips the card and `?login` forces it, for testing.
 
-- **Freelancer portal**: the player's own sheet. #PRINT (character creation & leveling, the
-  foundation every other tab reads from; export / import a record as JSON), Freelancer (the live
-  play dashboard for vitality/wounds, conditions, saves, senses, attacks, class features), Social
-  (the standing ledger; Contacts, the people you can reach; and #POST, an inbox that rides the
-  record), #GRID, Flow, Inventory
-  (Stash, Chrome, a gray-market storefront), Codex (searchable rules reference).
-- **Admin portal**: the GM toolkit, on its own rail, built from the Elysium Nights Game Master's
-  Handbook. Table (initiative tracker, with the running plan, the Security Response clock, the Room's
-  hazards and the XP award), Threats (statblock builder, initiative by the book's formula), Bestiary
-  (all 48 statblocks with subgroups, Species Templates and Hostile Vehicles), Encounters (the XP
-  budget, waves, objectives, saved plans, and RUN ON THE TABLE), Hazards (the eight Set Pieces at any
-  Grade, custom hazards, stalemate and falling tools), Job Board (the five roll tables and the Twelve
-  Postings, a job log, sending a posting to #POST), Payroll (contract pay, bounties, salvage, the
-  split, milestones, and crediting the crew), Heat (the Downtime Heat check across the crew, events,
-  Bounties and cooling off), People (contact cards with Resolve by Role, and the name and street
-  handle roller), and Scenes (Sit-Down, chase and Incursion trackers). Table rows take damage by an
-  amount, expand to their full statblock, carry conditions and notes, track a Solo's Surges and
-  Breakpoint, and can have a Hostile Vehicle attached; Bestiary People cards take Species Templates. A
-  GM'S CARD drawer on every Admin tab prints the book's quick reference. Every write the GM makes to a
-  Freelancer's record is confirmed, logged and undoable, and GM data can be exported and imported from
-  the Admin settings tray.
+- **Freelancer desktop**: the player's own sheet. The rail runs HUD (the live play dashboard for
+  vitality and wounds, conditions, saves, senses, attacks and class features), #POST (chat and mail,
+  only in a campaign), Social (the standing ledger, and Contacts, the people you can reach), #GRID
+  (only for net-runners and anyone holding a Burner Relay), Flow (Shapers only), Stash (Gear, Bills,
+  Chrome, Workbench, Garage and the Gray Market) and Codex (searchable rules reference). #PRINT
+  (character creation and leveling, the foundation every other tab reads from; export or import a
+  record as JSON) is opened from the settings cog.
+- **Admin desktop**: the GM toolkit, on its own rail, built from the Elysium Nights Game Master's
+  Toolkit.
+  - **Sysop**: CREW (invite link, roster, sends, blocks), HOUSE RULES (Advancement Type and the
+    table's rules), DATA (SYNC, and GM data export and import) and CAMPAIGN (name, leadership,
+    delete).
+  - **Table** (initiative tracker, with the running plan, the Security Response clock, the Room's
+    hazards and the XP award), **Scenes** (Sit-Down, chase and Incursion trackers) and **#POST**
+    (CHATS, MAIL and SENT).
+  - **Jobs** (the five roll tables and the Twelve Postings, a job log, sending a posting to #POST),
+    **Encounters** (the XP budget, waves, objectives, saved plans, and RUN ON THE TABLE), **Threats**
+    (Bestiary with Species Templates and Hostile Vehicles, statblock Builder, Saved statblocks, and
+    Hazards: the eight Set Pieces at any Grade, custom hazards, stalemate and falling tools) and
+    **People** (contact cards with Resolve by Role, and the name and street handle roller).
+  - **Downtime**: PAYDAY (contract pay, bounties, salvage, the split, milestones, and crediting the
+    crew) and HEAT (the Downtime Heat check across the crew, events, Bounties and cooling off).
+  - **Codex**: the player's chapters plus the Game Master's.
 
+  Table rows take damage by an amount, expand to their full statblock, carry conditions and notes,
+  track a Solo's Surges and Breakpoint, and can have a Hostile Vehicle attached; Bestiary People cards
+  take Species Templates. A GM'S CARD drawer on every Admin page prints the book's quick reference.
+  Every write the GM makes to a Freelancer's record is confirmed, logged and undoable.
 
 ## Skins and wallpapers
 
+Settings has an OS Skin row beside the color themes, with three skins:
+
+- **Classic**, the desktop look and the default on a computer. Its Freelancer desktop carries a status
+  rail on every tab, a Record drawer and a Ctrl K search.
+- **#GRIDroid**, a cyberpunk phone OS and the default on a phone: one column in a HUD bezel at any
+  width, the tab rail an app list docked at the foot, folded to the open app and unfolding on a tap
+  with Settings as its last row, and a sideways swipe that pages between tabs with a pill naming where
+  you are heading.
+- **#GRIDOS '98**, a Windows 98 homage made of original art: every tab is a program with its own
+  window, over desktop icons and a taskbar with START. On the Freelancer desktop #GRID is Magpie, a web
+  browser hosting NameDrop (Social), Burn Rate (Bills), the storefronts and the Codex as sites, and
+  the Stash is a spreadsheet. It adds a Control Panel, screen savers, a game and Gizmo as an
+  assistant. Choosing it from the skin buttons first shows a warning that it is made for a laptop or
+  desktop.
+
 Each skin remembers the last color theme you gave it, so the three can look like three different
 machines: switch to #GRIDOS '98 and it comes back in the Windows scheme, switch to Classic and it
-comes back in whatever you left there. Switching skins repaints the loaded Freelancer and saves
-that palette to them, so a skin change is also a change to what that character exports.
+comes back in whatever you left there. Switching skins repaints the loaded Freelancer and saves that
+palette to them, so a skin change is also a change to what that character exports.
 
-Settings has an OS Skin row beside the color themes: Classic (the look as shipped), #GRIDOS '98
-(a Windows 98 homage: bevels, title bars with caption buttons, a taskbar with START, an Explorer
-toolbar under the header whose address bar names the view you have open, an
-Inventory tab that opens a "#GRID Explorer" window around a 1998 auction-site Gray Market, and a
-#POST inbox that opens in "#POST Express", a mail client with a folder pane and a preview pane), and
-#GRIDroid (a cyberpunk phone OS: one phone-width screen in a HUD bezel at any width, the tab rail
-an app list docked at the foot, folded to the open app and unfolding on a tap with Settings as its
-last row, and a sideways swipe
-that pages between tabs with a pill naming where you are heading). On '98 and
-#GRIDroid a Wallpaper row picks the desktop behind the windows: your own image from a file
-(resized and kept on the device), or on '98 alone one of the twelve presets: six photographs in
-`app/img/wallpapers`, and six repeating patterns drawn as inline SVG in `app/data/wallpapers.js`
-and tiled at their own size. Toggles dim the wallpaper and outline or glow the desktop's text. Skins and wallpapers are device
-settings, never part of a character or its export.
+On '98 and #GRIDroid a Wallpaper row picks the desktop behind the windows: your own image from a file
+(resized and kept on the device), or on '98 alone one of the presets in `app/data/wallpapers.js`
+(pictures that cover the screen, and tiles that repeat). Toggles dim the wallpaper and outline or glow
+the desktop's text. Skins and wallpapers are device settings, never part of a character or its export.
 
 ## Tech
 
@@ -152,17 +163,20 @@ nothing for a `signed_in` product.
 
 An Admin starts a campaign and shares its invite link. A player clicks the link once (the join card,
 over the app), then moves characters in and out from a dropdown in Manage characters. A character sits
-in one campaign at a time. The Admin runs it all from the Campaign tab, first on the Admin rail: the
-link, the roster, who is blocked, and each player's sheet, read-only.
+in one campaign at a time. The Admin runs it all from Sysop, first on the Admin rail: the link, the
+roster, who is blocked, and each player's sheet, read-only.
 
-- The Admin does everything. A co-Admin can view sheets, copy or reset the link, remove players, and
-  block or unblock. Only the Admin removes co-Admins, makes or unmakes them, transfers leadership,
-  renames or deletes. `supabase/migrations/20261108120000_campaigns.sql` enforces all of it; the app's
-  hidden buttons are for clarity.
+- The Admin does everything. A co-Admin can view sheets, copy or reset the link, remove players,
+  block or unblock, send mail, and set the Advancement Type and house rules. Only the Admin removes
+  co-Admins, makes or unmakes them, transfers leadership, renames or deletes. The migrations in
+  `supabase/migrations` enforce all of it; the app's hidden buttons are for clarity.
 - An account that is crew in at least one campaign and runs none gets Gizmo's ACCESS DENIED instead of
   the Admin desktop. That is a polite fence: jacking out, or creating a campaign, gets past it.
 - A record's campaign is `characters.campaign_id`, account state like the link book. It is not in the
   record, so it never rides an export.
+- A campaign's house rules (Encumbrance, Weapon Jam, Morale, the GM's -1 Load, the Five-Finger Supply
+  and which Gray Market storefronts are open) apply to every sheet in it, shown locked to players.
+  Applying a change sends each character a letter.
 - `supabase/tests/campaign_checks.sql` is the check, run the way `entitlements_checks.sql` is. To run it
   without touching the live project, see `pg/README.txt` in the test suite.
 
@@ -174,12 +188,16 @@ Manage characters. Payroll, the Job Board and the XP award reach every character
 inbox, below. Heat counts the whole crew but can only write to sheets on this device, and says who it can't reach. Jacked out or offline,
 the desktop uses the browser's records as it always did.
 
-The Admin and co-Admins can send in-game mail from the Campaign tab, to one character or the whole crew,
-signed as an NPC card from the People tab or any typed name, with items from the gear catalog attached.
-A message can go alone, and so can a package. The list under the roster shows each of their sends as
-Waiting, Delivered or Taken, and a send that is still waiting can be recalled.
+The Admin and co-Admins can send in-game mail from #POST's MAIL page, or from the roster under Sysop,
+CREW, to one character or the whole crew, signed as an NPC card from the People tab or any typed name,
+with items from the gear catalog attached. A message can go alone, and so can a package. SENT lists each
+of their sends, and one that is still waiting can be recalled.
 
-- The player sees a toast and an unread message in #POST on the Social tab. A package waits in the message
+CHATS is a live messenger with each character, one chat for each voice the GM writes as, and players can
+write back. Players in the same campaign can also message each other; those chats are private to the two
+of them, and the people who run the campaign cannot read them (`20261117120000_chat.sql`).
+
+- The player sees a toast and an unread message on the #POST tab. A package waits in the message
   until Take it moves the items into the Stash, the way a purchase does.
 - The record is still where mail lives. `character_inbox` is only the courier: while jacked in, `js/cloud.js`
   files each row on the record and marks it delivered. A record that isn't on the device, or is locked,
@@ -202,18 +220,18 @@ others change numbers, so their row carries them: Glimmer, Nexus, XP and the two
 ## One Admin desktop per campaign
 
 Each campaign an account runs has its own Table and last fight, Encounters, Job Board, Payroll history, Heat log, People and Scenes. Saved Threats
-and custom Hazards are one library across every desktop. The picker above the Table switches all of it, for that tab. No campaign is this browser's
+and custom Hazards are one library across every desktop. The picker in the top bar switches all of it, for that browser tab. No campaign is this browser's
 own desktop, which is all an Admin with no campaign ever sees. A dropped connection stays on the campaign, and jacking out goes to the browser's own.
 
-It stays on the device: `en_gm_camp_<campaign id>_v1` for a campaign, and `en_gm_v1` for the library and the browser's own desktop. Settings exports and
-imports one desktop at a time. Work from before this stays in `en_gm_v1` until the Admin moves it. A one-time card asks, and Settings offers the same
+Each desktop is kept on the device: `en_gm_camp_<campaign id>_v1` for a campaign, and `en_gm_v1` for the library and the browser's own desktop. Sysop's DATA page exports and
+imports one desktop at a time. Work from before this stays in `en_gm_v1` until the Admin moves it. A one-time card asks, and Sysop's DATA page offers the same
 move later, with a copy of the old document kept first.
 
 ### SYNC, between browsers
 
-A desktop lives in one browser, so a co-Admin's Table starts blank, and so does the Admin's own on a second computer. SYNC, beside the campaign picker
-above the Table, is the one way across: a press saves that campaign's desktop to the account and adds what the others who run the campaign saved. It
-only ever adds. A record this desktop has is left exactly as it is, and the report under the picker says what was added and what was kept.
+A desktop lives in one browser, so a co-Admin's Table starts blank, and so does the Admin's own on a second computer. SYNC, on Sysop's DATA
+page, is the one way across: a press saves that campaign's desktop to the account and adds what the others who run the campaign saved. It
+only ever adds. A record this desktop has is left exactly as it is, and the report under the button says what was added and what was kept.
 
 - A delete doesn't travel. It stands on the desktop that made it until someone who still has the record saves again: the press after that brings it
   back. An edit reaches only someone who doesn't have the record yet.
@@ -279,7 +297,7 @@ Run this whenever anything under `app/` changed, then commit the result with you
 Pages serves every file with `Cache-Control: max-age=600` and that cannot be configured from the
 repo, so without a version on the asset URLs a browser can pair a cached `js/ui.js` with a fresh
 `data/rules.js` and run half of one build against half of another. Stamping makes a deploy atomic:
-all 60 local assets change name together, so the build swaps in one piece. It does not make the
+every local asset changes name together, so the build swaps in one piece. It does not make the
 deploy arrive any sooner, because the HTML carries the same ten minute cache. `--strip` undoes it.
 
 The stamped URLs do **not** break opening `app/index.html` straight from disk. Browsers ignore the
